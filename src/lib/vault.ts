@@ -117,3 +117,50 @@ export async function decryptJson<T>(ciphertextB64: string, key: CryptoKey): Pro
     return null
   }
 }
+
+// ── Size ─────────────────────────────────────────────────────────────────────
+
+/**
+ * The largest ciphertext we will upload, in CHARACTERS OF BASE64.
+ *
+ * ⚠️ Characters of base64, not bytes of ciphertext — because the base64 string
+ * is what `blackbook_vaults.ciphertext` actually stores. It is an unbounded
+ * `text` column, and unbounded is the problem this constant exists to fix.
+ * Base64 costs 4 characters per 3 bytes, so 2 MB here is ~1.5 MB of encrypted
+ * bytes and, near enough, ~1.5 MB of contacts JSON.
+ *
+ * ⚠️ Deliberately NOT a server-side CHECK constraint (James, 2026-08-24). A
+ * constraint violation arrives mid-sync as an opaque Postgres error code, after
+ * the edit that caused it has already been made and the request has already
+ * gone out. The browser, before the request, is the only place that can say
+ * what happened and what to do about it.
+ *
+ * A contact with every field filled is a few hundred bytes, so this is many
+ * thousands of people. In practice it is reached by pasting something large
+ * into one Notes field — which is why the message below names Notes first.
+ */
+export const VAULT_MAX_CIPHERTEXT_CHARS = 2 * 1024 * 1024
+
+function formatSize(chars: number): string {
+  const mb = chars / (1024 * 1024)
+  return `${mb < 10 ? mb.toFixed(1) : Math.round(mb)} MB`
+}
+
+/**
+ * Check a ciphertext before uploading it. Returns the message to show the user,
+ * or `null` to go ahead.
+ *
+ * The message leads with the fact that nothing is lost, because the failure it
+ * describes is alarming and completely non-destructive: the local book is
+ * untouched and remains the primary copy. Only the online BACKUP is refused.
+ */
+export function vaultSizeError(ciphertextB64: string): string | null {
+  if (ciphertextB64.length <= VAULT_MAX_CIPHERTEXT_CHARS) return null
+  return (
+    `This book is too large to save online — ${formatSize(ciphertextB64.length)}, ` +
+    `against a ${formatSize(VAULT_MAX_CIPHERTEXT_CHARS)} limit. ` +
+    `Nothing has been lost: this device still has every contact. ` +
+    `A very long Notes field is the usual cause — shortening the longest ones, ` +
+    `or removing contacts you no longer need, will bring it under.`
+  )
+}

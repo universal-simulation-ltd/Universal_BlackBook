@@ -17,7 +17,15 @@ import {
   type SyncMeta,
 } from '../lib/store'
 import type { Category, Contact } from '../lib/types'
-import { decryptJson, deriveKey, encryptJson, KDF_ITERATIONS, newSalt, VAULT_VERSION } from '../lib/vault'
+import {
+  decryptJson,
+  deriveKey,
+  encryptJson,
+  KDF_ITERATIONS,
+  newSalt,
+  VAULT_VERSION,
+  vaultSizeError,
+} from '../lib/vault'
 import { useBookStore } from './bookStore'
 
 /**
@@ -179,6 +187,13 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       const salt = newSalt()
       const key = await deriveKey(passphrase, salt, KDF_ITERATIONS)
       const ciphertext = await encryptJson(bookPayload(), key)
+      // Refuse an oversized book BEFORE the insert. Nothing has been persisted
+      // at this point — no meta, no stored key — so the app simply stays off.
+      const tooBig = vaultSizeError(ciphertext)
+      if (tooBig) {
+        set({ status: 'error', message: tooBig })
+        return
+      }
       const rev = await createVault(supabase, ciphertext, salt, KDF_ITERATIONS)
       const meta: SyncMeta = { userId, rev, salt, iterations: KDF_ITERATIONS, pushedAt: Date.now() }
       await saveSyncMeta(meta)
@@ -271,6 +286,14 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
     set({ status: 'working', message: null })
     try {
       const ciphertext = await encryptJson(bookPayload(), key)
+      // Same check on every save, not just the first: a book goes over the line
+      // by being edited, and this is the path an edit takes. `rev` is left
+      // where it was, so the next push after a prune is an ordinary one.
+      const tooBig = vaultSizeError(ciphertext)
+      if (tooBig) {
+        set({ status: 'error', message: tooBig })
+        return
+      }
       let expected = rev
       if (force) {
         // Re-read the server's revision and write on top of it. Only reachable

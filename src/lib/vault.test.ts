@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { decryptJson, deriveKey, encryptJson, KDF_ITERATIONS, newSalt } from './vault'
+import {
+  decryptJson,
+  deriveKey,
+  encryptJson,
+  KDF_ITERATIONS,
+  newSalt,
+  VAULT_MAX_CIPHERTEXT_CHARS,
+  vaultSizeError,
+} from './vault'
 
 // A low iteration count for the tests. The point being proved here is the
 // round-trip and the failure modes, not the KDF's cost — and 600k iterations
@@ -69,5 +77,41 @@ describe('vault', () => {
 
   it('states its production cost, so a silent downgrade is a failing test', () => {
     expect(KDF_ITERATIONS).toBeGreaterThanOrEqual(600_000)
+  })
+})
+
+describe('vault size cap', () => {
+  it('passes a ciphertext exactly on the limit', () => {
+    expect(vaultSizeError('x'.repeat(VAULT_MAX_CIPHERTEXT_CHARS))).toBeNull()
+  })
+
+  it('refuses one character over', () => {
+    // Off-by-one on the boundary is the whole risk in a `<=` check, so the two
+    // assertions either side of it are the ones worth having.
+    expect(vaultSizeError('x'.repeat(VAULT_MAX_CIPHERTEXT_CHARS + 1))).not.toBeNull()
+  })
+
+  it('passes an ordinary book without comment', () => {
+    expect(vaultSizeError('x'.repeat(50_000))).toBeNull()
+  })
+
+  it('tells the user nothing was lost, and names both sizes', () => {
+    // The message is the entire feature — the check itself is one comparison.
+    // A refusal that does not say the local book is safe reads as data loss.
+    const msg = vaultSizeError('x'.repeat(3 * 1024 * 1024))
+    expect(msg).toContain('3.0 MB')
+    expect(msg).toContain('2.0 MB')
+    expect(msg).toMatch(/nothing has been lost/i)
+    expect(msg).toMatch(/notes/i)
+  })
+
+  it('measures what actually gets uploaded — the base64, not the plaintext', async () => {
+    // `blackbook_vaults.ciphertext` stores the base64 string, and base64 costs
+    // 4 characters per 3 bytes. Checking the plaintext instead would put the
+    // real ceiling a third away from the number the message quotes.
+    const key = await deriveKey('pass', newSalt(), FAST)
+    const ciphertext = await encryptJson({ notes: 'x'.repeat(300_000) }, key)
+    expect(ciphertext.length).toBeGreaterThan(300_000)
+    expect(vaultSizeError(ciphertext)).toBeNull()
   })
 })
