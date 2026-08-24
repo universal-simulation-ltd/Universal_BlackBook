@@ -1,3 +1,4 @@
+import { MENU } from '@unisim/sdk'
 import { useSyncStore } from '../../stores/syncStore'
 
 // The per-app rows that slot into <UniversalAppsNavBar />'s `actions` prop —
@@ -5,19 +6,27 @@ import { useSyncStore } from '../../stores/syncStore'
 // dropdown's own row rhythm (8px/14px, 13px labels); these render inside SDK
 // chrome, not ours.
 //
-// ⚠️ THESE ROWS ARE LIGHT, in a dark-only app, and that is correct.
+// ⚠️ **These rows were LIGHT until SDK 0.107.0, deliberately, and are now
+// dark.** 0.106.0's `theme` prop covered the bar alone, so the profile
+// dropdown these rows sit inside was light in every consumer including this
+// one — dark rows would have been invisible on their own background. 0.107.0
+// themes the panels too, so the note that used to live here ("this file flips
+// with it and not before") has come due.
 //
-// BlackBook passes `theme="dark"` to the navbar, but SDK 0.106.0's theme
-// covers the BAR only — the profile dropdown these rows are mounted inside is
-// still light, in every consumer, and our stylesheet cannot reach it. Dark
-// rows here would be invisible on their own background. If the SDK ever
-// themes the dropdowns, this file flips with it and not before.
+// The colours are read from the SDK's own exported palette rather than copied
+// as literals. `actions` rows are the one part of that dropdown the SDK cannot
+// style for us, so they are also the one part that can silently drift out of
+// step with the panel around them — and a hand-copied hex has no way of
+// noticing when the panel's does change.
 //
-// Values match PalsPayIn's so the two apps' menus are the same menu.
+// ⚠️ PalsPayIn's menu was byte-identical to this one on purpose, and is still
+// on the light values. It is a LIGHT app, so it is now correct for a different
+// reason rather than by being the same file — do not "resync" the two.
 
-const TINT = { bg: '#fff7ed', fg: '#c2410c' }
-const REST_COLOR = '#374151'
-const MUTED = '#9ca3af'
+const C = MENU.dark
+const TINT = { bg: C.accentBg, fg: C.accentText }
+const REST_COLOR = C.body
+const MUTED = C.muted
 
 export default function AppMenu({
   onCategories,
