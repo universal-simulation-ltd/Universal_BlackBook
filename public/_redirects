@@ -1,0 +1,20 @@
+# The portal Worker proxies opensource.unisim.co.uk/blackbook/* to this Worker
+# with the /blackbook prefix intact, while the build output is flat. All 200s —
+# transparent rewrites, not redirects.
+#
+# ⚠️ NO catch-all `/blackbook/* /index.html 200` rule — Workers static assets
+# rejects it as an infinite loop (the asset layer strips `.html` itself, the
+# same trap as the marketing site's /netzero). Unmatched paths fall through to
+# `not_found_handling: single-page-application`, which serves index.html anyway.
+/blackbook/sw.js                /sw.js                200
+/blackbook/registerSW.js        /registerSW.js        200
+/blackbook/manifest.webmanifest /manifest.webmanifest 200
+/blackbook/workbox-*            /workbox-:splat       200
+/blackbook/assets/*             /assets/:splat        200
+/blackbook/favicon.svg          /favicon.svg          200
+/blackbook/unisim-icon.png      /unisim-icon.png      200
+/blackbook/icon-180.png         /icon-180.png         200
+/blackbook/icon-192.png         /icon-192.png         200
+/blackbook/icon-512.png         /icon-512.png         200
+/blackbook/robots.txt           /robots.txt           200
+/blackbook/sitemap.xml          /sitemap.xml          200

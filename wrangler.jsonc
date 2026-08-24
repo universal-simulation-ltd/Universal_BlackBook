@@ -1,0 +1,24 @@
+// Universal BlackBook — Cloudflare Worker serving the built static assets.
+//
+// A NEW Universal App starts on Workers static assets, not Pages (standing
+// policy, 2026-08-06); PalsPayIn's config is the template this copies. The
+// portal Worker proxies opensource.unisim.co.uk/blackbook/* here.
+//
+// ⚠️ No `main` entry, and no API of any kind. BlackBook's optional online copy
+// is a row in the platform's Supabase (`public.blackbook_vaults`) reached
+// straight from the browser under RLS — there is no server of our own in the
+// path, and nothing here that could read a book even if it wanted to. If that
+// ever changes, `run_worker_first` goes here.
+//
+// `assets.directory` must NEVER be "." — that uploads .git/ to the edge.
+{
+  "name": "universal-blackbook",
+  // Hardcoded so CI tokens don't need "User Details: Read" (same as the portal).
+  "account_id": "12fb850ff7cd52f3ef0244b1837e3008",
+  "compatibility_date": "2026-08-01",
+  "observability": { "enabled": true },
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}

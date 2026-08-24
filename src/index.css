@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────────────────────
+   BlackBook is DARK ONLY, and that is a product decision, not an oversight.
+
+   The suite's standing rule is that every app opens in light mode until the
+   user explicitly asks for something else (Docs_UNI_SIM/landmines.md →
+   Standing policies). This app is the deliberate exception, agreed with the
+   owner on 2026-08-24: it is a little black book, it has one appearance, and
+   there is no theme switcher in the menu because there is nothing to switch.
+
+   Two consequences worth being explicit about, because they are what makes
+   the exception cheap rather than a rolling cost:
+
+     • There is no `dark:` variant anywhere in this codebase, and no `.dark`
+       class on <html>. The classes in components/ui.tsx ARE the palette. A
+       `dark:` prefix here would be dead code that the next person maintains.
+     • `color-scheme: dark` below is doing real work. It is what makes the
+       NATIVE widgets — <select> dropdowns, scrollbars, autofill highlight,
+       the file picker — render dark. Without it a black page opens white
+       system menus, which is the single most obvious way a dark app looks
+       half-finished.
+
+   If light mode is ever wanted, the changes are: this file, ui.tsx, and the
+   navbar's `theme` prop. Nothing is stored in a user's data that assumes
+   dark — see lib/palette.ts for why swatches are keys and not hexes.
+   ───────────────────────────────────────────────────────────────────────── */
+
+html {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  background: #020617; /* slate-950 — painted here so overscroll is dark too */
+}
+
+#root {
+  min-height: 100%;
+}
+
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Names, email addresses and notes are free text: a long unbroken string
+     must wrap rather than widen the page. */
+  overflow-wrap: break-word;
+}
+
+/* The page gutter, which is also the `viewport-fit=cover` safe area: on a
+   notched phone held sideways the notch eats one edge, and content under it is
+   content nobody can read or tap. It sits on the content containers rather
+   than the page so that backgrounds still reach the screen edge. The three
+   steps match Tailwind's px-4 / sm:px-6 / lg:px-8. */
+.gutter {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+
+@media (min-width: 40rem) {
+  .gutter {
+    padding-left: max(1.5rem, env(safe-area-inset-left));
+    padding-right: max(1.5rem, env(safe-area-inset-right));
+  }
+}
+
+@media (min-width: 64rem) {
+  .gutter {
+    padding-left: max(2rem, env(safe-area-inset-left));
+    padding-right: max(2rem, env(safe-area-inset-right));
+  }
+}
+
+/* iOS Safari zooms the page in when a field under 16px takes focus, and it
+   does not zoom back out — which is how a layout that fits ends up half
+   off-screen with the right-hand edge unreachable. Touch devices therefore get
+   a 16px floor on every control, in any orientation; pointer devices keep the
+   denser 14px. `!important` and the bare element selectors are deliberate:
+   this has to reach the controls the suite chrome renders with inline styles,
+   which no class of ours can touch. */
+@media (hover: none) and (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: max(16px, 1em) !important;
+  }
+}
+
+/* Chrome paints autofilled fields a hardcoded pale yellow that no background
+   rule overrides — only an inset shadow large enough to cover the box does.
+   Without this, saving a contact after the browser has offered to fill the
+   email field leaves one blindingly white row in a black form. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #f1f5f9;
+  -webkit-box-shadow: 0 0 0 1000px #020617 inset;
+  caret-color: #f1f5f9;
+}
+
+/* The native dialog backdrop does not inherit anything; without this the modal
+   opens over a transparent backdrop on engines that default it to none. */
+dialog::backdrop {
+  background: rgb(2 6 23 / 0.8);
+}

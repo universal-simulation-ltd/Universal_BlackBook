@@ -1,0 +1,82 @@
+import { useEffect, useRef, type ReactNode } from 'react'
+
+/**
+ * The app's one dialog.
+ *
+ * Built on the native `<dialog>` element via `showModal()`, which is what
+ * gives us — for free, and correctly — the top layer, the inert background,
+ * Escape-to-close, initial focus, and a focus trap that actually holds. Every
+ * hand-rolled overlay in this suite has had to reimplement at least three of
+ * those, usually badly.
+ *
+ * Two things `<dialog>` does NOT do for you, both handled below:
+ *
+ *  1. **A click on the backdrop is a click on the dialog itself.** There is no
+ *     separate backdrop element, so the usual `e.target === e.currentTarget`
+ *     test would never fire. The hit test is done against the dialog's own
+ *     rectangle instead.
+ *  2. **`showModal()` throws if the dialog is already open**, which React's
+ *     StrictMode double-invoked effects will absolutely do in development.
+ *     Guarded with `.open`.
+ */
+export function Modal({
+  title,
+  onClose,
+  children,
+  wide = false,
+}: {
+  title: string
+  onClose: () => void
+  children: ReactNode
+  wide?: boolean
+}) {
+  const ref = useRef<HTMLDialogElement>(null)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    if (!el.open) el.showModal()
+    // Fires for Escape as well as for close(), so the parent's state and the
+    // element's own idea of being open cannot drift apart.
+    const onCancelOrClose = (e: Event) => {
+      e.preventDefault()
+      onClose()
+    }
+    el.addEventListener('cancel', onCancelOrClose)
+    return () => el.removeEventListener('cancel', onCancelOrClose)
+  }, [onClose])
+
+  return (
+    <dialog
+      ref={ref}
+      aria-labelledby="modal-title"
+      onMouseDown={(e) => {
+        // Backdrop click. `mousedown` rather than `click`: with `click`, a drag
+        // that starts inside a text field and releases outside it counts as a
+        // click on the backdrop and throws the form away mid-selection.
+        const box = e.currentTarget.getBoundingClientRect()
+        const outside =
+          e.clientX < box.left || e.clientX > box.right || e.clientY < box.top || e.clientY > box.bottom
+        if (outside) onClose()
+      }}
+      className={`m-auto w-[calc(100vw-2rem)] rounded-2xl border border-slate-800 bg-slate-900 p-0 text-slate-200 shadow-2xl backdrop:bg-slate-950/80 ${
+        wide ? 'max-w-2xl' : 'max-w-lg'
+      }`}
+    >
+      <div className="flex items-center justify-between gap-4 border-b border-slate-800 px-4 py-3 sm:px-5">
+        <h2 id="modal-title" className="text-base font-semibold text-slate-100">
+          {title}
+        </h2>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="rounded-md px-2 py-1 text-slate-400 hover:bg-slate-800 hover:text-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+        >
+          ✕
+        </button>
+      </div>
+      <div className="max-h-[70vh] overflow-y-auto px-4 py-4 sm:px-5">{children}</div>
+    </dialog>
+  )
+}
