@@ -54,7 +54,7 @@ export function FilterBar() {
             type="search"
             value={query.text}
             onChange={(e) => setQuery({ text: e.target.value })}
-            placeholder="Search names, emails and notes…"
+            placeholder="Search names, emails, notes and birthdays…"
             aria-label="Search contacts"
           />
           <svg

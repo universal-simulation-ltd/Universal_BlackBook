@@ -2,12 +2,13 @@ import { useState, type FormEvent } from 'react'
 import { FREQUENCIES } from '../lib/frequency'
 import type { Frequency } from '../lib/types'
 import { blankDraft, useBookStore, type ContactDraft } from '../stores/bookStore'
+import { BirthdayField } from './BirthdayField'
 import { CategoryPicker } from './CategoryPicker'
 import { Modal } from './Modal'
 import { btnDanger, btnGhost, btnPrimary, inputCls, label, selectCls, textareaCls } from './ui'
 
 /**
- * Add or edit one person. The five fields, in the order they matter.
+ * Add or edit one person. The six fields, in the order they matter.
  *
  * Validation is deliberately thin: a name OR an email is enough. A real
  * address book is full of half-known people — someone you have an email for
@@ -29,6 +30,7 @@ export function ContactForm({ id }: { id: string }) {
           email: existing.email,
           categoryIds: existing.categoryIds,
           frequency: existing.frequency,
+          birthdate: existing.birthdate,
           notes: existing.notes,
         }
       : blankDraft(),
@@ -109,6 +111,11 @@ export function ContactForm({ id }: { id: string }) {
             How often you'd like to be in touch. BlackBook records it and lets you filter by it — it never
             nags you.
           </p>
+        </div>
+
+        <div>
+          <span className={label}>Birthday</span>
+          <BirthdayField value={draft.birthdate} onChange={(birthdate) => patch({ birthdate })} />
         </div>
 
         <div>

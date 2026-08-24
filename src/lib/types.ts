@@ -15,6 +15,8 @@
  * add a new key and map the old one in lib/csv.ts instead.
  */
 export type Frequency =
+  /** Not said. The DEFAULT — see lib/frequency.ts for why it leads the list. */
+  | 'na'
   | 'weekly'
   | 'fortnightly'
   | 'monthly'
@@ -42,6 +44,14 @@ export interface Contact {
   /** Many-to-many, by id. A contact may be in no categories at all. */
   categoryIds: string[]
   frequency: Frequency
+  /**
+   * `YYYY-MM-DD`, or `--MM-DD` when the year is not known, or absent.
+   *
+   * Optional in both senses: the field may be blank, and a birthday whose year
+   * nobody remembers is a first-class value rather than a half-filled one. See
+   * lib/birthday.ts — the `--MM-DD` shape is vCard's, not ours.
+   */
+  birthdate?: string
   notes: string
   createdAt: number
   updatedAt: number

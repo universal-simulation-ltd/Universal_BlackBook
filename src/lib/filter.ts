@@ -1,4 +1,5 @@
 import type { Contact, Frequency } from './types'
+import { formatBirthday } from './birthday'
 import { frequencyRank } from './frequency'
 
 export type SortKey = 'name' | 'name-desc' | 'frequency' | 'recent'
@@ -33,14 +34,23 @@ export function fold(s: string): string {
  * Does the contact match the free-text box?
  *
  * Every whitespace-separated term must match SOMEWHERE in the contact (name,
- * email or notes) — AND across terms, OR across fields. So "sam berlin" finds
- * Sam whose notes mention Berlin, which a single-field search would not, and
- * typing a second word always narrows rather than widens.
+ * email, notes or birthday) — AND across terms, OR across fields. So "sam
+ * berlin" finds Sam whose notes mention Berlin, which a single-field search
+ * would not, and typing a second word always narrows rather than widens.
  */
 export function matchesText(contact: Contact, text: string): boolean {
   const terms = fold(text).split(/\s+/).filter(Boolean)
   if (terms.length === 0) return true
-  const haystack = `${fold(contact.name)} ${fold(contact.email)} ${fold(contact.notes)}`
+  // The FORMATTED birthday, so "june" matches and "--06-04" is not what a
+  // person has to type. The stored string is in there too, so an exact
+  // `1990-06-04` pasted from a spreadsheet still finds its contact.
+  const haystack = [
+    fold(contact.name),
+    fold(contact.email),
+    fold(contact.notes),
+    fold(formatBirthday(contact.birthdate)),
+    fold(contact.birthdate ?? ''),
+  ].join(' ')
   return terms.every((t) => haystack.includes(t))
 }
 

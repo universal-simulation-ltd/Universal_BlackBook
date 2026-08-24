@@ -8,10 +8,15 @@
 
 import type { Category, Contact, Frequency } from './types'
 import { DEFAULT_FREQUENCY, FREQUENCIES, isFrequency } from './frequency'
+import { parseBirthdayInput } from './birthday'
 import { newId } from './id'
 import { nextSwatch } from './palette'
 
-export const COLUMNS = ['Name', 'Email', 'Categories', 'Frequency', 'Notes'] as const
+// ⚠️ APPEND ONLY. A headerless file is read positionally against this order
+// (see `fromCsv`), so inserting a column in the middle would silently re-map
+// every column after it in files exported before the change. Birthday went on
+// the end for exactly that reason, not because it belongs there.
+export const COLUMNS = ['Name', 'Email', 'Categories', 'Frequency', 'Notes', 'Birthday'] as const
 
 /** Categories share one cell, so they need a separator the delimiter is not. */
 const CATEGORY_SEPARATOR = '; '
@@ -53,6 +58,10 @@ export function toCsv(contacts: Contact[], categories: Category[]): string {
           .join(CATEGORY_SEPARATOR),
         c.frequency,
         c.notes,
+        // The stored string, not the pretty one: `--06-04` round-trips and
+        // "4 June" does not survive a trip through a spreadsheet's date
+        // handling. `formatBirthday` is for screens.
+        c.birthdate ?? '',
       ]
         .map(escapeCell)
         .join(','),
@@ -135,7 +144,7 @@ export function parseCsv(text: string): string[][] {
   return rows
 }
 
-type Column = 'name' | 'email' | 'categories' | 'frequency' | 'notes'
+type Column = 'name' | 'email' | 'categories' | 'frequency' | 'notes' | 'birthday'
 
 /**
  * What a header cell may be called.
@@ -175,6 +184,12 @@ const HEADER_ALIASES: Record<string, Column> = {
   'notes': 'notes',
   'comment': 'notes',
   'comments': 'notes',
+  'birthday': 'birthday',
+  'birthdate': 'birthday',
+  'birth date': 'birthday',
+  'date of birth': 'birthday',
+  'dob': 'birthday',
+  'born': 'birthday',
 }
 
 /**
@@ -185,7 +200,7 @@ const HEADER_ALIASES: Record<string, Column> = {
  * primary value in.
  */
 function headerIndex(header: string[]): Record<Column, number> {
-  const out: Record<Column, number> = { name: -1, email: -1, categories: -1, frequency: -1, notes: -1 }
+  const out: Record<Column, number> = { name: -1, email: -1, categories: -1, frequency: -1, notes: -1, birthday: -1 }
   header.forEach((h, i) => {
     const column = HEADER_ALIASES[h.trim().toLowerCase()]
     if (column && out[column] === -1) out[column] = i
@@ -216,6 +231,13 @@ const FREQUENCY_ALIASES: Record<string, Frequency> = {
   'big news': 'big-news',
   none: 'big-news',
   never: 'big-news',
+  // 'n/a' and 'na' already resolve — the first through the short label, the
+  // second because `na` IS the stored key. These are the longhand ways people
+  // write the same thing in a spreadsheet.
+  'not specified': 'na',
+  'not set': 'na',
+  'unspecified': 'na',
+  'no set frequency': 'na',
 }
 
 export function parseFrequency(raw: string): Frequency {
@@ -253,7 +275,7 @@ export function fromCsv(text: string, existing: Category[]): ImportResult {
   // whose first row happens to say "Notes" and nothing else is far more likely
   // to be a headerless row of data than a header.
   const hasHeader = idx.name >= 0 || idx.email >= 0
-  const at = hasHeader ? idx : { name: 0, email: 1, categories: 2, frequency: 3, notes: 4 }
+  const at = hasHeader ? idx : { name: 0, email: 1, categories: 2, frequency: 3, notes: 4, birthday: 5 }
 
   const categories = [...existing]
   const byFoldedName = new Map(categories.map((c) => [c.name.trim().toLowerCase(), c]))
@@ -299,6 +321,11 @@ export function fromCsv(text: string, existing: Category[]): ImportResult {
         .filter(Boolean)
         .map(ensureCategory),
       frequency: parseFrequency(cell(row, at.frequency)),
+      // Unparseable birthdays are dropped, not rejected — losing one person's
+      // birthday is a far smaller harm than refusing to import the person, and
+      // `parseBirthdayInput` deliberately declines ambiguous forms like
+      // 04/06/1990 rather than guessing at a day/month order.
+      birthdate: parseBirthdayInput(cell(row, at.birthday)),
       notes: at.notes >= 0 ? (row[at.notes] ?? '') : '',
       createdAt: now,
       updatedAt: now,

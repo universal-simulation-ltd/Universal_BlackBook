@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { formatBirthday } from '../lib/birthday'
 import { frequencyShort } from '../lib/frequency'
 import { runQuery } from '../lib/filter'
 import type { Category, Contact } from '../lib/types'
@@ -88,6 +89,15 @@ function ContactRow({
             {frequencyShort(contact.frequency)}
           </span>
         </div>
+
+        {contact.birthdate && (
+          <p className="flex items-center gap-1.5 text-sm text-slate-400">
+            <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 shrink-0" fill="currentColor" aria-hidden>
+              <path d="M8 0a1 1 0 0 1 .9 1.44L8.5 2.3V3h.5A2.5 2.5 0 0 1 11.5 5.5V6h.5A2 2 0 0 1 14 8v1.2a2.6 2.6 0 0 1-1 .4 2.6 2.6 0 0 1-2-.7 2.6 2.6 0 0 1-3 0 2.6 2.6 0 0 1-3 0 2.6 2.6 0 0 1-2 .7 2.6 2.6 0 0 1-1-.4V8a2 2 0 0 1 2-2h.5v-.5A2.5 2.5 0 0 1 7 3h.5v-.7l-.4-.86A1 1 0 0 1 8 0Zm6 11.1V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2.9c.86.3 1.8.2 2.6-.3.9.5 2 .5 2.9 0 .9.5 2 .5 2.9 0 .8.5 1.74.6 2.6.3Z" />
+            </svg>
+            <span className="truncate">{formatBirthday(contact.birthdate)}</span>
+          </p>
+        )}
 
         {chips.length > 0 && (
           <div className="flex flex-wrap gap-1.5">

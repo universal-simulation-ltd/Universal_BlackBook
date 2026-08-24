@@ -12,7 +12,8 @@
 //     unopenable.
 
 import type { Category, Contact } from './types'
-import { isFrequency } from './frequency'
+import { DEFAULT_FREQUENCY, isFrequency } from './frequency'
+import { isValidBirthday } from './birthday'
 
 const DB_NAME = 'blackbook'
 const DB_VERSION = 1
@@ -64,13 +65,17 @@ function toContact(raw: unknown): Contact | null {
   if (!raw || typeof raw !== 'object') return null
   const r = raw as Record<string, unknown>
   if (typeof r.id !== 'string' || !r.id) return null
-  const freq = typeof r.frequency === 'string' && isFrequency(r.frequency) ? r.frequency : 'quarterly'
+  const freq = typeof r.frequency === 'string' && isFrequency(r.frequency) ? r.frequency : DEFAULT_FREQUENCY
   return {
     id: r.id,
     name: typeof r.name === 'string' ? r.name : '',
     email: typeof r.email === 'string' ? r.email : '',
     categoryIds: Array.isArray(r.categoryIds) ? r.categoryIds.filter((v): v is string => typeof v === 'string') : [],
     frequency: freq,
+    // Dropped rather than kept when unparseable. A malformed birthdate would
+    // otherwise reach formatBirthday on every render of that card, and an
+    // empty string there is indistinguishable from "not recorded" anyway.
+    birthdate: typeof r.birthdate === 'string' && isValidBirthday(r.birthdate) ? r.birthdate : undefined,
     notes: typeof r.notes === 'string' ? r.notes : '',
     createdAt: typeof r.createdAt === 'number' ? r.createdAt : Date.now(),
     updatedAt: typeof r.updatedAt === 'number' ? r.updatedAt : Date.now(),

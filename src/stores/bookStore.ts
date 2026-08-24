@@ -55,6 +55,7 @@ export interface ContactDraft {
   email: string
   categoryIds: string[]
   frequency: Frequency
+  birthdate?: string
   notes: string
 }
 
@@ -94,6 +95,7 @@ export const useBookStore = create<BookState>((set, get) => ({
       email: draft.email.trim(),
       categoryIds: draft.categoryIds,
       frequency: draft.frequency,
+      birthdate: draft.birthdate,
       notes: draft.notes,
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
@@ -187,5 +189,6 @@ export const blankDraft = (): ContactDraft => ({
   email: '',
   categoryIds: [],
   frequency: DEFAULT_FREQUENCY,
+  birthdate: undefined,
   notes: '',
 })
