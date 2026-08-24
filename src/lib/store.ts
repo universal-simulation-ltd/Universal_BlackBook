@@ -1,8 +1,8 @@
 // IndexedDB persistence — three object stores, no dependency.
 //
-// This is the ONLY copy of a user's book. There is no server, no account and
-// no export-on-write, so a bug here is not a sync conflict, it is somebody's
-// address book gone. Two rules follow from that and are worth keeping:
+// This is the ONLY copy of a user's book (the encrypted vault is an optional
+// backup, not the primary). There is no export-on-write, so a bug here is not
+// a sync conflict, it is somebody's address book gone. Two rules follow from that and are worth keeping:
 //
 //   • `onupgradeneeded` only ever ADDS stores. Never delete or rebuild one on
 //     a version bump — a partially-shipped migration would take the data with
@@ -11,14 +11,19 @@
 //     result, never thrown over: one bad row must not make the whole book
 //     unopenable.
 
-import type { Category, Contact } from './types'
-import { DEFAULT_FREQUENCY, isFrequency } from './frequency'
+import type { Contact, Tag } from './types'
 import { isValidBirthday } from './birthday'
 
 const DB_NAME = 'blackbook'
 const DB_VERSION = 1
 const CONTACTS = 'contacts'
-const CATEGORIES = 'categories'
+// ⚠️ The object store is still called 'categories', and must stay called that.
+// Tags were renamed from categories in the UI on 2026-08-24; renaming an
+// IndexedDB store means creating the new one and copying every record across
+// on a version bump, and this file's first rule is that a partially-shipped
+// migration takes somebody's only copy of their address book with it. The name
+// is a wire format. It is not worth a single byte of risk.
+const TAGS = 'categories'
 /** Out-of-line store: the remembered vault key and the sync bookkeeping. */
 const SYNC = 'sync'
 
@@ -28,7 +33,7 @@ function openDb(): Promise<IDBDatabase> {
     req.onupgradeneeded = () => {
       const db = req.result
       if (!db.objectStoreNames.contains(CONTACTS)) db.createObjectStore(CONTACTS, { keyPath: 'id' })
-      if (!db.objectStoreNames.contains(CATEGORIES)) db.createObjectStore(CATEGORIES, { keyPath: 'id' })
+      if (!db.objectStoreNames.contains(TAGS)) db.createObjectStore(TAGS, { keyPath: 'id' })
       // No keyPath — this store holds a CryptoKey and a small settings record
       // under fixed keys, neither of which has an id field of its own.
       if (!db.objectStoreNames.contains(SYNC)) db.createObjectStore(SYNC)
@@ -57,21 +62,32 @@ async function tx<T>(store: string, mode: IDBTransactionMode, fn: (s: IDBObjectS
  *
  * Everything in the record was written by this app, so this is not defending
  * against an attacker — it is defending against OUR OWN older shapes, and
- * against a hand-edited import. `categoryIds` in particular is filtered to
- * strings because a dangling id is harmless (it just matches no category)
- * whereas a non-string one crashes the chip renderer.
+ * against a hand-edited import. `tagIds` in particular is filtered to strings
+ * because a dangling id is harmless (it just matches no tag) whereas a
+ * non-string one crashes the chip renderer.
+ *
+ * ⚠️ `tagIds` falls back to `categoryIds`, which is what every record written
+ * before 2026-08-24 carries. That fallback is not decoration: without it, the
+ * rename silently un-files every contact in every existing book, and since the
+ * book is the ONLY copy there is nothing to restore from. Writes use the new
+ * name only, so a book heals as it is edited — but the read has to keep
+ * accepting the old one for as long as anybody's browser might still hold it,
+ * which is forever, because a user who last opened this app in 2026 and comes
+ * back in 2030 is exactly the person a local-first address book is for.
+ *
+ * `frequency` is simply dropped: the field was removed on 2026-08-24 and an
+ * old record's value is ignored rather than migrated anywhere.
  */
 function toContact(raw: unknown): Contact | null {
   if (!raw || typeof raw !== 'object') return null
   const r = raw as Record<string, unknown>
   if (typeof r.id !== 'string' || !r.id) return null
-  const freq = typeof r.frequency === 'string' && isFrequency(r.frequency) ? r.frequency : DEFAULT_FREQUENCY
+  const ids = Array.isArray(r.tagIds) ? r.tagIds : Array.isArray(r.categoryIds) ? r.categoryIds : []
   return {
     id: r.id,
     name: typeof r.name === 'string' ? r.name : '',
     email: typeof r.email === 'string' ? r.email : '',
-    categoryIds: Array.isArray(r.categoryIds) ? r.categoryIds.filter((v): v is string => typeof v === 'string') : [],
-    frequency: freq,
+    tagIds: ids.filter((v): v is string => typeof v === 'string'),
     // Dropped rather than kept when unparseable. A malformed birthdate would
     // otherwise reach formatBirthday on every render of that card, and an
     // empty string there is indistinguishable from "not recorded" anyway.
@@ -82,7 +98,7 @@ function toContact(raw: unknown): Contact | null {
   }
 }
 
-function toCategory(raw: unknown): Category | null {
+function toTag(raw: unknown): Tag | null {
   if (!raw || typeof raw !== 'object') return null
   const r = raw as Record<string, unknown>
   if (typeof r.id !== 'string' || !r.id) return null
@@ -98,9 +114,9 @@ export async function loadContacts(): Promise<Contact[]> {
   return all.map(toContact).filter((c): c is Contact => c !== null)
 }
 
-export async function loadCategories(): Promise<Category[]> {
-  const all = await tx<unknown[]>(CATEGORIES, 'readonly', (s) => s.getAll() as IDBRequest<unknown[]>)
-  return all.map(toCategory).filter((c): c is Category => c !== null)
+export async function loadTags(): Promise<Tag[]> {
+  const all = await tx<unknown[]>(TAGS, 'readonly', (s) => s.getAll() as IDBRequest<unknown[]>)
+  return all.map(toTag).filter((t): t is Tag => t !== null)
 }
 
 export async function putContact(contact: Contact): Promise<void> {
@@ -111,36 +127,36 @@ export async function deleteContact(id: string): Promise<void> {
   await tx(CONTACTS, 'readwrite', (s) => s.delete(id))
 }
 
-export async function putCategory(category: Category): Promise<void> {
-  await tx(CATEGORIES, 'readwrite', (s) => s.put(category))
+export async function putTag(tag: Tag): Promise<void> {
+  await tx(TAGS, 'readwrite', (s) => s.put(tag))
 }
 
-export async function deleteCategory(id: string): Promise<void> {
-  await tx(CATEGORIES, 'readwrite', (s) => s.delete(id))
+export async function deleteTag(id: string): Promise<void> {
+  await tx(TAGS, 'readwrite', (s) => s.delete(id))
 }
 
 /**
  * Replace the whole book — used by CSV import's "replace" mode only.
  *
  * Both stores are cleared and rewritten inside ONE transaction each, so a
- * failure mid-import cannot leave contacts pointing at categories that were
- * never written. IndexedDB aborts the transaction on any failed request, which
- * rolls the clear back with it.
+ * failure mid-import cannot leave contacts pointing at tags that were never
+ * written. IndexedDB aborts the transaction on any failed request, which rolls
+ * the clear back with it.
  */
-export async function replaceAll(contacts: Contact[], categories: Category[]): Promise<void> {
+export async function replaceAll(contacts: Contact[], tags: Tag[]): Promise<void> {
   const db = await openDb()
   try {
     await new Promise<void>((resolve, reject) => {
-      const t = db.transaction([CONTACTS, CATEGORIES], 'readwrite')
+      const t = db.transaction([CONTACTS, TAGS], 'readwrite')
       t.oncomplete = () => resolve()
       t.onerror = () => reject(t.error)
       t.onabort = () => reject(t.error)
       const cs = t.objectStore(CONTACTS)
-      const gs = t.objectStore(CATEGORIES)
+      const gs = t.objectStore(TAGS)
       cs.clear()
       gs.clear()
       for (const c of contacts) cs.put(c)
-      for (const g of categories) gs.put(g)
+      for (const g of tags) gs.put(g)
     })
   } finally {
     db.close()

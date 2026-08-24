@@ -14,14 +14,14 @@ import { btnGhost, btnPrimary, label } from './ui'
  */
 export function ImportExport({ onClose }: { onClose: () => void }) {
   const contacts = useBookStore((s) => s.contacts)
-  const categories = useBookStore((s) => s.categories)
+  const tags = useBookStore((s) => s.tags)
   const importBook = useBookStore((s) => s.importBook)
   const fileRef = useRef<HTMLInputElement>(null)
   const [mode, setMode] = useState<'merge' | 'replace'>('merge')
   const [error, setError] = useState<string | null>(null)
 
   const download = () => {
-    const blob = new Blob([toCsv(contacts, categories)], { type: 'text/csv;charset=utf-8' })
+    const blob = new Blob([toCsv(contacts, tags)], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -38,15 +38,15 @@ export function ImportExport({ onClose }: { onClose: () => void }) {
     setError(null)
     try {
       const text = await file.text()
-      const result = fromCsv(text, categories)
+      const result = fromCsv(text, tags)
       if (result.contacts.length === 0) {
         setError('No contacts found in that file. It needs a Name or an Email column.')
         return
       }
       const bits = [`Imported ${result.contacts.length} ${result.contacts.length === 1 ? 'contact' : 'contacts'}`]
-      if (result.created.length > 0) bits.push(`created ${result.created.length} new categories`)
+      if (result.created.length > 0) bits.push(`created ${result.created.length} new tags`)
       if (result.skipped > 0) bits.push(`skipped ${result.skipped} empty ${result.skipped === 1 ? 'row' : 'rows'}`)
-      await importBook(result.contacts, result.categories, mode, `${bits.join(', ')}.`)
+      await importBook(result.contacts, result.tags, mode, `${bits.join(', ')}.`)
       onClose()
     } catch {
       setError('That file could not be read.')
@@ -59,8 +59,8 @@ export function ImportExport({ onClose }: { onClose: () => void }) {
         <section className="space-y-2">
           <h3 className="text-sm font-semibold text-slate-100">Export</h3>
           <p className="text-sm text-slate-400">
-            A plain CSV — Name, Email, Categories, Frequency, Notes. Opens in any spreadsheet, and
-            BlackBook reads it straight back in.
+            A plain CSV — Name, Email, Tags, Notes, Birthday. Opens in any spreadsheet, and BlackBook
+            reads it straight back in.
           </p>
           <button type="button" className={btnPrimary} onClick={download} disabled={contacts.length === 0}>
             Download {contacts.length} {contacts.length === 1 ? 'contact' : 'contacts'}
@@ -70,8 +70,9 @@ export function ImportExport({ onClose }: { onClose: () => void }) {
         <section className="space-y-2 border-t border-slate-800 pt-4">
           <h3 className="text-sm font-semibold text-slate-100">Import</h3>
           <p className="text-sm text-slate-400">
-            Any CSV with a Name or Email column. Categories in the file are matched to yours by name and
-            created if they're new.
+            Any CSV with a Name or Email column. Tags in the file are matched to yours by name and created
+            if they're new — a Categories, Groups or Labels column counts as tags, including one from an
+            older BlackBook export.
           </p>
           <div>
             <span className={label}>What to do with what's already here</span>

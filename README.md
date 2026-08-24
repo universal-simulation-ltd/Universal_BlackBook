@@ -1,7 +1,7 @@
 # Universal BlackBook
 
-**A private address book.** The people worth staying in touch with — filed under
-your own categories, at the pace you choose.
+**A private address book.** The people worth staying in touch with — under your
+own tags, and never a birthday missed.
 
 **→ [opensource.unisim.co.uk/blackbook](https://opensource.unisim.co.uk/blackbook)**
 
@@ -12,28 +12,37 @@ Free, open source (MIT), and no account required.
 
 ## What it does
 
-Six fields, and nothing you didn't ask for:
+Five fields, and nothing you didn't ask for:
 
 | Field | |
 |---|---|
 | **Name** | |
 | **Email** | |
-| **Categories** | Entirely your own — make as many as you like, put a person in as many as fit. The six it starts with are ordinary categories you can rename or delete. |
-| **Contact frequency** | **N/A** by default, or weekly, fortnightly, monthly, quarterly, every six months, yearly, or *big news only*. |
+| **Notes** | Free text, and it sits right under the name — it is usually the reason you opened the form. Whatever you'd actually want to remember. |
+| **Tags** | Entirely your own. **A new book starts with none**, because six invented starters are an app telling you how it thinks you should file your friends. Make as many as you like, in any of seven colours, and put a person in as many as fit. |
 | **Birthday** | **The year is optional.** Half the birthdays in anybody's address book are "the 4th of June, no idea what year" — so a day and a month on their own are a complete answer, not a half-filled one. |
-| **Notes** | Free text. Whatever you'd actually want to remember. |
 
 Search across names, emails, notes and birthdays (typing `june` finds everyone
-born in June); filter by category and by frequency; sort by name, by how
-demanding the cadence is, or by recently added.
+born in June); filter by tag; sort by name or by recently added.
 
-**On contact frequency:** it starts on **N/A**, because most people you add are
-just people and an app that demands a cadence before it will take a name is
-charging a toll on its own main action. BlackBook records what you set and lets
-you filter by it. It does **not** track when you last spoke, and it does **not**
-tell you who is overdue. That is a deliberate line — the moment an address book
-starts nagging, it stops being an address book and becomes a task list, and
-people stop opening it.
+## Birthdays
+
+A view of its own, one tap from the search box: everybody with a birthday
+recorded, **soonest first**, each one saying how long you have — *Today*,
+*Tomorrow*, *in 12 days* — and, when you know the year, the age they are about
+to turn. Every card opens the contact behind it, because being told it is
+somebody's birthday in nine days is only useful next to their email address and
+the note about their kids.
+
+It shows only people whose birthday you have. A list padded out with everyone
+who has none is a worse answer to "whose birthday is coming up" than a short
+list is.
+
+**There is no nagging.** BlackBook does not track when you last spoke and does
+not tell you who is overdue. That is a deliberate line — the moment an address
+book starts issuing tasks, it stops being an address book, and people stop
+opening it. The birthdays view is the one exception, and only because a
+birthday is a fact about a date rather than a judgement about you.
 
 ## Where your book lives
 
@@ -42,11 +51,12 @@ account, no server and no telemetry about its contents.
 
 Two ways to get it out or move it elsewhere:
 
-**CSV** — a plain `Name, Email, Categories, Frequency, Notes, Birthday` file.
+**CSV** — a plain `Name, Email, Tags, Notes, Birthday` file.
 Opens in any spreadsheet and imports straight back. This is the backup story if
 you never want an account.
 
-The importer reads the column names Google Contacts and Outlook use, and takes
+The importer reads the column names Google Contacts and Outlook use — a
+`Categories`, `Groups` or `Labels` column all count as tags — and takes
 birthdays as `1990-06-04`, `4 June 1990`, `June 4` or `--06-04`. It deliberately
 **refuses** `04/06/1990` rather than guessing — that is the 4th of June to a
 British reader and the 6th of April to an American one, and an address book that
@@ -96,7 +106,8 @@ suite registry — see `Docs_UNI_SIM/dev-preview.md`.
 | | |
 |---|---|
 | `npm run dev` | Vite dev server |
-| `npm test` | Vitest — the CSV parser, the search/sort, the birthday parsing and the vault crypto |
+| `npm test` | Vitest — the CSV parser, the search/sort, the birthday maths and the vault crypto |
+| `BLACKBOOK_LIVE=1 npm test -- cloud.live` | The two-device vault round trip, against the REAL server. Not part of `npm test`: it signs in anonymously to production, exercises RLS, the primary-key conflict and the compare-and-set, then deletes what it made. |
 | `npm run lint` | ESLint |
 | `npm run build` | Typecheck + production build |
 | `npm run deploy` | Build and `wrangler deploy` |

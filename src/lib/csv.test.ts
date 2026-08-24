@@ -1,15 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { fromCsv, parseCsv, parseFrequency, toCsv } from './csv'
-import type { Category, Contact } from './types'
+import { fromCsv, parseCsv, toCsv } from './csv'
+import type { Contact, Tag } from './types'
 
-const cat = (id: string, name: string): Category => ({ id, name, colour: 'amber' })
+const tag = (id: string, name: string): Tag => ({ id, name, colour: 'amber' })
 
 const contact = (over: Partial<Contact> = {}): Contact => ({
   id: 'c1',
   name: 'Sam Okonkwo',
   email: 'sam@example.com',
-  categoryIds: [],
-  frequency: 'monthly',
+  tagIds: [],
   notes: '',
   createdAt: 1,
   updatedAt: 1,
@@ -59,17 +58,17 @@ describe('toCsv', () => {
   it('writes the header and one row per contact', () => {
     const csv = toCsv([contact()], [])
     const rows = parseCsv(csv)
-    expect(rows[0]).toEqual(['Name', 'Email', 'Categories', 'Frequency', 'Notes', 'Birthday'])
-    expect(rows[1]).toEqual(['Sam Okonkwo', 'sam@example.com', '', 'monthly', '', ''])
+    expect(rows[0]).toEqual(['Name', 'Email', 'Tags', 'Notes', 'Birthday'])
+    expect(rows[1]).toEqual(['Sam Okonkwo', 'sam@example.com', '', '', ''])
   })
 
-  it('writes category NAMES, not ids', () => {
-    const csv = toCsv([contact({ categoryIds: ['f', 'w'] })], [cat('f', 'Family'), cat('w', 'Work')])
+  it('writes tag NAMES, not ids', () => {
+    const csv = toCsv([contact({ tagIds: ['f', 'w'] })], [tag('f', 'Family'), tag('w', 'Work')])
     expect(parseCsv(csv)[1][2]).toBe('Family; Work')
   })
 
-  it('silently drops a dangling category id rather than writing "undefined"', () => {
-    const csv = toCsv([contact({ categoryIds: ['gone'] })], [])
+  it('silently drops a dangling tag id rather than writing "undefined"', () => {
+    const csv = toCsv([contact({ tagIds: ['gone'] })], [])
     expect(parseCsv(csv)[1][2]).toBe('')
   })
 
@@ -80,72 +79,63 @@ describe('toCsv', () => {
   it('round-trips a note containing a comma, a quote and a newline', () => {
     const nasty = 'He said "go", then\nleft'
     const csv = toCsv([contact({ notes: nasty })], [])
-    expect(parseCsv(csv)[1][4]).toBe(nasty)
-  })
-})
-
-describe('parseFrequency', () => {
-  it('accepts the stored key', () => {
-    expect(parseFrequency('fortnightly')).toBe('fortnightly')
-  })
-
-  it('accepts the label a human would type', () => {
-    expect(parseFrequency('Once a quarter')).toBe('quarterly')
-    expect(parseFrequency('Every 6 months')).toBe('biannually')
-    expect(parseFrequency('annually')).toBe('yearly')
-    expect(parseFrequency('Big news only')).toBe('big-news')
-  })
-
-  it('falls back to N/A rather than rejecting the row, or inventing a cadence', () => {
-    // Was 'quarterly', which made that one value mean two different things:
-    // "I chose this" and "nobody said".
-    expect(parseFrequency('whenever')).toBe('na')
-    expect(parseFrequency('')).toBe('na')
-  })
-
-  it('accepts the ways a human writes "no set frequency"', () => {
-    expect(parseFrequency('N/A')).toBe('na')
-    expect(parseFrequency('na')).toBe('na')
-    expect(parseFrequency('Not specified')).toBe('na')
+    expect(parseCsv(csv)[1][3]).toBe(nasty)
   })
 })
 
 describe('fromCsv', () => {
   it('reads a headed file', () => {
-    const { contacts } = fromCsv('Name,Email,Categories,Frequency,Notes\nSam,s@x.com,Work,weekly,hi', [])
+    const { contacts } = fromCsv('Name,Email,Tags,Notes\nSam,s@x.com,Work,hi', [])
     expect(contacts).toHaveLength(1)
-    expect(contacts[0]).toMatchObject({ name: 'Sam', email: 's@x.com', frequency: 'weekly', notes: 'hi' })
+    expect(contacts[0]).toMatchObject({ name: 'Sam', email: 's@x.com', notes: 'hi' })
   })
 
-  it('matches an existing category by name instead of creating a duplicate', () => {
-    const existing = [cat('w', 'Work')]
-    const { contacts, categories, created } = fromCsv('Name,Categories\nSam,work', existing)
+  it('matches an existing tag by name instead of creating a duplicate', () => {
+    const existing = [tag('w', 'Work')]
+    const { contacts, tags, created } = fromCsv('Name,Tags\nSam,work', existing)
     expect(created).toEqual([])
-    expect(categories).toHaveLength(1)
-    expect(contacts[0].categoryIds).toEqual(['w'])
+    expect(tags).toHaveLength(1)
+    expect(contacts[0].tagIds).toEqual(['w'])
   })
 
-  it('creates categories the file mentions and reports them', () => {
-    const { categories, created, contacts } = fromCsv('Name,Categories\nSam,Cycling club', [])
+  it('creates tags the file mentions and reports them', () => {
+    const { tags, created, contacts } = fromCsv('Name,Tags\nSam,Cycling club', [])
     expect(created).toEqual(['Cycling club'])
-    expect(categories).toHaveLength(1)
-    expect(contacts[0].categoryIds).toEqual([categories[0].id])
+    expect(tags).toHaveLength(1)
+    expect(contacts[0].tagIds).toEqual([tags[0].id])
   })
 
-  it('creates one category for two rows naming it differently cased', () => {
-    const { categories, created } = fromCsv('Name,Categories\nA,Work\nB,work', [])
+  it('creates one tag for two rows naming it differently cased', () => {
+    const { tags, created } = fromCsv('Name,Tags\nA,Work\nB,work', [])
     expect(created).toEqual(['Work'])
-    expect(categories).toHaveLength(1)
+    expect(tags).toHaveLength(1)
   })
 
-  it('splits multiple categories on ; and |', () => {
-    const { contacts, categories } = fromCsv('Name,Categories\nSam,Family; Work | Gym', [])
-    expect(categories.map((c) => c.name)).toEqual(['Family', 'Work', 'Gym'])
-    expect(contacts[0].categoryIds).toHaveLength(3)
+  it('splits multiple tags on ; and |', () => {
+    const { contacts, tags } = fromCsv('Name,Tags\nSam,Family; Work | Gym', [])
+    expect(tags.map((t) => t.name)).toEqual(['Family', 'Work', 'Gym'])
+    expect(contacts[0].tagIds).toHaveLength(3)
+  })
+
+  it('reads an older export\'s Categories column as tags', () => {
+    // Every file this app wrote before 2026-08-24 says "Categories", and so do
+    // Google Contacts and Outlook. A rename that stranded them would make the
+    // app unable to read its own backups.
+    const { contacts, tags } = fromCsv('Name,Categories\nSam,Family', [])
+    expect(tags.map((t) => t.name)).toEqual(['Family'])
+    expect(contacts[0].tagIds).toHaveLength(1)
+  })
+
+  it('ignores an older export\'s Frequency column rather than reading it as notes', () => {
+    const { contacts } = fromCsv(
+      'Name,Email,Categories,Frequency,Notes,Birthday\nSam,s@x.com,Work,weekly,hello,--06-04',
+      [],
+    )
+    expect(contacts[0]).toMatchObject({ name: 'Sam', notes: 'hello', birthdate: '--06-04' })
   })
 
   it('skips rows with neither a name nor an email, and counts them', () => {
-    const { contacts, skipped } = fromCsv('Name,Email,Categories,Frequency,Notes,Birthday\nSam,s@x.com,,,,\n,,,,a stray note,', [])
+    const { contacts, skipped } = fromCsv('Name,Email,Tags,Notes,Birthday\nSam,s@x.com,,,\n,,,a stray note,', [])
     expect(contacts).toHaveLength(1)
     expect(skipped).toBe(1)
   })
@@ -153,26 +143,6 @@ describe('fromCsv', () => {
   it('falls back to the email as the name when only an email is given', () => {
     const { contacts } = fromCsv('Name,Email\n,solo@x.com', [])
     expect(contacts[0].name).toBe('solo@x.com')
-  })
-
-  it('reads a headerless file positionally', () => {
-    const { contacts } = fromCsv('Sam,s@x.com,Work,weekly,hi,1990-06-04', [])
-    expect(contacts).toHaveLength(1)
-    expect(contacts[0]).toMatchObject({
-      name: 'Sam',
-      email: 's@x.com',
-      frequency: 'weekly',
-      birthdate: '1990-06-04',
-    })
-  })
-
-  it('still reads a headerless file written BEFORE the Birthday column existed', () => {
-    // The reason Birthday was appended rather than inserted: a positional file
-    // from an older build must not have every column after the insertion point
-    // silently re-mapped.
-    const { contacts } = fromCsv('Sam,s@x.com,Work,weekly,hi', [])
-    expect(contacts[0]).toMatchObject({ name: 'Sam', email: 's@x.com', frequency: 'weekly', notes: 'hi' })
-    expect(contacts[0].birthdate).toBeUndefined()
   })
 
   it('reads a birthday column under any of its usual names', () => {
@@ -195,22 +165,67 @@ describe('fromCsv', () => {
     expect(contacts[0]).toMatchObject({ name: 'Sam', email: '', notes: 'just a note' })
   })
 
-  it('round-trips a full export back to the same people and categories', () => {
-    const categories = [cat('f', 'Family'), cat('w', 'Work')]
+  it('round-trips a full export back to the same people and tags', () => {
+    const tags = [tag('f', 'Family'), tag('w', 'Work')]
     const people = [
-      contact({ id: '1', name: 'Alice', categoryIds: ['f'], frequency: 'weekly', notes: 'sister, twin', birthdate: '1990-06-04' }),
-      contact({ id: '2', name: 'Bob', email: '', categoryIds: ['f', 'w'], frequency: 'big-news', notes: '', birthdate: '--12-25' }),
+      contact({ id: '1', name: 'Alice', tagIds: ['f'], notes: 'sister, twin', birthdate: '1990-06-04' }),
+      contact({ id: '2', name: 'Bob', email: '', tagIds: ['f', 'w'], notes: '', birthdate: '--12-25' }),
     ]
-    const back = fromCsv(toCsv(people, categories), categories)
+    const back = fromCsv(toCsv(people, tags), tags)
     expect(back.created).toEqual([])
-    expect(
-      back.contacts.map((c) => ({ name: c.name, frequency: c.frequency, notes: c.notes, birthdate: c.birthdate })),
-    ).toEqual([
-      { name: 'Alice', frequency: 'weekly', notes: 'sister, twin', birthdate: '1990-06-04' },
+    expect(back.contacts.map((c) => ({ name: c.name, notes: c.notes, birthdate: c.birthdate }))).toEqual([
+      { name: 'Alice', notes: 'sister, twin', birthdate: '1990-06-04' },
       // The year-less shape survives a full round trip, which it would not if
       // the export wrote the pretty "25 December" instead of the stored value.
-      { name: 'Bob', frequency: 'big-news', notes: '', birthdate: '--12-25' },
+      { name: 'Bob', notes: '', birthdate: '--12-25' },
     ])
-    expect(back.contacts[1].categoryIds).toEqual(['f', 'w'])
+    expect(back.contacts[1].tagIds).toEqual(['f', 'w'])
+  })
+})
+
+describe('headerless files, across the frequency removal', () => {
+  // ⚠️ ONE VINTAGE IS NO LONGER READABLE, and it is a deliberate trade. A
+  // headerless five-cell row is now read as the CURRENT layout, so a file
+  // exported in the brief window when the layout was
+  // `Name,Email,Categories,Frequency,Notes` — five cells, no Birthday — reads
+  // its cadence as a note and its note as a birthday (which is then dropped as
+  // unparseable). That window was between v0.1.0 and the birthday release,
+  // days apart in an app first published on 2026-08-21, and it only bites a
+  // file somebody stripped the header off. Distinguishing it would mean
+  // sniffing cell 3 against a list of frequency words kept alive for no other
+  // purpose, and guessing at a file's meaning is what this parser refuses to
+  // do everywhere else (see the 04/06/1990 rule).
+
+  // ⚠️ The one case where dropping a column could silently corrupt data. A
+  // headerless file cannot say which layout it is, so `fromCsv` decides on the
+  // cell count. Get this wrong and every old export reads a cadence as a note
+  // and a note as a birthday — with no error, because both fields take
+  // anything and an unparseable birthday is quietly dropped.
+  it('reads a SIX-cell headerless row in the old layout, skipping the frequency', () => {
+    const { contacts } = fromCsv('Sam,s@x.com,Work,weekly,a note,--06-04', [])
+    expect(contacts[0]).toMatchObject({
+      name: 'Sam',
+      email: 's@x.com',
+      notes: 'a note',
+      birthdate: '--06-04',
+    })
+  })
+
+  it('reads a FIVE-cell headerless row in the current layout', () => {
+    const { contacts } = fromCsv('Sam,s@x.com,Work,a note,--06-04', [])
+    expect(contacts[0]).toMatchObject({
+      name: 'Sam',
+      email: 's@x.com',
+      notes: 'a note',
+      birthdate: '--06-04',
+    })
+  })
+
+  it('reads its own headerless export back', () => {
+    const people = [contact({ name: 'Alice', notes: 'sister', birthdate: '1990-06-04' })]
+    // Strip the header, as somebody pasting rows into a new sheet would.
+    const headerless = toCsv(people, []).split('\r\n').slice(1).join('\r\n')
+    const { contacts } = fromCsv(headerless, [])
+    expect(contacts[0]).toMatchObject({ name: 'Alice', notes: 'sister', birthdate: '1990-06-04' })
   })
 })

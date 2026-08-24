@@ -5,58 +5,58 @@ import { Modal } from './Modal'
 import { btnGhost, btnPrimary, btnSubtle, inputCls } from './ui'
 
 /**
- * Create, rename, recolour and delete categories.
+ * Create, rename, recolour and delete tags.
  *
- * Deleting a category never deletes the people in it — the count beside each
+ * Deleting a tag never deletes the people carrying it — the count beside each
  * row says how many contacts would be un-filed, so the confirmation is a real
- * question and not a shrug. See bookStore.removeCategory for the write.
+ * question and not a shrug. See bookStore.removeTag for the write.
  */
-export function CategoryManager({ onClose }: { onClose: () => void }) {
-  const categories = useBookStore((s) => s.categories)
+export function TagManager({ onClose }: { onClose: () => void }) {
+  const tags = useBookStore((s) => s.tags)
   const contacts = useBookStore((s) => s.contacts)
-  const addCategory = useBookStore((s) => s.addCategory)
-  const renameCategory = useBookStore((s) => s.renameCategory)
-  const recolourCategory = useBookStore((s) => s.recolourCategory)
-  const removeCategory = useBookStore((s) => s.removeCategory)
+  const addTag = useBookStore((s) => s.addTag)
+  const renameTag = useBookStore((s) => s.renameTag)
+  const recolourTag = useBookStore((s) => s.recolourTag)
+  const removeTag = useBookStore((s) => s.removeTag)
 
   const [draft, setDraft] = useState('')
   const [confirming, setConfirming] = useState<string | null>(null)
 
-  // One pass over the contacts rather than a `filter` per category — with a
-  // few hundred contacts and a dozen categories the quadratic version is the
-  // difference between an instant panel and a visible stutter on a phone.
+  // One pass over the contacts rather than a `filter` per tag — with a few
+  // hundred contacts and a dozen tags the quadratic version is the difference
+  // between an instant panel and a visible stutter on a phone.
   const counts = useMemo(() => {
     const out = new Map<string, number>()
-    for (const c of contacts) for (const id of c.categoryIds) out.set(id, (out.get(id) ?? 0) + 1)
+    for (const c of contacts) for (const id of c.tagIds) out.set(id, (out.get(id) ?? 0) + 1)
     return out
   }, [contacts])
 
   const sorted = useMemo(
-    () => [...categories].sort((a, b) => a.name.localeCompare(b.name, 'en-GB', { sensitivity: 'base' })),
-    [categories],
+    () => [...tags].sort((a, b) => a.name.localeCompare(b.name, 'en-GB', { sensitivity: 'base' })),
+    [tags],
   )
 
   return (
-    <Modal title="Categories" onClose={onClose} wide>
+    <Modal title="Tags" onClose={onClose} wide>
       <div className="space-y-4">
         <div className="flex gap-2">
           <input
             className={inputCls}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="New category…"
-            aria-label="New category name"
+            placeholder="New tag…"
+            aria-label="New tag name"
             onKeyDown={(e) => {
               if (e.key !== 'Enter') return
               e.preventDefault()
-              void addCategory(draft).then(() => setDraft(''))
+              void addTag(draft).then(() => setDraft(''))
             }}
           />
           <button
             type="button"
             className={btnPrimary}
             disabled={!draft.trim()}
-            onClick={() => void addCategory(draft).then(() => setDraft(''))}
+            onClick={() => void addTag(draft).then(() => setDraft(''))}
           >
             Add
           </button>
@@ -64,7 +64,7 @@ export function CategoryManager({ onClose }: { onClose: () => void }) {
 
         {sorted.length === 0 ? (
           <p className="py-6 text-center text-sm text-slate-500">
-            No categories. Add one above — they're yours to name.
+            No tags yet. Add one above — they're yours to name, colour and change.
           </p>
         ) : (
           <ul className="divide-y divide-slate-800">
@@ -82,7 +82,7 @@ export function CategoryManager({ onClose }: { onClose: () => void }) {
                       className={`${inputCls} flex-1`}
                       value={c.name}
                       aria-label={`Rename ${c.name}`}
-                      onChange={(e) => void renameCategory(c.id, e.target.value)}
+                      onChange={(e) => void renameTag(c.id, e.target.value)}
                     />
                     <span className="shrink-0 text-xs text-slate-500 tabular-nums">
                       {count} {count === 1 ? 'contact' : 'contacts'}
@@ -93,7 +93,7 @@ export function CategoryManager({ onClose }: { onClose: () => void }) {
                           type="button"
                           className={btnSubtle}
                           onClick={() => {
-                            void removeCategory(c.id)
+                            void removeTag(c.id)
                             setConfirming(null)
                           }}
                         >
@@ -117,7 +117,7 @@ export function CategoryManager({ onClose }: { onClose: () => void }) {
                   {confirming === c.id && count > 0 && (
                     <p className="mt-1.5 text-xs text-slate-400">
                       {count} {count === 1 ? 'contact stays' : 'contacts stay'} in your book — they just
-                      leave this category.
+                      lose this tag.
                     </p>
                   )}
                   <div className="mt-2 flex flex-wrap gap-1.5 pl-5">
@@ -127,7 +127,7 @@ export function CategoryManager({ onClose }: { onClose: () => void }) {
                         type="button"
                         aria-label={`${s.label} for ${c.name}`}
                         aria-pressed={c.colour === s.key}
-                        onClick={() => void recolourCategory(c.id, s.key)}
+                        onClick={() => void recolourTag(c.id, s.key)}
                         className={`h-5 w-5 rounded-full border-2 transition-transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
                           c.colour === s.key ? 'border-slate-100' : 'border-transparent'
                         }`}

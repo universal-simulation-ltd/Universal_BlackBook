@@ -29,11 +29,11 @@ const REST_COLOR = C.body
 const MUTED = C.muted
 
 export default function AppMenu({
-  onCategories,
+  onTags,
   onImportExport,
   onCloud,
 }: {
-  onCategories: () => void
+  onTags: () => void
   onImportExport: () => void
   onCloud: () => void
 }) {
@@ -42,7 +42,7 @@ export default function AppMenu({
   return (
     <>
       <MenuLabel>Your book</MenuLabel>
-      <MenuRow glyph="🏷️" label="Categories" onClick={onCategories} />
+      <MenuRow glyph="🏷️" label="Tags" onClick={onTags} />
       <MenuRow glyph="📄" label="Import & export" onClick={onImportExport} />
       <MenuLabel>Universal ID</MenuLabel>
       <MenuRow

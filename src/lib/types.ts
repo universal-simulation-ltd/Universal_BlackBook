@@ -1,36 +1,20 @@
 // The whole domain, in one file. A BlackBook is a list of people, a list of
-// categories, and nothing else — there is no server, no account and no sync,
-// so these types are also the complete on-disk schema (see lib/store.ts).
+// tags, and nothing else — there is no server, no account and no sync, so
+// these types are also the complete on-disk schema (see lib/store.ts).
+//
+// ⚠️ Tags were called CATEGORIES until 2026-08-24, and the old name survives in
+// two places that are not ours to rename freely: the IndexedDB object store,
+// and the `categoryIds` field on records already written to a user's disk.
+// `toContact` in lib/store.ts reads either spelling. Nothing else should have
+// to know.
 
 /**
- * How often you want to be in touch with someone.
- *
- * Stored as a string key, never as a number of days. The label and the day
- * count are both derived (lib/frequency.ts) — so "quarterly" survives a change
- * of mind about whether a quarter is 90 or 91 days, and an export written by
- * an older build still reads correctly in a newer one.
- *
- * ⚠️ These keys are written into CSV exports, so they are a FILE FORMAT.
- * Renaming one silently orphans every row already exported under the old name;
- * add a new key and map the old one in lib/csv.ts instead.
+ * A user-defined grouping. Entirely custom, and there are NO built-in tags —
+ * a new book starts with none at all. An app that seeds six of its own
+ * guesses is telling you how it thinks you should file people; the empty
+ * state asks instead.
  */
-export type Frequency =
-  /** Not said. The DEFAULT — see lib/frequency.ts for why it leads the list. */
-  | 'na'
-  | 'weekly'
-  | 'fortnightly'
-  | 'monthly'
-  | 'quarterly'
-  | 'biannually'
-  | 'yearly'
-  | 'big-news'
-
-/**
- * A user-defined grouping. Entirely custom: the app ships a starter set on
- * first run (lib/seed.ts) and every one of them can be renamed or deleted.
- * There are no built-in categories a user cannot get rid of.
- */
-export interface Category {
+export interface Tag {
   id: string
   name: string
   /** One of the swatch keys in lib/palette.ts. Not a raw colour — see there. */
@@ -41,9 +25,8 @@ export interface Contact {
   id: string
   name: string
   email: string
-  /** Many-to-many, by id. A contact may be in no categories at all. */
-  categoryIds: string[]
-  frequency: Frequency
+  /** Many-to-many, by id. A contact may carry no tags at all. */
+  tagIds: string[]
   /**
    * `YYYY-MM-DD`, or `--MM-DD` when the year is not known, or absent.
    *

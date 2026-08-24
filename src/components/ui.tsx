@@ -26,8 +26,19 @@ export const btnSubtle =
 // intrinsic width forces its grid or flex track wider than the screen. Touch
 // devices also get a 16px font floor (index.css) so focusing a field cannot
 // make iOS zoom the page and leave the right-hand edge unreachable.
-export const inputCls =
-  'w-full min-w-0 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500'
+//
+// ⚠️ `inputBase` carries NO WIDTH, and that is the whole reason it exists.
+// `inputCls` is it plus `w-full`, which is what almost every field wants — but
+// a narrow field written as `${inputCls} w-24` does NOT get 6rem. Tailwind
+// resolves a conflict by CSS SOURCE ORDER, not by the order of the class
+// string, and `.w-full` is emitted after `.w-24`, so `w-full` wins and the
+// field silently goes full width. That shipped: the birthday year box was
+// full width and wrapped onto its own line under Day and Month. Anything
+// narrower than the container composes from `inputBase`.
+export const inputBase =
+  'min-w-0 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500'
+
+export const inputCls = `w-full ${inputBase}`
 
 export const selectCls =
   'min-w-0 max-w-full rounded-lg border border-slate-700 bg-slate-950 px-2 py-2 text-sm text-slate-100 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500'

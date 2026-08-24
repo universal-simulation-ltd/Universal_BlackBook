@@ -7,17 +7,41 @@
 // encrypt/decrypt pair lives in lib/vault.ts and never leaves the browser.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Category, Contact } from './types'
+import type { Contact, Tag } from './types'
 
 export const TABLE = 'blackbook_vaults'
 
-/** What one vault holds, once decrypted. */
+/**
+ * What one vault holds, once decrypted.
+ *
+ * ⚠️ `tags` and `categories` are the SAME LIST, written twice, and the
+ * duplication is load-bearing until roughly 2026-09. Tags were called
+ * categories until 2026-08-24. The danger is not reading an old vault — that
+ * is a one-line fallback — it is an old CLIENT reading a new vault: this is a
+ * PWA, a device can be running yesterday's cached JavaScript, and that build
+ * looks for `categories`, finds nothing, and then its own autosave pushes a
+ * tag-less book back over the top. Every other device pulls the loss.
+ *
+ * A device cannot be asked to update before it syncs, so the vault carries
+ * both spellings and every client finds the one it knows. The cost is one
+ * duplicated array of small objects inside a blob capped at 2 MB.
+ *
+ * When this comes out, `categories` goes and `tags` becomes required.
+ */
 export interface VaultPayload {
   version: number
   contacts: Contact[]
-  categories: Category[]
+  tags?: Tag[]
+  /** @deprecated Legacy mirror of `tags`, for pre-2026-08-24 clients. */
+  categories?: Tag[]
   /** Epoch ms the writing device stamped. Advisory — used only in messages. */
   savedAt: number
+}
+
+/** The tag list out of a vault of either vintage. */
+export function payloadTags(payload: VaultPayload): Tag[] {
+  const list = payload.tags ?? payload.categories
+  return Array.isArray(list) ? list : []
 }
 
 export interface VaultRow {

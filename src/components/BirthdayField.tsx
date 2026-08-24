@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { buildBirthday, daysInMonth, MONTH_OPTIONS, parseBirthday } from '../lib/birthday'
-import { btnSubtle, inputCls, selectCls } from './ui'
+import { btnSubtle, inputBase, selectCls } from './ui'
 
 /**
- * Day / Month / Year — three controls, not one `<input type="date">`.
+ * Day / Month / Year — three controls on ONE line, not an `<input type="date">`.
  *
  * A native date picker cannot express "the 4th of June, year unknown", and
  * that is the commonest birthday in anybody's address book. Offered one, people
@@ -15,6 +15,9 @@ import { btnSubtle, inputCls, selectCls } from './ui'
  * it, and it sidesteps the native picker's own locale problem: `type="date"`
  * renders dd/mm/yyyy or mm/dd/yyyy depending on the browser's locale, and from
  * an empty field a user cannot tell which one they are looking at.
+ *
+ * The year is a typed box rather than a fourth dropdown on purpose: a year list
+ * is a hundred-odd options to scroll past, and "1962" is four keystrokes.
  *
  * ⚠️ **The three controls are LOCAL state, deliberately, and not derived from
  * `value` on every render.** A birthday is only a birthday once it has both a
@@ -47,11 +50,24 @@ export function BirthdayField({
   // with a birth certificate.
   const maxDay = month ? daysInMonth(month, year) : 31
 
+  /**
+   * Keep the chosen day inside the chosen month.
+   *
+   * ⚠️ Called on a YEAR change as well as a month change, which is the half
+   * that was missing and the bug people saw. 29 February with no year is
+   * valid; type 1991 after it and February has 28 days, so the Day select was
+   * left holding a value with no matching `<option>` — which browsers render
+   * as an EMPTY box — while `buildBirthday` quietly refused the pair and wiped
+   * the birthday. Both symptoms, one missing clamp.
+   */
+  const clampDay = (d: number, m: number, y: number | null) =>
+    m && d > daysInMonth(m, y) ? daysInMonth(m, y) : d
+
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex items-center gap-2">
         <select
-          className={selectCls}
+          className={`${selectCls} flex-1`}
           value={day || ''}
           aria-label="Day of birth"
           onChange={(e) => {
@@ -69,15 +85,12 @@ export function BirthdayField({
         </select>
 
         <select
-          className={selectCls}
+          className={`${selectCls} flex-[2]`}
           value={month || ''}
           aria-label="Month of birth"
           onChange={(e) => {
             const m = Number(e.target.value)
-            // Moving 31 March to February would otherwise leave a pair that
-            // `buildBirthday` silently refuses, clearing the field with no
-            // explanation. Clamp to the last day of the new month instead.
-            const clamped = m && day > daysInMonth(m, year) ? daysInMonth(m, year) : day
+            const clamped = clampDay(day, m, year)
             setMonth(m)
             setDay(clamped)
             emit(clamped, m, year)
@@ -91,8 +104,11 @@ export function BirthdayField({
           ))}
         </select>
 
+        {/* `inputBase`, not `inputCls` — see the warning in ui.tsx. `inputCls`
+            carries `w-full`, which beats `w-20` on CSS source order and would
+            put this box on a line of its own. */}
         <input
-          className={`${inputCls} w-24`}
+          className={`${inputBase} w-20 shrink-0 text-center`}
           type="text"
           inputMode="numeric"
           maxLength={4}
@@ -101,18 +117,21 @@ export function BirthdayField({
           value={yearText}
           onChange={(e) => {
             const digits = e.target.value.replace(/\D/g, '').slice(0, 4)
-            setYearText(digits)
             // Only a complete four-digit year counts as one. Anything shorter
             // is somebody mid-keystroke, and reading "19" as a year would store
             // the year 19 between the 1 and the 9.
-            emit(day, month, digits.length === 4 ? Number(digits) : null)
+            const y = digits.length === 4 ? Number(digits) : null
+            const clamped = clampDay(day, month, y)
+            setYearText(digits)
+            setDay(clamped)
+            emit(clamped, month, y)
           }}
         />
 
         {(day || month || yearText) && (
           <button
             type="button"
-            className={btnSubtle}
+            className={`${btnSubtle} shrink-0`}
             onClick={() => {
               setDay(0)
               setMonth(0)

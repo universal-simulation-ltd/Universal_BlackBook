@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildBirthday,
+  countdownLabel,
   daysInMonth,
   formatBirthday,
   isValidBirthday,
+  nextBirthday,
   parseBirthday,
   parseBirthdayInput,
+  todayParts,
+  type Today,
 } from './birthday'
 
 describe('daysInMonth', () => {
@@ -150,5 +154,83 @@ describe('parseBirthdayInput', () => {
     expect(parseBirthdayInput('sometime in spring')).toBeUndefined()
     expect(parseBirthdayInput('4 Junuary 1990')).toBeUndefined()
     expect(parseBirthdayInput('31 February')).toBeUndefined()
+  })
+})
+
+describe('nextBirthday', () => {
+  // Fixed dates throughout. A test that asks the clock what today is passes on
+  // the day it was written and starts failing on some later Tuesday.
+  const AUG_24_2026: Today = { year: 2026, month: 8, day: 24 }
+
+  it('counts today as today, not as a year away', () => {
+    // The whole reason somebody opens the birthdays list is that one of them
+    // is today. An off-by-one here hides exactly the person it exists for.
+    expect(nextBirthday('--08-24', AUG_24_2026)?.inDays).toBe(0)
+  })
+
+  it('counts tomorrow as one day', () => {
+    expect(nextBirthday('--08-25', AUG_24_2026)?.inDays).toBe(1)
+  })
+
+  it('wraps a date already past into next year', () => {
+    const next = nextBirthday('--08-23', AUG_24_2026)
+    expect(next?.year).toBe(2027)
+    expect(next?.inDays).toBe(364)
+  })
+
+  it('gives the age they will TURN, not the age they are', () => {
+    // Born 4 June 1990, asked on 24 August 2026: 4 June has gone, so the next
+    // one is in 2027 and they turn 37 — not the 36 they are today.
+    const next = nextBirthday('1990-06-04', AUG_24_2026)
+    expect(next?.year).toBe(2027)
+    expect(next?.turning).toBe(37)
+  })
+
+  it('turns them a year older on the day itself', () => {
+    expect(nextBirthday('1990-08-24', AUG_24_2026)?.turning).toBe(36)
+  })
+
+  it('has no age at all when the year is unknown', () => {
+    expect(nextBirthday('--06-04', AUG_24_2026)?.turning).toBeNull()
+  })
+
+  it('rolls 29 February to 1 March in a non-leap year', () => {
+    // Stated rather than assumed: 28 February is equally defensible and the
+    // two disagree three years in four.
+    const next = nextBirthday('2000-02-29', { year: 2027, month: 1, day: 1 })
+    expect(next?.year).toBe(2027)
+    expect(next?.inDays).toBe(59) // 31 January days + 28 February days
+    expect(next?.turning).toBe(27)
+  })
+
+  it('keeps 29 February on the day in a leap year', () => {
+    expect(nextBirthday('--02-29', { year: 2028, month: 2, day: 29 })?.inDays).toBe(0)
+  })
+
+  it('crosses a year boundary correctly', () => {
+    expect(nextBirthday('--01-01', { year: 2026, month: 12, day: 31 })?.inDays).toBe(1)
+  })
+
+  it('is null for a contact with no birthday, and for junk', () => {
+    expect(nextBirthday(undefined, AUG_24_2026)).toBeNull()
+    expect(nextBirthday('sometime in June', AUG_24_2026)).toBeNull()
+  })
+})
+
+describe('countdownLabel', () => {
+  it('names today and tomorrow rather than counting them', () => {
+    expect(countdownLabel(0)).toBe('Today')
+    expect(countdownLabel(1)).toBe('Tomorrow')
+    expect(countdownLabel(12)).toBe('in 12 days')
+  })
+})
+
+describe('todayParts', () => {
+  it('reads LOCAL date parts, not UTC ones', () => {
+    // 1 January 2026 at 00:30 local. Read through UTC in any timezone behind
+    // it, this is still 31 December — and everybody's birthday would be a day
+    // out for half the day.
+    const local = new Date(2026, 0, 1, 0, 30)
+    expect(todayParts(local)).toEqual({ year: 2026, month: 1, day: 1 })
   })
 })

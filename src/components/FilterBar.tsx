@@ -1,48 +1,43 @@
 import { useState } from 'react'
-import { FREQUENCIES } from '../lib/frequency'
-import { UNCATEGORISED, type SortKey } from '../lib/filter'
-import type { Frequency } from '../lib/types'
+import { UNTAGGED, type SortKey } from '../lib/filter'
 import { useBookStore } from '../stores/bookStore'
-import { CategoryChip } from './CategoryChip'
+import { TagChip } from './TagChip'
 import { btnSubtle, inputCls, selectCls } from './ui'
 
 const SORTS: { value: SortKey; label: string }[] = [
   { value: 'name', label: 'Name A–Z' },
   { value: 'name-desc', label: 'Name Z–A' },
-  { value: 'frequency', label: 'How often' },
   { value: 'recent', label: 'Recently added' },
 ]
 
 /**
- * Search, sort, and the two filters.
+ * Search, sort, the tag filter, and the birthdays switch.
  *
- * The filter chips are collapsed behind a toggle by default. On a phone the
+ * The tag chips are collapsed behind a toggle by default. On a phone the
  * expanded set is taller than the first screen of results, which puts the
  * thing you came for below the fold on every visit — and most visits are a
  * search, not a filter.
+ *
+ * ⚠️ **Birthdays is a sort that also filters**, which is why it is a button of
+ * its own rather than a fourth entry in the sort menu. Choosing it drops
+ * everyone with no birthday recorded (see `runQuery`), and a "sort" that
+ * removes half the list without saying so is a nasty surprise. As a switch you
+ * can see is on, it is a different view — which is what it actually is.
  */
 export function FilterBar() {
-  const categories = useBookStore((s) => s.categories)
+  const tags = useBookStore((s) => s.tags)
   const query = useBookStore((s) => s.query)
   const setQuery = useBookStore((s) => s.setQuery)
   const resetQuery = useBookStore((s) => s.resetQuery)
   const [open, setOpen] = useState(false)
 
-  const activeFilters = query.categoryIds.length + query.frequencies.length
-  const dirty = activeFilters > 0 || query.text.trim() !== ''
+  const birthdays = query.sort === 'birthday'
+  const activeFilters = query.tagIds.length
+  const dirty = activeFilters > 0 || query.text.trim() !== '' || birthdays
 
-  const toggleCategory = (id: string) =>
+  const toggleTag = (id: string) =>
     setQuery({
-      categoryIds: query.categoryIds.includes(id)
-        ? query.categoryIds.filter((x) => x !== id)
-        : [...query.categoryIds, id],
-    })
-
-  const toggleFrequency = (value: Frequency) =>
-    setQuery({
-      frequencies: query.frequencies.includes(value)
-        ? query.frequencies.filter((x) => x !== value)
-        : [...query.frequencies, value],
+      tagIds: query.tagIds.includes(id) ? query.tagIds.filter((x) => x !== id) : [...query.tagIds, id],
     })
 
   return (
@@ -69,25 +64,48 @@ export function FilterBar() {
             <path d="m13.5 13.5 3.5 3.5" strokeLinecap="round" />
           </svg>
         </div>
-        <select
-          className={selectCls}
-          value={query.sort}
-          onChange={(e) => setQuery({ sort: e.target.value as SortKey })}
-          aria-label="Sort by"
+
+        <button
+          type="button"
+          aria-pressed={birthdays}
+          // Back to Name A–Z when switched off, not to whatever it was before:
+          // remembering the previous sort means the list can land somewhere the
+          // user did not choose and cannot see the reason for.
+          onClick={() => setQuery({ sort: birthdays ? 'name' : 'birthday' })}
+          className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+            birthdays
+              ? 'border-orange-500/60 bg-orange-500/15 text-orange-300'
+              : 'border-slate-700 text-slate-300 hover:border-slate-600 hover:bg-slate-800'
+          }`}
         >
-          {SORTS.map((s) => (
-            <option key={s.value} value={s.value}>
-              {s.label}
-            </option>
-          ))}
-        </select>
+          <span aria-hidden>🎂</span> Birthdays
+        </button>
+
+        {/* The sort menu is meaningless while the birthdays view is on — that
+            view IS an order — so it is hidden rather than left there showing a
+            value that is not what the list is doing. */}
+        {!birthdays && (
+          <select
+            className={selectCls}
+            value={query.sort}
+            onChange={(e) => setQuery({ sort: e.target.value as SortKey })}
+            aria-label="Sort by"
+          >
+            {SORTS.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        )}
+
         <button
           type="button"
           className={`${btnSubtle} px-3 py-2`}
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
         >
-          Filters{activeFilters > 0 && <span className="ml-1 text-orange-400">({activeFilters})</span>}
+          Tags{activeFilters > 0 && <span className="ml-1 text-orange-400">({activeFilters})</span>}
         </button>
         {dirty && (
           <button type="button" className={`${btnSubtle} px-3 py-2`} onClick={resetQuery}>
@@ -97,52 +115,30 @@ export function FilterBar() {
       </div>
 
       {open && (
-        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/60 p-3">
-          <div>
-            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">Category</p>
+        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3">
+          {tags.length === 0 ? (
+            <p className="text-sm text-slate-500">
+              No tags yet. Add one while you're filling in a contact — they're entirely yours.
+            </p>
+          ) : (
             <div className="flex flex-wrap gap-1.5">
-              {categories.map((c) => (
-                <CategoryChip
-                  key={c.id}
-                  name={c.name}
-                  colour={c.colour}
-                  selected={query.categoryIds.includes(c.id)}
-                  onClick={() => toggleCategory(c.id)}
+              {tags.map((t) => (
+                <TagChip
+                  key={t.id}
+                  name={t.name}
+                  colour={t.colour}
+                  selected={query.tagIds.includes(t.id)}
+                  onClick={() => toggleTag(t.id)}
                 />
               ))}
-              <CategoryChip
-                name="No category"
+              <TagChip
+                name="Untagged"
                 colour="slate"
-                selected={query.categoryIds.includes(UNCATEGORISED)}
-                onClick={() => toggleCategory(UNCATEGORISED)}
+                selected={query.tagIds.includes(UNTAGGED)}
+                onClick={() => toggleTag(UNTAGGED)}
               />
             </div>
-          </div>
-          <div>
-            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">
-              How often
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {FREQUENCIES.map((f) => {
-                const on = query.frequencies.includes(f.value)
-                return (
-                  <button
-                    key={f.value}
-                    type="button"
-                    aria-pressed={on}
-                    onClick={() => toggleFrequency(f.value)}
-                    className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
-                      on
-                        ? 'border-orange-500/50 bg-orange-500/15 text-orange-300'
-                        : 'border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-200'
-                    }`}
-                  >
-                    {f.short}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
+          )}
         </div>
       )}
     </div>

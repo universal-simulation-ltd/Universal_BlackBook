@@ -69,8 +69,7 @@ function contact(name: string, notes: string): Contact {
     id: `live-${name.toLowerCase()}`,
     name,
     email: `${name.toLowerCase()}@example.test`,
-    categoryIds: [],
-    frequency: 'na',
+    tagIds: [],
     notes,
     createdAt: 1,
     updatedAt: 1,
@@ -78,7 +77,7 @@ function contact(name: string, notes: string): Contact {
 }
 
 function book(...contacts: Contact[]): VaultPayload {
-  return { version: VAULT_VERSION, contacts, categories: [], savedAt: 1 }
+  return { version: VAULT_VERSION, contacts, tags: [], categories: [], savedAt: 1 }
 }
 
 const PASSPHRASE = 'correct horse battery staple'
@@ -89,7 +88,13 @@ const PASSPHRASE = 'correct horse battery staple'
 // constant would prove it for a number production never uses.
 const ITERATIONS = KDF_ITERATIONS
 
-const LIVE = process.env.BLACKBOOK_LIVE === '1'
+// Reached through `globalThis` rather than as a bare `process`, because this
+// project has no @types/node — the app is browser-only and adding Node's
+// globals to it just to read one env var would let `process`, `Buffer` and
+// `__dirname` typecheck everywhere else too.
+const LIVE =
+  (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env
+    ?.BLACKBOOK_LIVE === '1'
 
 describe.skipIf(!LIVE)('the online copy, against the real server', () => {
   /** Device A — the laptop the book was typed into. */

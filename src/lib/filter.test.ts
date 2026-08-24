@@ -1,18 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { compare, fold, matchesCategories, matchesFrequency, matchesText, runQuery, UNCATEGORISED } from './filter'
+import { compare, fold, matchesTags, matchesText, runQuery, UNTAGGED } from './filter'
+import type { Today } from './birthday'
 import type { Contact } from './types'
 
 const contact = (over: Partial<Contact> = {}): Contact => ({
   id: over.id ?? 'c1',
   name: 'Sam Okonkwo',
   email: 'sam@example.com',
-  categoryIds: ['work'],
-  frequency: 'monthly',
+  tagIds: ['work'],
   notes: '',
   createdAt: 1,
   updatedAt: 1,
   ...over,
 })
+
+/** A fixed "today" so every birthday assertion means the same thing forever. */
+const TODAY: Today = { year: 2026, month: 8, day: 24 }
 
 describe('fold', () => {
   it('strips case and surrounding space', () => {
@@ -48,92 +51,101 @@ describe('matchesText', () => {
   })
 })
 
-describe('matchesCategories', () => {
+describe('matchesTags', () => {
   it('passes everything when nothing is selected', () => {
-    expect(matchesCategories(contact(), [])).toBe(true)
+    expect(matchesTags(contact(), [])).toBe(true)
   })
 
   it('ORs within the selection', () => {
-    const c = contact({ categoryIds: ['work'] })
-    expect(matchesCategories(c, ['work', 'family'])).toBe(true)
-    expect(matchesCategories(c, ['family'])).toBe(false)
+    const c = contact({ tagIds: ['work'] })
+    expect(matchesTags(c, ['work', 'family'])).toBe(true)
+    expect(matchesTags(c, ['family'])).toBe(false)
   })
 
-  it('matches the uncategorised pseudo-filter only when a contact has none', () => {
-    expect(matchesCategories(contact({ categoryIds: [] }), [UNCATEGORISED])).toBe(true)
-    expect(matchesCategories(contact({ categoryIds: ['work'] }), [UNCATEGORISED])).toBe(false)
+  it('matches the untagged pseudo-filter only when a contact has none', () => {
+    expect(matchesTags(contact({ tagIds: [] }), [UNTAGGED])).toBe(true)
+    expect(matchesTags(contact({ tagIds: ['work'] }), [UNTAGGED])).toBe(false)
   })
 
-  it('does not let the uncategorised filter swallow a categorised contact when combined', () => {
-    const c = contact({ categoryIds: ['work'] })
-    expect(matchesCategories(c, [UNCATEGORISED, 'work'])).toBe(true)
-    expect(matchesCategories(c, [UNCATEGORISED, 'family'])).toBe(false)
-  })
-})
-
-describe('matchesFrequency', () => {
-  it('passes everything when nothing is selected', () => {
-    expect(matchesFrequency(contact(), [])).toBe(true)
-  })
-
-  it('filters to the chosen cadences', () => {
-    expect(matchesFrequency(contact({ frequency: 'weekly' }), ['weekly', 'yearly'])).toBe(true)
-    expect(matchesFrequency(contact({ frequency: 'monthly' }), ['weekly'])).toBe(false)
+  it('does not let the untagged filter swallow a tagged contact when combined', () => {
+    const c = contact({ tagIds: ['work'] })
+    expect(matchesTags(c, [UNTAGGED, 'work'])).toBe(true)
+    expect(matchesTags(c, [UNTAGGED, 'family'])).toBe(false)
   })
 })
 
 describe('compare', () => {
-  const a = contact({ id: 'a', name: 'Alice', frequency: 'yearly', createdAt: 10 })
-  const b = contact({ id: 'b', name: 'bob', frequency: 'weekly', createdAt: 20 })
+  const a = contact({ id: 'a', name: 'Alice', createdAt: 10 })
+  const b = contact({ id: 'b', name: 'bob', createdAt: 20 })
 
   it('sorts by name case-insensitively', () => {
-    expect([b, a].sort(compare('name')).map((c) => c.id)).toEqual(['a', 'b'])
-    expect([a, b].sort(compare('name-desc')).map((c) => c.id)).toEqual(['b', 'a'])
+    expect([b, a].sort(compare('name', TODAY)).map((c) => c.id)).toEqual(['a', 'b'])
+    expect([a, b].sort(compare('name-desc', TODAY)).map((c) => c.id)).toEqual(['b', 'a'])
   })
 
   it('sorts numerically within a name, so Flat 9 precedes Flat 10', () => {
     const nine = contact({ id: '9', name: 'Flat 9' })
     const ten = contact({ id: '10', name: 'Flat 10' })
-    expect([ten, nine].sort(compare('name')).map((c) => c.id)).toEqual(['9', '10'])
-  })
-
-  it('sorts the most demanding cadence first and big-news last', () => {
-    const news = contact({ id: 'n', name: 'Zara', frequency: 'big-news' })
-    expect([news, a, b].sort(compare('frequency')).map((c) => c.id)).toEqual(['b', 'a', 'n'])
-  })
-
-  it('breaks frequency ties by name, so the order never wobbles between renders', () => {
-    const x = contact({ id: 'x', name: 'Xavier', frequency: 'monthly' })
-    const y = contact({ id: 'y', name: 'Aaron', frequency: 'monthly' })
-    expect([x, y].sort(compare('frequency')).map((c) => c.id)).toEqual(['y', 'x'])
-    expect([y, x].sort(compare('frequency')).map((c) => c.id)).toEqual(['y', 'x'])
+    expect([ten, nine].sort(compare('name', TODAY)).map((c) => c.id)).toEqual(['9', '10'])
   })
 
   it('sorts recently added first', () => {
-    expect([a, b].sort(compare('recent')).map((c) => c.id)).toEqual(['b', 'a'])
+    expect([a, b].sort(compare('recent', TODAY)).map((c) => c.id)).toEqual(['b', 'a'])
+  })
+
+  it('sorts the soonest birthday first, wrapping into next year', () => {
+    // Today is 24 August. December is 100-odd days off; February is next
+    // year's and further still; tomorrow wins.
+    const dec = contact({ id: 'dec', name: 'Dec', birthdate: '--12-25' })
+    const feb = contact({ id: 'feb', name: 'Feb', birthdate: '--02-01' })
+    const tomorrow = contact({ id: 'tom', name: 'Tom', birthdate: '--08-25' })
+    expect([feb, dec, tomorrow].sort(compare('birthday', TODAY)).map((c) => c.id)).toEqual([
+      'tom',
+      'dec',
+      'feb',
+    ])
+  })
+
+  it('breaks a shared birthday by name, so the order never wobbles between renders', () => {
+    const x = contact({ id: 'x', name: 'Xavier', birthdate: '--09-01' })
+    const y = contact({ id: 'y', name: 'Aaron', birthdate: '1990-09-01' })
+    expect([x, y].sort(compare('birthday', TODAY)).map((c) => c.id)).toEqual(['y', 'x'])
+    expect([y, x].sort(compare('birthday', TODAY)).map((c) => c.id)).toEqual(['y', 'x'])
   })
 })
 
 describe('runQuery', () => {
   const people = [
-    contact({ id: '1', name: 'Alice', categoryIds: ['fam'], frequency: 'weekly', notes: 'sister' }),
-    contact({ id: '2', name: 'Bob', categoryIds: [], frequency: 'yearly', notes: '' }),
-    contact({ id: '3', name: 'Carla', categoryIds: ['work'], frequency: 'monthly', notes: 'Berlin office' }),
+    contact({ id: '1', name: 'Alice', tagIds: ['fam'], notes: 'sister', birthdate: '--12-25' }),
+    contact({ id: '2', name: 'Bob', tagIds: [], notes: '' }),
+    contact({ id: '3', name: 'Carla', tagIds: ['work'], notes: 'Berlin office', birthdate: '--08-25' }),
   ]
 
-  it('applies text, category and frequency together', () => {
-    const out = runQuery(people, { text: '', categoryIds: ['work'], frequencies: ['monthly'], sort: 'name' })
+  it('applies text and tags together', () => {
+    const out = runQuery(people, { text: 'berlin', tagIds: ['work'], sort: 'name' }, TODAY)
     expect(out.map((c) => c.id)).toEqual(['3'])
   })
 
   it('returns everything for an empty query', () => {
-    const out = runQuery(people, { text: '', categoryIds: [], frequencies: [], sort: 'name' })
-    expect(out).toHaveLength(3)
+    expect(runQuery(people, { text: '', tagIds: [], sort: 'name' }, TODAY)).toHaveLength(3)
   })
 
   it('does not mutate the array it was given', () => {
     const original = [...people]
-    runQuery(people, { text: '', categoryIds: [], frequencies: [], sort: 'name-desc' })
+    runQuery(people, { text: '', tagIds: [], sort: 'name-desc' }, TODAY)
     expect(people).toEqual(original)
+  })
+
+  it('drops everyone without a birthday in the birthdays view', () => {
+    // Bob has none, so he is not in the list at all — the view answers "whose
+    // birthday is coming up", and padding it with people who have none is a
+    // worse answer than a shorter list.
+    const out = runQuery(people, { text: '', tagIds: [], sort: 'birthday' }, TODAY)
+    expect(out.map((c) => c.id)).toEqual(['3', '1'])
+  })
+
+  it('still applies the text and tag filters in the birthdays view', () => {
+    const out = runQuery(people, { text: 'sister', tagIds: [], sort: 'birthday' }, TODAY)
+    expect(out.map((c) => c.id)).toEqual(['1'])
   })
 })

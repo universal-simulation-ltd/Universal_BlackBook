@@ -3,7 +3,7 @@ import { UniversalAppsNavBar, UpdateNotice, useUniversal, useUser } from '@unisi
 import UsageTracker from './UsageTracker'
 import ProductLogo from './components/Header/ProductLogo'
 import AppMenu from './components/Header/AppMenu'
-import { CategoryManager } from './components/CategoryManager'
+import { TagManager } from './components/TagManager'
 import { CloudPanel } from './components/CloudPanel'
 import { ContactForm } from './components/ContactForm'
 import { ContactList } from './components/ContactList'
@@ -31,7 +31,7 @@ const REPO_URL = 'https://github.com/universal-simulation-ltd/Universal_BlackBoo
 /** How long to wait after the last edit before pushing to the vault. */
 const AUTOSAVE_DELAY = 2500
 
-type Panel = 'categories' | 'io' | 'cloud' | null
+type Panel = 'tags' | 'io' | 'cloud' | null
 
 export default function App() {
   const init = useBookStore((s) => s.init)
@@ -58,7 +58,7 @@ export default function App() {
         productHomeHref={import.meta.env.BASE_URL}
         actions={
           <AppMenu
-            onCategories={() => setPanel('categories')}
+            onTags={() => setPanel('tags')}
             onImportExport={() => setPanel('io')}
             onCloud={() => setPanel('cloud')}
           />
@@ -87,7 +87,7 @@ export default function App() {
           <div>
             <h1 className="text-xl font-semibold text-slate-100 sm:text-2xl">Your BlackBook</h1>
             <p className="text-sm text-slate-500">
-              The people worth staying in touch with — filed your way, at the pace you choose.
+              The people worth staying in touch with — tagged your way, and never a birthday missed.
             </p>
           </div>
           <button type="button" className={btnPrimary} onClick={() => edit('new')}>
@@ -135,7 +135,7 @@ export default function App() {
       </footer>
 
       {editing && <ContactForm key={editing} id={editing} />}
-      {panel === 'categories' && <CategoryManager onClose={() => setPanel(null)} />}
+      {panel === 'tags' && <TagManager onClose={() => setPanel(null)} />}
       {panel === 'io' && <ImportExport onClose={() => setPanel(null)} />}
       {panel === 'cloud' && <CloudPanel onClose={() => setPanel(null)} />}
     </div>
@@ -162,7 +162,7 @@ function useCloudSync(openPanel: () => void) {
   const { supabase } = useUniversal()
   const { user } = useUser()
   const contacts = useBookStore((s) => s.contacts)
-  const categories = useBookStore((s) => s.categories)
+  const tags = useBookStore((s) => s.tags)
   const loaded = useBookStore((s) => s.loaded)
   const hydrate = useSyncStore((s) => s.hydrate)
   const push = useSyncStore((s) => s.push)
@@ -185,7 +185,7 @@ function useCloudSync(openPanel: () => void) {
     if (!loaded || state !== 'on') return
     const t = setTimeout(() => void push(supabase), AUTOSAVE_DELAY)
     return () => clearTimeout(t)
-  }, [contacts, categories, loaded, state, push, supabase])
+  }, [contacts, tags, loaded, state, push, supabase])
 
   // A conflict is the one sync outcome the user MUST answer — it is the only
   // one where the app cannot proceed without destroying somebody's edits — so

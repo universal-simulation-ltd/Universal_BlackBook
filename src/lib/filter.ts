@@ -1,22 +1,27 @@
-import type { Contact, Frequency } from './types'
-import { formatBirthday } from './birthday'
-import { frequencyRank } from './frequency'
+import type { Contact } from './types'
+import { formatBirthday, nextBirthday, type Today } from './birthday'
 
-export type SortKey = 'name' | 'name-desc' | 'frequency' | 'recent'
+/**
+ * How the list is ordered.
+ *
+ * `birthday` is the odd one out and deliberately so: it is the only key that
+ * also FILTERS, dropping everyone with no birthday recorded. A "sort by
+ * birthday" that padded the bottom of the list with people who have none is a
+ * worse answer to "whose birthday is coming up" than a shorter list is.
+ */
+export type SortKey = 'name' | 'name-desc' | 'recent' | 'birthday'
 
-/** The pseudo-category for "in no category at all". Not a real Category id. */
-export const UNCATEGORISED = ' uncategorised'
+/** The pseudo-tag for "carrying no tags at all". Not a real Tag id. */
+export const UNTAGGED = ' untagged'
 
 export interface Query {
   text: string
-  /** Category ids, plus possibly UNCATEGORISED. Empty = no category filter. */
-  categoryIds: string[]
-  /** Empty = no frequency filter. */
-  frequencies: Frequency[]
+  /** Tag ids, plus possibly UNTAGGED. Empty = no tag filter. */
+  tagIds: string[]
   sort: SortKey
 }
 
-export const EMPTY_QUERY: Query = { text: '', categoryIds: [], frequencies: [], sort: 'name' }
+export const EMPTY_QUERY: Query = { text: '', tagIds: [], sort: 'name' }
 
 /**
  * Fold a string for searching: case, surrounding space, and accents.
@@ -54,15 +59,11 @@ export function matchesText(contact: Contact, text: string): boolean {
   return terms.every((t) => haystack.includes(t))
 }
 
-/** Category filter: OR within the selection — a person in ANY chosen category. */
-export function matchesCategories(contact: Contact, categoryIds: string[]): boolean {
-  if (categoryIds.length === 0) return true
-  if (categoryIds.includes(UNCATEGORISED) && contact.categoryIds.length === 0) return true
-  return contact.categoryIds.some((id) => categoryIds.includes(id))
-}
-
-export function matchesFrequency(contact: Contact, frequencies: Frequency[]): boolean {
-  return frequencies.length === 0 || frequencies.includes(contact.frequency)
+/** Tag filter: OR within the selection — a person carrying ANY chosen tag. */
+export function matchesTags(contact: Contact, tagIds: string[]): boolean {
+  if (tagIds.length === 0) return true
+  if (tagIds.includes(UNTAGGED) && contact.tagIds.length === 0) return true
+  return contact.tagIds.some((id) => tagIds.includes(id))
 }
 
 /**
@@ -77,35 +78,43 @@ function byName(a: Contact, b: Contact): number {
  * Sort comparator.
  *
  * Every branch falls through to a name comparison as its tiebreak, so the list
- * is TOTALLY ordered under all four keys. Without that, two contacts on the
- * same frequency could swap places between renders for no visible reason —
+ * is TOTALLY ordered under every key. Without that, two contacts sharing a
+ * birthday could swap places between renders for no visible reason —
  * Array.prototype.sort is stable, but the array it is handed here is rebuilt
  * by a filter on every keystroke, so "stable" buys nothing.
  */
-export function compare(sort: SortKey): (a: Contact, b: Contact) => number {
+export function compare(sort: SortKey, today: Today): (a: Contact, b: Contact) => number {
   switch (sort) {
     case 'name-desc':
       return (a, b) => byName(b, a)
-    case 'frequency':
-      // Most demanding first. Infinity (big-news) therefore lands last, which
-      // is the whole reason it is Infinity rather than 0.
-      return (a, b) => frequencyRank(a.frequency) - frequencyRank(b.frequency) || byName(a, b)
     case 'recent':
       return (a, b) => b.createdAt - a.createdAt || byName(a, b)
+    case 'birthday':
+      // Soonest first. Anyone reaching this comparator has a birthday — the
+      // filter above dropped the rest — but the `?? Infinity` keeps it total
+      // rather than returning NaN if that ever stops being true.
+      return (a, b) =>
+        (nextBirthday(a.birthdate, today)?.inDays ?? Infinity) -
+          (nextBirthday(b.birthdate, today)?.inDays ?? Infinity) || byName(a, b)
     case 'name':
     default:
       return byName
   }
 }
 
-/** Filter + sort in one pass. Returns a new array; never mutates the input. */
-export function runQuery(contacts: Contact[], query: Query): Contact[] {
+/**
+ * Filter + sort in one pass. Returns a new array; never mutates the input.
+ *
+ * `today` is passed in rather than read from the clock here so the whole
+ * pipeline stays pure — see `nextBirthday` for why that matters.
+ */
+export function runQuery(contacts: Contact[], query: Query, today: Today): Contact[] {
   return contacts
     .filter(
       (c) =>
         matchesText(c, query.text) &&
-        matchesCategories(c, query.categoryIds) &&
-        matchesFrequency(c, query.frequencies),
+        matchesTags(c, query.tagIds) &&
+        (query.sort !== 'birthday' || Boolean(nextBirthday(c.birthdate, today))),
     )
-    .sort(compare(query.sort))
+    .sort(compare(query.sort, today))
 }

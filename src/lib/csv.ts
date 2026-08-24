@@ -6,20 +6,29 @@
 // free text, and the first note anybody writes with a comma in it would
 // otherwise silently shear the row.
 
-import type { Category, Contact, Frequency } from './types'
-import { DEFAULT_FREQUENCY, FREQUENCIES, isFrequency } from './frequency'
+import type { Contact, Tag } from './types'
 import { parseBirthdayInput } from './birthday'
 import { newId } from './id'
 import { nextSwatch } from './palette'
 
-// ⚠️ APPEND ONLY. A headerless file is read positionally against this order
-// (see `fromCsv`), so inserting a column in the middle would silently re-map
-// every column after it in files exported before the change. Birthday went on
-// the end for exactly that reason, not because it belongs there.
-export const COLUMNS = ['Name', 'Email', 'Categories', 'Frequency', 'Notes', 'Birthday'] as const
+// ⚠️ APPEND ONLY, with ONE historical exception. A headerless file is read
+// positionally against this order (see `fromCsv`), so inserting a column in
+// the middle silently re-maps every column after it in files exported before
+// the change. Birthday went on the end for exactly that reason.
+//
+// The exception: `Frequency` used to sit between Tags and Notes, and was
+// removed when the field was (2026-08-24). That leaves TWO positional layouts
+// in the wild, and a headerless file cannot say which it is — so `fromCsv`
+// decides on the CELL COUNT: six columns is the old layout with the frequency
+// hole, five is this one. That is the only reason `LEGACY_COLUMN_COUNT`
+// exists, and removing it would silently shift Notes and Birthday one column
+// left in every old headerless export.
+export const COLUMNS = ['Name', 'Email', 'Tags', 'Notes', 'Birthday'] as const
 
-/** Categories share one cell, so they need a separator the delimiter is not. */
-const CATEGORY_SEPARATOR = '; '
+const LEGACY_COLUMN_COUNT = 6
+
+/** Tags share one cell, so they need a separator the delimiter is not. */
+const TAG_SEPARATOR = '; '
 
 // ─────────────────────────────────────────────────────────────── write
 
@@ -44,19 +53,18 @@ function escapeCell(value: string): string {
  * CRLF and a UTF-8 BOM are both for Excel: without the BOM it reads the file
  * as the local ANSI codepage and every accented name arrives mojibaked.
  */
-export function toCsv(contacts: Contact[], categories: Category[]): string {
-  const nameById = new Map(categories.map((c) => [c.id, c.name]))
+export function toCsv(contacts: Contact[], tags: Tag[]): string {
+  const nameById = new Map(tags.map((t) => [t.id, t.name]))
   const rows = [
     COLUMNS.join(','),
     ...contacts.map((c) =>
       [
         c.name,
         c.email,
-        c.categoryIds
+        c.tagIds
           .map((id) => nameById.get(id))
           .filter((n): n is string => Boolean(n))
-          .join(CATEGORY_SEPARATOR),
-        c.frequency,
+          .join(TAG_SEPARATOR),
         c.notes,
         // The stored string, not the pretty one: `--06-04` round-trips and
         // "4 June" does not survive a trip through a spreadsheet's date
@@ -144,20 +152,26 @@ export function parseCsv(text: string): string[][] {
   return rows
 }
 
-type Column = 'name' | 'email' | 'categories' | 'frequency' | 'notes' | 'birthday'
+type Column = 'name' | 'email' | 'tags' | 'notes' | 'birthday'
 
 /**
  * What a header cell may be called.
  *
  * An explicit table rather than a de-pluralising rule. The rule is what was
- * here first, and `'categories'.replace(/s$/, '')` yields `'categorie'` — so
- * the app's OWN export header did not match its own importer, and every
- * category in a round-tripped file was silently dropped. Five tests caught it;
- * nothing about the app's behaviour would have.
+ * here first, and `'categories'.replace(/s$/, '')` yielded `'categorie'` — so
+ * the app's OWN export header did not match its own importer, and every tag in
+ * a round-tripped file was silently dropped. Five tests caught it; nothing
+ * about the app's behaviour would have.
  *
  * The extra spellings are the ones people actually arrive with — Google
- * Contacts and Outlook both export "E-mail Address", and "Tags" and "Groups"
- * are what other address books call categories.
+ * Contacts and Outlook both export "E-mail Address", and "Groups" and "Labels"
+ * are what other address books call tags. `Categories` is in here twice over:
+ * it is what other address books say AND what this app's own exports said
+ * before 2026-08-24, so an old BlackBook file still imports its tags.
+ *
+ * ⚠️ There are no `frequency` aliases any more, and their absence is the whole
+ * migration for a HEADED file: an old export's `Frequency` column matches
+ * nothing, so it is ignored rather than mis-read as Notes.
  */
 const HEADER_ALIASES: Record<string, Column> = {
   'name': 'name',
@@ -169,17 +183,14 @@ const HEADER_ALIASES: Record<string, Column> = {
   'e-mail': 'email',
   'email address': 'email',
   'e-mail address': 'email',
-  'category': 'categories',
-  'categories': 'categories',
-  'group': 'categories',
-  'groups': 'categories',
-  'tag': 'categories',
-  'tags': 'categories',
-  'labels': 'categories',
-  'frequency': 'frequency',
-  'contact frequency': 'frequency',
-  'how often': 'frequency',
-  'cadence': 'frequency',
+  'tag': 'tags',
+  'tags': 'tags',
+  'category': 'tags',
+  'categories': 'tags',
+  'group': 'tags',
+  'groups': 'tags',
+  'label': 'tags',
+  'labels': 'tags',
   'note': 'notes',
   'notes': 'notes',
   'comment': 'notes',
@@ -200,7 +211,7 @@ const HEADER_ALIASES: Record<string, Column> = {
  * primary value in.
  */
 function headerIndex(header: string[]): Record<Column, number> {
-  const out: Record<Column, number> = { name: -1, email: -1, categories: -1, frequency: -1, notes: -1, birthday: -1 }
+  const out: Record<Column, number> = { name: -1, email: -1, tags: -1, notes: -1, birthday: -1 }
   header.forEach((h, i) => {
     const column = HEADER_ALIASES[h.trim().toLowerCase()]
     if (column && out[column] === -1) out[column] = i
@@ -208,92 +219,70 @@ function headerIndex(header: string[]): Record<Column, number> {
   return out
 }
 
-/**
- * Frequency values are round-tripped as their stored keys, but a file touched
- * by a human will have the LABEL in it instead — so accept both, plus a few
- * spellings people actually type. Anything unrecognised falls back to the
- * default rather than rejecting the row: losing one person's cadence is a
- * smaller harm than losing the person.
- */
-const FREQUENCY_ALIASES: Record<string, Frequency> = {
-  ...Object.fromEntries(FREQUENCIES.map((f) => [f.label.toLowerCase(), f.value])),
-  ...Object.fromEntries(FREQUENCIES.map((f) => [f.short.toLowerCase(), f.value])),
-  week: 'weekly',
-  fortnight: 'fortnightly',
-  month: 'monthly',
-  quarter: 'quarterly',
-  '6 months': 'biannually',
-  'six months': 'biannually',
-  'every 6 months': 'biannually',
-  'half yearly': 'biannually',
-  year: 'yearly',
-  annually: 'yearly',
-  'big news': 'big-news',
-  none: 'big-news',
-  never: 'big-news',
-  // 'n/a' and 'na' already resolve — the first through the short label, the
-  // second because `na` IS the stored key. These are the longhand ways people
-  // write the same thing in a spreadsheet.
-  'not specified': 'na',
-  'not set': 'na',
-  'unspecified': 'na',
-  'no set frequency': 'na',
-}
-
-export function parseFrequency(raw: string): Frequency {
-  const value = raw.trim().toLowerCase()
-  if (isFrequency(value)) return value
-  return FREQUENCY_ALIASES[value] ?? DEFAULT_FREQUENCY
-}
-
 export interface ImportResult {
   contacts: Contact[]
-  /** Existing categories plus any the file mentioned that did not exist yet. */
-  categories: Category[]
-  /** Categories created by this import — surfaced so the user is told. */
+  /** Existing tags plus any the file mentioned that did not exist yet. */
+  tags: Tag[]
+  /** Tags created by this import — surfaced so the user is told. */
   created: string[]
   /** Rows skipped for having no name AND no email. */
   skipped: number
 }
 
 /**
- * Turn a CSV into contacts, creating categories as needed.
+ * The positional map for a HEADERLESS file, chosen by how many cells the row
+ * has.
  *
- * Matching an existing category is by folded NAME, not by id: the file came
- * from a human or from another device, and neither knows our ids. That means
- * importing "Family" twice merges into one category rather than making a
- * second one that looks identical and behaves differently — the single most
- * annoying failure an address-book import has.
+ * ⚠️ Six cells means the pre-2026-08-24 layout, where column 3 was Frequency.
+ * Reading such a file against today's five-column order would put a cadence
+ * into Notes and a note into Birthday for every row — silently, since both
+ * fields accept anything and an unparseable birthday is simply dropped. The
+ * frequency cell is skipped rather than read: the field no longer exists.
  */
-export function fromCsv(text: string, existing: Category[]): ImportResult {
+function positionalMap(width: number): Record<Column, number> {
+  return width >= LEGACY_COLUMN_COUNT
+    ? { name: 0, email: 1, tags: 2, notes: 4, birthday: 5 }
+    : { name: 0, email: 1, tags: 2, notes: 3, birthday: 4 }
+}
+
+/**
+ * Turn a CSV into contacts, creating tags as needed.
+ *
+ * Matching an existing tag is by folded NAME, not by id: the file came from a
+ * human or from another device, and neither knows our ids. That means
+ * importing "Family" twice merges into one tag rather than making a second one
+ * that looks identical and behaves differently — the single most annoying
+ * failure an address-book import has.
+ */
+export function fromCsv(text: string, existing: Tag[]): ImportResult {
   const rows = parseCsv(text)
-  if (rows.length === 0) return { contacts: [], categories: existing, created: [], skipped: 0 }
+  if (rows.length === 0) return { contacts: [], tags: existing, created: [], skipped: 0 }
 
   const idx = headerIndex(rows[0])
   // No recognisable header row → assume the file is headerless and positional,
-  // in this app's own export order. Keyed on name/email specifically: a file
-  // whose first row happens to say "Notes" and nothing else is far more likely
-  // to be a headerless row of data than a header.
+  // in one of this app's own export orders. Keyed on name/email specifically: a
+  // file whose first row happens to say "Notes" and nothing else is far more
+  // likely to be a headerless row of data than a header.
   const hasHeader = idx.name >= 0 || idx.email >= 0
-  const at = hasHeader ? idx : { name: 0, email: 1, categories: 2, frequency: 3, notes: 4, birthday: 5 }
+  const at = hasHeader ? idx : positionalMap(rows[0].length)
 
-  const categories = [...existing]
-  const byFoldedName = new Map(categories.map((c) => [c.name.trim().toLowerCase(), c]))
+  const tags = [...existing]
+  const byFoldedName = new Map(tags.map((t) => [t.name.trim().toLowerCase(), t]))
   const created: string[] = []
 
-  const ensureCategory = (name: string): string => {
+  const ensureTag = (name: string): string => {
     const key = name.trim().toLowerCase()
     const found = byFoldedName.get(key)
     if (found) return found.id
-    const category: Category = {
+    const tag: Tag = {
       id: newId(),
       name: name.trim(),
-      colour: nextSwatch(categories.map((c) => c.colour)),
+      colour: nextSwatch(tags.map((t) => t.colour)),
     }
-    categories.push(category)
-    byFoldedName.set(key, category)
-    created.push(category.name)
-    return category.id
+    tags.push(tag)
+    byFoldedName.set(key, tag)
+    created.push(tag.name)
+    return tag.id
   }
 
   const cell = (row: string[], i: number) => (i >= 0 ? (row[i] ?? '').trim() : '')
@@ -315,12 +304,11 @@ export function fromCsv(text: string, existing: Category[]): ImportResult {
       id: newId(),
       name: name || email,
       email,
-      categoryIds: cell(row, at.categories)
+      tagIds: cell(row, at.tags)
         .split(/[;|]/)
         .map((s) => s.trim())
         .filter(Boolean)
-        .map(ensureCategory),
-      frequency: parseFrequency(cell(row, at.frequency)),
+        .map(ensureTag),
       // Unparseable birthdays are dropped, not rejected — losing one person's
       // birthday is a far smaller harm than refusing to import the person, and
       // `parseBirthdayInput` deliberately declines ambiguous forms like
@@ -332,5 +320,5 @@ export function fromCsv(text: string, existing: Category[]): ImportResult {
     })
   }
 
-  return { contacts, categories, created, skipped }
+  return { contacts, tags, created, skipped }
 }

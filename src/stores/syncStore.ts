@@ -4,6 +4,7 @@ import {
   createVault,
   deleteVault,
   fetchVault,
+  payloadTags,
   updateVault,
   VaultConflictError,
   type VaultPayload,
@@ -16,7 +17,7 @@ import {
   saveVaultKey,
   type SyncMeta,
 } from '../lib/store'
-import type { Category, Contact } from '../lib/types'
+import type { Contact, Tag } from '../lib/types'
 import {
   decryptJson,
   deriveKey,
@@ -75,8 +76,10 @@ interface SyncStore {
 }
 
 function bookPayload(): VaultPayload {
-  const { contacts, categories } = useBookStore.getState()
-  return { version: VAULT_VERSION, contacts, categories, savedAt: Date.now() }
+  const { contacts, tags } = useBookStore.getState()
+  // `categories` is the deprecated mirror of `tags` — see VaultPayload for why
+  // a stale PWA build reading this blob makes the duplication necessary.
+  return { version: VAULT_VERSION, contacts, tags, categories: tags, savedAt: Date.now() }
 }
 
 /**
@@ -90,8 +93,8 @@ function bookPayload(): VaultPayload {
  */
 async function adopt(payload: VaultPayload) {
   const contacts: Contact[] = Array.isArray(payload.contacts) ? payload.contacts : []
-  const categories: Category[] = Array.isArray(payload.categories) ? payload.categories : []
-  await useBookStore.getState().importBook(contacts, categories, 'replace', null)
+  const tags: Tag[] = payloadTags(payload)
+  await useBookStore.getState().importBook(contacts, tags, 'replace', null)
 }
 
 export const useSyncStore = create<SyncStore>((set, get) => ({

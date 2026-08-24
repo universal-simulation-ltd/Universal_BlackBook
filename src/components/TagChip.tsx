@@ -2,7 +2,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import { swatch } from '../lib/palette'
 
 /**
- * A category, as a chip.
+ * A tag, as a chip.
  *
  * Rendered with inline styles rather than Tailwind classes because the colour
  * comes from user data at runtime — Tailwind only emits classes it can see in
@@ -14,7 +14,7 @@ import { swatch } from '../lib/palette'
  * a colour-vision deficiency, and the name is always present beside it — the
  * dot is the quick scan, the name is the answer.
  */
-export function CategoryChip({
+export function TagChip({
   name,
   colour,
   onClick,

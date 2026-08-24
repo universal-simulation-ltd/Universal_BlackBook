@@ -101,7 +101,9 @@ export function isValidBirthday(value: string | undefined | null): boolean {
  * Built by hand rather than through `Intl.DateTimeFormat` on purpose. Feeding
  * this to a `Date` means picking a year for the year-less case, and any year
  * you pick is a timezone away from silently printing the 3rd of June for
- * somebody west of UTC. There is no Date object anywhere in this file.
+ * somebody west of UTC. No formatting in this file goes near a `Date` — the
+ * only one that exists is `epochDay` at the bottom, which counts rather than
+ * prints and uses `Date.UTC` for exactly that reason.
  */
 export function formatBirthday(value: string | undefined | null): string {
   const parts = parseBirthday(value)
@@ -162,4 +164,81 @@ export function parseBirthdayInput(raw: string): string | undefined {
   }
 
   return undefined
+}
+
+// ── The next one ─────────────────────────────────────────────────────────────
+
+/** Today, as plain integers. Read from LOCAL time — a birthday is local. */
+export interface Today {
+  year: number
+  month: number
+  day: number
+}
+
+export function todayParts(now: Date = new Date()): Today {
+  return { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() }
+}
+
+const DAY_MS = 86_400_000
+
+/**
+ * A date as a whole number of days since the epoch.
+ *
+ * ⚠️ `Date.UTC` and nothing else. Everything above this line avoids `Date`
+ * because formatting through one means choosing a year and then losing a day
+ * to the local timezone. This is the one place a date has to be COUNTED rather
+ * than printed, and `Date.UTC` is pure integer arithmetic: it never consults
+ * the local zone, so the count is the same in Auckland and in Los Angeles.
+ */
+function epochDay(year: number, month: number, day: number): number {
+  return Date.UTC(year, month - 1, day) / DAY_MS
+}
+
+export interface NextBirthday {
+  /** Whole days away. 0 is today, 1 is tomorrow. Never negative. */
+  inDays: number
+  /** The age they turn on that day, or null when the birth year is unknown. */
+  turning: number | null
+  /** The calendar year the next occurrence falls in. */
+  year: number
+}
+
+/**
+ * When is this person's birthday next, and how old will they be?
+ *
+ * ⚠️ **29 February rolls to 1 March in a non-leap year**, and it does so for
+ * free: `Date.UTC(2027, 1, 29)` is the 1st of March 2027. That is the choice
+ * this app makes and it is worth stating, because the alternative (28
+ * February) is equally defensible and the two disagree every three years out
+ * of four. Rolling forward means a leap-day birthday is never listed as
+ * already past when it has not happened yet.
+ *
+ * `today` is passed in rather than read here so the whole thing stays pure and
+ * testable — a function that calls `new Date()` internally can only be tested
+ * on the day you happen to run the tests.
+ */
+export function nextBirthday(value: string | undefined | null, today: Today): NextBirthday | null {
+  const parts = parseBirthday(value)
+  if (!parts) return null
+  const from = epochDay(today.year, today.month, today.day)
+  let year = today.year
+  let when = epochDay(year, parts.month, parts.day)
+  // Already gone this year → it is next year's. Equality is NOT past: a
+  // birthday today is the whole reason somebody opens this list today.
+  if (when < from) {
+    year += 1
+    when = epochDay(year, parts.month, parts.day)
+  }
+  return {
+    inDays: when - from,
+    turning: parts.year === null ? null : year - parts.year,
+    year,
+  }
+}
+
+/** "Today", "Tomorrow", "in 12 days". The countdown, without the age. */
+export function countdownLabel(inDays: number): string {
+  if (inDays === 0) return 'Today'
+  if (inDays === 1) return 'Tomorrow'
+  return `in ${inDays} days`
 }

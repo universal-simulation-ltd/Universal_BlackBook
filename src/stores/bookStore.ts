@@ -1,16 +1,14 @@
 import { create } from 'zustand'
-import type { Category, Contact, Frequency } from '../lib/types'
-import { DEFAULT_FREQUENCY } from '../lib/frequency'
+import type { Contact, Tag } from '../lib/types'
 import { EMPTY_QUERY, type Query } from '../lib/filter'
 import { newId } from '../lib/id'
 import { nextSwatch } from '../lib/palette'
-import { seedCategories } from '../lib/seed'
 import {
-  deleteCategory as dbDeleteCategory,
+  deleteTag as dbDeleteTag,
   deleteContact as dbDeleteContact,
-  loadCategories,
+  loadTags,
   loadContacts,
-  putCategory,
+  putTag,
   putContact,
   replaceAll,
 } from '../lib/store'
@@ -27,11 +25,19 @@ import {
  */
 interface BookState {
   contacts: Contact[]
-  categories: Category[]
+  tags: Tag[]
   loaded: boolean
   query: Query
   /** Contact being edited, `'new'` for the blank form, null for neither. */
   editing: string | null
+  /**
+   * A half-typed NEW contact whose form was closed without saving.
+   *
+   * In memory only — never written to disk and never pushed to the vault. It
+   * survives closing the dialog and nothing else: a reload is a fresh start.
+   * See `stashDraft` for why it exists and why it is only for new contacts.
+   */
+  stashed: ContactDraft | null
   /** Transient banner — import results, mostly. Cleared by the user. */
   notice: string | null
 
@@ -39,13 +45,15 @@ interface BookState {
   setQuery: (patch: Partial<Query>) => void
   resetQuery: () => void
   edit: (id: string | null) => void
+  stashDraft: (draft: ContactDraft) => void
+  clearStash: () => void
   saveContact: (draft: ContactDraft) => Promise<void>
   removeContact: (id: string) => Promise<void>
-  addCategory: (name: string) => Promise<Category | null>
-  renameCategory: (id: string, name: string) => Promise<void>
-  recolourCategory: (id: string, colour: string) => Promise<void>
-  removeCategory: (id: string) => Promise<void>
-  importBook: (contacts: Contact[], categories: Category[], mode: 'merge' | 'replace', notice: string | null) => Promise<void>
+  addTag: (name: string) => Promise<Tag | null>
+  renameTag: (id: string, name: string) => Promise<void>
+  recolourTag: (id: string, colour: string) => Promise<void>
+  removeTag: (id: string) => Promise<void>
+  importBook: (contacts: Contact[], tags: Tag[], mode: 'merge' | 'replace', notice: string | null) => Promise<void>
   setNotice: (notice: string | null) => void
 }
 
@@ -53,38 +61,59 @@ export interface ContactDraft {
   id?: string
   name: string
   email: string
-  categoryIds: string[]
-  frequency: Frequency
+  tagIds: string[]
   birthdate?: string
   notes: string
 }
 
+/** Is there anything in this draft worth offering back? */
+export function draftIsEmpty(d: ContactDraft): boolean {
+  return !d.name.trim() && !d.email.trim() && !d.notes.trim() && d.tagIds.length === 0 && !d.birthdate
+}
+
 export const useBookStore = create<BookState>((set, get) => ({
   contacts: [],
-  categories: [],
+  tags: [],
   loaded: false,
   query: EMPTY_QUERY,
   editing: null,
+  stashed: null,
   notice: null,
 
   init: async () => {
     if (get().loaded) return
-    const [contacts, categories] = await Promise.all([loadContacts(), loadCategories()])
-    // First run — no contacts AND no categories. Checking both matters: a user
-    // who deleted every starter category but kept their contacts must not be
-    // re-seeded, and one who deleted every contact must not be either.
-    if (contacts.length === 0 && categories.length === 0) {
-      const seeded = seedCategories()
-      await Promise.all(seeded.map(putCategory))
-      set({ contacts, categories: seeded, loaded: true })
-      return
-    }
-    set({ contacts, categories, loaded: true })
+    const [contacts, tags] = await Promise.all([loadContacts(), loadTags()])
+    // No seeding. A new book starts with no tags at all — six invented
+    // starters are the app telling somebody how it thinks they should file
+    // their friends, and every one of them has to be read and dismissed before
+    // the first real tag can be made.
+    set({ contacts, tags, loaded: true })
   },
 
   setQuery: (patch) => set((s) => ({ query: { ...s.query, ...patch } })),
   resetQuery: () => set({ query: EMPTY_QUERY }),
   edit: (id) => set({ editing: id }),
+
+  /**
+   * Keep what was typed when a new-contact form is closed without saving.
+   *
+   * The failure this exists for: the form is a modal, a click anywhere outside
+   * it closes it, and everything typed went in the bin with no warning. That is
+   * an easy accident to have while reaching for something on the page behind.
+   *
+   * Only for NEW contacts, deliberately. An edit of an existing person already
+   * has a copy of every field safely on disk, so the worst case there is
+   * re-typing one change — whereas a new contact abandoned mid-form is gone
+   * entirely. Offering "you were part way through editing Sam" as well would
+   * mean deciding what happens when Sam is edited on another device, or
+   * deleted, before the stash is picked up. This never has that problem: an
+   * unsaved new contact refers to nothing.
+   */
+  stashDraft: (draft) => {
+    if (draftIsEmpty(draft)) return
+    set({ stashed: draft })
+  },
+  clearStash: () => set({ stashed: null }),
 
   saveContact: async (draft) => {
     const now = Date.now()
@@ -93,8 +122,7 @@ export const useBookStore = create<BookState>((set, get) => ({
       id: existing?.id ?? newId(),
       name: draft.name.trim(),
       email: draft.email.trim(),
-      categoryIds: draft.categoryIds,
-      frequency: draft.frequency,
+      tagIds: draft.tagIds,
       birthdate: draft.birthdate,
       notes: draft.notes,
       createdAt: existing?.createdAt ?? now,
@@ -103,6 +131,9 @@ export const useBookStore = create<BookState>((set, get) => ({
     set((s) => ({
       contacts: existing ? s.contacts.map((c) => (c.id === contact.id ? contact : c)) : [...s.contacts, contact],
       editing: null,
+      // A saved draft is not an abandoned one. Without this, saving and then
+      // reopening the form would offer to restore what was just filed.
+      stashed: null,
     }))
     await putContact(contact)
   },
@@ -112,56 +143,56 @@ export const useBookStore = create<BookState>((set, get) => ({
     await dbDeleteContact(id)
   },
 
-  addCategory: async (name) => {
+  addTag: async (name) => {
     const trimmed = name.trim()
     if (!trimmed) return null
-    // Case-insensitive duplicate check. Two categories differing only in case
-    // are indistinguishable in the list and impossible to tell apart in a
-    // filter, so the existing one is returned instead of a second being made.
-    const clash = get().categories.find((c) => c.name.trim().toLowerCase() === trimmed.toLowerCase())
+    // Case-insensitive duplicate check. Two tags differing only in case are
+    // indistinguishable in the list and impossible to tell apart in a filter,
+    // so the existing one is returned instead of a second being made.
+    const clash = get().tags.find((t) => t.name.trim().toLowerCase() === trimmed.toLowerCase())
     if (clash) return clash
-    const category: Category = {
+    const tag: Tag = {
       id: newId(),
       name: trimmed,
-      colour: nextSwatch(get().categories.map((c) => c.colour)),
+      colour: nextSwatch(get().tags.map((t) => t.colour)),
     }
-    set((s) => ({ categories: [...s.categories, category] }))
-    await putCategory(category)
-    return category
+    set((s) => ({ tags: [...s.tags, tag] }))
+    await putTag(tag)
+    return tag
   },
 
-  renameCategory: async (id, name) => {
+  renameTag: async (id, name) => {
     const trimmed = name.trim()
     if (!trimmed) return
-    const next = get().categories.map((c) => (c.id === id ? { ...c, name: trimmed } : c))
-    set({ categories: next })
-    const changed = next.find((c) => c.id === id)
-    if (changed) await putCategory(changed)
+    const next = get().tags.map((t) => (t.id === id ? { ...t, name: trimmed } : t))
+    set({ tags: next })
+    const changed = next.find((t) => t.id === id)
+    if (changed) await putTag(changed)
   },
 
-  recolourCategory: async (id, colour) => {
-    const next = get().categories.map((c) => (c.id === id ? { ...c, colour } : c))
-    set({ categories: next })
-    const changed = next.find((c) => c.id === id)
-    if (changed) await putCategory(changed)
+  recolourTag: async (id, colour) => {
+    const next = get().tags.map((t) => (t.id === id ? { ...t, colour } : t))
+    set({ tags: next })
+    const changed = next.find((t) => t.id === id)
+    if (changed) await putTag(changed)
   },
 
-  removeCategory: async (id) => {
-    // Deleting a category must not delete the people in it. Every contact is
+  removeTag: async (id) => {
+    // Deleting a tag must not delete the people carrying it. Every contact is
     // stripped of the id, and each stripped contact is rewritten — a dangling
     // id would render as nothing anyway, but it would come back to life the
-    // day some other category happened to be created with a matching id, and
-    // it would travel into every CSV export as a phantom empty cell.
-    const touched = get().contacts.filter((c) => c.categoryIds.includes(id))
+    // day some other tag happened to be created with a matching id, and it
+    // would travel into every CSV export as a phantom empty cell.
+    const touched = get().contacts.filter((c) => c.tagIds.includes(id))
     const contacts = get().contacts.map((c) =>
-      c.categoryIds.includes(id) ? { ...c, categoryIds: c.categoryIds.filter((x) => x !== id), updatedAt: Date.now() } : c,
+      c.tagIds.includes(id) ? { ...c, tagIds: c.tagIds.filter((x) => x !== id), updatedAt: Date.now() } : c,
     )
     set((s) => ({
-      categories: s.categories.filter((c) => c.id !== id),
+      tags: s.tags.filter((t) => t.id !== id),
       contacts,
-      query: { ...s.query, categoryIds: s.query.categoryIds.filter((x) => x !== id) },
+      query: { ...s.query, tagIds: s.query.tagIds.filter((x) => x !== id) },
     }))
-    await dbDeleteCategory(id)
+    await dbDeleteTag(id)
     await Promise.all(
       touched.map((t) => {
         const updated = contacts.find((c) => c.id === t.id)
@@ -170,15 +201,15 @@ export const useBookStore = create<BookState>((set, get) => ({
     )
   },
 
-  importBook: async (contacts, categories, mode, notice) => {
+  importBook: async (contacts, tags, mode, notice) => {
     if (mode === 'replace') {
-      set({ contacts, categories, notice, query: EMPTY_QUERY })
-      await replaceAll(contacts, categories)
+      set({ contacts, tags, notice, query: EMPTY_QUERY })
+      await replaceAll(contacts, tags)
       return
     }
     const merged = [...get().contacts, ...contacts]
-    set({ contacts: merged, categories, notice })
-    await replaceAll(merged, categories)
+    set({ contacts: merged, tags, notice })
+    await replaceAll(merged, tags)
   },
 
   setNotice: (notice) => set({ notice }),
@@ -187,8 +218,7 @@ export const useBookStore = create<BookState>((set, get) => ({
 export const blankDraft = (): ContactDraft => ({
   name: '',
   email: '',
-  categoryIds: [],
-  frequency: DEFAULT_FREQUENCY,
+  tagIds: [],
   birthdate: undefined,
   notes: '',
 })
