@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { UniversalAppsNavBar, UpdateNotice, useUniversal, useUser } from '@unisim/sdk'
 import UsageTracker from './UsageTracker'
 import ProductLogo from './components/Header/ProductLogo'
@@ -46,7 +46,11 @@ export default function App() {
     void init()
   }, [init])
 
-  useCloudSync(() => setPanel('cloud'))
+  // Stable, not an inline arrow: `openPanel` is a dependency of an effect in
+  // there, and a fresh closure per render re-runs it per render — the same
+  // shape of bug as the `user` object below, one step short of a loop.
+  const openCloud = useCallback(() => setPanel('cloud'), [])
+  useCloudSync(openCloud)
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-950 text-slate-200">
@@ -161,6 +165,15 @@ export default function App() {
 function useCloudSync(openPanel: () => void) {
   const { supabase } = useUniversal()
   const { user } = useUser()
+  // ⚠️ THE ID, NEVER THE `user` OBJECT. The SDK's `useUser` builds a fresh
+  // `{ id, email }` literal on every render, so `user` in a dependency array is
+  // a NEW value every render and the effect below re-runs every time. That
+  // effect calls `hydrate`, which `set`s a status, which re-renders, which
+  // re-runs the effect: measured at ~320 hydrations a second, each one a
+  // `blackbook_vaults` round trip, an IndexedDB read and an AES-GCM decrypt.
+  // It made the whole browser sluggish, and only ever while signed IN —
+  // signed out `user` is a stable `null`, which is why it hid for so long.
+  const userId = user?.id ?? null
   const contacts = useBookStore((s) => s.contacts)
   const tags = useBookStore((s) => s.tags)
   const loaded = useBookStore((s) => s.loaded)
@@ -172,14 +185,14 @@ function useCloudSync(openPanel: () => void) {
   const wasSignedIn = useRef(false)
 
   useEffect(() => {
-    void hydrate(supabase, user?.id ?? null)
-    if (user) {
+    void hydrate(supabase, userId)
+    if (userId) {
       wasSignedIn.current = true
     } else if (wasSignedIn.current) {
       wasSignedIn.current = false
       void forgetVault()
     }
-  }, [supabase, user, hydrate])
+  }, [supabase, userId, hydrate])
 
   useEffect(() => {
     if (!loaded || state !== 'on') return
