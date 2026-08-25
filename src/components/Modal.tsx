@@ -12,9 +12,11 @@ import { useEffect, useRef, type ReactNode } from 'react'
  * Two things `<dialog>` does NOT do for you, both handled below:
  *
  *  1. **A click on the backdrop is a click on the dialog itself.** There is no
- *     separate backdrop element, so the usual `e.target === e.currentTarget`
- *     test would never fire. The hit test is done against the dialog's own
- *     rectangle instead.
+ *     separate backdrop element, so the hit test is done against the dialog's
+ *     own rectangle. ⚠️ The rectangle ALONE is not enough: a `position: fixed`
+ *     child — the birthday Dropdown's panel — can legitimately be painted
+ *     outside it, and closing on that discards a half-typed contact. So the
+ *     event has to have been aimed at the dialog element itself as well.
  *  2. **`showModal()` throws if the dialog is already open**, which React's
  *     StrictMode double-invoked effects will absolutely do in development.
  *     Guarded with `.open`.
@@ -54,6 +56,13 @@ export function Modal({
         // Backdrop click. `mousedown` rather than `click`: with `click`, a drag
         // that starts inside a text field and releases outside it counts as a
         // click on the backdrop and throws the form away mid-selection.
+        //
+        // A press on any child element targets that child; only the backdrop
+        // targets the dialog. That is what keeps the birthday dropdown's
+        // fixed-position panel — which sits outside the rectangle below when
+        // the list is taller than the room under the field — from reading as a
+        // dismissal.
+        if (e.target !== e.currentTarget) return
         const box = e.currentTarget.getBoundingClientRect()
         const outside =
           e.clientX < box.left || e.clientX > box.right || e.clientY < box.top || e.clientY > box.bottom

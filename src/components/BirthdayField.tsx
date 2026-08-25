@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { buildBirthday, daysInMonth, MONTH_OPTIONS, parseBirthday } from '../lib/birthday'
-import { btnSubtle, inputBase, selectCls } from './ui'
+import { Dropdown } from './Dropdown'
+import { btnSubtle, inputBase } from './ui'
 
 /**
  * Day / Month / Year — three controls on ONE line, not an `<input type="date">`.
@@ -55,10 +56,10 @@ export function BirthdayField({
    *
    * ⚠️ Called on a YEAR change as well as a month change, which is the half
    * that was missing and the bug people saw. 29 February with no year is
-   * valid; type 1991 after it and February has 28 days, so the Day select was
-   * left holding a value with no matching `<option>` — which browsers render
-   * as an EMPTY box — while `buildBirthday` quietly refused the pair and wiped
-   * the birthday. Both symptoms, one missing clamp.
+   * valid; type 1991 after it and February has 28 days, so the Day control was
+   * left holding a value with no matching row — which showed as an EMPTY box —
+   * while `buildBirthday` quietly refused the pair and wiped the birthday.
+   * Both symptoms, one missing clamp.
    */
   const clampDay = (d: number, m: number, y: number | null) =>
     m && d > daysInMonth(m, y) ? daysInMonth(m, y) : d
@@ -66,43 +67,37 @@ export function BirthdayField({
   return (
     <div>
       <div className="flex items-center gap-2">
-        <select
-          className={`${selectCls} flex-1`}
-          value={day || ''}
-          aria-label="Day of birth"
-          onChange={(e) => {
-            const d = Number(e.target.value)
+        {/* `Dropdown`, not `<select>` — see the warning at the top of
+            Dropdown.tsx. This field lives inside the `<dialog>`, where a
+            native select popup opens blank and stays blank until something
+            forces the tab to repaint. */}
+        <Dropdown
+          className="min-w-0 flex-1"
+          value={day ? String(day) : ''}
+          placeholder="Day"
+          ariaLabel="Day of birth"
+          options={Array.from({ length: maxDay }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }))}
+          onChange={(next) => {
+            const d = Number(next)
             setDay(d)
             emit(d, month, year)
           }}
-        >
-          <option value="">Day</option>
-          {Array.from({ length: maxDay }, (_, i) => i + 1).map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
-          ))}
-        </select>
+        />
 
-        <select
-          className={`${selectCls} flex-[2]`}
-          value={month || ''}
-          aria-label="Month of birth"
-          onChange={(e) => {
-            const m = Number(e.target.value)
+        <Dropdown
+          className="min-w-0 flex-[2]"
+          value={month ? String(month) : ''}
+          placeholder="Month"
+          ariaLabel="Month of birth"
+          options={MONTH_OPTIONS.map((m) => ({ value: String(m.value), label: m.label }))}
+          onChange={(next) => {
+            const m = Number(next)
             const clamped = clampDay(day, m, year)
             setMonth(m)
             setDay(clamped)
             emit(clamped, m, year)
           }}
-        >
-          <option value="">Month</option>
-          {MONTH_OPTIONS.map((m) => (
-            <option key={m.value} value={m.value}>
-              {m.label}
-            </option>
-          ))}
-        </select>
+        />
 
         {/* `inputBase`, not `inputCls` — see the warning in ui.tsx. `inputCls`
             carries `w-full`, which beats `w-20` on CSS source order and would
