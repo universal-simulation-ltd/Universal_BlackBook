@@ -1,4 +1,4 @@
-import { MENU } from '@unisim/sdk'
+import { AdvancedMenu, MENU } from '@unisim/sdk'
 import { useSyncStore } from '../../stores/syncStore'
 
 // The per-app rows that slot into <UniversalAppsNavBar />'s `actions` prop —
@@ -52,6 +52,21 @@ export default function AppMenu({
         }
         selected={state === 'on'}
         onClick={onCloud}
+      />
+
+      {/* Advanced — the SDK's own category, so every app in the suite has one in
+          the same place, and whatever goes in it next is one change rather than
+          nineteen. "About this app" is always its last row. */}
+      <AdvancedMenu
+        theme="dark"
+        about={{
+          repo:    'https://github.com/universal-simulation-ltd/Universal_BlackBook',
+          subject: 'Your contacts',
+          plural:  true,
+          except:  'the end-to-end encrypted backup you choose to store',
+          headline: 'Other address books keep your contacts on their servers.',
+          version: __APP_VERSION__,
+        }}
       />
     </>
   )
