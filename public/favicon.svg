@@ -3,11 +3,17 @@
      Regenerate: node scripts/app-marks/build.mjs (from backoffice/universal-platform)
      Mark: Universal BlackBook — A little black book — thumb-index tabs down the edge, ribbon still in it. -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Universal BlackBook">
-  <rect x="0" y="0" width="64" height="64" rx="14" fill="#0f172a"/>
+  <defs>
+    <linearGradient id="u-blackbook-tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fe8c01"/>
+      <stop offset="1" stop-color="#e05504"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#u-blackbook-tile)"/>
   <rect x="16" y="7" width="32" height="40" rx="4" fill="#ffffff"/>
   <rect x="16" y="7" width="6" height="40" rx="3" fill="#fdba74"/>
   <rect x="40.5" y="18" width="6" height="3" rx="1.5" fill="#e05504"/>
   <rect x="40.5" y="26" width="6" height="3" rx="1.5" fill="#e05504"/>
   <rect x="40.5" y="34" width="6" height="3" rx="1.5" fill="#e05504"/>
-  <path d="M28.5 45 h7 v12 l-3.5 -3.5 -3.5 3.5 z" fill="#fe8c01"/>
+  <path d="M28.5 45 h7 v12 l-3.5 -3.5 -3.5 3.5 z" fill="#ffffff"/>
 </svg>

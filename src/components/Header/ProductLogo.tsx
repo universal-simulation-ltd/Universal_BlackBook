@@ -40,13 +40,19 @@ export default function ProductLogo() {
     >
       <style>{CSS}</style>
       <svg viewBox="0 0 64 64" className="h-6 w-6" aria-hidden="true">
-        <rect x="0" y="0" width="64" height="64" rx="14" fill="#0f172a" />
+        <defs>
+          <linearGradient id="uam-nav-blackbook-tile" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#fe8c01" />
+            <stop offset="1" stopColor="#e05504" />
+          </linearGradient>
+        </defs>
+        <rect width="64" height="64" rx="14" fill="url(#uam-nav-blackbook-tile)" />
         <rect x={16} y={7} width={32} height={40} rx={4} fill="#ffffff" />
         <rect x={16} y={7} width={6} height={40} rx={3} fill="#fdba74" />
         <rect x={40.5} y={18} width={6} height={3} rx={1.5} fill="#e05504" className="uam-blackbook-tab1" />
         <rect x={40.5} y={26} width={6} height={3} rx={1.5} fill="#e05504" className="uam-blackbook-tab2" />
         <rect x={40.5} y={34} width={6} height={3} rx={1.5} fill="#e05504" className="uam-blackbook-tab3" />
-        <path d="M28.5 45 h7 v12 l-3.5 -3.5 -3.5 3.5 z" fill="#fe8c01" className="uam-blackbook-ribbon" />
+        <path d="M28.5 45 h7 v12 l-3.5 -3.5 -3.5 3.5 z" fill="#ffffff" className="uam-blackbook-ribbon" />
       </svg>
     </span>
   )
