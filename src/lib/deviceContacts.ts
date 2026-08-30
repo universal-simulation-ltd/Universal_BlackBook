@@ -24,8 +24,22 @@
 //   everywhere else  Not available. The UI hides the button and points at CSV,
 //                  which is the door that works in every browser.
 
+// ⚠️ A STATIC import, and it must stay one. This was a lazy
+// `await import('@capacitor-community/contacts')` — to keep ~9KB of plugin
+// JavaScript out of the web bundle — and inside the Capacitor WebView **that
+// import never settled**. Not rejected: pending, forever. So the button did
+// nothing at all, with no error, no permission prompt, and no bridge call:
+// the native side was never reached, which is why nothing in the device log
+// mentioned Contacts. Proved by putting the call on a timer and reading
+// `simctl launch --console-pty`: with the lazy import there is no
+// `To Native -> Contacts pickContact` line at all, and with this one there
+// is, followed by the iOS permission alert.
+//
+// The cause is Vite's `__vitePreload` wrapper around a code-split chunk under
+// the `capacitor://localhost` scheme. **Never lazily import a Capacitor plugin
+// in this suite** — the saving is a few KB and the failure mode is silence.
 import { Capacitor } from '@capacitor/core'
-import type { ContactPayload } from '@capacitor-community/contacts'
+import { Contacts, type ContactPayload } from '@capacitor-community/contacts'
 import { parseBirthdayInput } from './birthday'
 import { digits, fold } from './filter'
 import { newId } from './id'
@@ -34,19 +48,6 @@ import type { ContactDraft } from '../stores/bookStore'
 
 /** What a picked person looks like before it becomes a Contact. */
 export type PickedContact = Omit<ContactDraft, 'id'>
-
-/**
- * The plugin, imported ONLY when it is about to be used.
- *
- * A static import would pull the plugin's JavaScript into the web bundle,
- * where it can never do anything: `Contacts` on the web is the plugin proxy's
- * "not implemented" stub. The dynamic import keeps it out of the chunk every
- * browser downloads and inside the one the phone asks for.
- */
-async function nativePlugin() {
-  const { Contacts } = await import('@capacitor-community/contacts')
-  return Contacts
-}
 
 /** Everything this app has any use for. Nothing else is requested. */
 const PROJECTION = { name: true, phones: true, emails: true, birthday: true } as const
@@ -102,7 +103,6 @@ export async function pickOneContact(): Promise<PickedContact | null> {
   if (where === 'none') return null
   if (where === 'web') return pickViaWeb()
 
-  const Contacts = await nativePlugin()
   try {
     const { contact } = await Contacts.pickContact({ projection: { ...PROJECTION } })
     return toDraft(contact)
@@ -120,7 +120,6 @@ export async function pickOneContact(): Promise<PickedContact | null> {
  */
 export async function readAllContacts(): Promise<PickedContact[]> {
   if (!Capacitor.isNativePlatform()) return []
-  const Contacts = await nativePlugin()
   const permission = await Contacts.requestPermissions()
   // 'limited' is iOS 18's partial access — the user picked some contacts to
   // share. That is a yes to exactly those, and reading them is correct.
