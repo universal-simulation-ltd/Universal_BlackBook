@@ -20,6 +20,18 @@ import { useEffect, useRef, type ReactNode } from 'react'
  *  2. **`showModal()` throws if the dialog is already open**, which React's
  *     StrictMode double-invoked effects will absolutely do in development.
  *     Guarded with `.open`.
+ *
+ * The box is a capped flex COLUMN — pinned title row, scrolling body — and not
+ * one scroll container. As a single scroll box a long form (Add someone, with
+ * the birthday fields and notes) takes its own title and Close button off the
+ * top of the screen, so the way out of the dialog is the first thing to go.
+ * `max-h-[calc(100dvh-2rem)]` caps it, mirroring the `100vw - 2rem` width so a
+ * full form is inset by the same 1rem all round and its rounded corners are not
+ * clipped off the screen edge. `dvh` and not `vh`: the dynamic unit is the one
+ * that SHRINKS when the iOS keyboard opens, and with `vh` the bottom of the
+ * dialog ends up behind the keyboard. The
+ * paddings carry the safe-area insets; in landscape on a notched phone the 1rem
+ * gutter is narrower than the notch, and the home indicator eats the bottom.
  */
 export function Modal({
   title,
@@ -68,11 +80,15 @@ export function Modal({
           e.clientX < box.left || e.clientX > box.right || e.clientY < box.top || e.clientY > box.bottom
         if (outside) onClose()
       }}
-      className={`m-auto w-[calc(100vw-2rem)] rounded-2xl border border-slate-800 bg-slate-900 p-0 text-slate-200 shadow-2xl backdrop:bg-slate-950/80 ${
+      className={`m-auto flex max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] flex-col rounded-2xl border border-slate-800 bg-slate-900 p-0 text-slate-200 shadow-2xl backdrop:bg-slate-950/80 ${
         wide ? 'max-w-2xl' : 'max-w-lg'
       }`}
+      style={{
+        paddingLeft: 'env(safe-area-inset-left)',
+        paddingRight: 'env(safe-area-inset-right)',
+      }}
     >
-      <div className="flex items-center justify-between gap-4 border-b border-slate-800 px-4 py-3 sm:px-5">
+      <div className="flex shrink-0 items-center justify-between gap-4 border-b border-slate-800 px-4 py-3 sm:px-5">
         <h2 id="modal-title" className="text-base font-semibold text-slate-100">
           {title}
         </h2>
@@ -85,7 +101,15 @@ export function Modal({
           ✕
         </button>
       </div>
-      <div className="max-h-[70vh] overflow-y-auto px-4 py-4 sm:px-5">{children}</div>
+      {/* min-h-0 — without it a flex child refuses to shrink below its content
+          and the dialog grows past the cap instead of scrolling inside it. The
+          bottom padding clears the home indicator on a phone. */}
+      <div
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5"
+        style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
+      >
+        {children}
+      </div>
     </dialog>
   )
 }
