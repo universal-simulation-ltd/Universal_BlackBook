@@ -24,7 +24,7 @@ import { btnDanger, btnGhost, btnPrimary, inputCls, label, textareaCls } from '.
  *
  * ⚠️ **FOUR of the six are folded behind "More" unless they hold something** —
  * email, phone, birthday and tags (owner's call, 2026-08-30, extended from two
- * to four on 2026-08-31). Only Name and Notes are unconditional, and that is
+ * to four on 2026-08-30). Only Name and Notes are unconditional, and that is
  * the app in one line: the name of a person, and the private thing you know
  * about them. Everything else is already on the phone's own contact card.
  *
@@ -46,7 +46,7 @@ import { btnDanger, btnGhost, btnPrimary, inputCls, label, textareaCls } from '.
  * of the section you are looking at and land somewhere else on the page,
  * mid-edit. Same reasoning as the `stashed` read above.
  *
- * Validation is now a NAME and nothing else (owner's call, 2026-08-31). It
+ * Validation is now a NAME and nothing else (owner's call, 2026-08-30). It
  * used to be "a name or an email", which cannot survive email moving behind a
  * disclosure: the one field that could satisfy the rule was no longer on
  * screen, so a blank form would have refused to save with nothing visible to
