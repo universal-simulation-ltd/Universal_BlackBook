@@ -53,7 +53,15 @@ export default function App() {
   useCloudSync(openCloud)
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-950 text-slate-200">
+    // ⚠️ pt-[env(safe-area-inset-top)] is for the native (Capacitor) build, not
+    // the web one. Capacitor runs the app in a FULL-SCREEN WKWebView, and
+    // index.html asks for `viewport-fit=cover`, so without this the navbar
+    // renders UNDERNEATH the status bar and Dynamic Island, which puts the
+    // product name on the clock and the menu out of reach. In a browser the
+    // inset is 0, so this is a no-op on web. Converter, PDF, QR and Images all
+    // carry the same line; `.gutter` (index.css) already does the same job for
+    // the left/right insets in landscape, and the footer below does the bottom.
+    <div className="flex min-h-screen flex-col bg-slate-950 text-slate-200 pt-[env(safe-area-inset-top)]">
       <UniversalAppsNavBar
         contentClassName={CONTAINER}
         theme="dark"
@@ -106,7 +114,11 @@ export default function App() {
         {loaded && <ContactList />}
       </main>
 
-      <footer className="border-t border-slate-800 bg-slate-900 py-4">
+      {/* The bottom half of the same story: on a phone with a home indicator
+          the last 34pt of the screen is the swipe-up gesture area, so the
+          footer's own padding is added to the inset rather than replaced by
+          it — the GitHub link stops sitting under the bar. 0 in a browser. */}
+      <footer className="border-t border-slate-800 bg-slate-900 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
         <div className={`${CONTAINER} flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500`}>
           <p>
             With{' '}

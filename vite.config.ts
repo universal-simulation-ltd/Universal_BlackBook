@@ -9,7 +9,14 @@ import pkg from './package.json' with { type: 'json' }
 // offline — and the app genuinely does work offline, because the book is in
 // IndexedDB. Only the optional encrypted vault needs the network.
 export default defineConfig(({ mode }) => {
-  const BASE_PATH = mode === 'production' ? '/blackbook/' : '/'
+  // `desktop` mode is what the Capacitor (iOS) build uses. It needs two things
+  // the hosted build must NOT have: a RELATIVE base, because Capacitor serves
+  // the bundle from `capacitor://localhost` whose document root is the copied
+  // directory itself (a `/blackbook/…` URL is a 404 there, and the app is a
+  // blank screen with nothing on the Mac reporting it), and NO service worker,
+  // which would otherwise cache the wrong origin's URLs inside the app.
+  const isDesktop = mode === 'desktop'
+  const BASE_PATH = isDesktop ? './' : mode === 'production' ? '/blackbook/' : '/'
   return {
     base: BASE_PATH,
     define: { __APP_VERSION__: JSON.stringify(pkg.version) },
@@ -28,7 +35,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       tailwindcss(),
-      VitePWA({
+      ...(isDesktop ? [] : [VitePWA({
         registerType: 'autoUpdate',
         includeAssets: ['favicon.svg', 'unisim-icon.png', 'icon-180.png', 'icon-192.png', 'icon-512.png'],
         manifest: {
@@ -54,7 +61,7 @@ export default defineConfig(({ mode }) => {
           navigateFallback: `${BASE_PATH}index.html`,
         },
         devOptions: { enabled: false },
-      }),
+      })]),
     ],
   }
 })

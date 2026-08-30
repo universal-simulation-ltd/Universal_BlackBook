@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { fromCsv, toCsv } from '../lib/csv'
+import { saveBlob } from '../lib/saveFile'
 import { useBookStore } from '../stores/bookStore'
 import { Modal } from './Modal'
 import { btnGhost, btnPrimary, label } from './ui'
@@ -22,16 +23,15 @@ export function ImportExport({ onClose }: { onClose: () => void }) {
 
   const download = () => {
     const blob = new Blob([toCsv(contacts, tags)], { type: 'text/csv;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
     // A dated filename, because the second export lands in the same Downloads
     // folder as the first and "blackbook.csv (1)" tells nobody which is newer.
-    a.download = `blackbook-${new Date().toISOString().slice(0, 10)}.csv`
-    a.click()
-    // Revoking synchronously can beat the download on some engines; a tick is
-    // enough and the object is small.
-    setTimeout(() => URL.revokeObjectURL(url), 0)
+    //
+    // ⚠️ Via saveBlob, not a bare `a.download`. In a Capacitor WKWebView the
+    // download attribute is IGNORED — silently, with no exception — so the one
+    // way out of this app that does not need an account would be a dead button
+    // on the phone while looking perfect in every browser test. saveBlob keeps
+    // the anchor on the web and hands the phone its share sheet instead.
+    saveBlob(blob, `blackbook-${new Date().toISOString().slice(0, 10)}.csv`)
   }
 
   const onFile = async (file: File) => {
