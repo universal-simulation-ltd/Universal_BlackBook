@@ -18,12 +18,17 @@ Five fields, and nothing you didn't ask for:
 |---|---|
 | **Name** | |
 | **Email** | |
-| **Notes** | Free text, and it sits right under the name — it is usually the reason you opened the form. Whatever you'd actually want to remember. |
-| **Tags** | Entirely your own. **A new book starts with none**, because six invented starters are an app telling you how it thinks you should file your friends. Make as many as you like, in any of seven colours, and put a person in as many as fit. |
+| **Phone** | Kept exactly as you type it. Search folds the punctuation out, so `07700900123` finds `+44 (0)7700 900123` — nothing is reformatted, because every scheme for tidying a number needs a country to assume. |
+| **Notes** | Free text, and it sits right under the name and number — it is usually the reason you opened the form. Whatever you'd actually want to remember. |
 | **Birthday** | **The year is optional.** Half the birthdays in anybody's address book are "the 4th of June, no idea what year" — so a day and a month on their own are a complete answer, not a half-filled one. |
+| **Tags** | Entirely your own, and last in the form because they are a decision rather than a fact. **A new book starts with none**, because six invented starters are an app telling you how it thinks you should file your friends. Make as many as you like, in any of seven colours, and put a person in as many as fit. |
 
-Search across names, emails, notes and birthdays (typing `june` finds everyone
-born in June); filter by tag; sort by name or by recently added.
+Search across names, emails, phone numbers, notes and birthdays (typing `june`
+finds everyone born in June). Everything else — the birthdays view, the order,
+and the tag filter — sits behind one **⚙️ Filters** button beside the search
+box, so the search field is the whole row. On a phone that row is **docked to
+the bottom of the screen**, under your thumb, and the panel opens upwards from
+it.
 
 ## Birthdays
 
@@ -51,17 +56,33 @@ account, no server and no telemetry about its contents.
 
 Two ways to get it out or move it elsewhere:
 
-**CSV** — a plain `Name, Email, Tags, Notes, Birthday` file.
+**CSV** — a plain `Name, Email, Tags, Notes, Birthday, Phone` file.
 Opens in any spreadsheet and imports straight back. This is the backup story if
 you never want an account.
 
 The importer reads the column names Google Contacts and Outlook use — a
-`Categories`, `Groups` or `Labels` column all count as tags — and takes
+`Categories`, `Groups` or `Labels` column all count as tags, and `Mobile`,
+`Telephone` or Google's `Phone 1 - Value` all count as the number — and takes
 birthdays as `1990-06-04`, `4 June 1990`, `June 4` or `--06-04`. It deliberately
 **refuses** `04/06/1990` rather than guessing — that is the 4th of June to a
 British reader and the 6th of April to an American one, and an address book that
 silently picks one is wrong for half its users with nothing on screen to say
 so.
+
+**Your phone's own contacts** *(the iPhone app)* — **From my contacts** opens
+the system picker, and the person you choose arrives in the Add form with their
+name, email, number and birthday already filled in, ready for the part that is
+actually yours. **Import & export ▸ Import my phone contacts** does the whole
+address book at once, skipping anybody already in your book so you can run it
+again whenever you add someone to your phone.
+
+> BlackBook only ever **reads** your contacts, once, when you ask it to. It
+> never writes anything back, and it never copies across the note on your
+> phone's own contact card — the note in here is meant to be the private one.
+
+On Chrome for Android the same button uses the browser's contact picker (a name,
+an email and a number; the web API has no birthday). Everywhere else the door is
+the CSV importer below, which works in every browser.
 
 **An encrypted online copy** *(optional, off by default)* — sign in with your
 Universal ID and BlackBook can keep a copy on UNI·SIM's servers, so your book
@@ -106,7 +127,7 @@ suite registry — see `Docs_UNI_SIM/dev-preview.md`.
 | | |
 |---|---|
 | `npm run dev` | Vite dev server |
-| `npm test` | Vitest — the CSV parser, the search/sort, the birthday maths and the vault crypto |
+| `npm test` | Vitest — the CSV parser, the search/sort, the birthday maths, the phone-contact mapping and the vault crypto |
 | `BLACKBOOK_LIVE=1 npm test -- cloud.live` | The two-device vault round trip, against the REAL server. Not part of `npm test`: it signs in anonymously to production, exercises RLS, the primary-key conflict and the compare-and-set, then deletes what it made. |
 | `npm run lint` | ESLint |
 | `npm run build` | Typecheck + production build |

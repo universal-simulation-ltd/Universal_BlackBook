@@ -36,12 +36,26 @@ export function fold(s: string): string {
 }
 
 /**
+ * Every digit in a phone number, and nothing else.
+ *
+ * Both sides of a phone search go through this, which is what makes
+ * `07700900123` find `+44 7700 900123`: the stored spacing, the brackets, the
+ * dashes and the leading `+` are all noise a person will not reproduce. It is
+ * deliberately NOT a normalisation — no country code is added or removed, so
+ * `447700900123` and `07700900123` stay different strings and the app never
+ * has to guess which country somebody is in. See Contact.phone.
+ */
+export function digits(s: string): string {
+  return s.replace(/\D/g, '')
+}
+
+/**
  * Does the contact match the free-text box?
  *
  * Every whitespace-separated term must match SOMEWHERE in the contact (name,
- * email, notes or birthday) — AND across terms, OR across fields. So "sam
- * berlin" finds Sam whose notes mention Berlin, which a single-field search
- * would not, and typing a second word always narrows rather than widens.
+ * email, phone, notes or birthday) — AND across terms, OR across fields. So
+ * "sam berlin" finds Sam whose notes mention Berlin, which a single-field
+ * search would not, and typing a second word always narrows rather than widens.
  */
 export function matchesText(contact: Contact, text: string): boolean {
   const terms = fold(text).split(/\s+/).filter(Boolean)
@@ -52,11 +66,22 @@ export function matchesText(contact: Contact, text: string): boolean {
   const haystack = [
     fold(contact.name),
     fold(contact.email),
+    fold(contact.phone),
     fold(contact.notes),
     fold(formatBirthday(contact.birthdate)),
     fold(contact.birthdate ?? ''),
   ].join(' ')
-  return terms.every((t) => haystack.includes(t))
+  // The number's digits are searched separately from its text, and the term is
+  // reduced the same way, so how either side was punctuated stops mattering.
+  // Guarded on the term having digits at all: a bare `includes('')` is true
+  // for every contact, which would make every non-numeric term match anyone
+  // with a phone number.
+  const phoneDigits = digits(contact.phone)
+  return terms.every((t) => {
+    if (haystack.includes(t)) return true
+    const d = digits(t)
+    return d !== '' && phoneDigits.includes(d)
+  })
 }
 
 /** Tag filter: OR within the selection — a person carrying ANY chosen tag. */

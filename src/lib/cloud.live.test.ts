@@ -69,6 +69,7 @@ function contact(name: string, notes: string): Contact {
     id: `live-${name.toLowerCase()}`,
     name,
     email: `${name.toLowerCase()}@example.test`,
+    phone: '',
     tagIds: [],
     notes,
     createdAt: 1,

@@ -1,5 +1,11 @@
 import { useRef, useState } from 'react'
 import { fromCsv, toCsv } from '../lib/csv'
+import {
+  contactsAvailability,
+  ContactsPermissionError,
+  planBulkImport,
+  readAllContacts,
+} from '../lib/deviceContacts'
 import { saveBlob } from '../lib/saveFile'
 import { useBookStore } from '../stores/bookStore'
 import { Modal } from './Modal'
@@ -20,6 +26,49 @@ export function ImportExport({ onClose }: { onClose: () => void }) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [mode, setMode] = useState<'merge' | 'replace'>('merge')
   const [error, setError] = useState<string | null>(null)
+  // Read once: a device does not grow an address book while the panel is open.
+  const [where] = useState(contactsAvailability)
+  const [reading, setReading] = useState(false)
+
+  /**
+   * Everybody on the phone, minus everybody already here.
+   *
+   * Always a merge, and never offered as a replace — see `planBulkImport`. The
+   * CSV section above keeps both modes because a CSV is usually somebody
+   * moving a whole book between devices, which is exactly when "replace what's
+   * here" is the right answer; pulling in the phone's contacts never is.
+   */
+  const importFromPhone = async () => {
+    setError(null)
+    setReading(true)
+    try {
+      const picked = await readAllContacts()
+      const { contacts: fresh, duplicates } = planBulkImport(picked, contacts)
+      if (fresh.length === 0) {
+        setError(
+          duplicates > 0
+            ? `Nothing new — all ${duplicates} of your phone contacts are already in your book.`
+            : 'No contacts found on this device.',
+        )
+        return
+      }
+      const bits = [`Added ${fresh.length} ${fresh.length === 1 ? 'contact' : 'contacts'} from your phone`]
+      if (duplicates > 0) bits.push(`skipped ${duplicates} you already had`)
+      // `tags` unchanged: nothing on a phone maps to a BlackBook tag, and
+      // inventing "Imported" as one would be the app filing somebody's friends
+      // for them — which is the same call the empty tag list makes.
+      await importBook(fresh, tags, 'merge', `${bits.join(', ')}.`)
+      onClose()
+    } catch (e) {
+      setError(
+        e instanceof ContactsPermissionError
+          ? 'BlackBook cannot see your contacts. Allow it in Settings ▸ Privacy ▸ Contacts.'
+          : 'Your contacts could not be read.',
+      )
+    } finally {
+      setReading(false)
+    }
+  }
 
   const download = () => {
     const blob = new Blob([toCsv(contacts, tags)], { type: 'text/csv;charset=utf-8' })
@@ -59,8 +108,8 @@ export function ImportExport({ onClose }: { onClose: () => void }) {
         <section className="space-y-2">
           <h3 className="text-sm font-semibold text-slate-100">Export</h3>
           <p className="text-sm text-slate-400">
-            A plain CSV — Name, Email, Tags, Notes, Birthday. Opens in any spreadsheet, and BlackBook
-            reads it straight back in.
+            A plain CSV — Name, Email, Tags, Notes, Birthday, Phone. Opens in any spreadsheet, and
+            BlackBook reads it straight back in.
           </p>
           <button type="button" className={btnPrimary} onClick={download} disabled={contacts.length === 0}>
             Download {contacts.length} {contacts.length === 1 ? 'contact' : 'contacts'}
@@ -72,7 +121,7 @@ export function ImportExport({ onClose }: { onClose: () => void }) {
           <p className="text-sm text-slate-400">
             Any CSV with a Name or Email column. Tags in the file are matched to yours by name and created
             if they're new — a Categories, Groups or Labels column counts as tags, including one from an
-            older BlackBook export.
+            older BlackBook export. A Phone, Mobile or Telephone column comes across too.
           </p>
           <div>
             <span className={label}>What to do with what's already here</span>
@@ -117,6 +166,23 @@ export function ImportExport({ onClose }: { onClose: () => void }) {
           </button>
           {error && <p className="text-sm text-rose-300">{error}</p>}
         </section>
+
+        {/* Native only. The web Contact Picker API behind "From my contacts" on
+            the main page hands over ONE person at a time by design — there is
+            no bulk read in any browser, and there should not be. */}
+        {where === 'native' && (
+          <section className="space-y-2 border-t border-slate-800 pt-4">
+            <h3 className="text-sm font-semibold text-slate-100">From this phone</h3>
+            <p className="text-sm text-slate-400">
+              Everyone in your phone's own contacts, names, emails, numbers and birthdays. Anybody
+              already in your book is left alone, so you can do this again whenever you add someone
+              to your phone. Nothing is ever written back to your contacts.
+            </p>
+            <button type="button" className={btnGhost} onClick={() => void importFromPhone()} disabled={reading}>
+              {reading ? 'Reading your contacts…' : 'Import my phone contacts'}
+            </button>
+          </section>
+        )}
       </div>
     </Modal>
   )

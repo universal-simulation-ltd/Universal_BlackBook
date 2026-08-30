@@ -22,6 +22,14 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<!-- ⚠️ REQUIRED, and not only for the bulk import. iOS terminates the app
+	     on the first CNContactStore access with no usage string — and
+	     @capacitor-community/contacts asks for permission before opening the
+	     PICKER too (ContactsPlugin.pickContact → requestContactsPermission),
+	     so "From my contacts" crashes without this line just as surely as
+	     "Import my phone contacts" does. This app only ever READS. -->
+	<key>NSContactsUsageDescription</key>
+	<string>BlackBook can fill in a new contact from your phone's address book, so you only have to type the private note. It never changes your contacts.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

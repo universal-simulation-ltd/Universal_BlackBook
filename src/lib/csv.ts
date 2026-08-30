@@ -23,7 +23,11 @@ import { nextSwatch } from './palette'
 // hole, five is this one. That is the only reason `LEGACY_COLUMN_COUNT`
 // exists, and removing it would silently shift Notes and Birthday one column
 // left in every old headerless export.
-export const COLUMNS = ['Name', 'Email', 'Tags', 'Notes', 'Birthday'] as const
+// Phone was appended on 2026-08-30, under that same rule — it reads AFTER
+// Birthday in the file even though it sits under Email in the form, because
+// where a column lives on screen and where it lives in the file are two
+// different questions and only one of them is a wire format.
+export const COLUMNS = ['Name', 'Email', 'Tags', 'Notes', 'Birthday', 'Phone'] as const
 
 const LEGACY_COLUMN_COUNT = 6
 
@@ -70,6 +74,11 @@ export function toCsv(contacts: Contact[], tags: Tag[]): string {
         // "4 June" does not survive a trip through a spreadsheet's date
         // handling. `formatBirthday` is for screens.
         c.birthdate ?? '',
+        // Exactly as typed, `+` and spacing intact. A spreadsheet will read a
+        // bare `07700900123` as a number and eat the leading zero, which is
+        // the user's problem to notice — writing it back mangled, or prefixed
+        // with an apostrophe to stop that, would be ours.
+        c.phone,
       ]
         .map(escapeCell)
         .join(','),
@@ -152,7 +161,7 @@ export function parseCsv(text: string): string[][] {
   return rows
 }
 
-type Column = 'name' | 'email' | 'tags' | 'notes' | 'birthday'
+type Column = 'name' | 'email' | 'tags' | 'notes' | 'birthday' | 'phone'
 
 /**
  * What a header cell may be called.
@@ -201,6 +210,30 @@ const HEADER_ALIASES: Record<string, Column> = {
   'date of birth': 'birthday',
   'dob': 'birthday',
   'born': 'birthday',
+  'phone': 'phone',
+  'phones': 'phone',
+  'phone number': 'phone',
+  'telephone': 'phone',
+  'tel': 'phone',
+  'mobile': 'phone',
+  'mobile phone': 'phone',
+  'mobile number': 'phone',
+  'cell': 'phone',
+  'cell phone': 'phone',
+  'primary phone': 'phone',
+  'home phone': 'phone',
+  'work phone': 'phone',
+  'business phone': 'phone',
+  // Google Contacts' own header. It exports one column PER number —
+  // "Phone 1 - Value", "Phone 2 - Value" — and only the first is taken,
+  // because this app holds one number per person and silently concatenating
+  // somebody's mobile onto their fax is worse than dropping the fax.
+  //
+  // ⚠️ The neighbouring `Phone 1 - Type` column is deliberately absent from
+  // this table: it holds "Mobile", not a number. The lookup is exact, so it
+  // simply misses — which is the right answer and the reason this table is
+  // spellings rather than a de-suffixing rule that would catch both.
+  'phone 1 - value': 'phone',
 }
 
 /**
@@ -211,7 +244,7 @@ const HEADER_ALIASES: Record<string, Column> = {
  * primary value in.
  */
 function headerIndex(header: string[]): Record<Column, number> {
-  const out: Record<Column, number> = { name: -1, email: -1, tags: -1, notes: -1, birthday: -1 }
+  const out: Record<Column, number> = { name: -1, email: -1, tags: -1, notes: -1, birthday: -1, phone: -1 }
   header.forEach((h, i) => {
     const column = HEADER_ALIASES[h.trim().toLowerCase()]
     if (column && out[column] === -1) out[column] = i
@@ -230,19 +263,39 @@ export interface ImportResult {
 }
 
 /**
- * The positional map for a HEADERLESS file, chosen by how many cells the row
- * has.
+ * The positional map for a HEADERLESS file.
  *
- * ⚠️ Six cells means the pre-2026-08-24 layout, where column 3 was Frequency.
- * Reading such a file against today's five-column order would put a cadence
- * into Notes and a note into Birthday for every row — silently, since both
- * fields accept anything and an unparseable birthday is simply dropped. The
- * frequency cell is skipped rather than read: the field no longer exists.
+ * ⚠️ Five cells is unambiguous — Name, Email, Tags, Notes, Birthday, and no
+ * phone column at all. Six is not, and stopped being so on 2026-08-30:
+ *
+ *   legacy (pre-2026-08-24)   Name, Email, Tags, **Frequency**, Notes, Birthday
+ *   today                     Name, Email, Tags, Notes, Birthday, **Phone**
+ *
+ * The cell COUNT used to tell those apart and cannot any more, so the file's
+ * own content decides: Birthday sits at index 5 in one layout and index 4 in
+ * the other, and `parseBirthdayInput` is strict enough (it refuses `04/06/1990`
+ * outright) that whichever column yields more real dates is the birthday
+ * column. Reading it the wrong way round is not a cosmetic error — it puts a
+ * cadence word into Notes and a note into Birthday for every row, silently,
+ * because both fields accept anything and an unparseable birthday is dropped.
+ *
+ * ⚠️ A TIE goes to legacy, which includes the common case of a file with no
+ * birthdays in it at all. That is the pre-existing behaviour, kept deliberately
+ * rather than reasoned about afresh: an old headerless export is a file that
+ * definitely exists somewhere, and a NEW headerless one only exists if
+ * somebody deleted the header row from this week's export. When the tie is
+ * wrong, the cost is Notes read from the empty frequency column — recoverable
+ * by re-exporting with the header, which is what every export writes.
  */
-function positionalMap(width: number): Record<Column, number> {
-  return width >= LEGACY_COLUMN_COUNT
-    ? { name: 0, email: 1, tags: 2, notes: 4, birthday: 5 }
-    : { name: 0, email: 1, tags: 2, notes: 3, birthday: 4 }
+function positionalMap(rows: string[][]): Record<Column, number> {
+  const width = Math.max(...rows.map((r) => r.length))
+  if (width < LEGACY_COLUMN_COUNT) {
+    return { name: 0, email: 1, tags: 2, notes: 3, birthday: 4, phone: -1 }
+  }
+  const dates = (i: number) => rows.filter((r) => parseBirthdayInput((r[i] ?? '').trim())).length
+  return dates(4) > dates(5)
+    ? { name: 0, email: 1, tags: 2, notes: 3, birthday: 4, phone: 5 }
+    : { name: 0, email: 1, tags: 2, notes: 4, birthday: 5, phone: -1 }
 }
 
 /**
@@ -264,7 +317,7 @@ export function fromCsv(text: string, existing: Tag[]): ImportResult {
   // file whose first row happens to say "Notes" and nothing else is far more
   // likely to be a headerless row of data than a header.
   const hasHeader = idx.name >= 0 || idx.email >= 0
-  const at = hasHeader ? idx : positionalMap(rows[0].length)
+  const at = hasHeader ? idx : positionalMap(rows)
 
   const tags = [...existing]
   const byFoldedName = new Map(tags.map((t) => [t.name.trim().toLowerCase(), t]))
@@ -309,6 +362,7 @@ export function fromCsv(text: string, existing: Tag[]): ImportResult {
         .map((s) => s.trim())
         .filter(Boolean)
         .map(ensureTag),
+      phone: cell(row, at.phone),
       // Unparseable birthdays are dropped, not rejected — losing one person's
       // birthday is a far smaller harm than refusing to import the person, and
       // `parseBirthdayInput` deliberately declines ambiguous forms like

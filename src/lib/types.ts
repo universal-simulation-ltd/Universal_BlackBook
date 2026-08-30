@@ -25,6 +25,15 @@ export interface Contact {
   id: string
   name: string
   email: string
+  /**
+   * Free text, never normalised. `+44 7700 900123`, `07700 900123` and
+   * `(0113) 496 0000` are all the same number to a person and all different
+   * strings, and every scheme for canonicalising them needs a country to
+   * assume — which this app has no way of knowing and no business guessing.
+   * Search folds the digits out instead (lib/filter.ts), so the display form
+   * stays exactly what was typed or what the phone handed over.
+   */
+  phone: string
   /** Many-to-many, by id. A contact may carry no tags at all. */
   tagIds: string[]
   /**

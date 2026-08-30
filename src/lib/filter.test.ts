@@ -7,6 +7,7 @@ const contact = (over: Partial<Contact> = {}): Contact => ({
   id: over.id ?? 'c1',
   name: 'Sam Okonkwo',
   email: 'sam@example.com',
+  phone: '',
   tagIds: ['work'],
   notes: '',
   createdAt: 1,
@@ -50,6 +51,31 @@ describe('matchesText', () => {
     expect(matchesText(contact({ name: 'Zoë Fenwick' }), 'zoe')).toBe(true)
   })
 })
+
+  // ── Phone, added 2026-08-30 ──────────────────────────────────────────────
+
+  it('finds a contact by their phone number', () => {
+    expect(matchesText(contact({ phone: '07700 900123' }), '900123')).toBe(true)
+  })
+
+  it('ignores how either side punctuated the number', () => {
+    // The single reason the digit fold exists: nobody retypes the spacing.
+    const c = contact({ phone: '+44 (0)7700 900123' })
+    expect(matchesText(c, '07700900123')).toBe(true)
+    expect(matchesText(c, '+44 (0)7700-900123')).toBe(true)
+  })
+
+  it('does not match a number that is not in there', () => {
+    expect(matchesText(contact({ phone: '07700 900123' }), '900999')).toBe(false)
+  })
+
+  // ⚠️ The bug the `d !== ''` guard in matchesText exists for. A term with no
+  // digits folds to the empty string, and `'07700900123'.includes('')` is
+  // TRUE — so without the guard every text search would match everybody who
+  // has a phone number, and only them.
+  it('does not match every phone-owner on a term with no digits in it', () => {
+    expect(matchesText(contact({ name: 'Sam', phone: '07700 900123' }), 'zebra')).toBe(false)
+  })
 
 describe('matchesTags', () => {
   it('passes everything when nothing is selected', () => {

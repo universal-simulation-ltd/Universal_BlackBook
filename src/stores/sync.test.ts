@@ -97,6 +97,7 @@ const contact = (name: string): Contact => ({
   id: `c-${name}`,
   name,
   email: `${name.toLowerCase()}@example.com`,
+  phone: '',
   tagIds: [],
   notes: '',
   createdAt: 1,

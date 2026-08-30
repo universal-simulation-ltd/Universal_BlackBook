@@ -8,6 +8,7 @@ const contact = (over: Partial<Contact> = {}): Contact => ({
   id: 'c1',
   name: 'Sam Okonkwo',
   email: 'sam@example.com',
+  phone: '',
   tagIds: [],
   notes: '',
   createdAt: 1,
@@ -58,8 +59,8 @@ describe('toCsv', () => {
   it('writes the header and one row per contact', () => {
     const csv = toCsv([contact()], [])
     const rows = parseCsv(csv)
-    expect(rows[0]).toEqual(['Name', 'Email', 'Tags', 'Notes', 'Birthday'])
-    expect(rows[1]).toEqual(['Sam Okonkwo', 'sam@example.com', '', '', ''])
+    expect(rows[0]).toEqual(['Name', 'Email', 'Tags', 'Notes', 'Birthday', 'Phone'])
+    expect(rows[1]).toEqual(['Sam Okonkwo', 'sam@example.com', '', '', '', ''])
   })
 
   it('writes tag NAMES, not ids', () => {
@@ -227,5 +228,64 @@ describe('headerless files, across the frequency removal', () => {
     const headerless = toCsv(people, []).split('\r\n').slice(1).join('\r\n')
     const { contacts } = fromCsv(headerless, [])
     expect(contacts[0]).toMatchObject({ name: 'Alice', notes: 'sister', birthdate: '1990-06-04' })
+  })
+
+  // ── Phone, appended 2026-08-30 ────────────────────────────────────────────
+
+  it('round-trips a phone number exactly as typed', () => {
+    const people = [contact({ phone: '+44 (0)7700 900123' })]
+    const { contacts } = fromCsv(toCsv(people, []), [])
+    expect(contacts[0].phone).toBe('+44 (0)7700 900123')
+  })
+
+  it('reads the phone column names other address books use', () => {
+    const { contacts } = fromCsv('Name,Mobile\nSam,07700 900123', [])
+    expect(contacts[0].phone).toBe('07700 900123')
+  })
+
+  it("reads Google Contacts' 'Phone 1 - Value', and not its 'Phone 1 - Type'", () => {
+    const { contacts } = fromCsv('Name,Phone 1 - Type,Phone 1 - Value\nSam,Mobile,07700 900123', [])
+    expect(contacts[0].phone).toBe('07700 900123')
+  })
+
+  it('leaves the phone empty when the file has no such column', () => {
+    const { contacts } = fromCsv('Name,Email\nSam,s@x.com', [])
+    expect(contacts[0].phone).toBe('')
+  })
+
+  // ⚠️ The disambiguation that replaced the old cell-count rule. BOTH layouts
+  // are six cells wide now, so the file's content has to decide — and reading
+  // it the wrong way round puts a note in the birthday and a cadence in the
+  // note, silently, for every row.
+  it('reads a SIX-cell headerless row with a phone as the current layout', () => {
+    const { contacts } = fromCsv('Sam,s@x.com,Work,a note,--06-04,07700 900123', [])
+    expect(contacts[0]).toMatchObject({
+      notes: 'a note',
+      birthdate: '--06-04',
+      phone: '07700 900123',
+    })
+  })
+
+  it('still reads a SIX-cell headerless row with a frequency as the old layout', () => {
+    const { contacts } = fromCsv('Sam,s@x.com,Work,weekly,a note,1990-06-04', [])
+    expect(contacts[0]).toMatchObject({ notes: 'a note', birthdate: '1990-06-04', phone: '' })
+  })
+
+  it('decides on the whole file, not on one row that happens to be blank', () => {
+    const { contacts } = fromCsv(
+      ['Sam,s@x.com,,a note,--06-04,07700 900123', 'Alice,a@x.com,,,,'].join('\n'),
+      [],
+    )
+    expect(contacts[0]).toMatchObject({ notes: 'a note', birthdate: '--06-04' })
+  })
+
+  // A six-cell headerless file with no birthday in it anywhere is genuinely
+  // undecidable, and the tie goes to the OLD layout — the file that certainly
+  // exists somewhere, rather than the one that needs somebody to have deleted
+  // a header row from this week's export. Pinned as a test because it is a
+  // deliberate choice and not an accident of the comparison.
+  it('breaks an undecidable tie towards the old layout', () => {
+    const { contacts } = fromCsv('Sam,s@x.com,Work,weekly,a note,', [])
+    expect(contacts[0].notes).toBe('a note')
   })
 })

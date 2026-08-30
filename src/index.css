@@ -72,6 +72,49 @@ body {
   }
 }
 
+/* The filter dock — the search box and its ⚙️ panel.
+
+   Below 40rem it is PINNED TO THE BOTTOM of the screen. A phone is held at the
+   bottom and an address book is opened to search, so the one control that
+   matters belongs under the thumb rather than at the top of a page you have
+   scrolled away from. Above 40rem the rule does not apply at all and the bar
+   sits in the normal flow under the page title, where a pointer expects it.
+
+   Written as a media query here rather than as `fixed sm:static` utilities on
+   the element because of the padding: the dock spans the full viewport width,
+   so it has to carry the safe-area insets ITSELF — `.gutter` is for content
+   containers, and Tailwind's `sm:px-0` cannot reliably beat a class defined in
+   this file (equal specificity, and source order puts this one last).
+
+   The bottom inset is ADDED to the padding, not substituted for it: on a phone
+   with a home indicator the last 34pt is the swipe-up gesture area, and a
+   search field sitting in it is a field you cannot tap without leaving. */
+@media (max-width: 39.999rem) {
+  .filterdock {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    border-top: 1px solid #1e293b; /* slate-800 */
+    background: rgb(2 6 23 / 0.95); /* slate-950, near-opaque over the list */
+    backdrop-filter: blur(8px);
+    padding-top: 0.75rem;
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+
+  /* The dock is out of the flow, so the page has to reserve its height or the
+     last contact card sits underneath it and cannot be read or tapped. The
+     constant matches the row: a 44px control plus the 0.75rem padding either
+     side, and the row cannot wrap (the search field is `flex-1 min-w-0`), so
+     the height is fixed no matter how narrow the screen. */
+  .filterdock-spacer {
+    height: calc(44px + 1.5rem + env(safe-area-inset-bottom));
+  }
+}
+
 /* iOS Safari zooms the page in when a field under 16px takes focus, and it
    does not zoom back out — which is how a layout that fits ends up half
    off-screen with the right-hand edge unreachable. Touch devices therefore get

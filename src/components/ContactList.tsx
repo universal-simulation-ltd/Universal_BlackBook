@@ -142,6 +142,13 @@ function ContactRow({
         <div className="min-w-0">
           <p className="truncate font-semibold text-slate-100">{contact.name || 'Unnamed'}</p>
           {contact.email && <p className="truncate text-sm text-slate-400">{contact.email}</p>}
+          {/* Plain text, not a `tel:` link. The whole card is already a button
+              that opens the contact, and an anchor nested inside a button is
+              invalid HTML that behaves differently in every engine — the
+              number is one tap away on the contact's own screen instead. */}
+          {contact.phone && (
+            <p className="truncate text-sm text-slate-400 tabular-nums">{contact.phone}</p>
+          )}
         </div>
 
         {countdown ? (

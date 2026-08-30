@@ -38,6 +38,17 @@ interface BookState {
    * See `stashDraft` for why it exists and why it is only for new contacts.
    */
   stashed: ContactDraft | null
+  /**
+   * A form to open ALREADY FILLED IN — today, only from the phone's own
+   * contacts (lib/deviceContacts.ts).
+   *
+   * Separate from `stashed` although both prefill the same dialog, because
+   * they mean opposite things to the person looking at it. A stash is
+   * something of THEIRS being handed back, so the form asks before adopting
+   * it. A prefill is something they just chose from a picker two taps ago,
+   * so asking "did you mean this?" about it would be absurd.
+   */
+  prefill: ContactDraft | null
   /** Transient banner — import results, mostly. Cleared by the user. */
   notice: string | null
 
@@ -45,6 +56,8 @@ interface BookState {
   setQuery: (patch: Partial<Query>) => void
   resetQuery: () => void
   edit: (id: string | null) => void
+  /** Open the blank form with these values already in it. */
+  startWith: (draft: ContactDraft) => void
   stashDraft: (draft: ContactDraft) => void
   clearStash: () => void
   saveContact: (draft: ContactDraft) => Promise<void>
@@ -61,6 +74,7 @@ export interface ContactDraft {
   id?: string
   name: string
   email: string
+  phone: string
   tagIds: string[]
   birthdate?: string
   notes: string
@@ -68,7 +82,14 @@ export interface ContactDraft {
 
 /** Is there anything in this draft worth offering back? */
 export function draftIsEmpty(d: ContactDraft): boolean {
-  return !d.name.trim() && !d.email.trim() && !d.notes.trim() && d.tagIds.length === 0 && !d.birthdate
+  return (
+    !d.name.trim() &&
+    !d.email.trim() &&
+    !d.phone.trim() &&
+    !d.notes.trim() &&
+    d.tagIds.length === 0 &&
+    !d.birthdate
+  )
 }
 
 export const useBookStore = create<BookState>((set, get) => ({
@@ -78,6 +99,7 @@ export const useBookStore = create<BookState>((set, get) => ({
   query: EMPTY_QUERY,
   editing: null,
   stashed: null,
+  prefill: null,
   notice: null,
 
   init: async () => {
@@ -92,7 +114,11 @@ export const useBookStore = create<BookState>((set, get) => ({
 
   setQuery: (patch) => set((s) => ({ query: { ...s.query, ...patch } })),
   resetQuery: () => set({ query: EMPTY_QUERY }),
-  edit: (id) => set({ editing: id }),
+  // Closing or opening the form clears any prefill: it belongs to ONE opening
+  // of the dialog, and a leftover would silently fill the next person's form
+  // with the last one's details.
+  edit: (id) => set({ editing: id, prefill: null }),
+  startWith: (draft) => set({ prefill: draft, editing: 'new' }),
 
   /**
    * Keep what was typed when a new-contact form is closed without saving.
@@ -122,6 +148,7 @@ export const useBookStore = create<BookState>((set, get) => ({
       id: existing?.id ?? newId(),
       name: draft.name.trim(),
       email: draft.email.trim(),
+      phone: draft.phone.trim(),
       tagIds: draft.tagIds,
       birthdate: draft.birthdate,
       notes: draft.notes,
@@ -134,6 +161,7 @@ export const useBookStore = create<BookState>((set, get) => ({
       // A saved draft is not an abandoned one. Without this, saving and then
       // reopening the form would offer to restore what was just filed.
       stashed: null,
+      prefill: null,
     }))
     await putContact(contact)
   },
@@ -218,6 +246,7 @@ export const useBookStore = create<BookState>((set, get) => ({
 export const blankDraft = (): ContactDraft => ({
   name: '',
   email: '',
+  phone: '',
   tagIds: [],
   birthdate: undefined,
   notes: '',

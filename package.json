@@ -21,6 +21,7 @@
     "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
+    "@capacitor-community/contacts": "^7.2.0",
     "@capacitor/cli": "^7.6.8",
     "@capacitor/core": "^7.6.8",
     "@capacitor/filesystem": "^7.1.8",

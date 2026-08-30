@@ -6,13 +6,20 @@ import { Modal } from './Modal'
 import { btnDanger, btnGhost, btnPrimary, inputCls, label, textareaCls } from './ui'
 
 /**
- * Add or edit one person. Five fields, in the order they matter.
+ * Add or edit one person. Six fields, in the order they matter.
  *
- * ⚠️ **Notes sits third, directly under Name and Email**, above tags and the
- * birthday. It is the field with the most in it and the one people came to
- * write — "met at the Leeds conference, two kids" is why they opened the form
- * — and it used to be last, below two pickers, which put the main event below
- * the fold on a phone.
+ * ⚠️ **Notes sits above the two pickers**, directly under the three identity
+ * fields. It is the field with the most in it and the one people came to write
+ * — "met at the Leeds conference, two kids" is why they opened the form — and
+ * it used to be last, below both pickers, which put the main event below the
+ * fold on a phone.
+ *
+ * ⚠️ **Tags are LAST, below the birthday** (owner's call, 2026-08-30). They
+ * were above it, which is the wrong way round for how the form is actually
+ * filled in: a birthday is a fact you either have to hand or do not, and tags
+ * are a decision — and a decision that opens a picker, adds rows to the
+ * dialog, and can create a tag mid-form has no business standing between the
+ * typing and the Save button.
  *
  * Validation is deliberately thin: a name OR an email is enough. A real
  * address book is full of half-known people — someone you have an email for
@@ -30,9 +37,18 @@ export function ContactForm({ id }: { id: string }) {
   // every time the form opens — which is exactly when "was something left
   // half-typed?" is the right question, and never again while it is open.
   const [stashed] = useState(() => useBookStore.getState().stashed)
+  // Same rule, and read at the same moment: a contact just chosen out of the
+  // phone's address book (bookStore.startWith).
+  const [prefill] = useState(() => useBookStore.getState().prefill)
 
   const existing = id === 'new' ? undefined : contacts.find((c) => c.id === id)
-  const restorable = id === 'new' && stashed !== null && !draftIsEmpty(stashed)
+  // ⚠️ A prefill BEATS a stash, and silently. Both want the same empty form,
+  // but the prefill is what the user picked seconds ago and the stash is
+  // something they abandoned earlier — offering "you were part way through
+  // adding someone" over the top of a contact they just chose would be the app
+  // answering a question nobody asked. The stash is left alone rather than
+  // dropped, so it is still there the next time a genuinely blank form opens.
+  const restorable = id === 'new' && !prefill && stashed !== null && !draftIsEmpty(stashed)
 
   const [draft, setDraft] = useState<ContactDraft>(() =>
     existing
@@ -40,13 +56,16 @@ export function ContactForm({ id }: { id: string }) {
           id: existing.id,
           name: existing.name,
           email: existing.email,
+          phone: existing.phone,
           tagIds: existing.tagIds,
           birthdate: existing.birthdate,
           notes: existing.notes,
         }
-      : restorable
-        ? stashed
-        : blankDraft(),
+      : prefill
+        ? prefill
+        : restorable
+          ? stashed
+          : blankDraft(),
   )
   /** Is the "you were part way through" bar still showing? */
   const [offering, setOffering] = useState(restorable)
@@ -148,6 +167,28 @@ export function ContactForm({ id }: { id: string }) {
         </div>
 
         <div>
+          <label className={label} htmlFor="cf-phone">
+            Phone
+          </label>
+          <input
+            id="cf-phone"
+            className={inputCls}
+            // `type="tel"` for the keypad, and it carries no validation of its
+            // own in any engine — which is what this field wants. An address
+            // book holds extensions, "ask for Dave", and numbers in formats no
+            // pattern of ours would predict, and the value is never dialled by
+            // this app.
+            type="tel"
+            inputMode="tel"
+            value={draft.phone}
+            onChange={(e) => patch({ phone: e.target.value })}
+            placeholder="+44 7700 900123"
+            autoComplete="off"
+            spellCheck={false}
+          />
+        </div>
+
+        <div>
           <label className={label} htmlFor="cf-notes">
             Notes
           </label>
@@ -162,13 +203,13 @@ export function ContactForm({ id }: { id: string }) {
         </div>
 
         <div>
-          <span className={label}>Tags</span>
-          <TagPicker value={draft.tagIds} onChange={(tagIds) => patch({ tagIds })} />
+          <span className={label}>Birthday</span>
+          <BirthdayField value={draft.birthdate} onChange={(birthdate) => patch({ birthdate })} />
         </div>
 
         <div>
-          <span className={label}>Birthday</span>
-          <BirthdayField value={draft.birthdate} onChange={(birthdate) => patch({ birthdate })} />
+          <span className={label}>Tags</span>
+          <TagPicker value={draft.tagIds} onChange={(tagIds) => patch({ tagIds })} />
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-800 pt-4">
