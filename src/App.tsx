@@ -49,6 +49,7 @@ export default function App() {
     void init()
   }, [init])
 
+
   // Stable, not an inline arrow: `openPanel` is a dependency of an effect in
   // there, and a fresh closure per render re-runs it per render — the same
   // shape of bug as the `user` object below, one step short of a loop.
@@ -133,8 +134,18 @@ export default function App() {
         {notice && (
           <div className="mb-4 flex items-start justify-between gap-3 rounded-xl border border-orange-900/60 bg-orange-950/30 px-4 py-3 text-sm text-orange-200">
             <p>{notice}</p>
-            <button type="button" onClick={() => setNotice(null)} className="font-semibold" aria-label="Dismiss">
-              ✕
+            {/* ⚠️ An SVG, not `✕` — U+2715 has no glyph in iOS's system font
+                and draws as a hollow ▯?▯ box on the phone. See the note on
+                Modal's CloseGlyph, and the 📇 note further down. */}
+            <button
+              type="button"
+              onClick={() => setNotice(null)}
+              className="shrink-0 font-semibold"
+              aria-label="Dismiss"
+            >
+              <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
+                <path d="m4 4 8 8M12 4l-8 8" strokeLinecap="round" />
+              </svg>
             </button>
           </div>
         )}

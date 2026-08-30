@@ -98,18 +98,51 @@ export function Modal({
           aria-label="Close"
           className="rounded-md px-2 py-1 text-slate-400 hover:bg-slate-800 hover:text-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
         >
-          ✕
+          <CloseGlyph />
         </button>
       </div>
-      {/* min-h-0 — without it a flex child refuses to shrink below its content
-          and the dialog grows past the cap instead of scrolling inside it. The
-          bottom padding clears the home indicator on a phone. */}
+      {/* ⚠️ `flex-auto` (flex: 1 1 AUTO), never `flex-1` (flex: 1 1 0%) — and
+          this is the whole bug that made every dialog in the app a small box on
+          an iPhone. The dialog's height is `auto`, so the browser has to work
+          out an intrinsic height for it from its children. WebKit takes a
+          zero-basis flex child at its word and contributes almost nothing for
+          it, so the box collapsed to the title row plus about 70px of form,
+          with the rest of the fields simply not there. Blink sizes the same
+          child from its content, which is why this passed every check in a
+          Chromium and shipped. An `auto` basis makes the content the starting
+          size in both engines.
+
+          min-h-0 stays, and is what still lets it SHRINK: the cap below is a
+          max-height, and without this a flex child refuses to go below its
+          content height, so a long form would grow the dialog past the cap
+          instead of scrolling inside it. The bottom padding clears the home
+          indicator on a phone. */}
       <div
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5"
+        className="min-h-0 flex-auto overflow-y-auto overscroll-contain px-4 py-4 sm:px-5"
         style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
       >
         {children}
       </div>
     </dialog>
+  )
+}
+
+/**
+ * The ✕ on the title row.
+ *
+ * ⚠️ An SVG and not the character. This was `✕` (U+2715 MULTIPLICATION X),
+ * which **has no glyph in iOS's system font** and rendered as a hollow ▯?▯ box
+ * on the phone — so the only visible way out of every dialog in the app was a
+ * missing-character marker. Photographed in an iPhone 17 simulator; invisible
+ * in every desktop browser, because the desktop fonts do have it. Exactly the
+ * failure that took 📇 out of the "From my contacts" button (see App.tsx), and
+ * the second one found in this codebase: if you are about to put a
+ * non-alphabetic codepoint in the UI, look at it on a phone first.
+ */
+function CloseGlyph() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
+      <path d="m4 4 8 8M12 4l-8 8" strokeLinecap="round" />
+    </svg>
   )
 }

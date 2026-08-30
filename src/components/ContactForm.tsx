@@ -6,13 +6,14 @@ import { Modal } from './Modal'
 import { btnDanger, btnGhost, btnPrimary, inputCls, label, textareaCls } from './ui'
 
 /**
- * Add or edit one person. Six fields, in the order they matter.
+ * Add or edit one person. Six fields, in the order they matter — but on a blank
+ * form only TWO of them are showing.
  *
- * ⚠️ **Notes sits above the two pickers**, directly under the three identity
- * fields. It is the field with the most in it and the one people came to write
- * — "met at the Leeds conference, two kids" is why they opened the form — and
- * it used to be last, below both pickers, which put the main event below the
- * fold on a phone.
+ * ⚠️ **Notes sits directly under Name**, above everything else that is
+ * showing. It is the field with the most in it and the one people came to
+ * write — "met at the Leeds conference, two kids" is why they opened the form
+ * — and it used to be last, below both pickers, which put the main event below
+ * the fold on a phone. On a blank form it is now the SECOND thing on screen.
  *
  * ⚠️ **Tags are LAST, below the birthday** (owner's call, 2026-08-30). They
  * were above it, which is the wrong way round for how the form is actually
@@ -21,23 +22,37 @@ import { btnDanger, btnGhost, btnPrimary, inputCls, label, textareaCls } from '.
  * dialog, and can create a tag mid-form has no business standing between the
  * typing and the Save button.
  *
- * ⚠️ **And both of them are folded behind "More" unless they hold something**
- * (owner's call, 2026-08-30, from the phone). Four fields fit above the fold
- * on a phone and six do not, and the two that got cut are the two nobody fills
- * in most of the time — but a birthday you HAVE recorded has to be visible
- * when you open the contact, or the form is lying about what it holds. So the
- * split is by content, not by field: anything with a value sits out in the
- * open, and only the empty ones hide.
+ * ⚠️ **FOUR of the six are folded behind "More" unless they hold something** —
+ * email, phone, birthday and tags (owner's call, 2026-08-30, extended from two
+ * to four on 2026-08-31). Only Name and Notes are unconditional, and that is
+ * the app in one line: the name of a person, and the private thing you know
+ * about them. Everything else is already on the phone's own contact card.
+ *
+ * ⚠️ **The split is by CONTENT, not by field.** A field arriving with a value
+ * sits out in the open and only the empty ones hide — an email you HAVE
+ * recorded has to be visible when you open the contact, or the form is lying
+ * about what it holds. The consequence worth knowing: for an existing contact
+ * the form looks exactly as it always did, because everything filled in is
+ * still there, in its old place. It is only a BLANK form that is short.
+ *
+ * ⚠️ Which is why the pinned fields render in TWO groups, either side of
+ * Notes, rather than in one list. Email and phone are identity and belong
+ * above the notes about the person; birthday and tags are the two that used to
+ * be below it. Rendering all four in one block after Notes would have shuffled
+ * a form people already know, for no reason beyond it being less code.
  *
  * ⚠️ The split is decided ONCE, at mount, and deliberately does not re-run.
  * Recomputing it would make a field you just filled in inside "More" jump out
  * of the section you are looking at and land somewhere else on the page,
  * mid-edit. Same reasoning as the `stashed` read above.
  *
- * Validation is deliberately thin: a name OR an email is enough. A real
- * address book is full of half-known people — someone you have an email for
- * and no surname, someone whose email you have lost — and an app that refuses
- * to record them is an app people keep a second list alongside.
+ * Validation is now a NAME and nothing else (owner's call, 2026-08-31). It
+ * used to be "a name or an email", which cannot survive email moving behind a
+ * disclosure: the one field that could satisfy the rule was no longer on
+ * screen, so a blank form would have refused to save with nothing visible to
+ * explain why. A name is also the only field this app can show you in a list.
+ * It need not be a person's — "Plumber (the good one)" is a perfectly good
+ * entry in a little black book.
  */
 export function ContactForm({ id }: { id: string }) {
   const contacts = useBookStore((s) => s.contacts)
@@ -86,15 +101,94 @@ export function ContactForm({ id }: { id: string }) {
   const [more, setMore] = useState(false)
   const moreId = useId()
 
-  // Which of the two optional fields arrived with something in them. Read from
+  // Which of the four optional fields arrived with something in them. Read from
   // the draft's INITIAL value and never again — see the note above.
-  const [pinned] = useState<Extra[]>(() =>
-    EXTRAS.filter((k) => (k === 'birthday' ? Boolean(draft.birthdate) : draft.tagIds.length > 0)),
-  )
+  const [pinned] = useState<Extra[]>(() => EXTRAS.filter((k) => hasValue(k, draft)))
   const hidden = EXTRAS.filter((k) => !pinned.includes(k))
+  // Rendered either side of Notes, in the order they were always in.
+  const pinnedAbove = pinned.filter((k) => ABOVE_NOTES.includes(k))
+  const pinnedBelow = pinned.filter((k) => !ABOVE_NOTES.includes(k))
 
   const patch = (p: Partial<ContactDraft>) => setDraft((d) => ({ ...d, ...p }))
-  const valid = Boolean(draft.name.trim() || draft.email.trim())
+  const valid = Boolean(draft.name.trim())
+
+  /**
+   * One of the four foldable fields, wherever it happens to be rendering.
+   *
+   * The same call site draws it pinned above Notes, pinned below Notes, or
+   * inside the disclosure, which is what guarantees a field looks and behaves
+   * identically in all three places — the earlier version of this file wrote
+   * the picker JSX out twice and they had already started to drift.
+   *
+   * ⚠️ The ids are fixed strings, not generated, because a field is only ever
+   * on screen in ONE of those three positions at a time. Pinned and hidden are
+   * complements by construction (`hidden` is `EXTRAS` minus `pinned`), so a
+   * duplicate id here is impossible unless that invariant is broken.
+   */
+  const renderExtra = (k: Extra) => {
+    switch (k) {
+      case 'email':
+        return (
+          <div key={k}>
+            <label className={label} htmlFor="cf-email">
+              Email
+            </label>
+            <input
+              id="cf-email"
+              className={inputCls}
+              // `type="email"` would let the browser block submission on anything
+              // without an @ — including a perfectly good internal address, and
+              // including the empty string on some older engines. The field is
+              // optional and the app never sends mail, so the keyboard hint is
+              // worth having and the validation is not.
+              type="text"
+              inputMode="email"
+              value={draft.email}
+              onChange={(e) => patch({ email: e.target.value })}
+              placeholder="sam@example.com"
+              autoComplete="off"
+              spellCheck={false}
+            />
+          </div>
+        )
+      case 'phone':
+        return (
+          <div key={k}>
+            <label className={label} htmlFor="cf-phone">
+              Phone
+            </label>
+            <input
+              id="cf-phone"
+              className={inputCls}
+              // `type="tel"` for the keypad, and it carries no validation of its
+              // own in any engine — which is what this field wants. An address
+              // book holds extensions, "ask for Dave", and numbers in formats no
+              // pattern of ours would predict, and the value is never dialled by
+              // this app.
+              type="tel"
+              inputMode="tel"
+              value={draft.phone}
+              onChange={(e) => patch({ phone: e.target.value })}
+              placeholder="+44 7700 900123"
+              autoComplete="off"
+              spellCheck={false}
+            />
+          </div>
+        )
+      case 'birthday':
+        return (
+          <Field key={k} name={EXTRA_LABELS[k]}>
+            <BirthdayField value={draft.birthdate} onChange={(birthdate) => patch({ birthdate })} />
+          </Field>
+        )
+      case 'tags':
+        return (
+          <Field key={k} name={EXTRA_LABELS[k]}>
+            <TagPicker value={draft.tagIds} onChange={(tagIds) => patch({ tagIds })} />
+          </Field>
+        )
+    }
+  }
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
@@ -166,49 +260,7 @@ export function ContactForm({ id }: { id: string }) {
           />
         </div>
 
-        <div>
-          <label className={label} htmlFor="cf-email">
-            Email
-          </label>
-          <input
-            id="cf-email"
-            className={inputCls}
-            // `type="email"` would let the browser block submission on anything
-            // without an @ — including a perfectly good internal address, and
-            // including the empty string on some older engines. The field is
-            // optional and the app never sends mail, so the keyboard hint is
-            // worth having and the validation is not.
-            type="text"
-            inputMode="email"
-            value={draft.email}
-            onChange={(e) => patch({ email: e.target.value })}
-            placeholder="sam@example.com"
-            autoComplete="off"
-            spellCheck={false}
-          />
-        </div>
-
-        <div>
-          <label className={label} htmlFor="cf-phone">
-            Phone
-          </label>
-          <input
-            id="cf-phone"
-            className={inputCls}
-            // `type="tel"` for the keypad, and it carries no validation of its
-            // own in any engine — which is what this field wants. An address
-            // book holds extensions, "ask for Dave", and numbers in formats no
-            // pattern of ours would predict, and the value is never dialled by
-            // this app.
-            type="tel"
-            inputMode="tel"
-            value={draft.phone}
-            onChange={(e) => patch({ phone: e.target.value })}
-            placeholder="+44 7700 900123"
-            autoComplete="off"
-            spellCheck={false}
-          />
-        </div>
+        {pinnedAbove.map(renderExtra)}
 
         <div>
           <label className={label} htmlFor="cf-notes">
@@ -224,15 +276,7 @@ export function ContactForm({ id }: { id: string }) {
           />
         </div>
 
-        {pinned.map((k) => (
-          <Field key={k} name={EXTRA_LABELS[k]}>
-            {k === 'birthday' ? (
-              <BirthdayField value={draft.birthdate} onChange={(birthdate) => patch({ birthdate })} />
-            ) : (
-              <TagPicker value={draft.tagIds} onChange={(tagIds) => patch({ tagIds })} />
-            )}
-          </Field>
-        ))}
+        {pinnedBelow.map(renderExtra)}
 
         {hidden.length > 0 && (
           <div>
@@ -248,10 +292,10 @@ export function ContactForm({ id }: { id: string }) {
                 {/* Names what is inside rather than saying "More" twice. A
                     disclosure that does not say what it discloses is one
                     people never open. */}
-                {hidden.map((k) => EXTRA_LABELS[k]).join(' and ')}
+                {listOf(hidden.map((k) => EXTRA_LABELS[k]))}
                 <svg
                   viewBox="0 0 16 16"
-                  className={`h-3.5 w-3.5 transition-transform ${more ? 'rotate-180' : ''}`}
+                  className={`h-3.5 w-3.5 shrink-0 transition-transform ${more ? 'rotate-180' : ''}`}
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2"
@@ -269,15 +313,7 @@ export function ContactForm({ id }: { id: string }) {
                 this bug. */}
             {more && (
               <div id={moreId} className="mt-4 space-y-4">
-                {hidden.map((k) => (
-                  <Field key={k} name={EXTRA_LABELS[k]}>
-                    {k === 'birthday' ? (
-                      <BirthdayField value={draft.birthdate} onChange={(birthdate) => patch({ birthdate })} />
-                    ) : (
-                      <TagPicker value={draft.tagIds} onChange={(tagIds) => patch({ tagIds })} />
-                    )}
-                  </Field>
-                ))}
+                {hidden.map(renderExtra)}
               </div>
             )}
           </div>
@@ -314,7 +350,10 @@ export function ContactForm({ id }: { id: string }) {
           )}
         </div>
         {!valid && (
-          <p className="text-xs text-slate-500">Give them a name or an email — either one is enough.</p>
+          <p className="text-xs text-slate-500">
+            Give them a name — it is the only thing this needs. A person, a company, or
+            "Plumber (the good one)".
+          </p>
         )}
       </form>
     </Modal>
@@ -322,13 +361,48 @@ export function ContactForm({ id }: { id: string }) {
 }
 
 /**
- * The two fields that fold away when empty. In render order, which is also the
- * order they are listed in on the "More" button.
+ * The four fields that fold away when empty, in the order they are listed on
+ * the "More" button — which is also the order they appear in the form, reading
+ * top to bottom THROUGH Notes (email and phone above it, birthday and tags
+ * below). One list rather than two so the disclosure label cannot drift out of
+ * step with the form.
  */
-const EXTRAS = ['birthday', 'tags'] as const
+const EXTRAS = ['email', 'phone', 'birthday', 'tags'] as const
 type Extra = (typeof EXTRAS)[number]
 
-const EXTRA_LABELS: Record<Extra, string> = { birthday: 'Birthday', tags: 'Tags' }
+/** Of those, the ones that render ABOVE the Notes field when they are pinned. */
+const ABOVE_NOTES: readonly Extra[] = ['email', 'phone']
+
+const EXTRA_LABELS: Record<Extra, string> = {
+  email: 'Email',
+  phone: 'Phone',
+  birthday: 'Birthday',
+  tags: 'Tags',
+}
+
+/** Did this field arrive with something in it? Decides pinned vs. folded. */
+function hasValue(k: Extra, draft: ContactDraft): boolean {
+  switch (k) {
+    case 'email':
+      return draft.email.trim() !== ''
+    case 'phone':
+      return draft.phone.trim() !== ''
+    case 'birthday':
+      return Boolean(draft.birthdate)
+    case 'tags':
+      return draft.tagIds.length > 0
+  }
+}
+
+/**
+ * "Email, Phone, Birthday and Tags" — not "Email and Phone and Birthday and
+ * Tags", which is what a plain `join(' and ')` gave once there were more than
+ * two of these.
+ */
+function listOf(names: string[]): string {
+  if (names.length <= 1) return names[0] ?? ''
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
+}
 
 /**
  * One labelled row. A `<span>` and not a `<label>`: neither of these wraps a
