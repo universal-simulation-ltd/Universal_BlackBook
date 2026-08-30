@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useId, useState, type FormEvent, type ReactNode } from 'react'
 import { blankDraft, draftIsEmpty, useBookStore, type ContactDraft } from '../stores/bookStore'
 import { BirthdayField } from './BirthdayField'
 import { TagPicker } from './TagPicker'
@@ -20,6 +20,19 @@ import { btnDanger, btnGhost, btnPrimary, inputCls, label, textareaCls } from '.
  * are a decision — and a decision that opens a picker, adds rows to the
  * dialog, and can create a tag mid-form has no business standing between the
  * typing and the Save button.
+ *
+ * ⚠️ **And both of them are folded behind "More" unless they hold something**
+ * (owner's call, 2026-08-30, from the phone). Four fields fit above the fold
+ * on a phone and six do not, and the two that got cut are the two nobody fills
+ * in most of the time — but a birthday you HAVE recorded has to be visible
+ * when you open the contact, or the form is lying about what it holds. So the
+ * split is by content, not by field: anything with a value sits out in the
+ * open, and only the empty ones hide.
+ *
+ * ⚠️ The split is decided ONCE, at mount, and deliberately does not re-run.
+ * Recomputing it would make a field you just filled in inside "More" jump out
+ * of the section you are looking at and land somewhere else on the page,
+ * mid-edit. Same reasoning as the `stashed` read above.
  *
  * Validation is deliberately thin: a name OR an email is enough. A real
  * address book is full of half-known people — someone you have an email for
@@ -70,6 +83,15 @@ export function ContactForm({ id }: { id: string }) {
   /** Is the "you were part way through" bar still showing? */
   const [offering, setOffering] = useState(restorable)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [more, setMore] = useState(false)
+  const moreId = useId()
+
+  // Which of the two optional fields arrived with something in them. Read from
+  // the draft's INITIAL value and never again — see the note above.
+  const [pinned] = useState<Extra[]>(() =>
+    EXTRAS.filter((k) => (k === 'birthday' ? Boolean(draft.birthdate) : draft.tagIds.length > 0)),
+  )
+  const hidden = EXTRAS.filter((k) => !pinned.includes(k))
 
   const patch = (p: Partial<ContactDraft>) => setDraft((d) => ({ ...d, ...p }))
   const valid = Boolean(draft.name.trim() || draft.email.trim())
@@ -202,15 +224,64 @@ export function ContactForm({ id }: { id: string }) {
           />
         </div>
 
-        <div>
-          <span className={label}>Birthday</span>
-          <BirthdayField value={draft.birthdate} onChange={(birthdate) => patch({ birthdate })} />
-        </div>
+        {pinned.map((k) => (
+          <Field key={k} name={EXTRA_LABELS[k]}>
+            {k === 'birthday' ? (
+              <BirthdayField value={draft.birthdate} onChange={(birthdate) => patch({ birthdate })} />
+            ) : (
+              <TagPicker value={draft.tagIds} onChange={(tagIds) => patch({ tagIds })} />
+            )}
+          </Field>
+        ))}
 
-        <div>
-          <span className={label}>Tags</span>
-          <TagPicker value={draft.tagIds} onChange={(tagIds) => patch({ tagIds })} />
-        </div>
+        {hidden.length > 0 && (
+          <div>
+            <button
+              type="button"
+              onClick={() => setMore((v) => !v)}
+              aria-expanded={more}
+              aria-controls={moreId}
+              className="flex w-full items-center justify-between gap-2 rounded-lg border border-slate-800 px-3 py-2.5 text-left transition-colors hover:border-slate-700 hover:bg-slate-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+            >
+              <span className="text-sm font-medium text-slate-300">More</span>
+              <span className="flex items-center gap-1.5 text-xs text-slate-500">
+                {/* Names what is inside rather than saying "More" twice. A
+                    disclosure that does not say what it discloses is one
+                    people never open. */}
+                {hidden.map((k) => EXTRA_LABELS[k]).join(' and ')}
+                <svg
+                  viewBox="0 0 16 16"
+                  className={`h-3.5 w-3.5 transition-transform ${more ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  aria-hidden
+                >
+                  <path d="m4 6 4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+            </button>
+
+            {/* Unmounted rather than hidden with CSS. BirthdayField and
+                TagPicker both own popups and focus, and a `hidden` subtree
+                still holds tabbable children in some engines — a Tab out of
+                Notes landing in a collapsed section is the classic version of
+                this bug. */}
+            {more && (
+              <div id={moreId} className="mt-4 space-y-4">
+                {hidden.map((k) => (
+                  <Field key={k} name={EXTRA_LABELS[k]}>
+                    {k === 'birthday' ? (
+                      <BirthdayField value={draft.birthdate} onChange={(birthdate) => patch({ birthdate })} />
+                    ) : (
+                      <TagPicker value={draft.tagIds} onChange={(tagIds) => patch({ tagIds })} />
+                    )}
+                  </Field>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-800 pt-4">
           <div>
@@ -247,5 +318,29 @@ export function ContactForm({ id }: { id: string }) {
         )}
       </form>
     </Modal>
+  )
+}
+
+/**
+ * The two fields that fold away when empty. In render order, which is also the
+ * order they are listed in on the "More" button.
+ */
+const EXTRAS = ['birthday', 'tags'] as const
+type Extra = (typeof EXTRAS)[number]
+
+const EXTRA_LABELS: Record<Extra, string> = { birthday: 'Birthday', tags: 'Tags' }
+
+/**
+ * One labelled row. A `<span>` and not a `<label>`: neither of these wraps a
+ * single form control — BirthdayField is three, TagPicker is a list of
+ * buttons — and a `<label>` pointing at nothing is worse for a screen reader
+ * than a plain heading is.
+ */
+function Field({ name, children }: { name: string; children: ReactNode }) {
+  return (
+    <div>
+      <span className={label}>{name}</span>
+      {children}
+    </div>
   )
 }

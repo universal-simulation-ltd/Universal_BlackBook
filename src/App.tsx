@@ -80,6 +80,37 @@ export default function App() {
         }
         suiteSwitcherIconSrc={`${import.meta.env.BASE_URL}unisim-icon.png`}
       />
+      {/* ⚠️ The footer's job, on a phone (owner's call, 2026-08-30). A full
+          footer bar below a bottom-DOCKED search bar is two stacked strips of
+          chrome at the bottom of the screen, and the one that matters is the
+          dock — so below 40rem the footer is gone entirely and its two links
+          become one small line up here instead. The pair is exclusive:
+          `sm:hidden` here, `hidden sm:block` on the footer. */}
+      <div className={`${CONTAINER} pt-2 sm:hidden`}>
+        <p className="text-[11px] leading-none text-slate-600">
+          With{' '}
+          <span aria-hidden="true" className="text-orange-500">&hearts;</span>
+          <span className="sr-only">love</span> from{' '}
+          <a
+            href="https://www.unisim.co.uk"
+            target="_blank"
+            rel="noreferrer"
+            className="underline-offset-2 hover:text-orange-400 hover:underline"
+          >
+            UNISIM.co.uk
+          </a>
+          <span aria-hidden className="px-1.5 text-slate-700">·</span>
+          <a
+            href={REPO_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="underline-offset-2 hover:text-slate-400 hover:underline"
+          >
+            Source
+          </a>
+        </p>
+      </div>
+
       {/* Renders nothing until this tab is genuinely running superseded code.
           See the SDK's useAppUpdate: an autoUpdate PWA hands the new worker
           control but leaves the running page on its old JavaScript. */}
@@ -142,13 +173,24 @@ export default function App() {
         </div>
 
         {loaded && <ContactList />}
+
+        {/* The height of the docked filter bar, reserved at the end of the
+            page. The dock is `position: fixed` below 40rem, so nothing else in
+            the document knows it is there — without this the last contact card
+            sits underneath it and cannot be read or tapped. ⚠️ It lives HERE
+            and not in the footer, because the footer does not exist at the
+            width the dock does. Zero height above 40rem, where there is no
+            dock. */}
+        <div className="filterdock-spacer" aria-hidden />
       </main>
 
-      {/* The bottom half of the same story: on a phone with a home indicator
-          the last 34pt of the screen is the swipe-up gesture area, so the
-          footer's own padding is added to the inset rather than replaced by
-          it — the GitHub link stops sitting under the bar. 0 in a browser. */}
-      <footer className="border-t border-slate-800 bg-slate-900 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+      {/* ⚠️ `hidden sm:block` — there is no footer on a phone at all; the line
+          under the navbar above replaces it. The safe-area padding is kept
+          because a landscape iPad and a tall phone-in-desktop-width both still
+          reach this branch: on a device with a home indicator the last 34pt is
+          the swipe-up gesture area, so the footer's own padding is ADDED to
+          the inset rather than replaced by it. 0 in a browser. */}
+      <footer className="hidden border-t border-slate-800 bg-slate-900 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:block">
         <div className={`${CONTAINER} flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500`}>
           <p>
             With{' '}
@@ -178,14 +220,6 @@ export default function App() {
             <span className="hidden sm:inline">GitHub</span>
           </a>
         </div>
-        {/* The height of the docked filter bar, reserved at the very bottom of
-            the page. The dock is `position: fixed` below 40rem, so nothing
-            else in the document knows it is there — without this the footer,
-            and the last contact card behind it, cannot be scrolled clear of
-            it. It lives inside the footer rather than under it so the strip is
-            painted in the footer's own colour instead of showing as a gap.
-            Zero height above 40rem, where there is no dock. */}
-        <div className="filterdock-spacer" aria-hidden />
       </footer>
 
       {editing && <ContactForm key={editing} id={editing} />}
