@@ -54,7 +54,15 @@ export default defineConfig(({ mode }) => {
             { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
             { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
             { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
-            { src: 'unisim-icon.png', sizes: '128x128', type: 'image/png' },
+            // ⚠️ 1024×1024, not the 128×128 this claimed until 2026-08-30
+            // (`sips -g pixelWidth public/unisim-icon.png`). The file has been
+            // the full-size suite mark for a while and nobody re-checked the
+            // declaration. `sizes` is how an installer PICKS an icon, so a lie
+            // here makes the browser choose this one for a 128px slot and
+            // downscale a megapixel PNG — or skip it for a large slot it would
+            // actually have been ideal for. If the file is ever regenerated,
+            // re-measure and update this number with it.
+            { src: 'unisim-icon.png', sizes: '1024x1024', type: 'image/png' },
           ],
         },
         workbox: {
