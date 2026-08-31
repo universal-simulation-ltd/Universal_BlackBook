@@ -1,5 +1,12 @@
 import { useMemo } from 'react'
-import { countdownLabel, formatBirthday, nextBirthday, todayParts, type NextBirthday } from '../lib/birthday'
+import {
+  countdownLabel,
+  currentAge,
+  formatBirthday,
+  nextBirthday,
+  todayParts,
+  type NextBirthday,
+} from '../lib/birthday'
 import { runQuery } from '../lib/filter'
 import type { Contact, Tag } from '../lib/types'
 import { useBookStore } from '../stores/bookStore'
@@ -69,6 +76,7 @@ export function ContactList() {
             // email address and the note about their kids.
             onOpen={() => edit(c.id)}
             countdown={birthdays ? nextBirthday(c.birthdate, today) : null}
+            age={currentAge(c.birthdate, today)}
           />
         ))}
       </ul>
@@ -116,12 +124,15 @@ function ContactRow({
   byId,
   onOpen,
   countdown,
+  age,
 }: {
   contact: Contact
   byId: Map<string, Tag>
   onOpen: () => void
   /** Set only in the birthdays view. */
   countdown: NextBirthday | null
+  /** How old they are today. Null when the year is not recorded. */
+  age: number | null
 }) {
   // A dangling id renders as nothing rather than as an "undefined" chip. They
   // shouldn't exist — removeTag strips them — but an imported or hand-edited
@@ -160,6 +171,15 @@ function ContactRow({
                 <path d="M8 0a1 1 0 0 1 .9 1.44L8.5 2.3V3h.5A2.5 2.5 0 0 1 11.5 5.5V6h.5A2 2 0 0 1 14 8v1.2a2.6 2.6 0 0 1-1 .4 2.6 2.6 0 0 1-2-.7 2.6 2.6 0 0 1-3 0 2.6 2.6 0 0 1-3 0 2.6 2.6 0 0 1-2 .7 2.6 2.6 0 0 1-1-.4V8a2 2 0 0 1 2-2h.5v-.5A2.5 2.5 0 0 1 7 3h.5v-.7l-.4-.86A1 1 0 0 1 8 0Zm6 11.1V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2.9c.86.3 1.8.2 2.6-.3.9.5 2 .5 2.9 0 .9.5 2 .5 2.9 0 .8.5 1.74.6 2.6.3Z" />
               </svg>
               <span className="truncate">{formatBirthday(contact.birthdate)}</span>
+              {/* Only ever alongside the date, never instead of it — a
+                  year-less birthday has no age, and a card that showed one
+                  person's age and not another's with no visible reason would
+                  read as a bug rather than as missing data. `shrink-0` so the
+                  date truncates and the age stays whole; the other way round
+                  gives you "(Age 3…)". */}
+              {age !== null && (
+                <span className="shrink-0 text-slate-500 tabular-nums">(Age {age})</span>
+              )}
             </p>
           )
         )}

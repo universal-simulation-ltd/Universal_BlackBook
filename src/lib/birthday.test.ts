@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildBirthday,
   countdownLabel,
+  currentAge,
   daysInMonth,
   formatBirthday,
   isValidBirthday,
@@ -214,6 +215,51 @@ describe('nextBirthday', () => {
   it('is null for a contact with no birthday, and for junk', () => {
     expect(nextBirthday(undefined, AUG_24_2026)).toBeNull()
     expect(nextBirthday('sometime in June', AUG_24_2026)).toBeNull()
+  })
+})
+
+describe('currentAge', () => {
+  const AUG_24_2026: Today = { year: 2026, month: 8, day: 24 }
+
+  it('is the age they are now, not the one they are heading for', () => {
+    // Born 4 June 1990, asked on 24 August 2026. `nextBirthday` says they are
+    // TURNING 37; today they are 36.
+    expect(currentAge('1990-06-04', AUG_24_2026)).toBe(36)
+  })
+
+  it('counts the year up on the day itself', () => {
+    expect(currentAge('1990-08-24', AUG_24_2026)).toBe(36)
+  })
+
+  it('has not counted it up the day before', () => {
+    expect(currentAge('1990-08-25', AUG_24_2026)).toBe(35)
+  })
+
+  it('is null when the year is unknown', () => {
+    // The whole point of the year-less shape: no year, no age, and no guess.
+    expect(currentAge('--06-04', AUG_24_2026)).toBeNull()
+  })
+
+  it('is null for a birthday in the future rather than a negative age', () => {
+    // `buildBirthday` accepts a date for a baby due next week on purpose, so
+    // this case reaches here. "(Age -1)" would be the app talking nonsense.
+    expect(currentAge('2026-09-15', AUG_24_2026)).toBeNull()
+  })
+
+  it('says 0 for a baby already born this year', () => {
+    expect(currentAge('2026-01-01', AUG_24_2026)).toBe(0)
+  })
+
+  it('agrees with the 29 February roll-forward rule', () => {
+    // Born on a leap day, asked on 28 February in a non-leap year: their
+    // birthday lands on 1 March, so it has NOT happened yet and they are 26.
+    expect(currentAge('2000-02-29', { year: 2027, month: 2, day: 28 })).toBe(26)
+    expect(currentAge('2000-02-29', { year: 2027, month: 3, day: 1 })).toBe(27)
+  })
+
+  it('is null for no birthday and for junk', () => {
+    expect(currentAge(undefined, AUG_24_2026)).toBeNull()
+    expect(currentAge('sometime in June', AUG_24_2026)).toBeNull()
   })
 })
 

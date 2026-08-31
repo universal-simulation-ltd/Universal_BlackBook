@@ -242,3 +242,24 @@ export function countdownLabel(inDays: number): string {
   if (inDays === 1) return 'Tomorrow'
   return `in ${inDays} days`
 }
+
+/**
+ * How old they are TODAY, or null when we cannot say.
+ *
+ * Derived from `nextBirthday` rather than computed again, so the leap-day rule
+ * cannot drift: whatever "their birthday has happened this year" means up
+ * there, it means the same thing here. `turning` is the age at the NEXT
+ * occurrence, so they are a year short of it until it arrives — unless it is
+ * arriving today, in which case they have just turned it.
+ *
+ * ⚠️ Null, not a negative number, for a date in the future. `buildBirthday`
+ * deliberately accepts one (a baby due next week is the user's business), and
+ * "(Age -1)" on that card would be the app talking nonsense. Age 0 is a real
+ * answer and is kept.
+ */
+export function currentAge(value: string | undefined | null, today: Today): number | null {
+  const next = nextBirthday(value, today)
+  if (!next || next.turning === null) return null
+  const age = next.inDays === 0 ? next.turning : next.turning - 1
+  return age < 0 ? null : age
+}
