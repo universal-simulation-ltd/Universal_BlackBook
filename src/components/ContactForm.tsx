@@ -3,7 +3,8 @@ import { blankDraft, draftIsEmpty, useBookStore, type ContactDraft } from '../st
 import { BirthdayField } from './BirthdayField'
 import { TagPicker } from './TagPicker'
 import { Modal } from './Modal'
-import { btnDanger, btnGhost, btnPrimary, inputCls, label, textareaCls } from './ui'
+import { ExpandGlyph, NotesFullscreen } from './NotesFullscreen'
+import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label, textareaCls } from './ui'
 
 /**
  * Add or edit one person. Six fields, in the order they matter — but on a blank
@@ -14,6 +15,12 @@ import { btnDanger, btnGhost, btnPrimary, inputCls, label, textareaCls } from '.
  * write — "met at the Leeds conference, two kids" is why they opened the form
  * — and it used to be last, below both pickers, which put the main event below
  * the fold on a phone. On a blank form it is now the SECOND thing on screen.
+ *
+ * ⚠️ **Notes has a "Full screen" button on its label** (owner's request,
+ * 2026-08-31), which opens NotesFullscreen — a second dialog on top of this
+ * one, holding nothing but the note. Four rows is the right size for the field
+ * in a form and the wrong size for reading a note that has grown, and on a
+ * phone reading one means scrolling a box inside a scrolling form.
  *
  * ⚠️ **Tags are LAST, below the birthday** (owner's call, 2026-08-30). They
  * were above it, which is the wrong way round for how the form is actually
@@ -99,6 +106,8 @@ export function ContactForm({ id }: { id: string }) {
   const [offering, setOffering] = useState(restorable)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [more, setMore] = useState(false)
+  /** Is Notes showing on its own, full screen? */
+  const [notesFull, setNotesFull] = useState(false)
   const moreId = useId()
 
   // Which of the four optional fields arrived with something in them. Read from
@@ -263,9 +272,26 @@ export function ContactForm({ id }: { id: string }) {
         {pinnedAbove.map(renderExtra)}
 
         <div>
-          <label className={label} htmlFor="cf-notes">
-            Notes
-          </label>
+          {/* The label and its full-screen button share a row, and BOTH carry
+              the label's own `mb-1.5` rather than the row carrying it. Putting
+              the margin on the row and cancelling it on the label with `mb-0`
+              is the version that silently does nothing: Tailwind resolves a
+              conflict by CSS source order, not by the order of the class
+              string — the same trap that made the birthday year box full
+              width (see ui.tsx). */}
+          <div className="flex items-center justify-between gap-2">
+            <label className={label} htmlFor="cf-notes">
+              Notes
+            </label>
+            <button
+              type="button"
+              className={`${btnSubtle} mb-1.5 flex items-center gap-1.5`}
+              onClick={() => setNotesFull(true)}
+            >
+              <ExpandGlyph />
+              Full screen
+            </button>
+          </div>
           <textarea
             id="cf-notes"
             className={textareaCls}
@@ -356,6 +382,18 @@ export function ContactForm({ id }: { id: string }) {
           </p>
         )}
       </form>
+
+      {/* Rendered inside the form, and it makes no difference where: a
+          `showModal()` dialog is painted in the top layer, not where it sits
+          in the tree. Inside is where the draft is, which is what matters. */}
+      {notesFull && (
+        <NotesFullscreen
+          value={draft.notes}
+          onChange={(v) => patch({ notes: v })}
+          onClose={() => setNotesFull(false)}
+          name={draft.name}
+        />
+      )}
     </Modal>
   )
 }
