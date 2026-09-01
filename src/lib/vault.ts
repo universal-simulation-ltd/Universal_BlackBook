@@ -44,7 +44,10 @@ export const KDF_ITERATIONS = 600_000
 const enc = new TextEncoder()
 const dec = new TextDecoder()
 
-function toBase64(bytes: Uint8Array): string {
+// Exported for lib/lock.ts, which needs the same two conversions for the PIN
+// digest and its salt. Shared rather than re-written there so the chunking
+// rationale below lives in exactly one place.
+export function toBase64(bytes: Uint8Array): string {
   let s = ''
   // Chunked: String.fromCharCode(...bytes) blows the argument limit somewhere
   // around a book with a few thousand contacts, and does it as a RangeError
@@ -56,7 +59,7 @@ function toBase64(bytes: Uint8Array): string {
   return btoa(s)
 }
 
-function fromBase64(b64: string): Uint8Array {
+export function fromBase64(b64: string): Uint8Array {
   const bin = atob(b64)
   const out = new Uint8Array(bin.length)
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i)

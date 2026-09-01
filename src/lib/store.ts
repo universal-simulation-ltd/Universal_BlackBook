@@ -13,6 +13,7 @@
 
 import type { Contact, Tag } from './types'
 import { isValidBirthday } from './birthday'
+import { toLockRecord, type LockRecord } from './lock'
 
 const DB_NAME = 'blackbook'
 const DB_VERSION = 1
@@ -24,7 +25,17 @@ const CONTACTS = 'contacts'
 // migration takes somebody's only copy of their address book with it. The name
 // is a wire format. It is not worth a single byte of risk.
 const TAGS = 'categories'
-/** Out-of-line store: the remembered vault key and the sync bookkeeping. */
+/**
+ * Out-of-line store: the remembered vault key, the sync bookkeeping, and the
+ * PIN lock.
+ *
+ * ⚠️ The lock record lives HERE, in an existing store, rather than in one of
+ * its own — because a new object store means a DB_VERSION bump, and this
+ * file's first rule is that a partially-shipped migration takes somebody's
+ * only copy of their address book with it. A third fixed key in a keyed store
+ * costs nothing and migrates nothing. The name 'sync' is a wire format by now;
+ * read it as "the small settings store".
+ */
 const SYNC = 'sync'
 
 function openDb(): Promise<IDBDatabase> {
@@ -187,6 +198,10 @@ export async function replaceAll(contacts: Contact[], tags: Tag[]): Promise<void
 //           can be offered without writing a passphrase to disk.
 //   'meta'  what the last sync saw, so the next one can detect that the
 //           server moved underneath us.
+//   'lock'  the PIN lock's salt and digest (lib/lock.ts). Device-local, and
+//           NOT part of the vault — it is never uploaded, and `forgetVault`
+//           below leaves it alone: signing out of a Universal ID has nothing
+//           to do with the door on the front of this device's app.
 
 export interface SyncMeta {
   /** The Universal ID this vault belongs to. */
@@ -216,6 +231,71 @@ export async function loadSyncMeta(): Promise<SyncMeta | null> {
 
 export async function saveSyncMeta(meta: SyncMeta): Promise<void> {
   await tx(SYNC, 'readwrite', (s) => s.put(meta, 'meta'))
+}
+
+// ── the PIN lock ─────────────────────────────────────────────────────────────
+
+/**
+ * The lock record, or null for "this device has no PIN".
+ *
+ * A record that fails to parse reads as null — see `toLockRecord` for why the
+ * failure mode is deliberately "opens unlocked" and not "locked forever".
+ */
+export async function loadLock(): Promise<LockRecord | null> {
+  const raw = await tx<unknown>(SYNC, 'readonly', (s) => s.get('lock') as IDBRequest<unknown>)
+  return toLockRecord(raw)
+}
+
+export async function saveLock(rec: LockRecord): Promise<void> {
+  await tx(SYNC, 'readwrite', (s) => s.put(rec, 'lock'))
+}
+
+export async function clearLock(): Promise<void> {
+  await tx(SYNC, 'readwrite', (s) => s.delete('lock'))
+}
+
+/**
+ * Throw this device away: the book, the tags, the lock, and every trace of the
+ * online copy. Used by exactly one thing — "I have forgotten my PIN".
+ *
+ * ⚠️ **Clearing the lock alone would not be a reset, it would be a bypass.**
+ * The PIN is a door in front of a book that is sitting in IndexedDB in the
+ * clear (see lib/lock.ts), so anything that opens the door without the PIN has
+ * to take the book with it. That is the whole design: a stranger who reaches
+ * for this can destroy the book but can never read it, and the owner gets a
+ * working app back instead of a phone they have to reinstall.
+ *
+ * ⚠️ **The remembered vault key is the part that is easy to miss, and leaving
+ * it would undo everything above.** It is a non-extractable CryptoKey sitting
+ * in this same store; a reset that wiped the contacts and left it behind would
+ * hand the next screen a device that pulls the whole book back down from the
+ * vault on its own, with no passphrase asked for. So the key and the sync
+ * bookkeeping go too, and getting the book back afterwards costs a Universal
+ * ID sign-in AND the vault passphrase — neither of which this device now
+ * holds.
+ *
+ * Each store is cleared in its own transaction. There is no atomicity to
+ * protect here: every partial outcome is strictly safer than the state before
+ * it, and a half-done wipe that has already taken the contacts is not a state
+ * worth rolling back into.
+ */
+export async function wipeDevice(): Promise<void> {
+  const db = await openDb()
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const t = db.transaction([CONTACTS, TAGS], 'readwrite')
+      t.oncomplete = () => resolve()
+      t.onerror = () => reject(t.error)
+      t.onabort = () => reject(t.error)
+      t.objectStore(CONTACTS).clear()
+      t.objectStore(TAGS).clear()
+    })
+  } finally {
+    db.close()
+  }
+  await tx(SYNC, 'readwrite', (s) => s.delete('key'))
+  await tx(SYNC, 'readwrite', (s) => s.delete('meta'))
+  await tx(SYNC, 'readwrite', (s) => s.delete('lock'))
 }
 
 /**

@@ -9,10 +9,12 @@ import { ContactForm } from './components/ContactForm'
 import { ContactList } from './components/ContactList'
 import { FilterBar } from './components/FilterBar'
 import { ImportExport } from './components/ImportExport'
+import { LockPanel, LockScreen } from './components/Lock'
 import { btnGhost, btnPrimary } from './components/ui'
 import { contactsAvailability, ContactsPermissionError, pickOneContact } from './lib/deviceContacts'
 import { forgetVault } from './lib/store'
 import { useBookStore } from './stores/bookStore'
+import { useLockStore } from './stores/lockStore'
 import { useSyncStore } from './stores/syncStore'
 
 // The single page container. The navbar (via the SDK's `contentClassName`), the
@@ -32,7 +34,7 @@ const REPO_URL = 'https://github.com/universal-simulation-ltd/Universal_BlackBoo
 /** How long to wait after the last edit before pushing to the vault. */
 const AUTOSAVE_DELAY = 2500
 
-type Panel = 'tags' | 'io' | 'cloud' | null
+type Panel = 'tags' | 'io' | 'cloud' | 'lock' | null
 
 export default function App() {
   const init = useBookStore((s) => s.init)
@@ -44,10 +46,16 @@ export default function App() {
   const [panel, setPanel] = useState<Panel>(null)
   const { canPick, picking, pick } = useContactPicker()
   const dock = useKeyboardAwareDock()
+  const lockStatus = useLockStore((s) => s.status)
+  const initLock = useLockStore((s) => s.init)
 
   useEffect(() => {
     void init()
   }, [init])
+
+  useEffect(() => {
+    void initLock()
+  }, [initLock])
 
 
   // Stable, not an inline arrow: `openPanel` is a dependency of an effect in
@@ -55,6 +63,14 @@ export default function App() {
   // shape of bug as the `user` object below, one step short of a loop.
   const openCloud = useCallback(() => setPanel('cloud'), [])
   useCloudSync(openCloud)
+
+  // ⚠️ Every hook above runs whatever the lock says — they have to, and none of
+  // them puts anything on screen. What the gate below decides is only what is
+  // RENDERED: until the lock has been read off the disk ('unknown') that is
+  // nothing at all, because a frame of somebody's contact list before the
+  // keypad appears is exactly what this feature exists to prevent.
+  if (lockStatus === 'unknown') return <div className="min-h-screen bg-slate-950" />
+  if (lockStatus === 'locked') return <LockScreen />
 
   return (
     // ⚠️ pt-[env(safe-area-inset-top)] is for the native (Capacitor) build, not
@@ -152,7 +168,10 @@ export default function App() {
 
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h1 className="text-xl font-semibold text-slate-100 sm:text-2xl">Your BlackBook</h1>
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <h1 className="text-xl font-semibold text-slate-100 sm:text-2xl">Your BlackBook</h1>
+              <LockLink onClick={() => setPanel('lock')} />
+            </div>
             <p className="text-sm text-slate-500">
               The people worth staying in touch with — tagged your way, and never a birthday missed.
             </p>
@@ -247,7 +266,45 @@ export default function App() {
       {panel === 'tags' && <TagManager onClose={() => setPanel(null)} />}
       {panel === 'io' && <ImportExport onClose={() => setPanel(null)} />}
       {panel === 'cloud' && <CloudPanel onClose={() => setPanel(null)} />}
+      {panel === 'lock' && <LockPanel onClose={() => setPanel(null)} />}
     </div>
+  )
+}
+
+/**
+ * The padlock beside the page title: the whole of the PIN lock's front door.
+ *
+ * ⚠️ It states, it does not command. "🔓 Unlocked" is what the app IS right
+ * now, which is the thing worth knowing at a glance — a link reading "Lock
+ * this app" would say nothing about whether it already is. What happens when
+ * it is tapped follows from the state it is showing: unlocked offers to set a
+ * PIN, locked asks for the one that is set before taking it off. `title` and
+ * the accessible name carry the action, since the visible label carries the
+ * state.
+ *
+ * It sits in the body rather than in the ⚙ menu (owner's call) because a lock
+ * nobody knows is available is a lock nobody turns on — and because "is this
+ * thing locked?" deserves an answer without opening a menu to find it.
+ *
+ * The padlocks are emoji, and that is checked rather than assumed: 🔒 is
+ * already shipping in this app's own menu (Header/AppMenu.tsx). See the notes
+ * on 📇 and ✕ elsewhere for the two codepoints that were NOT safe.
+ */
+function LockLink({ onClick }: { onClick: () => void }) {
+  const locked = useLockStore((s) => s.record !== null)
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={locked ? 'Turn the PIN lock off' : 'Lock this app with a 4-digit PIN'}
+      className="inline-flex items-center gap-1 rounded text-sm text-slate-400 underline-offset-4 hover:text-orange-400 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+    >
+      <span aria-hidden>{locked ? '\u{1F512}' : '\u{1F513}'}</span>
+      <span>{locked ? 'Locked' : 'Unlocked'}</span>
+      <span className="sr-only">
+        {locked ? '— tap to turn the PIN lock off' : '— tap to lock this app with a 4-digit PIN'}
+      </span>
+    </button>
   )
 }
 

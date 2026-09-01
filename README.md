@@ -89,6 +89,38 @@ Everywhere else — and with a keyboard or a screen reader anywhere — Delete i
 where it has always been: inside the contact's own form, behind the same
 confirmation.
 
+## Locking the app
+
+**🔓 Unlocked / 🔒 Locked**, beside the page title. Tap it to set a 4-digit PIN,
+and BlackBook asks for it every time it is opened on that device. Tap it again
+(with the PIN) to take the lock off. Five wrong tries in a row and the keypad
+starts making you wait, doubling each time.
+
+> **It locks the app, not the data.** The book stays in this browser's storage
+> exactly as it was: the PIN keeps out somebody who picks up your phone, and it
+> is not encryption. Encrypting a book under four digits would be theatre —
+> 10,000 candidates is not a key — and it would put the only copy behind a
+> number you can forget. The PIN itself is never stored; what is stored is a
+> PBKDF2-SHA-256 digest of it with a per-device salt, which is what makes
+> guessing it cost ~300ms a go. The lock is per device and is never uploaded.
+
+**If you forget it: "Forgotten your PIN?" on the lock screen erases this
+device's book and starts it over, unlocked.** Nobody can tell you your PIN and
+nobody can turn the lock off for you.
+
+> ⚠️ **The reset takes the book with it, and that is what makes it safe to
+> offer.** A reset that only cleared the PIN would be a bypass — anybody holding
+> the phone could use it, and the lock would protect nobody. So the door opens
+> and the room behind it is emptied: the contacts, the tags, the PIN, and the
+> remembered vault key all go, which means getting the book back afterwards
+> costs a Universal ID sign-in **and** your vault passphrase. A stranger can
+> destroy your book this way; they can never read it.
+>
+> **So turn the online copy on before you set a PIN.** With a vault, forgetting
+> your PIN is an inconvenience — sign in, enter the passphrase, and the book
+> comes back. Without one, the reset screen says so in as many words, and it is
+> the truth: there is nothing to restore from.
+
 ## Where your book lives
 
 In your browser (IndexedDB), on the device you typed it into. There is no
@@ -168,7 +200,7 @@ suite registry — see `Docs_UNI_SIM/dev-preview.md`.
 | | |
 |---|---|
 | `npm run dev` | Vite dev server |
-| `npm test` | Vitest — the CSV parser, the search/sort, the birthday maths, the phone-contact mapping and the vault crypto |
+| `npm test` | Vitest — the CSV parser, the search/sort, the birthday maths, the phone-contact mapping, the vault crypto, the swipe geometry and the PIN lock (that it re-locks on every fresh opening, and that the reset takes the book and the remembered vault key with it) |
 | `BLACKBOOK_LIVE=1 npm test -- cloud.live` | The two-device vault round trip, against the REAL server. Not part of `npm test`: it signs in anonymously to production, exercises RLS, the primary-key conflict and the compare-and-set, then deletes what it made. |
 | `npm run lint` | ESLint |
 | `npm run build` | Typecheck + production build |
