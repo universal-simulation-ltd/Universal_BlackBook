@@ -22,9 +22,9 @@ import { useEffect, useRef, type ReactNode } from 'react'
  *     Guarded with `.open`.
  *
  * The box is a capped flex COLUMN — pinned title row, scrolling body — and not
- * one scroll container. As a single scroll box a long form (Add someone, with
- * the birthday fields and notes) takes its own title and Close button off the
- * top of the screen, so the way out of the dialog is the first thing to go.
+ * one scroll container. As a single scroll box a long form (Add new contact,
+ * with the birthday fields and notes) takes its own title and Close button off
+ * the top of the screen, so the way out of the dialog is the first thing to go.
  * `max-h-[calc(100dvh-2rem)]` caps it, mirroring the `100vw - 2rem` width so a
  * full form is inset by the same 1rem all round and its rounded corners are not
  * clipped off the screen edge. `dvh` and not `vh`: the dynamic unit is the one

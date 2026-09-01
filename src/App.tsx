@@ -174,7 +174,7 @@ export default function App() {
               </button>
             )}
             <button type="button" className={btnPrimary} onClick={() => edit('new')}>
-              Add someone
+              Add new
             </button>
           </div>
         </div>
