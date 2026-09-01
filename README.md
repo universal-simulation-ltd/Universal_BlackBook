@@ -49,6 +49,17 @@ book starts issuing tasks, it stops being an address book, and people stop
 opening it. The birthdays view is the one exception, and only because a
 birthday is a fact about a date rather than a judgement about you.
 
+## Deleting somebody
+
+**On a phone, swipe a card left** and a Delete button appears behind it. Tapping
+it asks first, by name — the swipe only ever uncovers the button, because a
+flick that deletes outright is one thumb away from losing something this app
+holds the only copy of.
+
+Everywhere else — and with a keyboard or a screen reader anywhere — Delete is
+where it has always been: inside the contact's own form, behind the same
+confirmation.
+
 ## Where your book lives
 
 In your browser (IndexedDB), on the device you typed it into. There is no

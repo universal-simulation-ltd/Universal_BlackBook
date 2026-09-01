@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import {
   countdownLabel,
   currentAge,
@@ -10,14 +10,23 @@ import {
 import { runQuery } from '../lib/filter'
 import type { Contact, Tag } from '../lib/types'
 import { useBookStore } from '../stores/bookStore'
+import { Modal } from './Modal'
+import { SwipeToDelete } from './SwipeToDelete'
 import { TagChip } from './TagChip'
-import { btnPrimary } from './ui'
+import { btnDanger, btnGhost, btnPrimary } from './ui'
 
 export function ContactList() {
   const contacts = useBookStore((s) => s.contacts)
   const tags = useBookStore((s) => s.tags)
   const query = useBookStore((s) => s.query)
   const edit = useBookStore((s) => s.edit)
+  const removeContact = useBookStore((s) => s.removeContact)
+  // Which row is swiped open, if any. ONE at a time, and held here rather than
+  // in each row: two rows showing a Delete button is two chances to tap the
+  // wrong one, and the second swipe should put the first row back.
+  const [openId, setOpenId] = useState<string | null>(null)
+  /** The contact whose deletion is being confirmed. */
+  const [pending, setPending] = useState<Contact | null>(null)
 
   // Read once per mount rather than per render, so the query's memo has a
   // stable input. A tab left open across midnight keeps yesterday's "today"
@@ -66,21 +75,85 @@ export function ContactList() {
       </p>
       <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
         {visible.map((c) => (
-          <ContactRow
-            key={c.id}
-            contact={c}
-            byId={byId}
-            // Every card is a button that opens the contact, in the birthdays
-            // view as much as anywhere else — the point of being told it is
-            // somebody's birthday in nine days is being one tap from their
-            // email address and the note about their kids.
-            onOpen={() => edit(c.id)}
-            countdown={birthdays ? nextBirthday(c.birthdate, today) : null}
-            age={currentAge(c.birthdate, today)}
-          />
+          <li key={c.id}>
+            <SwipeToDelete
+              open={openId === c.id}
+              onOpenChange={(open) => setOpenId(open ? c.id : null)}
+              onDelete={() => setPending(c)}
+              label={`Delete ${c.name || 'this contact'}`}
+            >
+              <ContactRow
+                contact={c}
+                byId={byId}
+                // Every card is a button that opens the contact, in the
+                // birthdays view as much as anywhere else — the point of being
+                // told it is somebody's birthday in nine days is being one tap
+                // from their email address and the note about their kids.
+                onOpen={() => edit(c.id)}
+                countdown={birthdays ? nextBirthday(c.birthdate, today) : null}
+                age={currentAge(c.birthdate, today)}
+              />
+            </SwipeToDelete>
+          </li>
         ))}
       </ul>
+
+      {pending && (
+        <ConfirmDelete
+          contact={pending}
+          onKeep={() => setPending(null)}
+          onDelete={() => {
+            void removeContact(pending.id)
+            setPending(null)
+            setOpenId(null)
+          }}
+        />
+      )}
     </>
+  )
+}
+
+/**
+ * "Delete Sam Okonkwo?" — the second half of the swipe.
+ *
+ * A dialog and not an inline confirmation, because the thing being confirmed
+ * has scrolled under a thumb: the row it belongs to is at the bottom of a
+ * list, mid-gesture, and an inline Yes/No there is two more taps in the same
+ * few square centimetres that the swipe just happened in. It also names the
+ * person, which is the only real protection against having swiped the row
+ * above the one you meant.
+ *
+ * ⚠️ Keep is FIRST and Delete is the destructive-styled one on the right. The
+ * cheap way to close this dialog — Escape, or a tap on the backdrop — keeps
+ * the contact, because this app holds the only copy of it.
+ */
+function ConfirmDelete({
+  contact,
+  onKeep,
+  onDelete,
+}: {
+  contact: Contact
+  onKeep: () => void
+  onDelete: () => void
+}) {
+  return (
+    <Modal title="Delete contact" onClose={onKeep}>
+      <p className="text-sm text-slate-300">
+        Delete <span className="font-semibold text-slate-100">{contact.name || 'this contact'}</span>?
+      </p>
+      <p className="mt-2 text-sm text-slate-500">
+        Their notes, tags and birthday go with them. There is no undo — if you save your book online,
+        the deletion is copied there the next time it syncs.
+      </p>
+      <div className="mt-5 flex justify-end gap-2">
+        <button type="button" className={btnGhost} onClick={onKeep} autoFocus>
+          Keep
+        </button>
+        <button type="button" className={btnDanger} onClick={onDelete}>
+          Delete
+        </button>
+      </div>
+    </Modal>
   )
 }
 
@@ -142,7 +215,10 @@ function ContactRow({
   const isToday = countdown?.inDays === 0
 
   return (
-    <li>
+    // No <li> of its own: the list wraps every row in SwipeToDelete, which is
+    // what the <li> holds. `h-full` on the button keeps the cards in a grid
+    // row the same height now that there is a wrapper between the two.
+    <div className="h-full">
       <button
         type="button"
         onClick={onOpen}
@@ -205,6 +281,6 @@ function ContactRow({
           <p className="line-clamp-2 whitespace-pre-wrap text-sm text-slate-500">{contact.notes}</p>
         )}
       </button>
-    </li>
+    </div>
   )
 }
