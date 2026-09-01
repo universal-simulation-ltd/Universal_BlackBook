@@ -57,6 +57,22 @@ reminder, and it is the one thing you cannot undo. It survives an export — the
 CSV carries a `Hide birthday` column — so a backup restores the list you had
 rather than one with everybody put back.
 
+## Hiding somebody from the list
+
+**Swipe a card right** on a phone, or use the ◎ button in its corner anywhere,
+and that person drops out of the main list — the plumber, the landlord, the
+person you contact once a year and would rather not scroll past every time.
+
+**They are hidden from browsing, never from searching.** Type their name and
+they are right there, dimmed, with the same control to put them back. A "N
+hidden from this list" drawer at the bottom of the list does the same. That is
+what makes this different from deleting them, and what stops it being a way to
+lose people quietly.
+
+It is **independent of hiding a birthday**: somebody tidied off the main list
+still has their birthday counted down, because clutter and reminders are two
+different complaints.
+
 ## Deleting somebody
 
 **On a phone, swipe a card left** and a Delete button appears behind it. Tapping
@@ -64,9 +80,10 @@ it asks first, by name — the swipe only ever uncovers the button, because a
 flick that deletes outright is one thumb away from losing something this app
 holds the only copy of.
 
-**Swipe the other way, in the birthdays view, to hide somebody** — and in the
-hidden drawer the same right-swipe puts them back. One direction, one meaning:
-whether they are in the list.
+**Swipe the other way to hide somebody** — from the main list, or from the
+birthdays list if that is the view you are in — and the same right-swipe puts
+them back. One direction, one meaning: whether they are in the list you are
+looking at.
 
 Everywhere else — and with a keyboard or a screen reader anywhere — Delete is
 where it has always been: inside the contact's own form, behind the same
@@ -79,7 +96,8 @@ account, no server and no telemetry about its contents.
 
 Two ways to get it out or move it elsewhere:
 
-**CSV** — a plain `Name, Email, Tags, Notes, Birthday, Phone, Hide birthday` file.
+**CSV** — a plain `Name, Email, Tags, Notes, Birthday, Phone, Hide birthday,
+Hide from list` file.
 Opens in any spreadsheet and imports straight back. This is the backup story if
 you never want an account.
 

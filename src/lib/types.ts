@@ -58,6 +58,23 @@ export interface Contact {
    * correctly with no migration.
    */
   hideBirthday?: boolean
+  /**
+   * Keep this person out of the main list, but still findable by searching.
+   *
+   * ⚠️ Independent of `hideBirthday`, and the two mean different things. This
+   * one is about CLUTTER — the plumber, the landlord, the person you contact
+   * once a year and do not want to scroll past every time. That one is about
+   * REMINDERS. Hiding somebody from the list does not stop their birthday
+   * counting down, and hiding their birthday does not take them off the list.
+   *
+   * ⚠️ Hidden from BROWSING, never from searching. Type their name and they
+   * are there — which is what makes this different from deleting them, and
+   * what stops it being a way to lose people quietly.
+   *
+   * Absent means shown, so every record written before this existed reads
+   * correctly with no migration.
+   */
+  hideFromList?: boolean
   notes: string
   createdAt: number
   updatedAt: number

@@ -59,8 +59,17 @@ describe('toCsv', () => {
   it('writes the header and one row per contact', () => {
     const csv = toCsv([contact()], [])
     const rows = parseCsv(csv)
-    expect(rows[0]).toEqual(['Name', 'Email', 'Tags', 'Notes', 'Birthday', 'Phone', 'Hide birthday'])
-    expect(rows[1]).toEqual(['Sam Okonkwo', 'sam@example.com', '', '', '', '', ''])
+    expect(rows[0]).toEqual([
+      'Name',
+      'Email',
+      'Tags',
+      'Notes',
+      'Birthday',
+      'Phone',
+      'Hide birthday',
+      'Hide from list',
+    ])
+    expect(rows[1]).toEqual(['Sam Okonkwo', 'sam@example.com', '', '', '', '', '', ''])
   })
 
   it('writes tag NAMES, not ids', () => {
@@ -350,5 +359,61 @@ describe('the Hide birthday column', () => {
     expect(back.Ada.birthdate).toBe('1815-12-10')
     expect(back.Sam.birthdate).toBe('1990-06-04')
     expect(back.Sam.hideBirthday).toBeUndefined()
+  })
+})
+
+describe('the Hide from list column', () => {
+  const tidied = contact({ name: 'Plumber', hideFromList: true })
+  const normal = contact({ name: 'Sam' })
+
+  it('round-trips somebody hidden from the main list', () => {
+    const { contacts } = fromCsv(toCsv([tidied, normal], []), [])
+    const back = Object.fromEntries(contacts.map((c) => [c.name, c]))
+    expect(back.Plumber.hideFromList).toBe(true)
+    expect(back.Sam.hideFromList).toBeUndefined()
+  })
+
+  it('is INDEPENDENT of Hide birthday — two flags, two columns', () => {
+    // Hiding somebody from the list does not stop their birthday counting
+    // down, so a file that conflated them would change behaviour on import.
+    const both = contact({ name: 'Ada', birthdate: '1815-12-10', hideBirthday: true, hideFromList: true })
+    const listOnly = contact({ name: 'Plumber', birthdate: '1990-06-04', hideFromList: true })
+    const { contacts } = fromCsv(toCsv([both, listOnly], []), [])
+    const back = Object.fromEntries(contacts.map((c) => [c.name, c]))
+    expect(back.Ada.hideBirthday).toBe(true)
+    expect(back.Ada.hideFromList).toBe(true)
+    expect(back.Plumber.hideFromList).toBe(true)
+    expect(back.Plumber.hideBirthday).toBeUndefined()
+  })
+
+  it('does NOT need a birthday, unlike Hide birthday', () => {
+    const csv = 'Name,Hide from list\r\nPlumber,yes\r\n'
+    expect(fromCsv(csv, []).contacts[0].hideFromList).toBe(true)
+  })
+
+  it('reads anything but the allowlist as shown', () => {
+    for (const cell of ['', 'no', 'false', '0', 'later']) {
+      const csv = `Name,Hide from list\r\nPlumber,${cell}\r\n`
+      expect(fromCsv(csv, []).contacts[0].hideFromList).toBeUndefined()
+    }
+  })
+
+  it('reads a SEVEN-cell file from before this column existed', () => {
+    // The previous export, headerless. Index 7 is simply absent, and a missing
+    // cell has to mean "not hidden" rather than throwing or defaulting to true.
+    const row = 'Ada,ada@example.com,,,1815-12-10,,yes\r\n'
+    const [c] = fromCsv(row, []).contacts
+    expect(c.hideBirthday).toBe(true)
+    expect(c.hideFromList).toBeUndefined()
+    expect(c.birthdate).toBe('1815-12-10')
+  })
+
+  it('reads its own EIGHT-cell headerless export back', () => {
+    const file = toCsv([tidied, normal], [])
+    const headerless = file.split('\r\n').slice(1).join('\r\n')
+    const { contacts } = fromCsv(headerless, [])
+    const back = Object.fromEntries(contacts.map((c) => [c.name, c]))
+    expect(back.Plumber.hideFromList).toBe(true)
+    expect(back.Sam.hideFromList).toBeUndefined()
   })
 })

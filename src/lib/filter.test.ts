@@ -3,6 +3,8 @@ import {
   compare,
   fold,
   hiddenBirthdays,
+  hiddenFromList,
+  isSearching,
   matchesTags,
   matchesText,
   runQuery,
@@ -226,5 +228,45 @@ describe('hiding somebody from the birthdays view', () => {
     const zed = contact({ id: 'zed', name: 'Zed', birthdate: '--01-02', hideBirthday: true })
     const abe = contact({ id: 'abe', name: 'Abe', birthdate: '--12-30', hideBirthday: true })
     expect(hiddenBirthdays([zed, abe], TODAY).map((c) => c.name)).toEqual(['Abe', 'Zed'])
+  })
+})
+
+describe('hiding somebody from the main list', () => {
+  const plumber = contact({ id: 'p', name: 'Dave the Plumber', hideFromList: true, tagIds: [] })
+  const sam = contact({ id: 's', name: 'Sam Okonkwo', tagIds: [] })
+  const browse = { text: '', tagIds: [] as string[], sort: 'name' as const }
+
+  it('drops them while browsing', () => {
+    expect(runQuery([plumber, sam], browse, TODAY).map((c) => c.id)).toEqual(['s'])
+  })
+
+  it('puts them back the moment you search — that is the whole point', () => {
+    // Hidden from browsing, never from searching. Otherwise this is a way to
+    // lose people quietly, which is what deleting is for.
+    const found = runQuery([plumber, sam], { ...browse, text: 'plumber' }, TODAY)
+    expect(found.map((c) => c.id)).toEqual(['p'])
+  })
+
+  it('stays hidden behind a TAG filter, which is still browsing', () => {
+    const tagged = contact({ id: 'p2', name: 'Dave', hideFromList: true, tagIds: ['work'] })
+    const out = runQuery([tagged, sam], { ...browse, tagIds: ['work'] }, TODAY)
+    expect(out).toEqual([])
+  })
+
+  it('treats whitespace as no search at all', () => {
+    expect(isSearching({ ...browse, text: '   ' })).toBe(false)
+    expect(runQuery([plumber, sam], { ...browse, text: '  ' }, TODAY).map((c) => c.id)).toEqual(['s'])
+  })
+
+  it('is independent of hiding a BIRTHDAY', () => {
+    // Two flags, two meanings: clutter and reminders. Somebody tidied off the
+    // main list still has their birthday counted down.
+    const tidied = contact({ id: 't', name: 'Dave', hideFromList: true, birthdate: '--06-04' })
+    const out = runQuery([tidied], { ...browse, sort: 'birthday' }, TODAY)
+    expect(out.map((c) => c.id)).toEqual(['t'])
+  })
+
+  it('lists the hidden ones so they can be put back', () => {
+    expect(hiddenFromList([plumber, sam]).map((c) => c.id)).toEqual(['p'])
   })
 })

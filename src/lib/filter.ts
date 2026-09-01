@@ -135,14 +135,39 @@ export function compare(sort: SortKey, today: Today): (a: Contact, b: Contact) =
  * pipeline stays pure — see `nextBirthday` for why that matters.
  */
 export function runQuery(contacts: Contact[], query: Query, today: Today): Contact[] {
+  const searching = isSearching(query)
   return contacts
     .filter(
       (c) =>
         matchesText(c, query.text) &&
         matchesTags(c, query.tagIds) &&
-        (query.sort !== 'birthday' || showsInBirthdays(c, today)),
+        (query.sort !== 'birthday' || showsInBirthdays(c, today)) &&
+        // ⚠️ `hideFromList` does NOT apply to the birthdays view. The two flags
+        // mean different things — clutter and reminders — and the birthdays
+        // view is somewhere you went ON PURPOSE to see birthdays, not a list
+        // you are scrolling past somebody in. Somebody tidied off the main list
+        // still has their birthday counted down; `hideBirthday` is the flag
+        // that stops that, and it is theirs to set separately.
+        (query.sort === 'birthday' || searching || !c.hideFromList),
     )
     .sort(compare(query.sort, today))
+}
+
+/**
+ * Is the user LOOKING for somebody, as opposed to browsing?
+ *
+ * The whole of `hideFromList` turns on this one distinction, so it is a
+ * function with a name rather than a `!==  ''` buried in a filter.
+ *
+ * ⚠️ The search BOX and not the tag chips. Tags are how the list is browsed —
+ * a chip narrows a list you are still reading down, and somebody hidden from
+ * that list is hidden from it whichever chips are lit. Typing a name is the
+ * opposite act: it is asking for one person, and answering "no such person"
+ * because they were tidied away six months ago would be the app lying about
+ * what it holds.
+ */
+export function isSearching(query: Query): boolean {
+  return query.text.trim() !== ''
 }
 
 /**
@@ -158,14 +183,22 @@ export function showsInBirthdays(contact: Contact, today: Today): boolean {
 }
 
 /**
- * The people the birthdays view is leaving out ON PURPOSE — hidden, but with a
- * real birthday behind them. Sorted by name: there is no countdown ordering
- * worth applying to a list whose whole point is that you are not counting.
+ * Everybody hidden from the main list, for the drawer that puts them back.
  *
- * ⚠️ NOT filtered by the search box or the tag chips. This list is the undo
- * for hiding somebody, so it has to show everybody who is hidden regardless of
- * what else the query says — a person you cannot find is a person you cannot
- * un-hide.
+ * ⚠️ NOT filtered by the search box or the tag chips. This list is the undo for
+ * hiding somebody, so it has to show everybody who is hidden regardless of what
+ * else the query says — a person you cannot find is a person you cannot
+ * un-hide. Same rule as `hiddenBirthdays` below, for the same reason.
+ */
+export function hiddenFromList(contacts: Contact[]): Contact[] {
+  return contacts.filter((c) => c.hideFromList).sort(byName)
+}
+
+/**
+ * The people the birthdays view is leaving out ON PURPOSE — hidden, but with a
+ * real birthday behind them. Sorted by name, like `hiddenFromList`: there is no
+ * countdown ordering worth applying to a list whose whole point is that you are
+ * not counting. Not filtered by the query either, and for the same reason.
  */
 export function hiddenBirthdays(contacts: Contact[], today: Today): Contact[] {
   return contacts

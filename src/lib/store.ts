@@ -102,6 +102,8 @@ function toContact(raw: unknown): Contact | null {
     // failure mode of a corrupt value has to be a visible birthday, never a
     // silently missing one.
     hideBirthday: r.hideBirthday === true ? true : undefined,
+    // Same rule, same reason: a corrupt value must leave the person VISIBLE.
+    hideFromList: r.hideFromList === true ? true : undefined,
     notes: typeof r.notes === 'string' ? r.notes : '',
     createdAt: typeof r.createdAt === 'number' ? r.createdAt : Date.now(),
     updatedAt: typeof r.updatedAt === 'number' ? r.updatedAt : Date.now(),

@@ -34,10 +34,25 @@ import { nextSwatch } from './palette'
 // backup and the device-to-device move, and a backup that quietly drops a
 // setting restores a book that is subtly not the one you saved.
 //
-// ⚠️ It also makes a SEVENTH cell a fact worth having: seven cells cannot be
-// the legacy layout, which had exactly six, so a headerless file that wide
-// needs none of the guessing `positionalMap` does below.
-export const COLUMNS = ['Name', 'Email', 'Tags', 'Notes', 'Birthday', 'Phone', 'Hide birthday'] as const
+// `Hide from list` followed on the same day and is the same kind of thing: a
+// view preference, kept for the same reason. The two are INDEPENDENT — hiding
+// somebody from the list does not stop their birthday counting down — so they
+// are two columns and not one.
+//
+// ⚠️ Appending also makes a SEVENTH cell a fact worth having: anything wider
+// than six cells cannot be the legacy layout, which had exactly six, so a
+// headerless file that wide needs none of the guessing `positionalMap` does
+// below. That holds for eight as well, and for whatever is appended next.
+export const COLUMNS = [
+  'Name',
+  'Email',
+  'Tags',
+  'Notes',
+  'Birthday',
+  'Phone',
+  'Hide birthday',
+  'Hide from list',
+] as const
 
 const LEGACY_COLUMN_COUNT = 6
 
@@ -106,6 +121,7 @@ export function toCsv(contacts: Contact[], tags: Tag[]): string {
         // Empty for the great majority, which keeps a hand-read file quiet:
         // the column only says anything about the people it applies to.
         c.hideBirthday ? HIDDEN_CELL : '',
+        c.hideFromList ? HIDDEN_CELL : '',
       ]
         .map(escapeCell)
         .join(','),
@@ -188,7 +204,15 @@ export function parseCsv(text: string): string[][] {
   return rows
 }
 
-type Column = 'name' | 'email' | 'tags' | 'notes' | 'birthday' | 'phone' | 'hideBirthday'
+type Column =
+  | 'name'
+  | 'email'
+  | 'tags'
+  | 'notes'
+  | 'birthday'
+  | 'phone'
+  | 'hideBirthday'
+  | 'hideFromList'
 
 /**
  * What a header cell may be called.
@@ -268,6 +292,10 @@ const HEADER_ALIASES: Record<string, Column> = {
   'hide birthdays': 'hideBirthday',
   'hidden birthday': 'hideBirthday',
   'hide from birthdays': 'hideBirthday',
+  'hide from list': 'hideFromList',
+  'hide from the list': 'hideFromList',
+  'hidden': 'hideFromList',
+  'hide': 'hideFromList',
 }
 
 /**
@@ -286,6 +314,7 @@ function headerIndex(header: string[]): Record<Column, number> {
     birthday: -1,
     phone: -1,
     hideBirthday: -1,
+    hideFromList: -1,
   }
   header.forEach((h, i) => {
     const column = HEADER_ALIASES[h.trim().toLowerCase()]
@@ -337,15 +366,35 @@ export interface ImportResult {
 function positionalMap(rows: string[][]): Record<Column, number> {
   const width = Math.max(...rows.map((r) => r.length))
   if (width > LEGACY_COLUMN_COUNT) {
-    return { name: 0, email: 1, tags: 2, notes: 3, birthday: 4, phone: 5, hideBirthday: 6 }
+    return {
+      name: 0,
+      email: 1,
+      tags: 2,
+      notes: 3,
+      birthday: 4,
+      phone: 5,
+      hideBirthday: 6,
+      // 7 is simply absent from a seven-cell file exported before this column
+      // existed; `cell` reads a missing index as '', which is "not hidden".
+      hideFromList: 7,
+    }
   }
   if (width < LEGACY_COLUMN_COUNT) {
-    return { name: 0, email: 1, tags: 2, notes: 3, birthday: 4, phone: -1, hideBirthday: -1 }
+    return {
+      name: 0,
+      email: 1,
+      tags: 2,
+      notes: 3,
+      birthday: 4,
+      phone: -1,
+      hideBirthday: -1,
+      hideFromList: -1,
+    }
   }
   const dates = (i: number) => rows.filter((r) => parseBirthdayInput((r[i] ?? '').trim())).length
   return dates(4) > dates(5)
-    ? { name: 0, email: 1, tags: 2, notes: 3, birthday: 4, phone: 5, hideBirthday: -1 }
-    : { name: 0, email: 1, tags: 2, notes: 4, birthday: 5, phone: -1, hideBirthday: -1 }
+    ? { name: 0, email: 1, tags: 2, notes: 3, birthday: 4, phone: 5, hideBirthday: -1, hideFromList: -1 }
+    : { name: 0, email: 1, tags: 2, notes: 4, birthday: 5, phone: -1, hideBirthday: -1, hideFromList: -1 }
 }
 
 /**
@@ -427,6 +476,9 @@ export function fromCsv(text: string, existing: Tag[]): ImportResult {
       // shown case, matching what the store writes.
       hideBirthday:
         birthdate && HIDDEN_VALUES.has(cell(row, at.hideBirthday).toLowerCase()) ? true : undefined,
+      // No birthday to depend on, so no such guard: hiding somebody from the
+      // list is about the person, not about a date they may not have.
+      hideFromList: HIDDEN_VALUES.has(cell(row, at.hideFromList).toLowerCase()) ? true : undefined,
       notes: at.notes >= 0 ? (row[at.notes] ?? '') : '',
       createdAt: now,
       updatedAt: now,

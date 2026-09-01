@@ -63,6 +63,8 @@ interface BookState {
   saveContact: (draft: ContactDraft) => Promise<void>
   /** Show or hide this person in the birthdays view. Their date is untouched. */
   setBirthdayHidden: (id: string, hidden: boolean) => Promise<void>
+  /** Show or hide this person in the main list. Search still finds them. */
+  setListHidden: (id: string, hidden: boolean) => Promise<void>
   removeContact: (id: string) => Promise<void>
   addTag: (name: string) => Promise<Tag | null>
   renameTag: (id: string, name: string) => Promise<void>
@@ -158,6 +160,7 @@ export const useBookStore = create<BookState>((set, get) => ({
       // the contact from the draft alone would silently un-hide somebody every
       // time their phone number was corrected.
       hideBirthday: existing?.hideBirthday,
+      hideFromList: existing?.hideFromList,
       notes: draft.notes,
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
@@ -180,6 +183,14 @@ export const useBookStore = create<BookState>((set, get) => ({
     // the record exactly as it was before it was ever hidden rather than
     // growing a field that means "normal".
     const next: Contact = { ...existing, hideBirthday: hidden ? true : undefined, updatedAt: Date.now() }
+    set((s) => ({ contacts: s.contacts.map((c) => (c.id === id ? next : c)) }))
+    await putContact(next)
+  },
+
+  setListHidden: async (id, hidden) => {
+    const existing = get().contacts.find((c) => c.id === id)
+    if (!existing) return
+    const next: Contact = { ...existing, hideFromList: hidden ? true : undefined, updatedAt: Date.now() }
     set((s) => ({ contacts: s.contacts.map((c) => (c.id === id ? next : c)) }))
     await putContact(next)
   },

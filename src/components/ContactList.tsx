@@ -7,7 +7,7 @@ import {
   todayParts,
   type NextBirthday,
 } from '../lib/birthday'
-import { hiddenBirthdays, runQuery } from '../lib/filter'
+import { hiddenBirthdays, hiddenFromList, isSearching, runQuery } from '../lib/filter'
 import type { Side } from '../lib/swipe'
 import type { Contact, Tag } from '../lib/types'
 import { useBookStore } from '../stores/bookStore'
@@ -68,6 +68,26 @@ function hideAction(contact: Contact, onAction: () => void): SwipeAction {
   }
 }
 
+function hideFromListAction(contact: Contact, onAction: () => void): SwipeAction {
+  return {
+    text: 'Hide',
+    label: `Hide ${contact.name || 'this contact'} from the list — searching still finds them`,
+    icon: EyeOffIcon,
+    tone: 'bg-slate-700 text-slate-100 focus-visible:ring-slate-300',
+    onAction,
+  }
+}
+
+function showInListAction(contact: Contact, onAction: () => void): SwipeAction {
+  return {
+    text: 'Show',
+    label: `Show ${contact.name || 'this contact'} in the list again`,
+    icon: EyeIcon,
+    tone: 'bg-orange-600 text-white focus-visible:ring-orange-200',
+    onAction,
+  }
+}
+
 function showAction(contact: Contact, onAction: () => void): SwipeAction {
   return {
     text: 'Show',
@@ -109,6 +129,15 @@ export function ContactList() {
     [birthdays, contacts, today],
   )
   const setBirthdayHidden = useBookStore((s) => s.setBirthdayHidden)
+  const setListHidden = useBookStore((s) => s.setListHidden)
+  const searching = isSearching(query)
+  // Only outside the birthdays view: that view has its own hidden drawer, and
+  // two of them stacked would be asking the reader to hold two different
+  // meanings of "hidden" at once.
+  const tidiedAway = useMemo(
+    () => (birthdays || searching ? [] : hiddenFromList(contacts)),
+    [birthdays, searching, contacts],
+  )
 
   if (contacts.length === 0) {
     return (
@@ -125,10 +154,11 @@ export function ContactList() {
     )
   }
 
-  // ⚠️ An empty birthdays view has TWO causes and they need different words.
-  // "Nobody has a birthday recorded" is a lie when the truth is that you hid
-  // everybody who does — and it is a lie that hides its own undo.
-  if (visible.length === 0 && !(birthdays && hidden.length > 0)) {
+  // ⚠️ An empty list has TWO causes and they need different words. "Nobody has
+  // a birthday recorded" — or "nobody matches that" — is a lie when the truth
+  // is that you hid everybody, and it is a lie that hides its own undo: the
+  // drawer that puts them back sits below a list that is not rendered.
+  if (visible.length === 0 && hidden.length === 0 && tidiedAway.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-slate-800 px-6 py-14 text-center">
         <p className="text-sm text-slate-400">
@@ -147,7 +177,9 @@ export function ContactList() {
           ? visible.length === 0
             ? 'Every birthday you have is hidden'
             : `${visible.length} ${visible.length === 1 ? 'birthday' : 'birthdays'}, soonest first`
-          : visible.length === contacts.length
+          : visible.length === 0
+            ? 'Everybody is hidden from this list'
+            : visible.length === contacts.length
             ? `${contacts.length} ${contacts.length === 1 ? 'contact' : 'contacts'}`
             : `${visible.length} of ${contacts.length}`}
       </p>
@@ -168,7 +200,18 @@ export function ContactList() {
                       void setBirthdayHidden(c.id, true)
                       setOpenRow(null)
                     })
-                  : undefined
+                  : c.hideFromList
+                    ? // Only reachable while SEARCHING — a hidden person is in
+                      // the results but not the list, and the same gesture that
+                      // put them away is the one that brings them back.
+                      showInListAction(c, () => {
+                        void setListHidden(c.id, false)
+                        setOpenRow(null)
+                      })
+                    : hideFromListAction(c, () => {
+                        void setListHidden(c.id, true)
+                        setOpenRow(null)
+                      })
               }
             >
               <ContactRow
@@ -183,13 +226,76 @@ export function ContactList() {
                 age={currentAge(c.birthdate, today)}
                 // Only in the birthdays view. Elsewhere the card is a contact
                 // and the flag would mean nothing on it.
-                onToggleHidden={birthdays ? () => void setBirthdayHidden(c.id, true) : undefined}
-                hiddenFromBirthdays={false}
+                onToggleHidden={
+                  birthdays
+                    ? () => void setBirthdayHidden(c.id, true)
+                    : () => void setListHidden(c.id, !c.hideFromList)
+                }
+                hideLabel={
+                  birthdays
+                    ? { on: 'birthdays list', hidden: false }
+                    : { on: 'list', hidden: Boolean(c.hideFromList) }
+                }
+                dimmed={Boolean(c.hideFromList)}
               />
             </SwipeRow>
           </li>
         ))}
       </ul>
+
+      {tidiedAway.length > 0 && (
+        <section className="mt-4 border-t border-slate-800 pt-3">
+          <button
+            type="button"
+            onClick={() => setShowHidden((v) => !v)}
+            aria-expanded={showHidden}
+            className="inline-flex items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs text-slate-500 transition-colors hover:text-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+          >
+            <svg
+              viewBox="0 0 16 16"
+              className={`h-3.5 w-3.5 transition-transform ${showHidden ? 'rotate-90' : ''}`}
+              fill="currentColor"
+              aria-hidden
+            >
+              <path d="M6 3.5 10.5 8 6 12.5V3.5Z" />
+            </svg>
+            <span className="tabular-nums">{tidiedAway.length} hidden from this list</span>
+          </button>
+          {showHidden && (
+            <>
+              <p className="mb-2 mt-1 px-1.5 text-xs text-slate-600">
+                Still in your book, and still found by searching — just not in the way while you scroll.
+              </p>
+              <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                {tidiedAway.map((c) => (
+                  <li key={c.id}>
+                    <SwipeRow
+                      open={openRow?.id === c.id ? openRow.side : null}
+                      onOpenChange={(side) => setOpenRow(side ? { id: c.id, side } : null)}
+                      right={deleteAction(c, () => setPending(c))}
+                      left={showInListAction(c, () => {
+                        void setListHidden(c.id, false)
+                        setOpenRow(null)
+                      })}
+                    >
+                      <ContactRow
+                        contact={c}
+                        byId={byId}
+                        onOpen={() => edit(c.id)}
+                        countdown={null}
+                        age={currentAge(c.birthdate, today)}
+                        onToggleHidden={() => void setListHidden(c.id, false)}
+                        hideLabel={{ on: 'list', hidden: true }}
+                        dimmed
+                      />
+                    </SwipeRow>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </section>
+      )}
 
       {birthdays && hidden.length > 0 && (
         <section className="mt-4 border-t border-slate-800 pt-3">
@@ -242,7 +348,8 @@ export function ContactList() {
                         countdown={null}
                         age={currentAge(c.birthdate, today)}
                         onToggleHidden={() => void setBirthdayHidden(c.id, false)}
-                        hiddenFromBirthdays
+                        hideLabel={{ on: 'birthdays list', hidden: true }}
+                        dimmed
                       />
                     </SwipeRow>
                   </li>
@@ -354,7 +461,8 @@ function ContactRow({
   countdown,
   age,
   onToggleHidden,
-  hiddenFromBirthdays,
+  hideLabel,
+  dimmed,
 }: {
   contact: Contact
   byId: Map<string, Tag>
@@ -363,10 +471,17 @@ function ContactRow({
   countdown: NextBirthday | null
   /** How old they are today. Null when the year is not recorded. */
   age: number | null
-  /** Set only in the birthdays view: hide this person, or put them back. */
+  /** Hide this person from whichever list they are in, or put them back. */
   onToggleHidden?: () => void
-  /** Whether this row is being rendered in the hidden drawer. */
-  hiddenFromBirthdays?: boolean
+  /**
+   * What the hide control says. `on` names the list ("list", "birthdays list")
+   * and `hidden` picks the direction — the same corner button means "hide" in
+   * one view and "show again" in another, and a control that does not say which
+   * is a control people stop trusting.
+   */
+  hideLabel?: { on: string; hidden: boolean }
+  /** Dim the card: this person is hidden from the list they are showing in. */
+  dimmed?: boolean
 }) {
   // A dangling id renders as nothing rather than as an "undefined" chip. They
   // shouldn't exist — removeTag strips them — but an imported or hand-edited
@@ -384,7 +499,7 @@ function ContactRow({
     // positioned over its corner — never a child of it. A button inside a
     // button is invalid HTML and behaves differently in every engine; the same
     // reason the phone number on this card is plain text and not a `tel:` link.
-    <div className={`relative h-full ${hiddenFromBirthdays ? 'opacity-60' : ''}`}>
+    <div className={`relative h-full ${dimmed ? 'opacity-60' : ''}`}>
       <button
         type="button"
         onClick={onOpen}
@@ -458,14 +573,18 @@ function ContactRow({
           // control has no idea which card it is sitting on, and "Hide" on its
           // own does not say hide from WHAT either.
           aria-label={
-            hiddenFromBirthdays
-              ? `Show ${contact.name || 'this contact'} in the birthdays list again`
-              : `Hide ${contact.name || 'this contact'} from the birthdays list`
+            hideLabel?.hidden
+              ? `Show ${contact.name || 'this contact'} in the ${hideLabel.on} again`
+              : `Hide ${contact.name || 'this contact'} from the ${hideLabel?.on ?? 'list'}`
           }
-          title={hiddenFromBirthdays ? 'Show in the birthdays list again' : 'Hide from the birthdays list'}
+          title={
+            hideLabel?.hidden
+              ? `Show in the ${hideLabel.on} again`
+              : `Hide from the ${hideLabel?.on ?? 'list'}`
+          }
           className="absolute right-1 top-1 inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
         >
-          {hiddenFromBirthdays ? (
+          {hideLabel?.hidden ? (
             <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden>
               <path d="M10 4c-3.8 0-6.9 2.4-8.2 5.6a1 1 0 0 0 0 .8C3.1 13.6 6.2 16 10 16s6.9-2.4 8.2-5.6a1 1 0 0 0 0-.8C16.9 6.4 13.8 4 10 4Zm0 10.5c-3 0-5.5-1.8-6.7-4.5C4.5 7.3 7 5.5 10 5.5s5.5 1.8 6.7 4.5c-1.2 2.7-3.7 4.5-6.7 4.5Zm0-7.5a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z" />
             </svg>
