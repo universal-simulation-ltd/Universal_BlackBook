@@ -53,7 +53,9 @@ birthday is a fact about a date rather than a judgement about you.
 card. It hides the reminder, not the birthday: the date stays on the contact,
 and a "N hidden from this list" drawer at the bottom of the birthdays view puts
 them back. Deleting the date would have been the other way to stop the yearly
-reminder, and it is the one thing you cannot undo.
+reminder, and it is the one thing you cannot undo. It survives an export — the
+CSV carries a `Hide birthday` column — so a backup restores the list you had
+rather than one with everybody put back.
 
 ## Deleting somebody
 
@@ -73,7 +75,7 @@ account, no server and no telemetry about its contents.
 
 Two ways to get it out or move it elsewhere:
 
-**CSV** — a plain `Name, Email, Tags, Notes, Birthday, Phone` file.
+**CSV** — a plain `Name, Email, Tags, Notes, Birthday, Phone, Hide birthday` file.
 Opens in any spreadsheet and imports straight back. This is the backup story if
 you never want an account.
 

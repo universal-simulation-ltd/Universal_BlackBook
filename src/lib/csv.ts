@@ -27,9 +27,33 @@ import { nextSwatch } from './palette'
 // Birthday in the file even though it sits under Email in the form, because
 // where a column lives on screen and where it lives in the file are two
 // different questions and only one of them is a wire format.
-export const COLUMNS = ['Name', 'Email', 'Tags', 'Notes', 'Birthday', 'Phone'] as const
+//
+// `Hide birthday` was appended on 2026-09-01, same rule again. It is the one
+// column that is not a fact about the person — it is a view preference (see
+// Contact.hideBirthday) — and it is here anyway because this file is the
+// backup and the device-to-device move, and a backup that quietly drops a
+// setting restores a book that is subtly not the one you saved.
+//
+// ⚠️ It also makes a SEVENTH cell a fact worth having: seven cells cannot be
+// the legacy layout, which had exactly six, so a headerless file that wide
+// needs none of the guessing `positionalMap` does below.
+export const COLUMNS = ['Name', 'Email', 'Tags', 'Notes', 'Birthday', 'Phone', 'Hide birthday'] as const
 
 const LEGACY_COLUMN_COUNT = 6
+
+/**
+ * What counts as "yes" in the Hide birthday column.
+ *
+ * ⚠️ An allowlist, and everything else — a stray word, a foreign export's own
+ * column that happened to match the header, a corrupted cell — reads as SHOWN.
+ * The failure mode of this field has to be a visible birthday, never a
+ * silently missing one; `toContact` in lib/store.ts takes the same line with
+ * the same reasoning.
+ */
+const HIDDEN_VALUES = new Set(['yes', 'y', 'true', '1', 'hidden'])
+
+/** What `toCsv` writes. A word rather than `1`, because a person may read it. */
+const HIDDEN_CELL = 'yes'
 
 /** Tags share one cell, so they need a separator the delimiter is not. */
 const TAG_SEPARATOR = '; '
@@ -79,6 +103,9 @@ export function toCsv(contacts: Contact[], tags: Tag[]): string {
         // the user's problem to notice — writing it back mangled, or prefixed
         // with an apostrophe to stop that, would be ours.
         c.phone,
+        // Empty for the great majority, which keeps a hand-read file quiet:
+        // the column only says anything about the people it applies to.
+        c.hideBirthday ? HIDDEN_CELL : '',
       ]
         .map(escapeCell)
         .join(','),
@@ -161,7 +188,7 @@ export function parseCsv(text: string): string[][] {
   return rows
 }
 
-type Column = 'name' | 'email' | 'tags' | 'notes' | 'birthday' | 'phone'
+type Column = 'name' | 'email' | 'tags' | 'notes' | 'birthday' | 'phone' | 'hideBirthday'
 
 /**
  * What a header cell may be called.
@@ -234,6 +261,13 @@ const HEADER_ALIASES: Record<string, Column> = {
   // simply misses — which is the right answer and the reason this table is
   // spellings rather than a de-suffixing rule that would catch both.
   'phone 1 - value': 'phone',
+  // Ours alone. No other address book has this column, so there is nothing to
+  // be compatible WITH — the spellings here are just the ones a person might
+  // type after editing the export in a spreadsheet.
+  'hide birthday': 'hideBirthday',
+  'hide birthdays': 'hideBirthday',
+  'hidden birthday': 'hideBirthday',
+  'hide from birthdays': 'hideBirthday',
 }
 
 /**
@@ -244,7 +278,15 @@ const HEADER_ALIASES: Record<string, Column> = {
  * primary value in.
  */
 function headerIndex(header: string[]): Record<Column, number> {
-  const out: Record<Column, number> = { name: -1, email: -1, tags: -1, notes: -1, birthday: -1, phone: -1 }
+  const out: Record<Column, number> = {
+    name: -1,
+    email: -1,
+    tags: -1,
+    notes: -1,
+    birthday: -1,
+    phone: -1,
+    hideBirthday: -1,
+  }
   header.forEach((h, i) => {
     const column = HEADER_ALIASES[h.trim().toLowerCase()]
     if (column && out[column] === -1) out[column] = i
@@ -286,16 +328,24 @@ export interface ImportResult {
  * somebody deleted the header row from this week's export. When the tie is
  * wrong, the cost is Notes read from the empty frequency column — recoverable
  * by re-exporting with the header, which is what every export writes.
+ *
+ * ⚠️ SEVEN cells short-circuits all of that, from 2026-09-01. The legacy layout
+ * had exactly six columns and can never be wider, so a seven-cell file is this
+ * app's current layout and nothing else — no heuristic, and no tie to lose. It
+ * is the only width here that is known rather than inferred.
  */
 function positionalMap(rows: string[][]): Record<Column, number> {
   const width = Math.max(...rows.map((r) => r.length))
+  if (width > LEGACY_COLUMN_COUNT) {
+    return { name: 0, email: 1, tags: 2, notes: 3, birthday: 4, phone: 5, hideBirthday: 6 }
+  }
   if (width < LEGACY_COLUMN_COUNT) {
-    return { name: 0, email: 1, tags: 2, notes: 3, birthday: 4, phone: -1 }
+    return { name: 0, email: 1, tags: 2, notes: 3, birthday: 4, phone: -1, hideBirthday: -1 }
   }
   const dates = (i: number) => rows.filter((r) => parseBirthdayInput((r[i] ?? '').trim())).length
   return dates(4) > dates(5)
-    ? { name: 0, email: 1, tags: 2, notes: 3, birthday: 4, phone: 5 }
-    : { name: 0, email: 1, tags: 2, notes: 4, birthday: 5, phone: -1 }
+    ? { name: 0, email: 1, tags: 2, notes: 3, birthday: 4, phone: 5, hideBirthday: -1 }
+    : { name: 0, email: 1, tags: 2, notes: 4, birthday: 5, phone: -1, hideBirthday: -1 }
 }
 
 /**
@@ -353,6 +403,11 @@ export function fromCsv(text: string, existing: Tag[]): ImportResult {
       skipped++
       continue
     }
+    // Unparseable birthdays are dropped, not rejected — losing one person's
+    // birthday is a far smaller harm than refusing to import the person, and
+    // `parseBirthdayInput` deliberately declines ambiguous forms like
+    // 04/06/1990 rather than guessing at a day/month order.
+    const birthdate = parseBirthdayInput(cell(row, at.birthday))
     contacts.push({
       id: newId(),
       name: name || email,
@@ -363,11 +418,15 @@ export function fromCsv(text: string, existing: Tag[]): ImportResult {
         .filter(Boolean)
         .map(ensureTag),
       phone: cell(row, at.phone),
-      // Unparseable birthdays are dropped, not rejected — losing one person's
-      // birthday is a far smaller harm than refusing to import the person, and
-      // `parseBirthdayInput` deliberately declines ambiguous forms like
-      // 04/06/1990 rather than guessing at a day/month order.
-      birthdate: parseBirthdayInput(cell(row, at.birthday)),
+      birthdate,
+      // ⚠️ Only alongside a birthday that actually parsed. A row flagged hidden
+      // whose date was unreadable would otherwise land a flag on somebody with
+      // no date at all — invisible until they were given one, at which point
+      // they would be silently absent from the birthdays view for a reason
+      // written into a CSV weeks earlier. `undefined` and not `false` for the
+      // shown case, matching what the store writes.
+      hideBirthday:
+        birthdate && HIDDEN_VALUES.has(cell(row, at.hideBirthday).toLowerCase()) ? true : undefined,
       notes: at.notes >= 0 ? (row[at.notes] ?? '') : '',
       createdAt: now,
       updatedAt: now,

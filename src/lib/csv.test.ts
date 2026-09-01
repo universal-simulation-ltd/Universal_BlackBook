@@ -59,8 +59,8 @@ describe('toCsv', () => {
   it('writes the header and one row per contact', () => {
     const csv = toCsv([contact()], [])
     const rows = parseCsv(csv)
-    expect(rows[0]).toEqual(['Name', 'Email', 'Tags', 'Notes', 'Birthday', 'Phone'])
-    expect(rows[1]).toEqual(['Sam Okonkwo', 'sam@example.com', '', '', '', ''])
+    expect(rows[0]).toEqual(['Name', 'Email', 'Tags', 'Notes', 'Birthday', 'Phone', 'Hide birthday'])
+    expect(rows[1]).toEqual(['Sam Okonkwo', 'sam@example.com', '', '', '', '', ''])
   })
 
   it('writes tag NAMES, not ids', () => {
@@ -287,5 +287,68 @@ describe('headerless files, across the frequency removal', () => {
   it('breaks an undecidable tie towards the old layout', () => {
     const { contacts } = fromCsv('Sam,s@x.com,Work,weekly,a note,', [])
     expect(contacts[0].notes).toBe('a note')
+  })
+})
+
+describe('the Hide birthday column', () => {
+  const hidden = contact({ name: 'Ada', birthdate: '1815-12-10', hideBirthday: true })
+  const shown = contact({ name: 'Sam', birthdate: '1990-06-04' })
+
+  it('round-trips a hidden birthday through an export and back', () => {
+    // The whole point of the column. Before it existed, exporting and
+    // re-importing put everybody back in the birthdays list.
+    const { contacts } = fromCsv(toCsv([hidden, shown], []), [])
+    const back = Object.fromEntries(contacts.map((c) => [c.name, c]))
+    expect(back.Ada.hideBirthday).toBe(true)
+    expect(back.Ada.birthdate).toBe('1815-12-10')
+    expect(back.Sam.hideBirthday).toBeUndefined()
+  })
+
+  it('leaves the cell EMPTY for everybody else, not "no"', () => {
+    // A column of "no" down a file that is mostly people you never hid is
+    // noise in a spreadsheet somebody opens to edit a phone number.
+    expect(parseCsv(toCsv([shown], []))[1][6]).toBe('')
+    expect(parseCsv(toCsv([hidden], []))[1][6]).toBe('yes')
+  })
+
+  it('accepts the spellings a person might type in a spreadsheet', () => {
+    for (const cell of ['yes', 'Yes', 'TRUE', 'y', '1', 'hidden']) {
+      const csv = `Name,Birthday,Hide birthday\r\nAda,1815-12-10,${cell}\r\n`
+      expect(fromCsv(csv, []).contacts[0].hideBirthday).toBe(true)
+    }
+  })
+
+  it('reads anything ELSE as shown — the failure mode must be a visible birthday', () => {
+    for (const cell of ['', 'no', 'false', '0', 'maybe', 'Mobile']) {
+      const csv = `Name,Birthday,Hide birthday\r\nAda,1815-12-10,${cell}\r\n`
+      expect(fromCsv(csv, []).contacts[0].hideBirthday).toBeUndefined()
+    }
+  })
+
+  it('drops the flag when the birthday itself did not parse', () => {
+    // Otherwise the flag outlives the date it refers to, and the person goes
+    // silently missing from the birthdays view whenever one is added later.
+    const csv = 'Name,Birthday,Hide birthday\r\nAda,04/06/1990,yes\r\n'
+    const [c] = fromCsv(csv, []).contacts
+    expect(c.birthdate).toBeUndefined()
+    expect(c.hideBirthday).toBeUndefined()
+  })
+
+  it('is absent from a file that has no such column, rather than false', () => {
+    const csv = 'Name,Email,Birthday\r\nAda,ada@example.com,1815-12-10\r\n'
+    expect(fromCsv(csv, []).contacts[0].hideBirthday).toBeUndefined()
+  })
+
+  it('reads its own SEVEN-cell headerless export with no guessing', () => {
+    // Seven cells cannot be the legacy six-column layout, so this width needs
+    // none of the birthday-column heuristic the six-cell case runs.
+    const file = toCsv([hidden, shown], [])
+    const headerless = file.split('\r\n').slice(1).join('\r\n')
+    const { contacts } = fromCsv(headerless, [])
+    const back = Object.fromEntries(contacts.map((c) => [c.name, c]))
+    expect(back.Ada.hideBirthday).toBe(true)
+    expect(back.Ada.birthdate).toBe('1815-12-10')
+    expect(back.Sam.birthdate).toBe('1990-06-04')
+    expect(back.Sam.hideBirthday).toBeUndefined()
   })
 })
