@@ -96,6 +96,12 @@ function toContact(raw: unknown): Contact | null {
     // otherwise reach formatBirthday on every render of that card, and an
     // empty string there is indistinguishable from "not recorded" anyway.
     birthdate: typeof r.birthdate === 'string' && isValidBirthday(r.birthdate) ? r.birthdate : undefined,
+    // Only ever stored when TRUE, so the field is absent on every record that
+    // predates it and on everyone who is simply shown — which is the great
+    // majority. Anything other than a literal `true` reads as "shown": the
+    // failure mode of a corrupt value has to be a visible birthday, never a
+    // silently missing one.
+    hideBirthday: r.hideBirthday === true ? true : undefined,
     notes: typeof r.notes === 'string' ? r.notes : '',
     createdAt: typeof r.createdAt === 'number' ? r.createdAt : Date.now(),
     updatedAt: typeof r.updatedAt === 'number' ? r.updatedAt : Date.now(),

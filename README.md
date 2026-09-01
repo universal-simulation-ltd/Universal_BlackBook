@@ -49,6 +49,12 @@ book starts issuing tasks, it stops being an address book, and people stop
 opening it. The birthdays view is the one exception, and only because a
 birthday is a fact about a date rather than a judgement about you.
 
+**Anyone can be hidden from that list** with the ◎ button in the corner of their
+card. It hides the reminder, not the birthday: the date stays on the contact,
+and a "N hidden from this list" drawer at the bottom of the birthdays view puts
+them back. Deleting the date would have been the other way to stop the yearly
+reminder, and it is the one thing you cannot undo.
+
 ## Deleting somebody
 
 **On a phone, swipe a card left** and a Delete button appears behind it. Tapping

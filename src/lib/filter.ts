@@ -5,9 +5,10 @@ import { formatBirthday, nextBirthday, type Today } from './birthday'
  * How the list is ordered.
  *
  * `birthday` is the odd one out and deliberately so: it is the only key that
- * also FILTERS, dropping everyone with no birthday recorded. A "sort by
- * birthday" that padded the bottom of the list with people who have none is a
- * worse answer to "whose birthday is coming up" than a shorter list is.
+ * also FILTERS, dropping everyone with no birthday recorded — and everyone
+ * marked `hideBirthday`. A "sort by birthday" that padded the bottom of the
+ * list with people who have none is a worse answer to "whose birthday is
+ * coming up" than a shorter list is.
  */
 export type SortKey = 'name' | 'name-desc' | 'recent' | 'birthday'
 
@@ -139,7 +140,35 @@ export function runQuery(contacts: Contact[], query: Query, today: Today): Conta
       (c) =>
         matchesText(c, query.text) &&
         matchesTags(c, query.tagIds) &&
-        (query.sort !== 'birthday' || Boolean(nextBirthday(c.birthdate, today))),
+        (query.sort !== 'birthday' || showsInBirthdays(c, today)),
     )
     .sort(compare(query.sort, today))
+}
+
+/**
+ * Does this person belong in the birthdays view?
+ *
+ * Two ways to be out of it, and they are different in kind: no date recorded
+ * (nothing to show) and `hideBirthday` (a date you asked not to be shown). The
+ * second is why `hiddenBirthdays` below exists — anything a user switched on
+ * needs somewhere to switch it off, or it is a trapdoor.
+ */
+export function showsInBirthdays(contact: Contact, today: Today): boolean {
+  return !contact.hideBirthday && Boolean(nextBirthday(contact.birthdate, today))
+}
+
+/**
+ * The people the birthdays view is leaving out ON PURPOSE — hidden, but with a
+ * real birthday behind them. Sorted by name: there is no countdown ordering
+ * worth applying to a list whose whole point is that you are not counting.
+ *
+ * ⚠️ NOT filtered by the search box or the tag chips. This list is the undo
+ * for hiding somebody, so it has to show everybody who is hidden regardless of
+ * what else the query says — a person you cannot find is a person you cannot
+ * un-hide.
+ */
+export function hiddenBirthdays(contacts: Contact[], today: Today): Contact[] {
+  return contacts
+    .filter((c) => c.hideBirthday && Boolean(nextBirthday(c.birthdate, today)))
+    .sort(byName)
 }

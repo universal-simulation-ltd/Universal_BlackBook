@@ -7,7 +7,7 @@ import {
   todayParts,
   type NextBirthday,
 } from '../lib/birthday'
-import { runQuery } from '../lib/filter'
+import { hiddenBirthdays, runQuery } from '../lib/filter'
 import type { Contact, Tag } from '../lib/types'
 import { useBookStore } from '../stores/bookStore'
 import { Modal } from './Modal'
@@ -27,6 +27,10 @@ export function ContactList() {
   const [openId, setOpenId] = useState<string | null>(null)
   /** The contact whose deletion is being confirmed. */
   const [pending, setPending] = useState<Contact | null>(null)
+  /** Is the "hidden from this list" drawer open? Never persisted — it is a
+      management view, and it should be shut again the next time you come
+      looking for whose birthday is next. */
+  const [showHidden, setShowHidden] = useState(false)
 
   // Read once per mount rather than per render, so the query's memo has a
   // stable input. A tab left open across midnight keeps yesterday's "today"
@@ -36,6 +40,11 @@ export function ContactList() {
   const byId = useMemo(() => new Map(tags.map((t) => [t.id, t])), [tags])
   const visible = useMemo(() => runQuery(contacts, query, today), [contacts, query, today])
   const birthdays = query.sort === 'birthday'
+  const hidden = useMemo(
+    () => (birthdays ? hiddenBirthdays(contacts, today) : []),
+    [birthdays, contacts, today],
+  )
+  const setBirthdayHidden = useBookStore((s) => s.setBirthdayHidden)
 
   if (contacts.length === 0) {
     return (
@@ -52,7 +61,10 @@ export function ContactList() {
     )
   }
 
-  if (visible.length === 0) {
+  // ⚠️ An empty birthdays view has TWO causes and they need different words.
+  // "Nobody has a birthday recorded" is a lie when the truth is that you hid
+  // everybody who does — and it is a lie that hides its own undo.
+  if (visible.length === 0 && !(birthdays && hidden.length > 0)) {
     return (
       <div className="rounded-2xl border border-dashed border-slate-800 px-6 py-14 text-center">
         <p className="text-sm text-slate-400">
@@ -68,7 +80,9 @@ export function ContactList() {
     <>
       <p className="mb-2 text-xs text-slate-500 tabular-nums" aria-live="polite">
         {birthdays
-          ? `${visible.length} ${visible.length === 1 ? 'birthday' : 'birthdays'}, soonest first`
+          ? visible.length === 0
+            ? 'Every birthday you have is hidden'
+            : `${visible.length} ${visible.length === 1 ? 'birthday' : 'birthdays'}, soonest first`
           : visible.length === contacts.length
             ? `${contacts.length} ${contacts.length === 1 ? 'contact' : 'contacts'}`
             : `${visible.length} of ${contacts.length}`}
@@ -92,11 +106,70 @@ export function ContactList() {
                 onOpen={() => edit(c.id)}
                 countdown={birthdays ? nextBirthday(c.birthdate, today) : null}
                 age={currentAge(c.birthdate, today)}
+                // Only in the birthdays view. Elsewhere the card is a contact
+                // and the flag would mean nothing on it.
+                onToggleHidden={birthdays ? () => void setBirthdayHidden(c.id, true) : undefined}
+                hiddenFromBirthdays={false}
               />
             </SwipeToDelete>
           </li>
         ))}
       </ul>
+
+      {birthdays && hidden.length > 0 && (
+        <section className="mt-4 border-t border-slate-800 pt-3">
+          <button
+            type="button"
+            onClick={() => setShowHidden((v) => !v)}
+            aria-expanded={showHidden}
+            className="inline-flex items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs text-slate-500 transition-colors hover:text-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+          >
+            <svg
+              viewBox="0 0 16 16"
+              className={`h-3.5 w-3.5 transition-transform ${showHidden ? 'rotate-90' : ''}`}
+              fill="currentColor"
+              aria-hidden
+            >
+              <path d="M6 3.5 10.5 8 6 12.5V3.5Z" />
+            </svg>
+            <span className="tabular-nums">
+              {hidden.length} hidden from this list
+            </span>
+          </button>
+          {showHidden && (
+            <>
+              <p className="mb-2 mt-1 px-1.5 text-xs text-slate-600">
+                Their birthdays are still recorded — they are just not counted down here.
+              </p>
+              <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                {hidden.map((c) => (
+                  <li key={c.id}>
+                    <SwipeToDelete
+                      open={openId === c.id}
+                      onOpenChange={(open) => setOpenId(open ? c.id : null)}
+                      onDelete={() => setPending(c)}
+                      label={`Delete ${c.name || 'this contact'}`}
+                    >
+                      <ContactRow
+                        contact={c}
+                        byId={byId}
+                        onOpen={() => edit(c.id)}
+                        // Dimmed, and with no countdown banner: a hidden row is
+                        // here to be un-hidden or opened, and "in 12 days" on it
+                        // would be the app doing the counting it was told not to.
+                        countdown={null}
+                        age={currentAge(c.birthdate, today)}
+                        onToggleHidden={() => void setBirthdayHidden(c.id, false)}
+                        hiddenFromBirthdays
+                      />
+                    </SwipeToDelete>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </section>
+      )}
 
       {pending && (
         <ConfirmDelete
@@ -198,6 +271,8 @@ function ContactRow({
   onOpen,
   countdown,
   age,
+  onToggleHidden,
+  hiddenFromBirthdays,
 }: {
   contact: Contact
   byId: Map<string, Tag>
@@ -206,6 +281,10 @@ function ContactRow({
   countdown: NextBirthday | null
   /** How old they are today. Null when the year is not recorded. */
   age: number | null
+  /** Set only in the birthdays view: hide this person, or put them back. */
+  onToggleHidden?: () => void
+  /** Whether this row is being rendered in the hidden drawer. */
+  hiddenFromBirthdays?: boolean
 }) {
   // A dangling id renders as nothing rather than as an "undefined" chip. They
   // shouldn't exist — removeTag strips them — but an imported or hand-edited
@@ -218,7 +297,12 @@ function ContactRow({
     // No <li> of its own: the list wraps every row in SwipeToDelete, which is
     // what the <li> holds. `h-full` on the button keeps the cards in a grid
     // row the same height now that there is a wrapper between the two.
-    <div className="h-full">
+    //
+    // ⚠️ `relative`, because the hide control is a SIBLING of the card button
+    // positioned over its corner — never a child of it. A button inside a
+    // button is invalid HTML and behaves differently in every engine; the same
+    // reason the phone number on this card is plain text and not a `tel:` link.
+    <div className={`relative h-full ${hiddenFromBirthdays ? 'opacity-60' : ''}`}>
       <button
         type="button"
         onClick={onOpen}
@@ -227,7 +311,9 @@ function ContactRow({
         }`}
       >
         <div className="min-w-0">
-          <p className="truncate font-semibold text-slate-100">{contact.name || 'Unnamed'}</p>
+          <p className={`truncate font-semibold text-slate-100 ${onToggleHidden ? 'pr-8' : ''}`}>
+            {contact.name || 'Unnamed'}
+          </p>
           {contact.email && <p className="truncate text-sm text-slate-400">{contact.email}</p>}
           {/* Plain text, not a `tel:` link. The whole card is already a button
               that opens the contact, and an anchor nested inside a button is
@@ -281,6 +367,33 @@ function ContactRow({
           <p className="line-clamp-2 whitespace-pre-wrap text-sm text-slate-500">{contact.notes}</p>
         )}
       </button>
+
+      {onToggleHidden && (
+        <button
+          type="button"
+          onClick={onToggleHidden}
+          // The full sentence, not "Hide" — a screen reader reaching this
+          // control has no idea which card it is sitting on, and "Hide" on its
+          // own does not say hide from WHAT either.
+          aria-label={
+            hiddenFromBirthdays
+              ? `Show ${contact.name || 'this contact'} in the birthdays list again`
+              : `Hide ${contact.name || 'this contact'} from the birthdays list`
+          }
+          title={hiddenFromBirthdays ? 'Show in the birthdays list again' : 'Hide from the birthdays list'}
+          className="absolute right-1 top-1 inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+        >
+          {hiddenFromBirthdays ? (
+            <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden>
+              <path d="M10 4c-3.8 0-6.9 2.4-8.2 5.6a1 1 0 0 0 0 .8C3.1 13.6 6.2 16 10 16s6.9-2.4 8.2-5.6a1 1 0 0 0 0-.8C16.9 6.4 13.8 4 10 4Zm0 10.5c-3 0-5.5-1.8-6.7-4.5C4.5 7.3 7 5.5 10 5.5s5.5 1.8 6.7 4.5c-1.2 2.7-3.7 4.5-6.7 4.5Zm0-7.5a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden>
+              <path d="M3.3 2.2a.75.75 0 1 0-1.1 1l2.2 2.2A10.6 10.6 0 0 0 1.8 9.6a1 1 0 0 0 0 .8C3.1 13.6 6.2 16 10 16c1.4 0 2.8-.35 4-.98l2.7 2.7a.75.75 0 0 0 1.1-1.06l-14.5-14.5Zm5.1 7.2 2.2 2.2a2 2 0 0 1-2.2-2.2Zm3.4 4.5c-.6.25-1.2.4-1.8.4-3 0-5.5-1.8-6.7-4.5.5-1 1.2-1.9 2-2.6l1.9 1.9a3.5 3.5 0 0 0 4.6 4.6l.7.7-.7-.5ZM10 5.5c3 0 5.5 1.8 6.7 4.5-.4.9-1 1.7-1.7 2.4l1.1 1.1a10.6 10.6 0 0 0 2.1-3.1 1 1 0 0 0 0-.8C16.9 6.4 13.8 4 10 4c-.9 0-1.8.13-2.6.4l1.2 1.2c.45-.07.92-.1 1.4-.1Z" />
+            </svg>
+          )}
+        </button>
+      )}
     </div>
   )
 }

@@ -155,7 +155,8 @@ export function FilterBar() {
             </button>
             {birthdays && (
               <p className="mt-1.5 text-xs text-slate-500">
-                Soonest first, and only people whose birthday you have.
+                Soonest first, and only people whose birthday you have. Anyone you'd rather not be
+                reminded about can be hidden from the list without losing their date.
               </p>
             )}
           </section>

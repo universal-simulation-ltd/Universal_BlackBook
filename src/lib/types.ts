@@ -44,6 +44,20 @@ export interface Contact {
    * lib/birthday.ts — the `--MM-DD` shape is vCard's, not ours.
    */
   birthdate?: string
+  /**
+   * Keep this person out of the birthdays view, without forgetting the date.
+   *
+   * ⚠️ A VIEW flag, not a fact about the person, and deliberately not the
+   * absence of one. Somebody you have fallen out with, an ex, a client whose
+   * birthday came in with an import — you want the date kept (it is real, and
+   * deleting it is the one thing you cannot undo) and you do not want the app
+   * reminding you every year. Clearing `birthdate` would achieve the second at
+   * the cost of the first.
+   *
+   * Absent means shown, so every record written before this existed reads
+   * correctly with no migration.
+   */
+  hideBirthday?: boolean
   notes: string
   createdAt: number
   updatedAt: number

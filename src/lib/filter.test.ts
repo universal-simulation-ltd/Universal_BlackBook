@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { compare, fold, matchesTags, matchesText, runQuery, UNTAGGED } from './filter'
+import {
+  compare,
+  fold,
+  hiddenBirthdays,
+  matchesTags,
+  matchesText,
+  runQuery,
+  showsInBirthdays,
+  UNTAGGED,
+} from './filter'
 import type { Today } from './birthday'
 import type { Contact } from './types'
 
@@ -173,5 +182,49 @@ describe('runQuery', () => {
   it('still applies the text and tag filters in the birthdays view', () => {
     const out = runQuery(people, { text: 'sister', tagIds: [], sort: 'birthday' }, TODAY)
     expect(out.map((c) => c.id)).toEqual(['1'])
+  })
+})
+
+describe('hiding somebody from the birthdays view', () => {
+  const sam = contact({ id: 'sam', name: 'Sam', birthdate: '1990-06-04' })
+  const ada = contact({ id: 'ada', name: 'Ada', birthdate: '1815-12-10', hideBirthday: true })
+  const noDate = contact({ id: 'nia', name: 'Nia' })
+
+  it('keeps a hidden person out of the birthdays view', () => {
+    const out = runQuery([sam, ada], { text: '', tagIds: [], sort: 'birthday' }, TODAY)
+    expect(out.map((c) => c.id)).toEqual(['sam'])
+  })
+
+  it('leaves them in every OTHER view — this hides a birthday, not a person', () => {
+    const out = runQuery([sam, ada], { text: '', tagIds: [], sort: 'name' }, TODAY)
+    expect(out.map((c) => c.id).sort()).toEqual(['ada', 'sam'])
+  })
+
+  it('does not touch the stored birthday', () => {
+    // The whole point: the date is still there to come back to.
+    expect(ada.birthdate).toBe('1815-12-10')
+  })
+
+  it('separates the two reasons somebody is not in the list', () => {
+    expect(showsInBirthdays(sam, TODAY)).toBe(true)
+    expect(showsInBirthdays(ada, TODAY)).toBe(false)
+    expect(showsInBirthdays(noDate, TODAY)).toBe(false)
+  })
+
+  it('lists the hidden ones so they can be put back', () => {
+    expect(hiddenBirthdays([sam, ada, noDate], TODAY).map((c) => c.id)).toEqual(['ada'])
+  })
+
+  it('never lists somebody hidden who has no birthday at all', () => {
+    // Nothing to un-hide, and a row in that drawer offering to "show" a person
+    // with no date would put them nowhere.
+    const ghost = contact({ id: 'ghost', hideBirthday: true })
+    expect(hiddenBirthdays([ghost], TODAY)).toEqual([])
+  })
+
+  it('sorts the hidden list by name, not by countdown', () => {
+    const zed = contact({ id: 'zed', name: 'Zed', birthdate: '--01-02', hideBirthday: true })
+    const abe = contact({ id: 'abe', name: 'Abe', birthdate: '--12-30', hideBirthday: true })
+    expect(hiddenBirthdays([zed, abe], TODAY).map((c) => c.name)).toEqual(['Abe', 'Zed'])
   })
 })
