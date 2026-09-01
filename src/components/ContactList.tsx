@@ -8,12 +8,75 @@ import {
   type NextBirthday,
 } from '../lib/birthday'
 import { hiddenBirthdays, runQuery } from '../lib/filter'
+import type { Side } from '../lib/swipe'
 import type { Contact, Tag } from '../lib/types'
 import { useBookStore } from '../stores/bookStore'
 import { Modal } from './Modal'
-import { SwipeToDelete } from './SwipeToDelete'
+import { SwipeRow, type SwipeAction } from './SwipeRow'
 import { TagChip } from './TagChip'
 import { btnDanger, btnGhost, btnPrimary } from './ui'
+
+// The glyphs the swipe actions carry. SVG and not emoji: 🗑 is one of the
+// codepoints with no glyph in iOS's system font (see Modal's CloseGlyph), and
+// this is a phone-only surface.
+const BinIcon = (
+  <svg viewBox="0 0 16 16" className="h-5 w-5" fill="currentColor" aria-hidden>
+    <path d="M6.5 1a1 1 0 0 0-1 1v.5H2.75a.75.75 0 0 0 0 1.5h10.5a.75.75 0 0 0 0-1.5H10.5V2a1 1 0 0 0-1-1h-3ZM4.5 5.5h7l-.6 8.1a1.5 1.5 0 0 1-1.5 1.4H6.6a1.5 1.5 0 0 1-1.5-1.4L4.5 5.5Z" />
+  </svg>
+)
+
+const EyeOffIcon = (
+  <svg viewBox="0 0 20 20" className="h-5 w-5" fill="currentColor" aria-hidden>
+    <path d="M3.3 2.2a.75.75 0 1 0-1.1 1l2.2 2.2A10.6 10.6 0 0 0 1.8 9.6a1 1 0 0 0 0 .8C3.1 13.6 6.2 16 10 16c1.4 0 2.8-.35 4-.98l2.7 2.7a.75.75 0 0 0 1.1-1.06l-14.5-14.5Zm5.1 7.2 2.2 2.2a2 2 0 0 1-2.2-2.2Zm3.4 4.5c-.6.25-1.2.4-1.8.4-3 0-5.5-1.8-6.7-4.5.5-1 1.2-1.9 2-2.6l1.9 1.9a3.5 3.5 0 0 0 4.6 4.6l.7.7-.7-.5ZM10 5.5c3 0 5.5 1.8 6.7 4.5-.4.9-1 1.7-1.7 2.4l1.1 1.1a10.6 10.6 0 0 0 2.1-3.1 1 1 0 0 0 0-.8C16.9 6.4 13.8 4 10 4c-.9 0-1.8.13-2.6.4l1.2 1.2c.45-.07.92-.1 1.4-.1Z" />
+  </svg>
+)
+
+const EyeIcon = (
+  <svg viewBox="0 0 20 20" className="h-5 w-5" fill="currentColor" aria-hidden>
+    <path d="M10 4c-3.8 0-6.9 2.4-8.2 5.6a1 1 0 0 0 0 .8C3.1 13.6 6.2 16 10 16s6.9-2.4 8.2-5.6a1 1 0 0 0 0-.8C16.9 6.4 13.8 4 10 4Zm0 10.5c-3 0-5.5-1.8-6.7-4.5C4.5 7.3 7 5.5 10 5.5s5.5 1.8 6.7 4.5c-1.2 2.7-3.7 4.5-6.7 4.5Zm0-7.5a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z" />
+  </svg>
+)
+
+/**
+ * The three swipe actions, as small builders rather than inline objects.
+ *
+ * Each names the person in its `label`: a screen-reader user reaching a button
+ * revealed behind a row has no idea which row it belongs to, and "Delete" on
+ * its own is the least useful thing it could say. The visible `text` stays one
+ * word — the button is 96px wide and the name is already on the card.
+ */
+function deleteAction(contact: Contact, onAction: () => void): SwipeAction {
+  return {
+    text: 'Delete',
+    label: `Delete ${contact.name || 'this contact'}`,
+    icon: BinIcon,
+    tone: 'bg-rose-600 text-white focus-visible:ring-rose-200',
+    onAction,
+  }
+}
+
+function hideAction(contact: Contact, onAction: () => void): SwipeAction {
+  return {
+    text: 'Hide',
+    label: `Hide ${contact.name || 'this contact'} from the birthdays list`,
+    icon: EyeOffIcon,
+    // Slate, not rose. Hiding is reversible and undramatic, and giving it the
+    // colour of the button that deletes somebody would say otherwise — on a
+    // row where the two are one flick apart in opposite directions.
+    tone: 'bg-slate-700 text-slate-100 focus-visible:ring-slate-300',
+    onAction,
+  }
+}
+
+function showAction(contact: Contact, onAction: () => void): SwipeAction {
+  return {
+    text: 'Show',
+    label: `Show ${contact.name || 'this contact'} in the birthdays list again`,
+    icon: EyeIcon,
+    tone: 'bg-orange-600 text-white focus-visible:ring-orange-200',
+    onAction,
+  }
+}
 
 export function ContactList() {
   const contacts = useBookStore((s) => s.contacts)
@@ -21,10 +84,11 @@ export function ContactList() {
   const query = useBookStore((s) => s.query)
   const edit = useBookStore((s) => s.edit)
   const removeContact = useBookStore((s) => s.removeContact)
-  // Which row is swiped open, if any. ONE at a time, and held here rather than
-  // in each row: two rows showing a Delete button is two chances to tap the
-  // wrong one, and the second swipe should put the first row back.
-  const [openId, setOpenId] = useState<string | null>(null)
+  // Which row is swiped open and on which side, if any. ONE at a time across
+  // the whole list, and held here rather than in each row: two rows showing a
+  // Delete button is two chances to tap the wrong one, and the second swipe
+  // should put the first row back.
+  const [openRow, setOpenRow] = useState<{ id: string; side: Side } | null>(null)
   /** The contact whose deletion is being confirmed. */
   const [pending, setPending] = useState<Contact | null>(null)
   /** Is the "hidden from this list" drawer open? Never persisted — it is a
@@ -90,11 +154,22 @@ export function ContactList() {
       <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
         {visible.map((c) => (
           <li key={c.id}>
-            <SwipeToDelete
-              open={openId === c.id}
-              onOpenChange={(open) => setOpenId(open ? c.id : null)}
-              onDelete={() => setPending(c)}
-              label={`Delete ${c.name || 'this contact'}`}
+            <SwipeRow
+              open={openRow?.id === c.id ? openRow.side : null}
+              onOpenChange={(side) => setOpenRow(side ? { id: c.id, side } : null)}
+              right={deleteAction(c, () => setPending(c))}
+              // Swipe RIGHT to hide, and only where hiding means something.
+              // In every other view the row has no left action at all, which
+              // makes that direction a wall rather than a gesture that opens
+              // onto nothing.
+              left={
+                birthdays
+                  ? hideAction(c, () => {
+                      void setBirthdayHidden(c.id, true)
+                      setOpenRow(null)
+                    })
+                  : undefined
+              }
             >
               <ContactRow
                 contact={c}
@@ -111,7 +186,7 @@ export function ContactList() {
                 onToggleHidden={birthdays ? () => void setBirthdayHidden(c.id, true) : undefined}
                 hiddenFromBirthdays={false}
               />
-            </SwipeToDelete>
+            </SwipeRow>
           </li>
         ))}
       </ul>
@@ -144,11 +219,18 @@ export function ContactList() {
               <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                 {hidden.map((c) => (
                   <li key={c.id}>
-                    <SwipeToDelete
-                      open={openId === c.id}
-                      onOpenChange={(open) => setOpenId(open ? c.id : null)}
-                      onDelete={() => setPending(c)}
-                      label={`Delete ${c.name || 'this contact'}`}
+                    <SwipeRow
+                      open={openRow?.id === c.id ? openRow.side : null}
+                      onOpenChange={(side) => setOpenRow(side ? { id: c.id, side } : null)}
+                      right={deleteAction(c, () => setPending(c))}
+                      // The same gesture, the opposite action: in this drawer
+                      // a right-swipe puts somebody back rather than taking
+                      // them out. One direction, one meaning — "the thing that
+                      // changes whether they are in the list".
+                      left={showAction(c, () => {
+                        void setBirthdayHidden(c.id, false)
+                        setOpenRow(null)
+                      })}
                     >
                       <ContactRow
                         contact={c}
@@ -162,7 +244,7 @@ export function ContactList() {
                         onToggleHidden={() => void setBirthdayHidden(c.id, false)}
                         hiddenFromBirthdays
                       />
-                    </SwipeToDelete>
+                    </SwipeRow>
                   </li>
                 ))}
               </ul>
@@ -178,7 +260,7 @@ export function ContactList() {
           onDelete={() => {
             void removeContact(pending.id)
             setPending(null)
-            setOpenId(null)
+            setOpenRow(null)
           }}
         />
       )}
@@ -294,7 +376,7 @@ function ContactRow({
   const isToday = countdown?.inDays === 0
 
   return (
-    // No <li> of its own: the list wraps every row in SwipeToDelete, which is
+    // No <li> of its own: the list wraps every row in SwipeRow, which is
     // what the <li> holds. `h-full` on the button keeps the cards in a grid
     // row the same height now that there is a wrapper between the two.
     //

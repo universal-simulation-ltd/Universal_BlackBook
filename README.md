@@ -49,8 +49,8 @@ book starts issuing tasks, it stops being an address book, and people stop
 opening it. The birthdays view is the one exception, and only because a
 birthday is a fact about a date rather than a judgement about you.
 
-**Anyone can be hidden from that list** with the ◎ button in the corner of their
-card. It hides the reminder, not the birthday: the date stays on the contact,
+**Anyone can be hidden from that list** — swipe their card right on a phone, or
+use the ◎ button in the corner of it anywhere. It hides the reminder, not the birthday: the date stays on the contact,
 and a "N hidden from this list" drawer at the bottom of the birthdays view puts
 them back. Deleting the date would have been the other way to stop the yearly
 reminder, and it is the one thing you cannot undo. It survives an export — the
@@ -63,6 +63,10 @@ rather than one with everybody put back.
 it asks first, by name — the swipe only ever uncovers the button, because a
 flick that deletes outright is one thumb away from losing something this app
 holds the only copy of.
+
+**Swipe the other way, in the birthdays view, to hide somebody** — and in the
+hidden drawer the same right-swipe puts them back. One direction, one meaning:
+whether they are in the list.
 
 Everywhere else — and with a keyboard or a screen reader anywhere — Delete is
 where it has always been: inside the contact's own form, behind the same
