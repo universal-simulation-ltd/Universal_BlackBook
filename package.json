@@ -28,7 +28,7 @@
     "@capacitor/filesystem": "^7.1.8",
     "@capacitor/ios": "^7.6.8",
     "@capacitor/share": "^7.0.4",
-    "@unisim/sdk": "^0.127.0",
+    "@unisim/sdk": "^0.128.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "zustand": "^5.0.2"
