@@ -499,13 +499,20 @@ function ContactRow({
     // positioned over its corner — never a child of it. A button inside a
     // button is invalid HTML and behaves differently in every engine; the same
     // reason the phone number on this card is plain text and not a `tel:` link.
-    <div className={`relative h-full ${dimmed ? 'opacity-60' : ''}`}>
+    //
+    // ⚠️ The dim goes on the CONTENTS, never on this wrapper. A card sits on
+    // top of its swipe actions and they are out of sight only because it is
+    // opaque — fading the wrapper fades the card's own background with it, and
+    // "Show" and "Delete" read straight through a row nobody has swiped. So
+    // the wrapper carries an opaque card-coloured backdrop instead, and the
+    // two buttons fade against that.
+    <div className={`relative h-full ${dimmed ? 'rounded-xl bg-slate-900' : ''}`}>
       <button
         type="button"
         onClick={onOpen}
         className={`flex h-full w-full flex-col gap-2 rounded-xl border bg-slate-900 p-3.5 text-left transition-colors hover:bg-slate-800/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
           isToday ? 'border-orange-500/50 hover:border-orange-500/70' : 'border-slate-800 hover:border-slate-700'
-        }`}
+        } ${dimmed ? 'opacity-60' : ''}`}
       >
         <div className="min-w-0">
           <p className={`truncate font-semibold text-slate-100 ${onToggleHidden ? 'pr-8' : ''}`}>
@@ -582,7 +589,9 @@ function ContactRow({
               ? `Show in the ${hideLabel.on} again`
               : `Hide from the ${hideLabel?.on ?? 'list'}`
           }
-          className="absolute right-1 top-1 inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+          className={`absolute right-1 top-1 inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+            dimmed ? 'opacity-60' : ''
+          }`}
         >
           {hideLabel?.hidden ? (
             <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden>
