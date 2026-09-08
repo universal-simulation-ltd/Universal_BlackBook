@@ -1,4 +1,9 @@
 import { AdvancedMenu, MENU } from '@unisim/sdk'
+// Generated — `npm run credits` after any dependency change. Never edit it by
+// hand: it is read off the installed tree, so a hand-kept list drifts from the
+// lockfile the first time anyone upgrades anything, and a credits list naming a
+// package we removed is worse than no list at all.
+import credits from '../../generated/credits.json'
 import { useSyncStore } from '../../stores/syncStore'
 
 // The per-app rows that slot into <UniversalAppsNavBar />'s `actions` prop —
@@ -66,6 +71,8 @@ export default function AppMenu({
           except:  'the end-to-end encrypted backup you choose to store',
           headline: 'Other address books keep your contacts on their servers.',
           version: __APP_VERSION__,
+          credits,
+          noticesHref: 'https://github.com/universal-simulation-ltd/Universal_BlackBook/blob/main/THIRD-PARTY-NOTICES.md',
         }}
       />
     </>
