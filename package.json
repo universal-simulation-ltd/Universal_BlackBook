@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "license": "MIT",
+  "license": "AGPL-3.0-or-later",
   "description": "Universal BlackBook — a private address book. Custom categories, how often you want to be in touch, and notes. No account needed; the optional online copy is end-to-end encrypted.",
   "scripts": {
     "dev": "vite",

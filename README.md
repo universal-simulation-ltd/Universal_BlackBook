@@ -6,7 +6,7 @@ own tags, and never a birthday missed.
 **→ [opensource.unisim.co.uk/blackbook](https://opensource.unisim.co.uk/blackbook)**
 
 Part of the [Universal Apps](https://opensource.unisim.co.uk) suite by UNI·SIM.
-Free, open source (MIT), and no account required.
+Free, open source (AGPL-3.0), and no account required.
 
 ---
 
@@ -221,4 +221,4 @@ Pushing to `main` deploys (`.github/workflows/deploy.yml`).
 
 ## Licence
 
-MIT — see [LICENCE](LICENSE).
+[AGPL-3.0-or-later](LICENSE), with an added permission for app-store distribution.
