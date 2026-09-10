@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { onlyDigits, PIN_LENGTH } from '../lib/lock'
 import { useLockStore, type PinResult } from '../stores/lockStore'
 import ProductLogo from './Header/ProductLogo'
@@ -124,6 +124,7 @@ const RESET_WORD = 'DELETE'
 
 function Forgotten() {
   const [open, setOpen] = useState(false)
+  const panelId = useId()
   const [typed, setTyped] = useState('')
   const [busy, setBusy] = useState(false)
   const [online, setOnline] = useState<boolean | null | 'checking'>('checking')
@@ -157,13 +158,14 @@ function Forgotten() {
           type="button"
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
+          aria-controls={panelId}
           className="text-xs text-slate-500 underline-offset-2 hover:text-slate-300 hover:underline"
         >
           Forgotten your PIN?
         </button>
       </div>
       {open && (
-        <div className="mt-3 rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-left">
+        <div id={panelId} className="mt-3 rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-left">
           <p className="text-xs leading-relaxed text-slate-400">
             Nobody can tell you your PIN and nobody can turn the lock off for you — that is what
             makes it a lock. What you can do is start this device over: the PIN goes, and so does

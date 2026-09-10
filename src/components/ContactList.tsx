@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import {
   countdownLabel,
   currentAge,
@@ -115,6 +115,8 @@ export function ContactList() {
       management view, and it should be shut again the next time you come
       looking for whose birthday is next. */
   const [showHidden, setShowHidden] = useState(false)
+  const tidiedId = useId()
+  const hiddenBirthdaysId = useId()
 
   // Read once per mount rather than per render, so the query's memo has a
   // stable input. A tab left open across midnight keeps yesterday's "today"
@@ -249,6 +251,7 @@ export function ContactList() {
             type="button"
             onClick={() => setShowHidden((v) => !v)}
             aria-expanded={showHidden}
+            aria-controls={tidiedId}
             className="inline-flex items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs text-slate-500 transition-colors hover:text-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
           >
             <svg
@@ -266,7 +269,7 @@ export function ContactList() {
               <p className="mb-2 mt-1 px-1.5 text-xs text-slate-600">
                 Still in your book, and still found by searching — just not in the way while you scroll.
               </p>
-              <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+              <ul id={tidiedId} className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                 {tidiedAway.map((c) => (
                   <li key={c.id}>
                     <SwipeRow
@@ -303,6 +306,7 @@ export function ContactList() {
             type="button"
             onClick={() => setShowHidden((v) => !v)}
             aria-expanded={showHidden}
+            aria-controls={hiddenBirthdaysId}
             className="inline-flex items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs text-slate-500 transition-colors hover:text-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
           >
             <svg
@@ -322,7 +326,7 @@ export function ContactList() {
               <p className="mb-2 mt-1 px-1.5 text-xs text-slate-600">
                 Their birthdays are still recorded — they are just not counted down here.
               </p>
-              <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+              <ul id={hiddenBirthdaysId} className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                 {hidden.map((c) => (
                   <li key={c.id}>
                     <SwipeRow
