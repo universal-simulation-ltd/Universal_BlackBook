@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { UniversalAppsNavBar, UpdateNotice, useUniversal, useUser } from '@unisim/sdk'
-import UsageTracker from './UsageTracker'
+// <UsageTracker /> sends one "session.opened" row for a signed-in visitor, and
+// nothing else may ever be tracked here: no names, email addresses, category
+// names or counts. The vault goes to the server encrypted precisely so we cannot
+// see this data, and a usage event that leaked a contact count would undo that.
+import { UsageTracker } from '@unisim/sdk'
 import ProductLogo from './components/Header/ProductLogo'
 import AppMenu from './components/Header/AppMenu'
 import { TagManager } from './components/TagManager'

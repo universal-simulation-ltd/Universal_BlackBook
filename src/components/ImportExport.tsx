@@ -6,7 +6,7 @@ import {
   planBulkImport,
   readAllContacts,
 } from '../lib/deviceContacts'
-import { saveBlob } from '../lib/saveFile'
+import { saveBlob } from '@unisim/media/save'
 import { useBookStore } from '../stores/bookStore'
 import { Modal } from './Modal'
 import { btnGhost, btnPrimary, label } from './ui'
