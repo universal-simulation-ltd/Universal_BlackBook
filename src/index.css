@@ -97,12 +97,45 @@ body {
     bottom: 0;
     z-index: 40;
     border-top: 1px solid #1e293b; /* slate-800 */
-    background: rgb(2 6 23 / 0.95); /* slate-950, near-opaque over the list */
-    backdrop-filter: blur(8px);
+    /* ⚠️ FULLY OPAQUE. This was `rgb(2 6 23 / 0.95)` with a blur behind it, and
+       0.95 is not "near enough" over a list of cards: a slate-900 card crossing
+       a slate-950 dock at 5% is a visible shape moving under the search box —
+       the contact list scrolling THROUGH the one piece of chrome that is meant
+       to be standing still. There is nothing behind this bar worth seeing, so
+       nothing behind it is shown. */
+    background: #020617; /* slate-950 */
     padding-top: 0.75rem;
     padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
     padding-left: max(1rem, env(safe-area-inset-left));
     padding-right: max(1rem, env(safe-area-inset-right));
+  }
+
+  /* ⚠️ The skirt: the dock's own background, continued BELOW it to the foot of
+     the screen. It is normally zero-tall and invisible, because the dock sits
+     on `bottom: 0`.
+
+     It is not decoration. The dock is translated upwards whenever the visual
+     viewport is shorter than the layout viewport (App.tsx,
+     `useKeyboardAwareDock`) — the iOS keyboard, and also Safari's own bottom
+     toolbar as it collapses and expands. The dock moves; the page behind it
+     does not; and the strip it has just vacated is a window onto the contact
+     list, scrolling. That strip is the "small gap below the search bar" —
+     lined up under the bar, the full width of the screen, with cards sliding
+     past inside it.
+
+     `100vh` is simply "more than enough": the element cannot be seen below the
+     screen, and any smaller number is a guess at how far the dock will ever be
+     pushed up. `pointer-events: none` so it never eats a tap meant for a card
+     in the rare case it is over one. */
+  .filterdock::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    height: 100vh;
+    background: #020617; /* slate-950 — the dock's own ground */
+    pointer-events: none;
   }
 
   /* The dock is out of the flow, so the page has to reserve its height or the
@@ -113,6 +146,25 @@ body {
   .filterdock-spacer {
     height: calc(44px + 1.5rem + env(safe-area-inset-bottom));
   }
+}
+
+/* The buttons hidden behind a contact card (components/SwipeRow.tsx).
+   TOUCH ONLY, and hidden everywhere else rather than merely covered up.
+
+   ⚠️ They are uncovered by a swipe, and the swipe is `ontouchstart` and
+   nothing else — there is no pointer equivalent, deliberately, because a
+   horizontal drag with a mouse is a text selection everywhere else on the web.
+   So on a desktop these are a crimson Delete and an orange Show painted under
+   every card in the list, waiting for a gesture that cannot happen: invisible
+   only for as long as the card over them is perfectly opaque, and lighting up
+   the moment one is not. That is exactly how they appeared on web — through a
+   card's translucent hover, and before that through a dimmed hidden row.
+
+   Nothing is lost by hiding them: every swipe action has a button somewhere a
+   finger is not required (the ✕ / eye on the card, Delete inside the contact's
+   own form), which is the rule SwipeRow was written to. */
+.swipeaction {
+  display: none;
 }
 
 /* iOS Safari zooms the page in when a field under 16px takes focus, and it
@@ -127,6 +179,12 @@ body {
   select,
   textarea {
     font-size: max(16px, 1em) !important;
+  }
+
+  /* A finger can reach them, so here they are. `flex`, matching the utility
+     class SwipeRow renders them with. */
+  .swipeaction {
+    display: flex;
   }
 }
 

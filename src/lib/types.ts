@@ -9,10 +9,15 @@
 // to know.
 
 /**
- * A user-defined grouping. Entirely custom, and there are NO built-in tags —
- * a new book starts with none at all. An app that seeds six of its own
- * guesses is telling you how it thinks you should file people; the empty
- * state asks instead.
+ * A user-defined grouping. Entirely custom.
+ *
+ * A brand new book is given TWO to start with — "Important People" and
+ * "Important Notes" (owner's request, 2026-09-11; see `SEED_TAGS` in
+ * stores/bookStore.ts). They are ordinary tags from the moment they exist:
+ * nothing in the app treats them specially, deleting them is final, and no
+ * record anywhere says a tag was seeded. The restraint that kept this list
+ * empty for a year still applies to a LONG one — an app that seeds six of its
+ * own guesses is telling you how it thinks you should file people.
  */
 export interface Tag {
   id: string

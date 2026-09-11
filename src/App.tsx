@@ -11,6 +11,7 @@ import { TagManager } from './components/TagManager'
 import { CloudPanel } from './components/CloudPanel'
 import { ContactForm } from './components/ContactForm'
 import { ContactList } from './components/ContactList'
+import { ContactView } from './components/ContactView'
 import { FilterBar } from './components/FilterBar'
 import { ImportExport } from './components/ImportExport'
 import { LockPanel, LockScreen } from './components/Lock'
@@ -44,6 +45,7 @@ export default function App() {
   const init = useBookStore((s) => s.init)
   const loaded = useBookStore((s) => s.loaded)
   const editing = useBookStore((s) => s.editing)
+  const viewing = useBookStore((s) => s.viewing)
   const edit = useBookStore((s) => s.edit)
   const notice = useBookStore((s) => s.notice)
   const setNotice = useBookStore((s) => s.setNotice)
@@ -266,6 +268,12 @@ export default function App() {
         </div>
       </footer>
 
+      {/* ⚠️ The view is rendered BEFORE the form, and the two are open together
+          on purpose. Tapping a card opens the full-screen view; its Edit button
+          opens the form on top of it, because `showModal()` stacks in call
+          order — so closing the form drops you back on the person you were
+          reading rather than in the list. */}
+      {viewing && <ContactView key={viewing} id={viewing} />}
       {editing && <ContactForm key={editing} id={editing} />}
       {panel === 'tags' && <TagManager onClose={() => setPanel(null)} />}
       {panel === 'io' && <ImportExport onClose={() => setPanel(null)} />}

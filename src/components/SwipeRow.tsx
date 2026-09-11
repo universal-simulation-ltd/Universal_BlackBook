@@ -161,7 +161,15 @@ export function SwipeRow({
  */
 function ActionButton({ action, side, open }: { action: SwipeAction; side: Side; open: boolean }) {
   return (
-    <div className={`absolute inset-y-0 flex ${side === 'left' ? 'left-0' : 'right-0'}`}>
+    // ⚠️ `.swipeaction` (index.css) keeps this OFF a pointer device entirely.
+    // Nothing can uncover it there — the gesture is touch-only — so on web it
+    // was a crimson Delete and an orange Show sitting under every card, showing
+    // through the moment the card went even slightly translucent. It did:
+    // hovering one used to fade its background to 70%, which lit up a stripe of
+    // whichever button was underneath. Both halves are fixed (the hover is
+    // opaque again in ContactList), because a colour that has no business being
+    // painted at all should not be relying on something else staying opaque.
+    <div className={`swipeaction absolute inset-y-0 flex ${side === 'left' ? 'left-0' : 'right-0'}`}>
       <button
         type="button"
         onClick={action.onAction}
