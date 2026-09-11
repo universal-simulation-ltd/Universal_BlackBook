@@ -103,6 +103,8 @@ export function ContactList() {
   const tags = useBookStore((s) => s.tags)
   const query = useBookStore((s) => s.query)
   const edit = useBookStore((s) => s.edit)
+  // Tapping a card OPENS the person, it does not edit them — see ContactView.
+  const openContact = useBookStore((s) => s.view)
   const removeContact = useBookStore((s) => s.removeContact)
   // Which row is swiped open and on which side, if any. ONE at a time across
   // the whole list, and held here rather than in each row: two rows showing a
@@ -146,8 +148,8 @@ export function ContactList() {
       <div className="rounded-2xl border border-dashed border-slate-800 px-6 py-14 text-center">
         <p className="text-lg font-semibold text-slate-200">Your book is empty</p>
         <p className="mx-auto mt-1.5 max-w-md text-sm text-slate-400">
-          Add the people you actually want to stay in touch with, and file them however you like. There are
-          no tags until you make one.
+          Add the people you actually want to stay in touch with, and file them however you like. Two
+          tags are here to start you off — rename them, recolour them, or make your own.
         </p>
         <button type="button" className={`${btnPrimary} mt-5`} onClick={() => edit('new')}>
           Add your first contact
@@ -223,7 +225,7 @@ export function ContactList() {
                 // birthdays view as much as anywhere else — the point of being
                 // told it is somebody's birthday in nine days is being one tap
                 // from their email address and the note about their kids.
-                onOpen={() => edit(c.id)}
+                onOpen={() => openContact(c.id)}
                 countdown={birthdays ? nextBirthday(c.birthdate, today) : null}
                 age={currentAge(c.birthdate, today)}
                 // Only in the birthdays view. Elsewhere the card is a contact
@@ -284,7 +286,7 @@ export function ContactList() {
                       <ContactRow
                         contact={c}
                         byId={byId}
-                        onOpen={() => edit(c.id)}
+                        onOpen={() => openContact(c.id)}
                         countdown={null}
                         age={currentAge(c.birthdate, today)}
                         onToggleHidden={() => void setListHidden(c.id, false)}
@@ -345,7 +347,7 @@ export function ContactList() {
                       <ContactRow
                         contact={c}
                         byId={byId}
-                        onOpen={() => edit(c.id)}
+                        onOpen={() => openContact(c.id)}
                         // Dimmed, and with no countdown banner: a hidden row is
                         // here to be un-hidden or opened, and "in 12 days" on it
                         // would be the app doing the counting it was told not to.
@@ -514,7 +516,14 @@ function ContactRow({
       <button
         type="button"
         onClick={onOpen}
-        className={`flex h-full w-full flex-col gap-2 rounded-xl border bg-slate-900 p-3.5 text-left transition-colors hover:bg-slate-800/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+        // ⚠️ `hover:bg-slate-800`, and never a translucent one. This was
+        // `hover:bg-slate-800/70`, and a card is the only thing hiding the
+        // swipe buttons behind it — so on web, hovering a card made the Delete
+        // underneath it glow through at 30%. Same failure as the dimmed card
+        // (see the note above), reached a different way. The row's actions are
+        // now off a pointer device altogether (SwipeRow), and this stays opaque
+        // so nothing else can shine through either.
+        className={`flex h-full w-full flex-col gap-2 rounded-xl border bg-slate-900 p-3.5 text-left transition-colors hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
           isToday ? 'border-orange-500/50 hover:border-orange-500/70' : 'border-slate-800 hover:border-slate-700'
         } ${dimmed ? 'opacity-60' : ''}`}
       >

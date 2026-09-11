@@ -10,7 +10,24 @@ import { formatBirthday, nextBirthday, type Today } from './birthday'
  * list with people who have none is a worse answer to "whose birthday is
  * coming up" than a shorter list is.
  */
-export type SortKey = 'name' | 'name-desc' | 'recent' | 'birthday'
+export const SORT_KEYS = ['name', 'name-desc', 'recent', 'birthday'] as const
+export type SortKey = (typeof SORT_KEYS)[number]
+
+/**
+ * What each order is called, in one place.
+ *
+ * The filter panel reads these for its buttons and the saved-default line reads
+ * them for its summary; two lists would drift the moment an order is renamed.
+ * `birthday` is in here even though it is not one of the panel's order buttons
+ * — it is still a value `Query.sort` can hold, and the summary has to be able
+ * to name it.
+ */
+export const SORT_LABELS: Record<SortKey, string> = {
+  name: 'Name A–Z',
+  'name-desc': 'Name Z–A',
+  recent: 'Recently added',
+  birthday: 'Birthdays',
+}
 
 /** The pseudo-tag for "carrying no tags at all". Not a real Tag id. */
 export const UNTAGGED = ' untagged'
@@ -23,6 +40,53 @@ export interface Query {
 }
 
 export const EMPTY_QUERY: Query = { text: '', tagIds: [], sort: 'name' }
+
+/**
+ * The part of a Query that can be REMEMBERED as the view the app opens on.
+ *
+ * ⚠️ The search box is deliberately not in here. Tags and an order are a way of
+ * looking at the book; a search term is a question about one person, and an app
+ * that reopened three weeks later still filtered to "sam" would look like it
+ * had lost everybody else.
+ */
+export type View = Pick<Query, 'tagIds' | 'sort'>
+
+/** What the app opens on when nobody has saved a view of their own. */
+export const DEFAULT_VIEW: View = { tagIds: [], sort: 'name' }
+
+/** The rememberable part of a query, copied so the caller cannot mutate it. */
+export function viewOf(query: Query): View {
+  return { tagIds: [...query.tagIds], sort: query.sort }
+}
+
+/** A query showing exactly this view? Order of the chosen tags never counts. */
+export function sameView(a: View, b: View): boolean {
+  if (a.sort !== b.sort || a.tagIds.length !== b.tagIds.length) return false
+  const seen = new Set(b.tagIds)
+  return a.tagIds.every((id) => seen.has(id))
+}
+
+/**
+ * "Name A–Z" — or "Birthdays · Family and Work". One line of English for the
+ * filter panel to say what the app will open on.
+ *
+ * `tagName` is passed in rather than a tag list being imported, so this stays
+ * pure and testable. A tag id it cannot name is dropped rather than printed
+ * raw: a default saved before a tag was deleted should read as the tags that
+ * are left, not as a line of gibberish.
+ */
+export function describeView(view: View, tagName: (id: string) => string | null): string {
+  const names = view.tagIds
+    .map((id) => (id === UNTAGGED ? 'Untagged' : tagName(id)))
+    .filter((n): n is string => Boolean(n))
+  const order = SORT_LABELS[view.sort] ?? SORT_LABELS.name
+  if (names.length === 0) return order
+  const tags =
+    names.length === 1
+      ? names[0]
+      : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
+  return `${order} · ${tags}`
+}
 
 /**
  * Fold a string for searching: case, surrounding space, and accents.

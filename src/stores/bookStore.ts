@@ -1,16 +1,21 @@
 import { create } from 'zustand'
 import type { Contact, Tag } from '../lib/types'
-import { EMPTY_QUERY, type Query } from '../lib/filter'
+import { DEFAULT_VIEW, EMPTY_QUERY, UNTAGGED, viewOf, type Query, type View } from '../lib/filter'
 import { newId } from '../lib/id'
-import { nextSwatch } from '../lib/palette'
+import { nextSwatch, SWATCHES } from '../lib/palette'
 import {
+  clearDefaultView as dbClearDefaultView,
   deleteTag as dbDeleteTag,
   deleteContact as dbDeleteContact,
+  loadDefaultView,
+  loadSeeded,
   loadTags,
   loadContacts,
+  markSeeded,
   putTag,
   putContact,
   replaceAll,
+  saveDefaultView as dbSaveDefaultView,
 } from '../lib/store'
 
 /**
@@ -28,6 +33,16 @@ interface BookState {
   tags: Tag[]
   loaded: boolean
   query: Query
+  /**
+   * The filters and order the app opened on, and will open on again.
+   *
+   * Device-local (lib/store.ts, the 'view' key) and never part of the vault.
+   * Held in state as well as on disk so the filter panel can say what it is and
+   * tell whether what is on screen differs from it.
+   */
+  defaultView: View
+  /** Contact whose full-screen view is open, if any. */
+  viewing: string | null
   /** Contact being edited, `'new'` for the blank form, null for neither. */
   editing: string | null
   /**
@@ -54,7 +69,16 @@ interface BookState {
 
   init: () => Promise<void>
   setQuery: (patch: Partial<Query>) => void
+  /** Everything off — the search box included. "Clear everything". */
   resetQuery: () => void
+  /** Back to the view this app opens on, whatever that has been set to. */
+  applyDefaultView: () => void
+  /** Remember what is on screen as the view the app opens on. */
+  saveDefaultView: () => Promise<void>
+  /** Forget a saved view: back to opening on Name A–Z with no tag filter. */
+  forgetDefaultView: () => Promise<void>
+  /** Open this contact's full-screen view, or close it with null. */
+  view: (id: string | null) => void
   edit: (id: string | null) => void
   /** Open the blank form with these values already in it. */
   startWith: (draft: ContactDraft) => void
@@ -96,11 +120,36 @@ export function draftIsEmpty(d: ContactDraft): boolean {
   )
 }
 
+/**
+ * The two tags a brand new book starts with (owner's request, 2026-09-11).
+ *
+ * ⚠️ This app used to seed NOTHING, deliberately, and the reasoning against
+ * seeding still holds for a long list: six invented starters are an app telling
+ * somebody how it thinks they should file their friends, and every one of them
+ * has to be read and dismissed before the first real tag can be made. Two is a
+ * different proposition — they are the two this book is for ("the people who
+ * matter" and "the things worth remembering"), they demonstrate what a tag IS,
+ * and an empty tag list is its own kind of unhelpful: the filter panel has
+ * nothing in it and the contact form's picker looks broken.
+ *
+ * They are ordinary tags from the moment they exist: rename them, recolour
+ * them, delete them. Nothing in the app treats them specially and nothing
+ * brings them back — see `loadSeeded` for the marker that guarantees that.
+ */
+const SEED_TAGS = ['Important People', 'Important Notes'] as const
+
+/** The starting tags, as records. Fixed swatches so the pair always contrast. */
+function seedTags(): Tag[] {
+  return SEED_TAGS.map((name, i) => ({ id: newId(), name, colour: SWATCHES[i].key }))
+}
+
 export const useBookStore = create<BookState>((set, get) => ({
   contacts: [],
   tags: [],
   loaded: false,
   query: EMPTY_QUERY,
+  defaultView: DEFAULT_VIEW,
+  viewing: null,
   editing: null,
   stashed: null,
   prefill: null,
@@ -108,16 +157,56 @@ export const useBookStore = create<BookState>((set, get) => ({
 
   init: async () => {
     if (get().loaded) return
-    const [contacts, tags] = await Promise.all([loadContacts(), loadTags()])
-    // No seeding. A new book starts with no tags at all — six invented
-    // starters are the app telling somebody how it thinks they should file
-    // their friends, and every one of them has to be read and dismissed before
-    // the first real tag can be made.
-    set({ contacts, tags, loaded: true })
+    const [contacts, loadedTags, saved, seeded] = await Promise.all([
+      loadContacts(),
+      loadTags(),
+      loadDefaultView(),
+      loadSeeded(),
+    ])
+
+    // The starting tags, once per device and only into a book with nothing in
+    // it at all. A book that already holds contacts or tags is somebody's, and
+    // dropping two tags into it — on an upgrade, or after a vault was adopted
+    // — would be the app adding to their data uninvited.
+    let tags = loadedTags
+    if (!seeded) {
+      await markSeeded()
+      if (contacts.length === 0 && loadedTags.length === 0) {
+        tags = seedTags()
+        await Promise.all(tags.map(putTag))
+      }
+    }
+
+    // A saved view can name a tag that has since been deleted. Dropping the
+    // dangling ids is what stops the app opening on a filter that matches
+    // nobody, with no lit chip in the panel to explain why.
+    const known = new Set(tags.map((t) => t.id))
+    const defaultView: View = saved
+      ? { sort: saved.sort, tagIds: saved.tagIds.filter((id) => id === UNTAGGED || known.has(id)) }
+      : DEFAULT_VIEW
+
+    set({ contacts, tags, defaultView, query: { ...EMPTY_QUERY, ...defaultView }, loaded: true })
   },
 
   setQuery: (patch) => set((s) => ({ query: { ...s.query, ...patch } })),
   resetQuery: () => set({ query: EMPTY_QUERY }),
+  applyDefaultView: () => set((s) => ({ query: { ...EMPTY_QUERY, ...s.defaultView } })),
+
+  saveDefaultView: async () => {
+    const defaultView = viewOf(get().query)
+    set({ defaultView })
+    await dbSaveDefaultView(defaultView)
+  },
+
+  forgetDefaultView: async () => {
+    set({ defaultView: DEFAULT_VIEW })
+    await dbClearDefaultView()
+  },
+
+  // Opening somebody's card closes any form that was open on somebody else —
+  // two dialogs about two different people, with the one underneath holding
+  // unsaved edits, is a state nothing good comes of.
+  view: (id) => set((s) => ({ viewing: id, editing: id === null ? s.editing : null })),
   // Closing or opening the form clears any prefill: it belongs to ONE opening
   // of the dialog, and a leftover would silently fill the next person's form
   // with the last one's details.
@@ -196,7 +285,14 @@ export const useBookStore = create<BookState>((set, get) => ({
   },
 
   removeContact: async (id) => {
-    set((s) => ({ contacts: s.contacts.filter((c) => c.id !== id), editing: s.editing === id ? null : s.editing }))
+    set((s) => ({
+      contacts: s.contacts.filter((c) => c.id !== id),
+      editing: s.editing === id ? null : s.editing,
+      // The full-screen view goes with them. Deleting somebody from the form
+      // that opened on top of their own card must not leave that card on
+      // screen showing a person the book no longer holds.
+      viewing: s.viewing === id ? null : s.viewing,
+    }))
     await dbDeleteContact(id)
   },
 
@@ -244,11 +340,21 @@ export const useBookStore = create<BookState>((set, get) => ({
     const contacts = get().contacts.map((c) =>
       c.tagIds.includes(id) ? { ...c, tagIds: c.tagIds.filter((x) => x !== id), updatedAt: Date.now() } : c,
     )
+    // The saved opening view is stripped of it too, and on disk — otherwise
+    // the app would go on opening on a tag that no longer exists, with nothing
+    // in the panel lit to say what it was filtering by.
+    const defaultView = get().defaultView
+    const inDefault = defaultView.tagIds.includes(id)
+    const nextDefault: View = inDefault
+      ? { ...defaultView, tagIds: defaultView.tagIds.filter((x) => x !== id) }
+      : defaultView
     set((s) => ({
       tags: s.tags.filter((t) => t.id !== id),
       contacts,
       query: { ...s.query, tagIds: s.query.tagIds.filter((x) => x !== id) },
+      defaultView: nextDefault,
     }))
+    if (inDefault) await dbSaveDefaultView(nextDefault)
     await dbDeleteTag(id)
     await Promise.all(
       touched.map((t) => {
@@ -260,7 +366,9 @@ export const useBookStore = create<BookState>((set, get) => ({
 
   importBook: async (contacts, tags, mode, notice) => {
     if (mode === 'replace') {
-      set({ contacts, tags, notice, query: EMPTY_QUERY })
+      // `viewing: null` — the card on screen belongs to a book that has just
+      // been thrown away, and the person on it may not be in the new one.
+      set({ contacts, tags, notice, query: EMPTY_QUERY, viewing: null })
       await replaceAll(contacts, tags)
       return
     }

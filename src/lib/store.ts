@@ -13,6 +13,7 @@
 
 import type { Contact, Tag } from './types'
 import { isValidBirthday } from './birthday'
+import { SORT_KEYS, type SortKey, type View } from './filter'
 import { toLockRecord, type LockRecord } from './lock'
 
 const DB_NAME = 'blackbook'
@@ -202,6 +203,12 @@ export async function replaceAll(contacts: Contact[], tags: Tag[]): Promise<void
 //           NOT part of the vault — it is never uploaded, and `forgetVault`
 //           below leaves it alone: signing out of a Universal ID has nothing
 //           to do with the door on the front of this device's app.
+//   'view'  the filters and order this app opens on. Device-local for the same
+//           reason the lock is: which tags you want in front of you on the
+//           phone in your pocket is not a fact about your address book, and
+//           syncing it would mean a laptop deciding how the phone opens.
+//   'seed'  whether this device has ever been given its two starting tags. A
+//           marker and not a count, so deleting them is a decision that sticks.
 
 export interface SyncMeta {
   /** The Universal ID this vault belongs to. */
@@ -231,6 +238,60 @@ export async function loadSyncMeta(): Promise<SyncMeta | null> {
 
 export async function saveSyncMeta(meta: SyncMeta): Promise<void> {
   await tx(SYNC, 'readwrite', (s) => s.put(meta, 'meta'))
+}
+
+// ── the view the app opens on ────────────────────────────────────────────────
+
+/**
+ * Coerce a stored view, or null.
+ *
+ * Tolerant in the same way every other read in this file is: an unknown sort
+ * key or a non-array tag list reads as "no saved view" rather than as a
+ * filtered list nobody can explain. The failure mode has to be the whole book,
+ * never a book with people missing from it.
+ */
+function toView(raw: unknown): View | null {
+  if (!raw || typeof raw !== 'object') return null
+  const r = raw as Record<string, unknown>
+  const sort = SORT_KEYS.includes(r.sort as SortKey) ? (r.sort as SortKey) : null
+  if (!sort) return null
+  const ids = Array.isArray(r.tagIds) ? r.tagIds.filter((v): v is string => typeof v === 'string') : []
+  return { tagIds: ids, sort }
+}
+
+export async function loadDefaultView(): Promise<View | null> {
+  const raw = await tx<unknown>(SYNC, 'readonly', (s) => s.get('view') as IDBRequest<unknown>)
+  return toView(raw)
+}
+
+export async function saveDefaultView(view: View): Promise<void> {
+  // A plain object, not the store's own state: whatever is handed in is copied
+  // so a later edit of the live query cannot reach the record on disk.
+  await tx(SYNC, 'readwrite', (s) => s.put({ tagIds: [...view.tagIds], sort: view.sort }, 'view'))
+}
+
+export async function clearDefaultView(): Promise<void> {
+  await tx(SYNC, 'readwrite', (s) => s.delete('view'))
+}
+
+// ── the starting tags ────────────────────────────────────────────────────────
+
+/**
+ * Has this device ever been offered its two starting tags?
+ *
+ * ⚠️ The marker is what makes "Important People" and "Important Notes" a
+ * STARTING point rather than a pair of tags that grow back. Seeding on "the
+ * book has no tags" alone would recreate both the moment somebody deleted them
+ * — an app arguing with a decision its user has already made, every time they
+ * open it.
+ */
+export async function loadSeeded(): Promise<boolean> {
+  const raw = await tx<unknown>(SYNC, 'readonly', (s) => s.get('seed') as IDBRequest<unknown>)
+  return raw === true
+}
+
+export async function markSeeded(): Promise<void> {
+  await tx(SYNC, 'readwrite', (s) => s.put(true, 'seed'))
 }
 
 // ── the PIN lock ─────────────────────────────────────────────────────────────
@@ -296,6 +357,11 @@ export async function wipeDevice(): Promise<void> {
   await tx(SYNC, 'readwrite', (s) => s.delete('key'))
   await tx(SYNC, 'readwrite', (s) => s.delete('meta'))
   await tx(SYNC, 'readwrite', (s) => s.delete('lock'))
+  // The saved view and the seed marker go too. A wiped device is a new book,
+  // and a new book is entitled to its starting tags and to opening on Name A–Z
+  // rather than on a filter belonging to a book that no longer exists.
+  await tx(SYNC, 'readwrite', (s) => s.delete('view'))
+  await tx(SYNC, 'readwrite', (s) => s.delete('seed'))
 }
 
 /**

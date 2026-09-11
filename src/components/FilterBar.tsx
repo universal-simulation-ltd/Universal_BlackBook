@@ -1,14 +1,21 @@
-import { useEffect, useId, useRef, useState } from 'react'
-import { UNTAGGED, type SortKey } from '../lib/filter'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import {
+  DEFAULT_VIEW,
+  describeView,
+  sameView,
+  SORT_LABELS,
+  UNTAGGED,
+  viewOf,
+  type SortKey,
+} from '../lib/filter'
 import { useBookStore } from '../stores/bookStore'
 import { TagChip } from './TagChip'
 import { btnSubtle, inputCls, label } from './ui'
 
-const SORTS: { value: SortKey; label: string }[] = [
-  { value: 'name', label: 'Name A–Z' },
-  { value: 'name-desc', label: 'Name Z–A' },
-  { value: 'recent', label: 'Recently added' },
-]
+// The orders offered as buttons. `birthday` is not among them on purpose — it
+// is the switch above, for the reason in this file's doc comment — but its
+// label lives in the same table so the saved-default line can still name it.
+const SORTS: SortKey[] = ['name', 'name-desc', 'recent']
 
 /**
  * The search box, and everything else behind one ⚙️ button.
@@ -29,6 +36,12 @@ const SORTS: { value: SortKey; label: string }[] = [
  * want. Above 40rem the bar is back in the page flow at the top and the panel
  * opens downwards, which is what a dropdown anchored under a button should do.
  *
+ * ⚠️ **"Opens on" is the panel's last section** (owner's request, 2026-09-11):
+ * a Default button that puts the list back to the view the app starts in, and
+ * a Save button that makes the current view that. It is deliberately NOT the
+ * same control as "Clear everything" — clearing turns everything off, and the
+ * default may be a birthdays view filtered to two tags.
+ *
  * ⚠️ **Birthdays is a sort that also filters**, which is why it is a switch of
  * its own under "View" rather than a fourth entry in the order list. Choosing
  * it drops everyone with no birthday recorded (see `runQuery`), and an "order"
@@ -40,9 +53,21 @@ export function FilterBar() {
   const query = useBookStore((s) => s.query)
   const setQuery = useBookStore((s) => s.setQuery)
   const resetQuery = useBookStore((s) => s.resetQuery)
+  const defaultView = useBookStore((s) => s.defaultView)
+  const applyDefaultView = useBookStore((s) => s.applyDefaultView)
+  const saveDefaultView = useBookStore((s) => s.saveDefaultView)
+  const forgetDefaultView = useBookStore((s) => s.forgetDefaultView)
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const panelId = useId()
+
+  // Is the list already showing what the app opens on? Decides whether the two
+  // default buttons do anything — a "Default" that is already the case, and a
+  // "Save" that would save what is already saved, are both dead controls.
+  const showingDefault = sameView(viewOf(query), defaultView)
+  const customDefault = !sameView(defaultView, DEFAULT_VIEW)
+  const tagNames = useMemo(() => new Map(tags.map((t) => [t.id, t.name])), [tags])
+  const defaultSummary = describeView(defaultView, (id) => tagNames.get(id) ?? null)
 
   const birthdays = query.sort === 'birthday'
   // What the ⚙️ badge counts. NOT the search text: that is legible in the box
@@ -170,17 +195,17 @@ export function FilterBar() {
               <div className="flex flex-wrap gap-2">
                 {SORTS.map((s) => (
                   <button
-                    key={s.value}
+                    key={s}
                     type="button"
-                    aria-pressed={query.sort === s.value}
-                    onClick={() => setQuery({ sort: s.value })}
+                    aria-pressed={query.sort === s}
+                    onClick={() => setQuery({ sort: s })}
                     className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
-                      query.sort === s.value
+                      query.sort === s
                         ? 'border-orange-500/50 bg-orange-500/15 text-orange-300'
                         : 'border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-200'
                     }`}
                   >
-                    {s.label}
+                    {SORT_LABELS[s]}
                   </button>
                 ))}
               </div>
@@ -212,6 +237,50 @@ export function FilterBar() {
                 />
               </div>
             )}
+          </section>
+
+          {/* ⚠️ "Default" is a DESTINATION, not a reset (owner's request,
+              2026-09-11). "Clear everything" below turns the whole query off
+              and always has; this button goes to the view the app opens on,
+              which may itself be a tag filter and a birthdays view. When
+              nothing has been saved the two do the same thing, and that is
+              fine — the point is that once somebody saves a default, one tap
+              gets them back to it from wherever they have wandered.
+
+              The saved view is device-local (lib/store.ts, the 'view' key),
+              like the PIN lock and unlike the book: which tags a phone opens
+              on is not a fact about an address book, and syncing it would mean
+              a laptop deciding how the phone opens. */}
+          <section>
+            <span className={label}>Opens on</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={applyDefaultView}
+                disabled={showingDefault}
+                className="rounded-lg border border-slate-700 px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:border-slate-600 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Default
+              </button>
+              <button
+                type="button"
+                onClick={() => void saveDefaultView()}
+                disabled={showingDefault}
+                className="rounded-lg border border-orange-500/60 px-3 py-2 text-sm font-medium text-orange-300 transition-colors hover:bg-orange-500/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Save these as default
+              </button>
+              {customDefault && (
+                <button type="button" className={`${btnSubtle} px-2 py-1.5`} onClick={() => void forgetDefaultView()}>
+                  Forget
+                </button>
+              )}
+            </div>
+            <p className="mt-1.5 text-xs text-slate-500">
+              {showingDefault
+                ? `This is what the app opens on: ${defaultSummary}.`
+                : `The app opens on ${defaultSummary}. The search box is never saved.`}
+            </p>
           </section>
 
           <div className="flex items-center justify-between gap-2 border-t border-slate-800 pt-3">

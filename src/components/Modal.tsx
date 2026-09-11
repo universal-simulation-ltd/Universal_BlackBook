@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react'
+import { usePageScrollLock } from '../lib/scrollLock'
 
 /**
  * The app's one dialog.
@@ -45,6 +46,10 @@ export function Modal({
   wide?: boolean
 }) {
   const ref = useRef<HTMLDialogElement>(null)
+
+  // The page behind stays put. `showModal()` makes it inert but not unscrollable
+  // — see lib/scrollLock.ts.
+  usePageScrollLock()
 
   useEffect(() => {
     const el = ref.current
@@ -138,8 +143,11 @@ export function Modal({
  * failure that took 📇 out of the "From my contacts" button (see App.tsx), and
  * the second one found in this codebase: if you are about to put a
  * non-alphabetic codepoint in the UI, look at it on a phone first.
+ *
+ * Exported so the full-screen contact view can use the same mark: one ✕ in the
+ * app, and one place for the next person to find that lesson.
  */
-function CloseGlyph() {
+export function CloseGlyph() {
   return (
     <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
       <path d="m4 4 8 8M12 4l-8 8" strokeLinecap="round" />

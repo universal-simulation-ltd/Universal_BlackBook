@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   compare,
+  DEFAULT_VIEW,
+  describeView,
   fold,
   hiddenBirthdays,
   hiddenFromList,
@@ -8,8 +10,10 @@ import {
   matchesTags,
   matchesText,
   runQuery,
+  sameView,
   showsInBirthdays,
   UNTAGGED,
+  viewOf,
 } from './filter'
 import type { Today } from './birthday'
 import type { Contact } from './types'
@@ -268,5 +272,45 @@ describe('hiding somebody from the main list', () => {
 
   it('lists the hidden ones so they can be put back', () => {
     expect(hiddenFromList([plumber, sam]).map((c) => c.id)).toEqual(['p'])
+  })
+})
+
+describe('the view the app opens on', () => {
+  const name = (id: string) => ({ work: 'Work', family: 'Family' })[id] ?? null
+
+  it('copies the tag list, so a later edit of the query cannot reach it', () => {
+    const query = { text: 'sam', tagIds: ['work'], sort: 'recent' as const }
+    const view = viewOf(query)
+    query.tagIds.push('family')
+    expect(view).toEqual({ tagIds: ['work'], sort: 'recent' })
+  })
+
+  it('leaves the search box out — a saved question is not a saved view', () => {
+    expect(viewOf({ text: 'sam', tagIds: [], sort: 'name' })).toEqual({ tagIds: [], sort: 'name' })
+  })
+
+  it('compares tags as a SET: the order chips were tapped in never counts', () => {
+    expect(sameView({ tagIds: ['a', 'b'], sort: 'name' }, { tagIds: ['b', 'a'], sort: 'name' })).toBe(true)
+    expect(sameView({ tagIds: ['a'], sort: 'name' }, { tagIds: ['a', 'b'], sort: 'name' })).toBe(false)
+    expect(sameView({ tagIds: [], sort: 'name' }, { tagIds: [], sort: 'recent' })).toBe(false)
+    expect(sameView(DEFAULT_VIEW, { tagIds: [], sort: 'name' })).toBe(true)
+  })
+
+  it('describes itself in English', () => {
+    expect(describeView({ tagIds: [], sort: 'name' }, name)).toBe('Name A–Z')
+    expect(describeView({ tagIds: [], sort: 'birthday' }, name)).toBe('Birthdays')
+    expect(describeView({ tagIds: ['work'], sort: 'recent' }, name)).toBe('Recently added · Work')
+    expect(describeView({ tagIds: ['work', 'family'], sort: 'name' }, name)).toBe(
+      'Name A–Z · Work and Family',
+    )
+  })
+
+  it('names the untagged pseudo-tag rather than printing its id', () => {
+    expect(describeView({ tagIds: [UNTAGGED], sort: 'name' }, name)).toBe('Name A–Z · Untagged')
+  })
+
+  it('drops a tag it cannot name — a default outliving a deleted tag', () => {
+    expect(describeView({ tagIds: ['gone', 'work'], sort: 'name' }, name)).toBe('Name A–Z · Work')
+    expect(describeView({ tagIds: ['gone'], sort: 'name' }, name)).toBe('Name A–Z')
   })
 })

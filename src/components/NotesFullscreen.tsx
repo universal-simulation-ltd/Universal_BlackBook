@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { usePageScrollLock } from '../lib/scrollLock'
 import { btnPrimary } from './ui'
 
 /**
@@ -56,6 +57,10 @@ export function NotesFullscreen({
   // text never reached the form's field at all.
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
+
+  // Third lock in the stack — the list, the form and this note. See
+  // lib/scrollLock.ts for why they count rather than each set and clear it.
+  usePageScrollLock()
 
   useEffect(() => {
     const el = ref.current

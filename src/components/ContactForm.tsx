@@ -18,7 +18,7 @@ import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label, textareaCl
  *
  * ⚠️ **Notes has a "Full screen" button on its label** (owner's request,
  * 2026-08-31), which opens NotesFullscreen — a second dialog on top of this
- * one, holding nothing but the note. Four rows is the right size for the field
+ * one, holding nothing but the note. Seven rows is the right size for the field
  * in a form and the wrong size for reading a note that has grown, and on a
  * phone reading one means scrolling a box inside a scrolling form.
  *
@@ -295,7 +295,14 @@ export function ContactForm({ id }: { id: string }) {
           <textarea
             id="cf-notes"
             className={textareaCls}
-            rows={4}
+            // ⚠️ Seven rows, up from four (owner's request, 2026-09-11). Four
+            // was chosen to keep the pickers below it in reach on a phone;
+            // those pickers are now folded behind "More" on a blank form, so
+            // the room is there — and this is the field people came to write
+            // in. `resize-y` (textareaCls) still lets it be dragged taller,
+            // and the Full screen button above is the way out for a note that
+            // has grown past any row count.
+            rows={7}
             value={draft.notes}
             onChange={(e) => patch({ notes: e.target.value })}
             placeholder="Met at the Leeds conference. Two kids. Allergic to shellfish."
