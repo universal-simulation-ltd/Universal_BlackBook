@@ -273,8 +273,28 @@ export default function App() {
           opens the form on top of it, because `showModal()` stacks in call
           order — so closing the form drops you back on the person you were
           reading rather than in the list. */}
-      {viewing && <ContactView key={viewing} id={viewing} />}
-      {editing && <ContactForm key={editing} id={editing} />}
+      {/* ⚠️ The keys are PREFIXED, and that prefix is the whole of a bug that
+          left the app wedged on a full-screen contact. Both of these are keyed
+          on a contact id so that opening a different person remounts them —
+          the form reads the stash and the prefill once at mount, and the view
+          calls `showModal()` once — but the two ids are THE SAME id whenever
+          the form was opened from the view's own Edit button, which is the
+          normal way in. Two siblings with the key `c-sam` is a duplicate key,
+          and React's own warning for it says the behaviour is unsupported:
+          asked to unmount BOTH in one commit — which is exactly what deleting
+          somebody from that form does, since `removeContact` clears `viewing`
+          and `editing` together — it dropped one of the two deletions. The
+          form went; the full-screen view stayed on screen, never re-rendered,
+          never ran its unmount cleanup, and so never `close()`d its dialog —
+          a card for a person no longer in the book, with a Close button that
+          did nothing. The prefixes make the two keys distinct, so both fibers
+          are deleted and both dialogs go.
+
+          ⚠️ It only ever showed up in a PRODUCTION build. The duplicate-key
+          warning is development-only, and this pair of dialogs had only ever
+          been driven in the deployed app. */}
+      {viewing && <ContactView key={`view-${viewing}`} id={viewing} />}
+      {editing && <ContactForm key={`form-${editing}`} id={editing} />}
       {panel === 'tags' && <TagManager onClose={() => setPanel(null)} />}
       {panel === 'io' && <ImportExport onClose={() => setPanel(null)} />}
       {panel === 'cloud' && <CloudPanel onClose={() => setPanel(null)} />}
