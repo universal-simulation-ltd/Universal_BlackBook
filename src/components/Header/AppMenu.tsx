@@ -49,15 +49,22 @@ export default function AppMenu({
       <MenuLabel>Your book</MenuLabel>
       <MenuRow glyph="🏷️" label="Tags" onClick={onTags} />
       <MenuRow glyph="📄" label="Import & export" onClick={onImportExport} />
-      <MenuLabel>Universal ID</MenuLabel>
-      <MenuRow
-        glyph={state === 'on' ? '☁️' : '🔒'}
-        label={
-          state === 'on' ? 'Saving online — manage' : state === 'locked' ? 'Unlock online copy' : 'Save online'
-        }
-        selected={state === 'on'}
-        onClick={onCloud}
-      />
+      {/* Nothing here while signed out: the navbar's own Sign in is the way
+          in, and signing in opens the backup by itself (App's useCloudSync).
+          A second "Save online" door beside it read as a second feature. */}
+      {state !== 'signed-out' && (
+        <>
+          <MenuLabel>Universal ID</MenuLabel>
+          <MenuRow
+            glyph={state === 'on' ? '☁️' : '🔒'}
+            label={
+              state === 'on' ? 'Online backup' : state === 'locked' ? 'Download my book' : 'Back up online'
+            }
+            selected={state === 'on'}
+            onClick={onCloud}
+          />
+        </>
+      )}
 
       {/* Advanced — the SDK's own category, so every app in the suite has one in
           the same place, and whatever goes in it next is one change rather than

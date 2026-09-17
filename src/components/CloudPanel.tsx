@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { SignInDialog, useUniversal, useUser } from '@unisim/sdk'
+import { mergeBooks } from '../lib/merge'
+import { payloadTags } from '../lib/cloud'
 import { useBookStore } from '../stores/bookStore'
 import { useSyncStore } from '../stores/syncStore'
 import { Modal } from './Modal'
@@ -8,17 +10,22 @@ import { btnDanger, btnGhost, btnPrimary, btnSubtle, checkboxCls, inputCls, labe
 const MIN_PASSPHRASE = 10
 
 /**
- * "Save my book online" — the Universal ID half of the app.
+ * The online backup — the Universal ID half of the app.
  *
- * Everything here is opt-in and reversible. BlackBook works completely without
- * an account; this exists so a book survives a lost laptop and turns up on a
- * phone, and it is deliberately described in those terms rather than as
- * "sync", which promises a merge this does not do.
+ * ⚠️ Signing in is the whole of the front door (owner's call, 2026-09-17).
+ * There used to be a separate "Save online" step beside the navbar's Sign in,
+ * and two ways in read as two features. Now App opens this panel by itself
+ * once somebody signs in: an existing backup asks for its passphrase and comes
+ * straight down, and a device that already has contacts is asked whether to
+ * merge them in. With no backup yet, it asks for a passphrase to start one.
+ *
+ * BlackBook still works completely without an account.
  */
 export function CloudPanel({ onClose }: { onClose: () => void }) {
   const { supabase } = useUniversal()
   const { user } = useUser()
   const contacts = useBookStore((s) => s.contacts)
+  const tags = useBookStore((s) => s.tags)
 
   const sync = useSyncStore()
   const [signInOpen, setSignInOpen] = useState(false)
@@ -30,16 +37,26 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
 
   const busy = sync.status === 'working'
 
+  // What "Merge" would add, so the question can say so before it is answered.
+  const { pending } = sync
+  const preview = useMemo(
+    () =>
+      pending
+        ? mergeBooks({ contacts: pending.contacts ?? [], tags: payloadTags(pending) }, { contacts, tags })
+        : null,
+    [pending, contacts, tags],
+  )
+
   return (
     <>
-      <Modal title="Save online" onClose={onClose} wide>
+      <Modal title="Online backup" onClose={onClose} wide>
         <div className="space-y-4">
           <PrivacyNote />
 
           {sync.state === 'signed-out' && (
             <div className="space-y-3">
               <p className="text-sm text-slate-300">
-                Sign in with your Universal ID and BlackBook can keep an encrypted copy of your book, so
+                Sign in with your Universal ID and BlackBook keeps an encrypted copy of your book, so
                 it survives a lost device and opens on your phone.
               </p>
               <button type="button" className={btnPrimary} onClick={() => setSignInOpen(true)}>
@@ -61,8 +78,9 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
               }}
             >
               <p className="text-sm text-slate-300">
-                Signed in as <span className="font-medium text-slate-100">{user.email}</span>. Choose a
-                passphrase to encrypt your book with — it never leaves this device.
+                Signed in as <span className="font-medium text-slate-100">{user.email}</span>. There is
+                no online copy of your book yet. Choose a passphrase to encrypt it with — it never leaves
+                this device, and you will need it to open your book on another one.
               </p>
               <div>
                 <label className={label} htmlFor="cp-pass">
@@ -128,7 +146,7 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
                   passphrase !== confirm
                 }
               >
-                {busy ? 'Encrypting…' : `Save ${contacts.length} ${contacts.length === 1 ? 'contact' : 'contacts'} online`}
+                {busy ? 'Encrypting…' : `Back up ${contacts.length} ${contacts.length === 1 ? 'contact' : 'contacts'}`}
               </button>
               {passphrase.length > 0 && passphrase.length < MIN_PASSPHRASE && (
                 <p className="text-xs text-slate-500">A few more characters — {MIN_PASSPHRASE} minimum.</p>
@@ -148,7 +166,8 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
               }}
             >
               <p className="text-sm text-slate-300">
-                You have an online copy saved. Enter the passphrase you chose to open it.
+                Signed in as <span className="font-medium text-slate-100">{user.email}</span>. Your book
+                is backed up online — enter the passphrase you chose to download it.
               </p>
               <div>
                 <label className={label} htmlFor="cp-unlock">
@@ -174,22 +193,19 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
                 Remember on this device
               </label>
               <button type="submit" className={btnPrimary} disabled={busy || passphrase.length === 0}>
-                {busy ? 'Opening…' : 'Unlock'}
+                {busy ? 'Downloading…' : 'Download my book'}
               </button>
             </form>
           )}
 
-          {sync.pending && (
+          {pending && preview && (
             <ChoiceBlock
-              title="Two books"
-              body={`This device has ${contacts.length} ${
-                contacts.length === 1 ? 'contact' : 'contacts'
-              }; the online copy has ${sync.pending.contacts.length}. Only one can be kept — whichever you don't choose is replaced.`}
-              primary={{ label: 'Use the online copy', onClick: () => void sync.adoptPending() }}
-              secondary={{
-                label: 'Keep this device, overwrite online',
-                onClick: () => void sync.discardPending(supabase),
-              }}
+              title={`Merge ${contacts.length} ${contacts.length === 1 ? 'contact' : 'contacts'} from this device?`}
+              body={`Your online copy has ${pending.contacts.length} ${
+                pending.contacts.length === 1 ? 'contact' : 'contacts'
+              }. ${mergeSummary(preview.added, contacts.length)} Using the online copy only removes this device's contacts.`}
+              primary={{ label: 'Merge', onClick: () => void sync.mergePending(supabase) }}
+              secondary={{ label: 'Use the online copy only', onClick: () => void sync.adoptPending() }}
             />
           )}
 
@@ -208,7 +224,7 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
           {sync.state === 'on' && !sync.pending && sync.status !== 'conflict' && (
             <div className="space-y-3">
               <div className="rounded-xl border border-emerald-900/60 bg-emerald-950/30 px-3 py-2.5">
-                <p className="text-sm font-medium text-emerald-300">Saving online is on</p>
+                <p className="text-sm font-medium text-emerald-300">Your book is backed up online</p>
                 <p className="mt-0.5 text-xs text-emerald-200/70">
                   {sync.lastPushedAt
                     ? `Last saved ${new Date(sync.lastPushedAt).toLocaleString('en-GB')}`
@@ -267,6 +283,13 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
       <SignInDialog open={signInOpen} onClose={() => setSignInOpen(false)} />
     </>
   )
+}
+
+/** How many of this device's contacts a merge would actually bring in. */
+function mergeSummary(added: number, local: number): string {
+  if (added === 0) return 'Everyone on this device is already in it.'
+  if (added === local) return `Merging adds all ${local} of them.`
+  return `Merging adds ${added} — the other ${local - added} are already in it.`
 }
 
 function PrivacyNote() {

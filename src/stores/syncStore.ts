@@ -27,6 +27,7 @@ import {
   VAULT_VERSION,
   vaultSizeError,
 } from '../lib/vault'
+import { mergeBooks } from '../lib/merge'
 import { useBookStore } from './bookStore'
 
 /**
@@ -59,7 +60,8 @@ interface SyncStore {
   remembered: boolean
   /**
    * A vault decrypted during `unlock` but not yet adopted — the user is being
-   * asked whether to take it or to overwrite it with this device's book.
+   * asked whether to merge this device's contacts into it or to take the
+   * online copy as it is.
    */
   pending: VaultPayload | null
 
@@ -67,7 +69,7 @@ interface SyncStore {
   enable: (supabase: SupabaseClient, userId: string, passphrase: string, remember: boolean) => Promise<void>
   unlock: (supabase: SupabaseClient, userId: string, passphrase: string, remember: boolean) => Promise<void>
   adoptPending: () => Promise<void>
-  discardPending: (supabase: SupabaseClient) => Promise<void>
+  mergePending: (supabase: SupabaseClient) => Promise<void>
   push: (supabase: SupabaseClient, force?: boolean) => Promise<void>
   pull: (supabase: SupabaseClient) => Promise<void>
   disable: (supabase: SupabaseClient) => Promise<void>
@@ -85,11 +87,10 @@ function bookPayload(): VaultPayload {
 /**
  * Adopt a decrypted payload as the local book.
  *
- * Goes through `replaceAll` in bookStore rather than merging: the vault is a
- * snapshot of a whole book, and a field-level merge of two address books
- * without per-record clocks produces duplicates nobody asked for. The user is
- * always asked before this runs (see `pending`), so a replace is a choice
- * rather than a surprise.
+ * A replace: the vault is a snapshot of a whole book. Merging is a separate,
+ * explicit answer (`mergePending`) — a device that already has contacts is
+ * always asked before this runs, so a replace is a choice rather than a
+ * surprise.
  */
 async function adopt(payload: VaultPayload) {
   const contacts: Contact[] = Array.isArray(payload.contacts) ? payload.contacts : []
@@ -260,7 +261,7 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
         remembered: remember,
         // An empty device just takes the online copy — there is nothing to
         // lose and nothing to ask about. A device that already has contacts is
-        // asked, because either answer destroys one of the two books.
+        // asked whether to merge them in.
         pending: local > 0 ? payload : null,
         status: 'idle',
         message: null,
@@ -278,9 +279,17 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
     set({ pending: null, status: 'saved' })
   },
 
-  discardPending: async (supabase) => {
+  mergePending: async (supabase) => {
+    const { pending } = get()
+    if (!pending) return
+    const { contacts, tags } = useBookStore.getState()
+    const merged = mergeBooks({ contacts: pending.contacts ?? [], tags: payloadTags(pending) }, { contacts, tags })
+    await useBookStore.getState().importBook(merged.contacts, merged.tags, 'replace', null)
     set({ pending: null })
-    await get().push(supabase, true)
+    // Straight up, rather than on the autosave timer: the online copy is
+    // missing this device's contacts until it goes, and a second device
+    // signing in during that window would not see them.
+    await get().push(supabase)
   },
 
   push: async (supabase, force = false) => {

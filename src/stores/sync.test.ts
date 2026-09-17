@@ -165,8 +165,9 @@ describe('two devices, one account', () => {
     await seed(b, ['Bob'])
     await use(b).sync.getState().unlock(b.client, USER, PASS, true)
 
-    // ⚠️ The book is UNTOUCHED until the question is answered. Either answer
-    // destroys one of the two books, so unlocking must not pick one.
+    // ⚠️ The book is UNTOUCHED until the question is answered. "Use the online
+    // copy only" throws this device's contacts away, so unlocking must not
+    // pick an answer for them.
     expect(use(b).sync.getState().pending).not.toBeNull()
     expect(names(b)).toEqual(['Bob'])
 
@@ -175,24 +176,26 @@ describe('two devices, one account', () => {
     expect(use(b).sync.getState().pending).toBeNull()
   })
 
-  it('discarding instead pushes THIS device’s book over the online copy', async () => {
+  it('merging keeps both books and pushes the union online', async () => {
     const a = await boot(server)
     await seed(a, ['Ada'])
     await use(a).sync.getState().enable(a.client, USER, PASS, true)
     const revAfterEnable = server.row!.rev
 
     const b = await boot(server)
-    await seed(b, ['Bob'])
+    await seed(b, ['Ada', 'Bob'])
     await use(b).sync.getState().unlock(b.client, USER, PASS, true)
-    await use(b).sync.getState().discardPending(b.client)
+    await use(b).sync.getState().mergePending(b.client)
 
-    expect(names(b)).toEqual(['Bob'])
+    // Ada is the same id on both devices, so she is there once.
+    expect(names(b)).toEqual(['Ada', 'Bob'])
+    expect(use(b).sync.getState().pending).toBeNull()
     expect(server.row!.rev).toBe(revAfterEnable + 1)
 
-    // And device A pulling gets Bob — the discard really did reach the server,
+    // And device A pulling gets Bob — the merge really did reach the server,
     // rather than only clearing the prompt.
     await use(a).sync.getState().pull(a.client)
-    expect(names(a)).toEqual(['Bob'])
+    expect(names(a)).toEqual(['Ada', 'Bob'])
   })
 })
 

@@ -158,8 +158,10 @@ an email and a number; the web API has no birthday). Everywhere else the door is
 the CSV importer below, which works in every browser.
 
 **An encrypted online copy** *(optional, off by default)* — sign in with your
-Universal ID and BlackBook can keep a copy on UNI·SIM's servers, so your book
-survives a lost laptop and opens on your phone.
+Universal ID and BlackBook keeps a copy on UNI·SIM's servers, so your book
+survives a lost laptop and opens on your phone. Signing in is the only step:
+BlackBook then asks for your passphrase and downloads your book. If this device
+already has contacts, it asks whether to merge them in.
 
 > **We cannot read it.** The book is encrypted in your browser with AES-GCM-256,
 > under a key derived from a passphrase you choose (PBKDF2-SHA-256, 600,000
@@ -175,9 +177,11 @@ survives a lost laptop and opens on your phone.
 > we hold no key, no escrow and no reset. Your local book is untouched, which is
 > why this is a backup and never the primary copy.
 
-The online copy is a whole-book snapshot, not a field-by-field merge. If two
-devices have both changed, BlackBook stops and asks which one to keep rather
-than silently picking.
+The merge on sign-in adds this device's contacts that the online copy does not
+have. The same person is matched by id, or by name plus email or phone, and is
+never added twice. After that, the online copy is a whole-book snapshot: if two
+signed-in devices have both changed, BlackBook stops and asks which one to keep
+rather than silently picking.
 
 ## Dark only
 
@@ -207,7 +211,7 @@ suite registry — see `Docs_UNI_SIM/dev-preview.md`.
 | `npm run deploy` | Build and `wrangler deploy` |
 
 ⚠️ **`npm run dev` talks to the LIVE platform Supabase.** The book is local
-either way, but signing in and turning on "save online" in dev writes a real
+either way, but signing in and setting a passphrase in dev writes a real
 vault against your real Universal ID.
 
 ## Deployment

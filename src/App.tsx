@@ -443,14 +443,41 @@ function useContactPicker() {
 }
 
 /**
+ * The account the backup panel last opened itself for, on this device.
+ *
+ * localStorage and not IndexedDB: it is a courtesy, not data. If it cannot be
+ * read (a private window, blocked storage) the worst case is being shown the
+ * panel again after signing in.
+ */
+const PROMPTED_KEY = 'blackbook.backupPrompted'
+
+function readPrompted(): string | null {
+  try {
+    return localStorage.getItem(PROMPTED_KEY)
+  } catch {
+    return null
+  }
+}
+
+function writePrompted(userId: string | null) {
+  try {
+    if (userId) localStorage.setItem(PROMPTED_KEY, userId)
+    else localStorage.removeItem(PROMPTED_KEY)
+  } catch {
+    // See readPrompted.
+  }
+}
+
+/**
  * Keeps the encrypted vault in step with the local book.
  *
  * Three jobs, all of them effects because they hang off session state the SDK
  * owns rather than off anything the user did:
  *
- *  1. **Follow the session.** Signing in checks for a vault; signing out drops
- *     the in-memory key AND the remembered one, so a shared machine does not
- *     leave a key behind for whoever signs in next.
+ *  1. **Follow the session.** Signing in checks for a vault and opens the
+ *     backup panel if it needs a passphrase; signing out drops the in-memory
+ *     key AND the remembered one, so a shared machine does not leave a key
+ *     behind for whoever signs in next.
  *  2. **Debounced push.** Every edit restarts a timer; the vault is written
  *     once the typing stops. Pushing per keystroke would re-encrypt and
  *     re-upload the whole book on every letter of a note.
@@ -481,14 +508,32 @@ function useCloudSync(openPanel: () => void) {
   const wasSignedIn = useRef(false)
 
   useEffect(() => {
-    void hydrate(supabase, userId)
+    let cancelled = false
+    void hydrate(supabase, userId).then(() => {
+      // Signing in IS turning the backup on: open the panel so the passphrase
+      // and the merge question come straight away. Once per account per
+      // device, so somebody who closes it is not asked on every launch — and
+      // keyed on the stored flag rather than on a null → user transition,
+      // because a sign-in that went via the hub comes back as a fresh page
+      // load with the session already there.
+      if (cancelled || !userId) return
+      const { state } = useSyncStore.getState()
+      if ((state === 'locked' || state === 'off') && readPrompted() !== userId) {
+        writePrompted(userId)
+        openPanel()
+      }
+    })
     if (userId) {
       wasSignedIn.current = true
     } else if (wasSignedIn.current) {
       wasSignedIn.current = false
+      writePrompted(null)
       void forgetVault()
     }
-  }, [supabase, userId, hydrate])
+    return () => {
+      cancelled = true
+    }
+  }, [supabase, userId, hydrate, openPanel])
 
   useEffect(() => {
     if (!loaded || state !== 'on') return

@@ -237,7 +237,7 @@ async function pickViaWeb(): Promise<PickedContact | null> {
  * same number is written five ways, and the copy in the system contacts is
  * rarely punctuated the way the copy typed in here was.
  */
-function identityKeys(c: { name: string; email: string; phone: string }): string[] {
+export function identityKeys(c: { name: string; email: string; phone: string }): string[] {
   const name = fold(c.name)
   const keys: string[] = []
   if (c.email.trim()) keys.push(`${name} e:${fold(c.email)}`)
