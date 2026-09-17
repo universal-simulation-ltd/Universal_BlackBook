@@ -1,7 +1,8 @@
 import { create } from 'zustand'
 
 /**
- * The app's switches (owner's request, 2026-09-17: a Settings row in the menu).
+ * The app's own switches, shown in the SDK's ⚙ menu ▸ App preferences
+ * (owner's request, 2026-09-17).
  *
  * Device-local, in localStorage: a preference about how THIS device shows the
  * app, not a fact about the address book, so it stays out of the vault — the

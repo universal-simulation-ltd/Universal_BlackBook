@@ -632,7 +632,7 @@ function ContactRow({
 
 /**
  * "Copy emails" and "Export CSV" for exactly the people on screen (owner's
- * request, 2026-09-17), with Settings ▸ Email lists on. Filter the list to a tag — an email list — and this is
+ * request, 2026-09-17), with App preferences ▸ Email lists on. Filter the list to a tag — an email list — and this is
  * how it leaves the app: pasted into a To: line, or opened in a spreadsheet.
  *
  * ⚠️ The VISIBLE list, not the book. What the filters show is what goes out;

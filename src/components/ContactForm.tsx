@@ -234,7 +234,7 @@ export function ContactForm({ id }: { id: string }) {
     close(null)
   }
 
-  // The tab bar is on a NEW contact only, only with Settings ▸ Email lists on,
+  // The tab bar is on a NEW contact only, only with App preferences ▸ Email lists on,
   // and not over a contact just picked from the phone, which is one person by
   // definition.
   const tabs = id === 'new' && !prefill && emailLists ? <AddTabs mode={mode} onChange={setMode} /> : null

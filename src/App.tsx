@@ -9,7 +9,7 @@ import ProductLogo from './components/Header/ProductLogo'
 import AppMenu from './components/Header/AppMenu'
 import { TagManager } from './components/TagManager'
 import { CloudPanel } from './components/CloudPanel'
-import { SettingsPanel } from './components/SettingsPanel'
+import { EmailListsPreference } from './components/EmailListsPreference'
 import { ContactForm } from './components/ContactForm'
 import { ContactList } from './components/ContactList'
 import { ContactView } from './components/ContactView'
@@ -42,7 +42,7 @@ const REPO_URL = 'https://github.com/universal-simulation-ltd/Universal_BlackBoo
 /** How long to wait after the last edit before pushing to the vault. */
 const AUTOSAVE_DELAY = 2500
 
-type Panel = 'tags' | 'io' | 'cloud' | 'lock' | 'settings' | null
+type Panel = 'tags' | 'io' | 'cloud' | 'lock' | null
 
 export default function App() {
   const init = useBookStore((s) => s.init)
@@ -53,7 +53,7 @@ export default function App() {
   const notice = useBookStore((s) => s.notice)
   const setNotice = useBookStore((s) => s.setNotice)
   const [panel, setPanel] = useState<Panel>(null)
-  // Contacts | Lists, on the landing screen. Lists only exists with Settings ▸
+  // Contacts | Lists, on the landing screen. Lists only exists with App preferences ▸
   // Email lists on; turning that off drops back to Contacts.
   const emailLists = useSettingsStore((s) => s.emailLists)
   const [tab, setTab] = useState<'contacts' | 'lists'>('contacts')
@@ -106,9 +106,12 @@ export default function App() {
           <AppMenu
             onTags={() => setPanel('tags')}
             onImportExport={() => setPanel('io')}
-            onSettings={() => setPanel('settings')}
           />
         }
+        // ⚙ menu ▸ App preferences (SDK 0.143). The SDK adds Language and
+        // Colour scheme; BlackBook is dark-only, which the SDK reads off
+        // `theme` and shows as "always dark".
+        appPreferences={<EmailListsPreference />}
         suiteSwitcherIconSrc={`${import.meta.env.BASE_URL}unisim-icon.png`}
       />
       {/* ⚠️ The footer's job, on a phone (owner's call, 2026-08-30). A full
@@ -342,7 +345,6 @@ export default function App() {
       {panel === 'io' && <ImportExport onClose={() => setPanel(null)} />}
       {panel === 'cloud' && <CloudPanel onClose={() => setPanel(null)} />}
       {panel === 'lock' && <LockPanel onClose={() => setPanel(null)} />}
-      {panel === 'settings' && <SettingsPanel onClose={() => setPanel(null)} />}
     </div>
   )
 }

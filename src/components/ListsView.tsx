@@ -7,7 +7,7 @@ import { btnPrimary } from './ui'
 
 /**
  * The Lists tab on the landing screen (owner's request, 2026-09-17), there
- * only with Settings ▸ Email lists on.
+ * only with App preferences ▸ Email lists on.
  *
  * ⚠️ A list is a TAG, and every tag is shown. Saving an Email list files its
  * people under a tag of the list's name, so there is no separate record of
