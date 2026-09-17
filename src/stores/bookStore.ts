@@ -83,6 +83,13 @@ interface BookState {
   edit: (id: string | null) => void
   /** Open the blank form with these values already in it. */
   startWith: (draft: ContactDraft) => void
+  /**
+   * The Add new form should open on its Email list tab. Read once when the
+   * form mounts, like `prefill`, and cleared by the next `edit`.
+   */
+  listMode: boolean
+  /** Open Add new on its Email list tab — the Lists screen's New list. */
+  newList: () => void
   stashDraft: (draft: ContactDraft) => void
   clearStash: () => void
   saveContact: (draft: ContactDraft) => Promise<void>
@@ -160,6 +167,7 @@ export const useBookStore = create<BookState>((set, get) => ({
   editing: null,
   stashed: null,
   prefill: null,
+  listMode: false,
   notice: null,
 
   init: async () => {
@@ -221,8 +229,9 @@ export const useBookStore = create<BookState>((set, get) => ({
   // Closing or opening the form clears any prefill: it belongs to ONE opening
   // of the dialog, and a leftover would silently fill the next person's form
   // with the last one's details.
-  edit: (id) => set({ editing: id, prefill: null }),
-  startWith: (draft) => set({ prefill: draft, editing: 'new' }),
+  edit: (id) => set({ editing: id, prefill: null, listMode: false }),
+  startWith: (draft) => set({ prefill: draft, editing: 'new', listMode: false }),
+  newList: () => set({ editing: 'new', prefill: null, listMode: true }),
 
   /**
    * Keep what was typed when a new-contact form is closed without saving.

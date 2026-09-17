@@ -112,7 +112,9 @@ export function ContactForm({ id }: { id: string }) {
   const [notesFull, setNotesFull] = useState(false)
   const moreId = useId()
   /** "Add new" only: one person, or a Name / Email list of many. */
-  const [mode, setMode] = useState<'contact' | 'list'>('contact')
+  const [mode, setMode] = useState<'contact' | 'list'>(() =>
+    useBookStore.getState().listMode ? 'list' : 'contact',
+  )
   const emailLists = useSettingsStore((s) => s.emailLists)
 
   // Which of the four optional fields arrived with something in them. Read from

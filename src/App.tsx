@@ -15,12 +15,14 @@ import { ContactList } from './components/ContactList'
 import { ContactView } from './components/ContactView'
 import { FilterBar } from './components/FilterBar'
 import { ImportExport } from './components/ImportExport'
+import { ListsView } from './components/ListsView'
 import { LockPanel, LockScreen } from './components/Lock'
 import { btnGhost, btnPrimary } from './components/ui'
 import { contactsAvailability, ContactsPermissionError, pickOneContact } from './lib/deviceContacts'
 import { forgetVault } from './lib/store'
 import { useBookStore } from './stores/bookStore'
 import { useLockStore } from './stores/lockStore'
+import { useSettingsStore } from './stores/settingsStore'
 import { useSyncStore } from './stores/syncStore'
 
 // The single page container. The navbar (via the SDK's `contentClassName`), the
@@ -51,6 +53,11 @@ export default function App() {
   const notice = useBookStore((s) => s.notice)
   const setNotice = useBookStore((s) => s.setNotice)
   const [panel, setPanel] = useState<Panel>(null)
+  // Contacts | Lists, on the landing screen. Lists only exists with Settings ▸
+  // Email lists on; turning that off drops back to Contacts.
+  const emailLists = useSettingsStore((s) => s.emailLists)
+  const [tab, setTab] = useState<'contacts' | 'lists'>('contacts')
+  const onLists = emailLists && tab === 'lists'
   const { canPick, picking, pick } = useContactPicker()
   const dock = useKeyboardAwareDock()
   const lockStatus = useLockStore((s) => s.status)
@@ -173,62 +180,97 @@ export default function App() {
           </div>
         )}
 
-        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <h1 className="text-xl font-semibold text-slate-100 sm:text-2xl">Your BlackBook</h1>
-              <LockLink onClick={() => setPanel('lock')} />
-            </div>
-            <p className="text-sm text-slate-500">
-              The people worth staying in touch with — tagged your way, and never a birthday missed.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {canPick && (
-              <button type="button" className={`${btnGhost} inline-flex items-center gap-1.5`} onClick={pick}>
-                {/* ⚠️ An SVG and not an emoji. 📇 (CARD INDEX) has no glyph in
-                    iOS's emoji font and rendered as a hollow ? box on the
-                    phone — visible in a simulator screenshot, invisible in
-                    every browser, which is exactly the class of bug that ships.
-                    The 🎂 on the birthdays switch is fine; not every codepoint
-                    is. */}
-                <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden>
-                  <path d="M4 2.5A1.5 1.5 0 0 0 2.5 4v12A1.5 1.5 0 0 0 4 17.5h12a1.5 1.5 0 0 0 1.5-1.5V4A1.5 1.5 0 0 0 16 2.5H4ZM4 4h12v12H4V4Z" />
-                  <path d="M10 6a2 2 0 1 1 0 4 2 2 0 0 1 0-4Zm0 5c2.2 0 4 1.2 4 2.6v.9H6v-.9C6 12.2 7.8 11 10 11Z" />
-                </svg>
-                From my contacts
+        {emailLists && (
+          <div
+            role="tablist"
+            aria-label="Contacts or lists"
+            className="mb-5 grid grid-cols-2 gap-1 rounded-lg border border-slate-800 bg-slate-900 p-1 sm:max-w-xs"
+          >
+            {(
+              [
+                ['contacts', 'Contacts'],
+                ['lists', 'Lists'],
+              ] as const
+            ).map(([t, name]) => (
+              <button
+                key={t}
+                type="button"
+                role="tab"
+                aria-selected={(t === 'lists') === onLists}
+                onClick={() => setTab(t)}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+                  (t === 'lists') === onLists ? 'bg-orange-500/15 text-orange-300' : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                {name}
               </button>
-            )}
-            <button type="button" className={btnPrimary} onClick={() => edit('new')}>
-              Add new
-            </button>
+            ))}
           </div>
-        </div>
-        {picking && (
-          <p className="mb-4 text-xs text-slate-500">
-            Waiting for the contact you pick. Closed it without choosing anybody? Tap again.
-          </p>
         )}
 
-        {/* ⚠️ On a phone this is FIXED to the bottom of the screen (.filterdock
-            in index.css) and therefore OUT OF THE FLOW, so the spacer below the
-            list is not decoration — without it the last contact card sits under
-            the dock where it cannot be read or tapped. The two belong together;
-            do not move one without the other. */}
-        <div ref={dock} className="filterdock mb-4">
-          <FilterBar />
+        {onLists && loaded && <ListsView onOpen={() => setTab('contacts')} />}
+
+        {/* ⚠️ Hidden with a class, not unmounted, while Lists is showing: the
+            dock's keyboard hook attaches to its element once, at mount, and a
+            remounted dock would be a new element it never hears about. */}
+        <div className={onLists ? 'hidden' : undefined}>
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <h1 className="text-xl font-semibold text-slate-100 sm:text-2xl">Your BlackBook</h1>
+                <LockLink onClick={() => setPanel('lock')} />
+              </div>
+              <p className="text-sm text-slate-500">
+                The people worth staying in touch with — tagged your way, and never a birthday missed.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {canPick && (
+                <button type="button" className={`${btnGhost} inline-flex items-center gap-1.5`} onClick={pick}>
+                  {/* ⚠️ An SVG and not an emoji. 📇 (CARD INDEX) has no glyph in
+                      iOS's emoji font and rendered as a hollow ? box on the
+                      phone — visible in a simulator screenshot, invisible in
+                      every browser, which is exactly the class of bug that ships.
+                      The 🎂 on the birthdays switch is fine; not every codepoint
+                      is. */}
+                  <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden>
+                    <path d="M4 2.5A1.5 1.5 0 0 0 2.5 4v12A1.5 1.5 0 0 0 4 17.5h12a1.5 1.5 0 0 0 1.5-1.5V4A1.5 1.5 0 0 0 16 2.5H4ZM4 4h12v12H4V4Z" />
+                    <path d="M10 6a2 2 0 1 1 0 4 2 2 0 0 1 0-4Zm0 5c2.2 0 4 1.2 4 2.6v.9H6v-.9C6 12.2 7.8 11 10 11Z" />
+                  </svg>
+                  From my contacts
+                </button>
+              )}
+              <button type="button" className={btnPrimary} onClick={() => edit('new')}>
+                Add new
+              </button>
+            </div>
+          </div>
+          {picking && (
+            <p className="mb-4 text-xs text-slate-500">
+              Waiting for the contact you pick. Closed it without choosing anybody? Tap again.
+            </p>
+          )}
+
+          {/* ⚠️ On a phone this is FIXED to the bottom of the screen (.filterdock
+              in index.css) and therefore OUT OF THE FLOW, so the spacer below the
+              list is not decoration — without it the last contact card sits under
+              the dock where it cannot be read or tapped. The two belong together;
+              do not move one without the other. */}
+          <div ref={dock} className="filterdock mb-4">
+            <FilterBar />
+          </div>
+
+          {loaded && <ContactList />}
+
+          {/* The height of the docked filter bar, reserved at the end of the
+              page. The dock is `position: fixed` below 40rem, so nothing else in
+              the document knows it is there — without this the last contact card
+              sits underneath it and cannot be read or tapped. ⚠️ It lives HERE
+              and not in the footer, because the footer does not exist at the
+              width the dock does. Zero height above 40rem, where there is no
+              dock. */}
+          <div className="filterdock-spacer" aria-hidden />
         </div>
-
-        {loaded && <ContactList />}
-
-        {/* The height of the docked filter bar, reserved at the end of the
-            page. The dock is `position: fixed` below 40rem, so nothing else in
-            the document knows it is there — without this the last contact card
-            sits underneath it and cannot be read or tapped. ⚠️ It lives HERE
-            and not in the footer, because the footer does not exist at the
-            width the dock does. Zero height above 40rem, where there is no
-            dock. */}
-        <div className="filterdock-spacer" aria-hidden />
       </main>
 
       {/* ⚠️ `hidden sm:block` — there is no footer on a phone at all; the line

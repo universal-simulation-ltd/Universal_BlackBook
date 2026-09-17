@@ -638,7 +638,7 @@ function ContactRow({
  * ⚠️ The VISIBLE list, not the book. What the filters show is what goes out;
  * Advanced ▸ Import & export is still the whole-book export.
  */
-function ListExport({ contacts, tags, tagIds }: { contacts: Contact[]; tags: Tag[]; tagIds: string[] }) {
+export function ListExport({ contacts, tags, tagIds }: { contacts: Contact[]; tags: Tag[]; tagIds: string[] }) {
   const recipients = useMemo(() => toRecipients(contacts), [contacts])
   const [said, setSaid] = useState<string | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
