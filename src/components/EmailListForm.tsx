@@ -1,8 +1,12 @@
-import { useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
-import { fold } from '../lib/filter'
+import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
+import { fold, matchesText } from '../lib/filter'
+import { isList } from '../lib/lists'
+import type { Contact, Tag } from '../lib/types'
 import { useBookStore } from '../stores/bookStore'
+import { Modal } from './Modal'
 import { NotesFullscreen } from './NotesFullscreen'
 import { TagChip } from './TagChip'
+import { TagPicker } from './TagPicker'
 import { btnGhost, btnPrimary, inputCls, label } from './ui'
 
 // `label` minus its bottom margin: the grid's gap spaces the headings, and
@@ -14,6 +18,8 @@ interface Row {
   name: string
   email: string
   notes: string
+  /** Linked to this existing contact (＋ ▸ Link to a contact). */
+  contactId?: string
 }
 
 let nextKey = 0
@@ -33,22 +39,29 @@ const filled = (r: Row) => r.name.trim() !== '' || r.email.trim() !== ''
  * submitting: in a grid people fill in at speed, Enter-submits would save a
  * half-typed list on the first slip.
  *
- * Each row ends in a ＋ that opens a note for that person, full screen — the
- * same editor as the contact form's. Once a row has a note the ＋ becomes a
- * paper-and-pencil. It is disabled on the empty last row: a note with nobody
- * to belong to would be dropped on save.
+ * Each row ends in a ＋ with two things behind it: a note for that person,
+ * full screen (the contact form's editor), and **Link to a contact** — pick
+ * somebody already in the book, see which lists they are on, and the row is
+ * them. Once a row has a note the ＋ becomes a paper-and-pencil; linked, a
+ * chain. It is disabled on the empty last row: a note with nobody to belong
+ * to would be dropped on save.
  *
- * ⚠️ **The list name IS a tag.** Saving makes a tag of that name — or finds
- * the one that already exists, case-insensitively — and puts everybody on it,
- * so the list is Filters ▸ that tag, and Copy emails / Export CSV from there.
- * The existing tags sit under the name field so a list can be added to again.
- * Somebody already in the book gains the tag rather than being added twice
- * (`planListImport`, via the store's `saveEmailList`).
+ * ⚠️ **A list is a tag with `kind: 'list'`** (lib/lists.ts). Saving makes the
+ * list — or finds the one of that name — and puts everybody on it. Existing
+ * lists sit under the name field so one can be added to again, and "Tags for
+ * this list" are the list's OWN tags, not its members'. Somebody already in
+ * the book joins the list rather than being added twice; new people are
+ * list-only and stay off Contacts (`planListImport`, via `saveEmailList`).
  */
 export function EmailListForm({ onCancel, onSaved }: { onCancel: () => void; onSaved: () => void }) {
-  const tags = useBookStore((s) => s.tags)
+  const all = useBookStore((s) => s.tags)
+  const lists = useMemo(() => all.filter(isList), [all])
   const saveEmailList = useBookStore((s) => s.saveEmailList)
   const [listName, setListName] = useState('')
+  const [listTagIds, setListTagIds] = useState<string[]>([])
+  /** The row whose ＋ menu is open, and the row being linked. */
+  const [menuFor, setMenuFor] = useState<number | null>(null)
+  const [linking, setLinking] = useState<number | null>(null)
   const [rows, setRows] = useState<Row[]>(() => [blankRow()])
   /** The row whose note is open full screen. */
   const [noting, setNoting] = useState<number | null>(null)
@@ -56,7 +69,14 @@ export function EmailListForm({ onCancel, onSaved }: { onCancel: () => void; onS
   const grid = useRef<HTMLDivElement>(null)
 
   const people = rows.filter(filled)
-  const existingList = tags.find((t) => fold(t.name) === fold(listName))
+  const existingList = lists.find((t) => fold(t.name) === fold(listName))
+  // Choosing an existing list brings its own tags into the picker, so saving
+  // does not quietly wipe them.
+  const existingId = existingList?.id
+  useEffect(() => {
+    if (existingId) setListTagIds(lists.find((t) => t.id === existingId)?.tagIds ?? [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [existingId])
   const valid = listName.trim() !== '' && people.length > 0
 
   const update = (key: number, patch: Partial<Row>) =>
@@ -81,7 +101,7 @@ export function EmailListForm({ onCancel, onSaved }: { onCancel: () => void; onS
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     if (!valid) return
-    await saveEmailList(listName, people)
+    await saveEmailList(listName, people, listTagIds)
     onSaved()
   }
 
@@ -105,14 +125,15 @@ export function EmailListForm({ onCancel, onSaved }: { onCancel: () => void; onS
           autoFocus
           autoComplete="off"
         />
-        {tags.length > 0 && (
+        {lists.length > 0 && (
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <span className="text-xs text-slate-500">Or add to:</span>
-            {tags.map((t) => (
+            {lists.map((t) => (
               <TagChip
                 key={t.id}
                 name={t.name}
                 colour={t.colour}
+                list
                 selected={existingList?.id === t.id}
                 onClick={() => setListName(existingList?.id === t.id ? '' : t.name)}
               />
@@ -154,22 +175,44 @@ export function EmailListForm({ onCancel, onSaved }: { onCancel: () => void; onS
               autoCapitalize="off"
               spellCheck={false}
             />
-            <button
-              type="button"
-              onClick={() => setNoting(r.key)}
-              disabled={!filled(r)}
-              aria-label={`${r.notes.trim() ? 'Edit note' : 'Add a note'}, row ${i + 1}`}
-              title={r.notes.trim() ? 'Edit note' : 'Add a note'}
-              className={`flex h-9 w-9 items-center justify-center rounded-lg border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 disabled:cursor-not-allowed disabled:opacity-30 ${
-                r.notes.trim()
-                  ? 'border-orange-500/60 bg-orange-500/15 text-orange-300'
-                  : 'border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-200'
-              }`}
-            >
-              {r.notes.trim() ? <NoteGlyph /> : <PlusGlyph />}
-            </button>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setMenuFor(menuFor === r.key ? null : r.key)}
+                aria-expanded={menuFor === r.key}
+                aria-haspopup="menu"
+                aria-label={`More for row ${i + 1}${r.notes.trim() ? ', has a note' : ''}${r.contactId ? ', linked to a contact' : ''}`}
+                className={`flex h-9 w-9 items-center justify-center rounded-lg border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 disabled:cursor-not-allowed disabled:opacity-30 ${
+                  r.notes.trim() || r.contactId
+                    ? 'border-orange-500/60 bg-orange-500/15 text-orange-300'
+                    : 'border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-200'
+                }`}
+              >
+                {r.notes.trim() ? <NoteGlyph /> : r.contactId ? <LinkGlyph /> : <PlusGlyph />}
+              </button>
+              {menuFor === r.key && (
+                <RowMenu
+                  hasNote={r.notes.trim() !== ''}
+                  linked={Boolean(r.contactId)}
+                  onClose={() => setMenuFor(null)}
+                  onNote={() => setNoting(r.key)}
+                  onLink={() => setLinking(r.key)}
+                  onUnlink={() => update(r.key, { contactId: undefined })}
+                />
+              )}
+            </div>
+            {r.contactId && (
+              <p className="col-span-3 -mt-1 text-xs text-slate-500">
+                <span aria-hidden>🔗</span> Linked to an existing contact
+              </p>
+            )}
           </div>
         ))}
+      </div>
+
+      <div>
+        <span className={label}>Tags for this list</span>
+        <TagPicker value={listTagIds} onChange={setListTagIds} tagsOnly />
       </div>
 
       <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-800 pt-4">
@@ -188,6 +231,18 @@ export function EmailListForm({ onCancel, onSaved }: { onCancel: () => void; onS
           onChange={(notes) => update(notingRow.key, { notes })}
           onClose={() => setNoting(null)}
           name={notingRow.name || notingRow.email}
+        />
+      )}
+
+      {linking !== null && (
+        <LinkPicker
+          tags={all}
+          onClose={() => setLinking(null)}
+          onPick={(c) => {
+            const row = rows.find((x) => x.key === linking)
+            update(linking, { contactId: c.id, name: c.name, email: c.email || row?.email || '' })
+            setLinking(null)
+          }}
         />
       )}
     </form>
@@ -218,6 +273,134 @@ function NoteGlyph() {
       <path d="M9.5 2.5H4a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V7" />
       <path d="M5.5 7.5h3M5.5 10h4" />
       <path d="m12.2 1.8 2 2L9.5 8.5l-2.4.4.4-2.4 4.7-4.7Z" />
+    </svg>
+  )
+}
+
+/** Behind a row's ＋: the note, and linking the row to an existing contact. */
+function RowMenu({
+  hasNote,
+  linked,
+  onClose,
+  onNote,
+  onLink,
+  onUnlink,
+}: {
+  hasNote: boolean
+  linked: boolean
+  onClose: () => void
+  onNote: () => void
+  onLink: () => void
+  onUnlink: () => void
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const onDown = (e: PointerEvent) => {
+      if (!ref.current?.parentElement?.contains(e.target as Node)) onClose()
+    }
+    document.addEventListener('pointerdown', onDown)
+    return () => document.removeEventListener('pointerdown', onDown)
+  }, [onClose])
+
+  const item =
+    'block w-full whitespace-nowrap px-3 py-2 text-left text-sm text-slate-200 hover:bg-slate-800 focus:outline-none focus-visible:bg-slate-800'
+  const run = (fn: () => void) => () => {
+    onClose()
+    fn()
+  }
+  return (
+    <div
+      ref={ref}
+      role="menu"
+      className="absolute right-0 top-full z-10 mt-1 overflow-hidden rounded-lg border border-slate-700 bg-slate-900 py-1 shadow-lg shadow-black/40"
+    >
+      <button type="button" role="menuitem" className={item} onClick={run(onNote)}>
+        {hasNote ? 'Edit note' : 'Add a note'}
+      </button>
+      <button type="button" role="menuitem" className={item} onClick={run(onLink)}>
+        {linked ? 'Link to a different contact' : 'Link to a contact'}
+      </button>
+      {linked && (
+        <button type="button" role="menuitem" className={item} onClick={run(onUnlink)}>
+          Unlink
+        </button>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Pick an existing contact for a row. Each person shows the lists they are
+ * already on — which is how you can tell, before saving, whether somebody is
+ * already on this one.
+ */
+function LinkPicker({ tags, onClose, onPick }: { tags: Tag[]; onClose: () => void; onPick: (c: Contact) => void }) {
+  const contacts = useBookStore((s) => s.contacts)
+  const [text, setText] = useState('')
+  const byId = useMemo(() => new Map(tags.map((t) => [t.id, t])), [tags])
+  const found = useMemo(
+    () =>
+      contacts
+        .filter((c) => matchesText(c, text))
+        .sort((a, b) => a.name.localeCompare(b.name, 'en-GB', { sensitivity: 'base' }))
+        .slice(0, 50),
+    [contacts, text],
+  )
+
+  return (
+    <Modal title="Link to a contact" onClose={onClose}>
+      <div className="space-y-3">
+        <input
+          className={inputCls}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          // Inside the Email list <form>: Enter must not save the list.
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') e.preventDefault()
+          }}
+          placeholder="Search names and emails…"
+          aria-label="Search contacts"
+          autoFocus
+          autoComplete="off"
+        />
+        {found.length === 0 ? (
+          <p className="py-4 text-center text-sm text-slate-500">Nobody matches that.</p>
+        ) : (
+          <ul className="max-h-[50vh] divide-y divide-slate-800 overflow-y-auto">
+            {found.map((c) => {
+              const onLists = c.tagIds.map((id) => byId.get(id)).filter((t): t is Tag => Boolean(t && isList(t)))
+              return (
+                <li key={c.id}>
+                  <button
+                    type="button"
+                    onClick={() => onPick(c)}
+                    className="w-full space-y-1 px-1 py-2.5 text-left hover:bg-slate-800/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+                  >
+                    <span className="block text-sm font-medium text-slate-100">{c.name || c.email}</span>
+                    {c.email && <span className="block text-xs text-slate-400">{c.email}</span>}
+                    {onLists.length > 0 && (
+                      <span className="flex flex-wrap gap-1 pt-0.5">
+                        {onLists.map((t) => (
+                          <TagChip key={t.id} name={t.name} colour={t.colour} list />
+                        ))}
+                      </span>
+                    )}
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </div>
+    </Modal>
+  )
+}
+
+function LinkGlyph() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden>
+      <path d="M6.5 9.5 9.5 6.5" />
+      <path d="M7 4.5 8.2 3.3a2.5 2.5 0 0 1 3.5 3.5L10.5 8M9 11.5l-1.2 1.2a2.5 2.5 0 0 1-3.5-3.5L5.5 8" />
     </svg>
   )
 }

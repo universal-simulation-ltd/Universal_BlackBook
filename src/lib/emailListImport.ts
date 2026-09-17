@@ -21,18 +21,24 @@ export interface ListImport {
  *
  * Blank rows are dropped; a row with only an email is named by its email.
  *
+ * A row LINKED to a contact (＋ ▸ Link to a contact) is that contact, by id,
+ * whatever its name and email say.
+ *
+ * New people are `listOnly`: they are on the list, not in Contacts.
+ *
  * A row's note (the ＋ beside it) goes on a new person as their Notes. For
  * somebody already in the book it is APPENDED under what they had, never in
  * place of it, and not again if their notes already contain it.
  */
 export function planListImport(
-  rows: { name: string; email: string; notes?: string }[],
+  rows: { name: string; email: string; notes?: string; contactId?: string }[],
   existing: Contact[],
   tagId: string,
   now = Date.now(),
 ): ListImport {
   const byKey = new Map<string, Contact>()
   for (const c of existing) for (const k of identityKeys(c)) byKey.set(k, c)
+  const byId = new Map(existing.map((c) => [c.id, c]))
   const added: Contact[] = []
   const tagged = new Map<string, Contact>()
   const addedIds = new Set<string>()
@@ -45,7 +51,7 @@ export function planListImport(
     if (!name && !email) continue
     const row = { name: name || email, email, phone: '' }
     const keys = identityKeys(row)
-    const match = keys.map((k) => byKey.get(k)).find(Boolean)
+    const match = (r.contactId ? byId.get(r.contactId) : undefined) ?? keys.map((k) => byKey.get(k)).find(Boolean)
     if (match && addedIds.has(match.id)) continue
     if (match) {
       const current = tagged.get(match.id) ?? match
@@ -67,6 +73,7 @@ export function planListImport(
       id: newId(),
       ...row,
       tagIds: [tagId],
+      listOnly: true,
       notes: note,
       createdAt: now,
       updatedAt: now,

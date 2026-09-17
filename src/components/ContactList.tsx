@@ -12,6 +12,7 @@ import { hiddenBirthdays, hiddenFromList, isSearching, runQuery } from '../lib/f
 import { copyText } from '../lib/clipboard'
 import { toCsv } from '../lib/csv'
 import { toRecipients } from '../lib/emailList'
+import { isList, keptOffContacts, listIdsOf } from '../lib/lists'
 import type { Side } from '../lib/swipe'
 import type { Contact, Tag } from '../lib/types'
 import { useBookStore } from '../stores/bookStore'
@@ -132,7 +133,15 @@ export function ContactList() {
   // re-sorting the list on a timer nobody asked for.
   const today = useMemo(() => todayParts(), [])
   const byId = useMemo(() => new Map(tags.map((t) => [t.id, t])), [tags])
-  const visible = useMemo(() => runQuery(contacts, query, today), [contacts, query, today])
+  const listIds = useMemo(() => listIdsOf(tags), [tags])
+  const visible = useMemo(() => runQuery(contacts, query, today, listIds), [contacts, query, today, listIds])
+  // What "x of N" counts: the people Contacts shows with no filter on. A
+  // list-only person is not one of them, so they must not make a full list
+  // read as "1 of 2".
+  const inContacts = useMemo(
+    () => contacts.filter((c) => !keptOffContacts(c, listIds, [])).length,
+    [contacts, listIds],
+  )
   const birthdays = query.sort === 'birthday'
   const hidden = useMemo(
     () => (birthdays ? hiddenBirthdays(contacts, today) : []),
@@ -190,9 +199,11 @@ export function ContactList() {
               : `${visible.length} ${visible.length === 1 ? 'birthday' : 'birthdays'}, soonest first`
             : visible.length === 0
               ? 'Everybody is hidden from this list'
-              : visible.length === contacts.length
-              ? `${contacts.length} ${contacts.length === 1 ? 'contact' : 'contacts'}`
-              : `${visible.length} of ${contacts.length}`}
+              : // `>=`: a list filter shows its list-only people too, so it can
+              // show MORE than Contacts holds — "2 of 1" would be nonsense.
+              visible.length >= inContacts
+              ? `${visible.length} ${visible.length === 1 ? 'contact' : 'contacts'}`
+              : `${visible.length} of ${inContacts}`}
         </p>
         {emailLists && visible.length > 0 && <ListExport contacts={visible} tags={tags} tagIds={query.tagIds} />}
       </div>
@@ -502,7 +513,11 @@ function ContactRow({
   // shouldn't exist — removeTag strips them — but an imported or hand-edited
   // book can carry one, and a broken chip in the list is a worse outcome than
   // a missing one.
-  const chips = contact.tagIds.map((id) => byId.get(id)).filter((t): t is Tag => Boolean(t))
+  // Tags, then lists — each list drawn as one (TagChip `list`).
+  const chips = contact.tagIds
+    .map((id) => byId.get(id))
+    .filter((t): t is Tag => Boolean(t))
+    .sort((a, b) => Number(isList(a)) - Number(isList(b)))
   const isToday = countdown?.inDays === 0
 
   return (
@@ -581,7 +596,7 @@ function ContactRow({
         {chips.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {chips.map((t) => (
-              <TagChip key={t.id} name={t.name} colour={t.colour} />
+              <TagChip key={t.id} name={t.name} colour={t.colour} list={isList(t)} />
             ))}
           </div>
         )}

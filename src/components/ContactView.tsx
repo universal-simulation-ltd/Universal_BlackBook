@@ -1,11 +1,12 @@
 import { useEffect, useId, useMemo, useRef, type ReactNode } from 'react'
 import { countdownLabel, currentAge, formatBirthday, nextBirthday, todayParts } from '../lib/birthday'
 import { usePageScrollLock } from '../lib/scrollLock'
+import { isList } from '../lib/lists'
 import type { Tag } from '../lib/types'
 import { useBookStore } from '../stores/bookStore'
 import { CloseGlyph } from './Modal'
 import { TagChip } from './TagChip'
-import { btnPrimary, label } from './ui'
+import { btnGhost, btnPrimary, label } from './ui'
 
 /**
  * One person, filling the screen, with an Edit button (owner's request,
@@ -37,6 +38,7 @@ export function ContactView({ id }: { id: string }) {
   const tags = useBookStore((s) => s.tags)
   const close = useBookStore((s) => s.view)
   const edit = useBookStore((s) => s.edit)
+  const addToContacts = useBookStore((s) => s.addToContacts)
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
 
@@ -79,6 +81,8 @@ export function ContactView({ id }: { id: string }) {
   if (!contact) return null
 
   const chips = contact.tagIds.map((t) => byId.get(t)).filter((t): t is Tag => Boolean(t))
+  const tagChips = chips.filter((t) => !isList(t))
+  const listChips = chips.filter(isList)
   const next = nextBirthday(contact.birthdate, today)
   const age = currentAge(contact.birthdate, today)
   const bare =
@@ -145,6 +149,17 @@ export function ContactView({ id }: { id: string }) {
         }}
       >
         <div className="mx-auto w-full max-w-2xl space-y-5">
+          {contact.listOnly && listChips.length > 0 && (
+            // Somebody who came in on a list and is not in Contacts — say so,
+            // and offer the one tap that makes them a contact.
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-800 bg-slate-900 px-3 py-2.5">
+              <p className="text-sm text-slate-400">Only on {listChips.length === 1 ? 'a list' : 'lists'} — not in Contacts.</p>
+              <button type="button" className={btnGhost} onClick={() => void addToContacts(contact.id)}>
+                Add to Contacts
+              </button>
+            </div>
+          )}
+
           {contact.email.trim() && (
             <Row name="Email">
               <a
@@ -195,11 +210,21 @@ export function ContactView({ id }: { id: string }) {
             </Row>
           )}
 
-          {chips.length > 0 && (
+          {tagChips.length > 0 && (
             <Row name="Tags">
               <div className="flex flex-wrap gap-1.5">
-                {chips.map((t) => (
+                {tagChips.map((t) => (
                   <TagChip key={t.id} name={t.name} colour={t.colour} />
+                ))}
+              </div>
+            </Row>
+          )}
+
+          {listChips.length > 0 && (
+            <Row name="Lists">
+              <div className="flex flex-wrap gap-1.5">
+                {listChips.map((t) => (
+                  <TagChip key={t.id} name={t.name} colour={t.colour} list />
                 ))}
               </div>
             </Row>

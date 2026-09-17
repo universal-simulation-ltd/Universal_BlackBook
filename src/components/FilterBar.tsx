@@ -239,12 +239,13 @@ export function FilterBar() {
               </p>
             ) : (
               <div className="flex flex-wrap gap-1.5">
-                {tags.map((t) => (
+                {[...tags].sort((a, b) => Number(a.kind === 'list') - Number(b.kind === 'list')).map((t) => (
                   <TagChip
                     key={t.id}
                     name={t.name}
                     colour={t.colour}
                     {...chipState(t.id)}
+                    list={t.kind === 'list'}
                     onClick={() => toggleTag(t.id)}
                   />
                 ))}

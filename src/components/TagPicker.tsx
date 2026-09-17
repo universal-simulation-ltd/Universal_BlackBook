@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { SWATCHES } from '../lib/palette'
 import { useBookStore } from '../stores/bookStore'
+import { isList } from '../lib/lists'
 import { TagChip } from './TagChip'
 import { btnGhost, inputCls } from './ui'
 
@@ -27,11 +28,16 @@ import { btnGhost, inputCls } from './ui'
 export function TagPicker({
   value,
   onChange,
+  tagsOnly = false,
 }: {
   value: string[]
   onChange: (next: string[]) => void
+  /** Leave the lists out — a list's own tags cannot be lists. */
+  tagsOnly?: boolean
 }) {
-  const tags = useBookStore((s) => s.tags)
+  const all = useBookStore((s) => s.tags)
+  const tags = all.filter((t) => !isList(t))
+  const lists = tagsOnly ? [] : all.filter(isList)
   const addTag = useBookStore((s) => s.addTag)
   const recolourTag = useBookStore((s) => s.recolourTag)
   const [draft, setDraft] = useState('')
@@ -80,6 +86,21 @@ export function TagPicker({
           />
         ))}
       </div>
+      {lists.length > 0 && (
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          <span className="mr-0.5 text-xs text-slate-500">Lists</span>
+          {lists.map((t) => (
+            <TagChip
+              key={t.id}
+              name={t.name}
+              colour={t.colour}
+              list
+              selected={value.includes(t.id)}
+              onClick={() => toggle(t.id)}
+            />
+          ))}
+        </div>
+      )}
       <div className="mt-2.5 flex gap-2">
         <input
           className={inputCls}

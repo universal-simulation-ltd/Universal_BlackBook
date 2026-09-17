@@ -24,6 +24,17 @@ export interface Tag {
   name: string
   /** One of the swatch keys in lib/palette.ts. Not a raw colour — see there. */
   colour: string
+  /**
+   * `'list'` makes this an Email LIST rather than a tag (owner's request,
+   * 2026-09-17: "have a distinction between lists and tags"). Same record,
+   * same `tagIds` membership on a contact — a list is a tag with a job — but
+   * drawn with a list glyph instead of the colour dot, managed on the Lists
+   * tab, and able to carry tags of its own. Absent means an ordinary tag, so
+   * every tag written before this reads as one.
+   */
+  kind?: 'list'
+  /** A LIST's own tags ("Book club" tagged Important People). Lists only. */
+  tagIds?: string[]
 }
 
 export interface Contact {
@@ -80,6 +91,16 @@ export interface Contact {
    * correctly with no migration.
    */
   hideFromList?: boolean
+  /**
+   * Added by an Email list and never as a contact (owner's request,
+   * 2026-09-17: "if the user is only in a list then don't show them in the
+   * contact tab"). Such a person is left out of Contacts while they are on any
+   * list — still found by search, and shown when that list is open. Adding
+   * them to Contacts from their card clears it.
+   *
+   * Absent means an ordinary contact, so nothing written before this moves.
+   */
+  listOnly?: boolean
   notes: string
   createdAt: number
   updatedAt: number

@@ -98,7 +98,14 @@ interface BookState {
   /** Show or hide this person in the main list. Search still finds them. */
   setListHidden: (id: string, hidden: boolean) => Promise<void>
   removeContact: (id: string) => Promise<void>
-  addTag: (name: string) => Promise<Tag | null>
+  /** A tag, or with `kind: 'list'` a list. A name is only a clash within its kind. */
+  addTag: (name: string, kind?: 'list') => Promise<Tag | null>
+  /** Turn a tag into a list or a list back into a tag (Tags ▸ "This is a list"). */
+  setTagKind: (id: string, kind: 'list' | undefined) => Promise<void>
+  /** A list's own tags. */
+  setListTags: (id: string, tagIds: string[]) => Promise<void>
+  /** Put a list-only person into Contacts. */
+  addToContacts: (id: string) => Promise<void>
   renameTag: (id: string, name: string) => Promise<void>
   recolourTag: (id: string, colour: string) => Promise<void>
   removeTag: (id: string) => Promise<void>
@@ -108,7 +115,11 @@ interface BookState {
    * are added with it, and people already in the book gain it. See
    * lib/emailListImport.ts.
    */
-  saveEmailList: (listName: string, rows: { name: string; email: string; notes?: string }[]) => Promise<void>
+  saveEmailList: (
+    listName: string,
+    rows: { name: string; email: string; notes?: string; contactId?: string }[],
+    listTagIds?: string[],
+  ) => Promise<void>
   setNotice: (notice: string | null) => void
 }
 
@@ -270,6 +281,7 @@ export const useBookStore = create<BookState>((set, get) => ({
       // time their phone number was corrected.
       hideBirthday: existing?.hideBirthday,
       hideFromList: existing?.hideFromList,
+      listOnly: existing?.listOnly,
       notes: draft.notes,
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
@@ -316,18 +328,23 @@ export const useBookStore = create<BookState>((set, get) => ({
     await dbDeleteContact(id)
   },
 
-  addTag: async (name) => {
+  addTag: async (name, kind) => {
     const trimmed = name.trim()
     if (!trimmed) return null
     // Case-insensitive duplicate check. Two tags differing only in case are
     // indistinguishable in the list and impossible to tell apart in a filter,
-    // so the existing one is returned instead of a second being made.
-    const clash = get().tags.find((t) => t.name.trim().toLowerCase() === trimmed.toLowerCase())
+    // so the existing one is returned instead of a second being made. Within a
+    // KIND: a "Book club" tag and a "Book club" list are drawn differently and
+    // live in different places, so one does not stop the other.
+    const clash = get().tags.find(
+      (t) => t.kind === kind && t.name.trim().toLowerCase() === trimmed.toLowerCase(),
+    )
     if (clash) return clash
     const tag: Tag = {
       id: newId(),
       name: trimmed,
       colour: nextSwatch(get().tags.map((t) => t.colour)),
+      ...(kind === 'list' ? { kind, tagIds: [] } : {}),
     }
     set((s) => ({ tags: [...s.tags, tag] }))
     await putTag(tag)
@@ -348,6 +365,32 @@ export const useBookStore = create<BookState>((set, get) => ({
     set({ tags: next })
     const changed = next.find((t) => t.id === id)
     if (changed) await putTag(changed)
+  },
+
+  setTagKind: async (id, kind) => {
+    const current = get().tags.find((t) => t.id === id)
+    if (!current) return
+    const next: Tag = kind === 'list'
+      ? { ...current, kind, tagIds: current.tagIds ?? [] }
+      : { id: current.id, name: current.name, colour: current.colour }
+    set((s) => ({ tags: s.tags.map((t) => (t.id === id ? next : t)) }))
+    await putTag(next)
+  },
+
+  setListTags: async (id, tagIds) => {
+    const current = get().tags.find((t) => t.id === id)
+    if (!current || current.kind !== 'list') return
+    const next: Tag = { ...current, tagIds }
+    set((s) => ({ tags: s.tags.map((t) => (t.id === id ? next : t)) }))
+    await putTag(next)
+  },
+
+  addToContacts: async (id) => {
+    const existing = get().contacts.find((c) => c.id === id)
+    if (!existing?.listOnly) return
+    const next: Contact = { ...existing, listOnly: undefined, updatedAt: Date.now() }
+    set((s) => ({ contacts: s.contacts.map((c) => (c.id === id ? next : c)) }))
+    await putContact(next)
   },
 
   removeTag: async (id) => {
@@ -372,8 +415,13 @@ export const useBookStore = create<BookState>((set, get) => ({
           hiddenTagIds: defaultView.hiddenTagIds.filter((x) => x !== id),
         }
       : defaultView
+    // Lists that carried it as one of their own tags lose it too.
+    const lists = get()
+      .tags.filter((t) => t.id !== id && t.tagIds?.includes(id))
+      .map((t) => ({ ...t, tagIds: (t.tagIds ?? []).filter((x) => x !== id) }))
+    const listById = new Map(lists.map((t) => [t.id, t]))
     set((s) => ({
-      tags: s.tags.filter((t) => t.id !== id),
+      tags: s.tags.filter((t) => t.id !== id).map((t) => listById.get(t.id) ?? t),
       contacts,
       query: {
         ...s.query,
@@ -384,6 +432,7 @@ export const useBookStore = create<BookState>((set, get) => ({
     }))
     if (inDefault) await dbSaveDefaultView(nextDefault)
     await dbDeleteTag(id)
+    await Promise.all(lists.map(putTag))
     await Promise.all(
       touched.map((t) => {
         const updated = contacts.find((c) => c.id === t.id)
@@ -405,9 +454,10 @@ export const useBookStore = create<BookState>((set, get) => ({
     await replaceAll(merged, tags)
   },
 
-  saveEmailList: async (listName, rows) => {
-    const tag = await get().addTag(listName)
+  saveEmailList: async (listName, rows, listTagIds) => {
+    const tag = await get().addTag(listName, 'list')
     if (!tag) return
+    if (listTagIds) await get().setListTags(tag.id, listTagIds)
     const { added, tagged, already } = planListImport(rows, get().contacts, tag.id)
     const bits: string[] = []
     if (added.length) bits.push(`added ${added.length} ${added.length === 1 ? 'person' : 'people'}`)

@@ -1,5 +1,6 @@
 import type { Contact } from './types'
 import { formatBirthday, nextBirthday, type Today } from './birthday'
+import { keptOffContacts } from './lists'
 
 /**
  * How the list is ordered.
@@ -253,7 +254,12 @@ export function compare(sort: SortKey, today: Today): (a: Contact, b: Contact) =
  * `today` is passed in rather than read from the clock here so the whole
  * pipeline stays pure — see `nextBirthday` for why that matters.
  */
-export function runQuery(contacts: Contact[], query: Query, today: Today): Contact[] {
+export function runQuery(
+  contacts: Contact[],
+  query: Query,
+  today: Today,
+  listIds: Set<string> = new Set(),
+): Contact[] {
   const searching = isSearching(query)
   return contacts
     .filter(
@@ -264,6 +270,8 @@ export function runQuery(contacts: Contact[], query: Query, today: Today): Conta
         // gives: hiding the email lists tidies the list you scroll, and typing
         // somebody's name is asking for them whatever they are tagged.
         (searching || clearOfHiddenTags(c, query.hiddenTagIds)) &&
+        // People who are only on a list stay off Contacts — see `listOnly`.
+        (searching || !keptOffContacts(c, listIds, query.tagIds)) &&
         (query.sort !== 'birthday' || showsInBirthdays(c, today)) &&
         // ⚠️ `hideFromList` does NOT apply to the birthdays view. The two flags
         // mean different things — clutter and reminders — and the birthdays

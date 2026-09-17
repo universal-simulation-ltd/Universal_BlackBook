@@ -116,6 +116,7 @@ function toContact(raw: unknown): Contact | null {
     hideBirthday: r.hideBirthday === true ? true : undefined,
     // Same rule, same reason: a corrupt value must leave the person VISIBLE.
     hideFromList: r.hideFromList === true ? true : undefined,
+    listOnly: r.listOnly === true ? true : undefined,
     notes: typeof r.notes === 'string' ? r.notes : '',
     createdAt: typeof r.createdAt === 'number' ? r.createdAt : Date.now(),
     updatedAt: typeof r.updatedAt === 'number' ? r.updatedAt : Date.now(),
@@ -130,6 +131,14 @@ function toTag(raw: unknown): Tag | null {
     id: r.id,
     name: typeof r.name === 'string' ? r.name : 'Untitled',
     colour: typeof r.colour === 'string' ? r.colour : 'amber',
+    // ⚠️ Kept through this reader or lists turn back into tags on the next
+    // load — every unknown field is dropped here.
+    ...(r.kind === 'list'
+      ? {
+          kind: 'list' as const,
+          tagIds: Array.isArray(r.tagIds) ? r.tagIds.filter((v): v is string => typeof v === 'string') : [],
+        }
+      : {}),
   }
 }
 

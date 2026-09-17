@@ -64,6 +64,13 @@ interface SyncStore {
    * online copy as it is.
    */
   pending: VaultPayload | null
+  /**
+   * The book has changed since the last successful push — true from the edit
+   * until the autosave lands. Drives "Syncing…" beside the page title, so
+   * adding people shows them going up rather than an unexplained wait.
+   */
+  dirty: boolean
+  markDirty: () => void
 
   hydrate: (supabase: SupabaseClient, userId: string | null) => Promise<void>
   enable: (supabase: SupabaseClient, userId: string, passphrase: string, remember: boolean) => Promise<void>
@@ -109,6 +116,8 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
   key: null,
   remembered: false,
   pending: null,
+  dirty: false,
+  markDirty: () => set({ dirty: true }),
 
   reset: () =>
     set({
@@ -315,14 +324,14 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
         expected = row?.rev ?? 0
         if (!row) {
           const created = await createVault(supabase, ciphertext, salt, iterations)
-          set({ status: 'saved', rev: created, lastPushedAt: Date.now() })
+          set({ status: 'saved', rev: created, lastPushedAt: Date.now(), dirty: false })
           return
         }
       }
       const next = await updateVault(supabase, ciphertext, salt, iterations, expected)
       const meta = await loadSyncMeta()
       if (meta) await saveSyncMeta({ ...meta, rev: next, pushedAt: Date.now() })
-      set({ status: 'saved', rev: next, lastPushedAt: Date.now() })
+      set({ status: 'saved', rev: next, lastPushedAt: Date.now(), dirty: false })
     } catch (e) {
       if (e instanceof VaultConflictError) {
         set({

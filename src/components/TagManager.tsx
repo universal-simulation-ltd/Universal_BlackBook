@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
 import { SWATCHES, swatch } from '../lib/palette'
 import { useBookStore } from '../stores/bookStore'
+import { useSettingsStore } from '../stores/settingsStore'
 import { Modal } from './Modal'
-import { btnGhost, btnPrimary, btnSubtle, inputCls } from './ui'
+import { btnGhost, btnPrimary, btnSubtle, checkboxCls, inputCls } from './ui'
 
 /**
  * Create, rename, recolour and delete tags.
@@ -18,6 +19,8 @@ export function TagManager({ onClose }: { onClose: () => void }) {
   const renameTag = useBookStore((s) => s.renameTag)
   const recolourTag = useBookStore((s) => s.recolourTag)
   const removeTag = useBookStore((s) => s.removeTag)
+  const setTagKind = useBookStore((s) => s.setTagKind)
+  const emailLists = useSettingsStore((s) => s.emailLists)
 
   const [draft, setDraft] = useState('')
   const [confirming, setConfirming] = useState<string | null>(null)
@@ -73,11 +76,17 @@ export function TagManager({ onClose }: { onClose: () => void }) {
               return (
                 <li key={c.id} className="py-3">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      aria-hidden
-                      className="h-3 w-3 shrink-0 rounded-full"
-                      style={{ background: swatch(c.colour).dot }}
-                    />
+                    {c.kind === 'list' ? (
+                      <svg aria-hidden viewBox="0 0 14 14" className="h-3 w-3 shrink-0" fill="none" stroke={swatch(c.colour).dot} strokeWidth="2" strokeLinecap="round">
+                        <path d="M2 3.5h10M2 7h10M2 10.5h6" />
+                      </svg>
+                    ) : (
+                      <span
+                        aria-hidden
+                        className="h-3 w-3 shrink-0 rounded-full"
+                        style={{ background: swatch(c.colour).dot }}
+                      />
+                    )}
                     <input
                       className={`${inputCls} flex-1`}
                       value={c.name}
@@ -119,6 +128,20 @@ export function TagManager({ onClose }: { onClose: () => void }) {
                       {count} {count === 1 ? 'contact stays' : 'contacts stay'} in your book — they just
                       lose this tag.
                     </p>
+                  )}
+                  {/* Tag ⇄ list. Only with Email lists on, and it is how a list
+                      made before lists were their own kind (as a plain tag)
+                      becomes one. Membership is untouched either way. */}
+                  {emailLists && (
+                    <label className="mt-2 flex items-center gap-2 pl-5 text-xs text-slate-400">
+                      <input
+                        type="checkbox"
+                        className={checkboxCls}
+                        checked={c.kind === 'list'}
+                        onChange={(e) => void setTagKind(c.id, e.target.checked ? 'list' : undefined)}
+                      />
+                      This is an email list
+                    </label>
                   )}
                   <div className="mt-2 flex flex-wrap gap-1.5 pl-5">
                     {SWATCHES.map((s) => (

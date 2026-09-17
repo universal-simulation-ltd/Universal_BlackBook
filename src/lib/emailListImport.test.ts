@@ -52,6 +52,20 @@ describe('planListImport', () => {
     expect(plan.already).toBe(0)
   })
 
+  it('a linked row is that contact by id, and new people are list-only', () => {
+    const ada = person('a', 'Ada Lovelace', 'ada@work.example')
+    const plan = planListImport(
+      [
+        { name: 'Ada', email: 'ada@home.example', contactId: 'a' },
+        { name: 'Bob', email: 'bob@example.com' },
+      ],
+      [ada],
+      'list',
+    )
+    expect(plan.tagged.map((c) => c.id)).toEqual(['a'])
+    expect(plan.added[0].listOnly).toBe(true)
+  })
+
   it('counts people already on the list, and a row typed twice once', () => {
     const plan = planListImport(
       [

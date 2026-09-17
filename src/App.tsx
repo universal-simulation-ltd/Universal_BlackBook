@@ -222,6 +222,7 @@ export default function App() {
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <h1 className="text-xl font-semibold text-slate-100 sm:text-2xl">Your BlackBook</h1>
                 <LockLink onClick={() => setPanel('lock')} />
+              <SyncStatus onOpen={openCloud} />
               </div>
               <p className="text-sm text-slate-500">
                 The people worth staying in touch with — tagged your way, and never a birthday missed.
@@ -383,6 +384,64 @@ function LockLink({ onClick }: { onClick: () => void }) {
         {locked ? '— tap to turn the PIN lock off' : '— tap to lock this app with a 4-digit PIN'}
       </span>
     </button>
+  )
+}
+
+/**
+ * "Syncing…" / "Synced" beside the page title (owner's request, 2026-09-17:
+ * show that what was just added is backed up).
+ *
+ * Only while signed in — signed out the book is local-first by design, and a
+ * permanent "not backed up" would nag people who chose that. Signed in without
+ * a backup yet, or with one waiting for its passphrase, it says so and opens
+ * the backup panel; the same for a failed or conflicting save.
+ */
+function SyncStatus({ onOpen }: { onOpen: () => void }) {
+  const state = useSyncStore((s) => s.state)
+  const status = useSyncStore((s) => s.status)
+  const dirty = useSyncStore((s) => s.dirty)
+  const lastPushedAt = useSyncStore((s) => s.lastPushedAt)
+  if (state === 'signed-out') return null
+
+  const problem = status === 'error' || status === 'conflict'
+  const view =
+    state === 'off'
+      ? { text: 'Not backed up', tone: 'text-slate-400', icon: '☁︎' }
+      : state === 'locked'
+        ? { text: 'Backup locked', tone: 'text-slate-400', icon: '☁︎' }
+        : problem
+          ? { text: 'Not synced', tone: 'text-rose-300', icon: '!' }
+          : dirty || status === 'working'
+            ? { text: 'Syncing…', tone: 'text-slate-400', icon: '↻' }
+            : { text: 'Synced', tone: 'text-emerald-300', icon: '✓' }
+  const clickable = state !== 'on' || problem
+
+  const body = (
+    <>
+      <span aria-hidden className={view.text === 'Syncing…' ? 'inline-block animate-spin' : undefined}>
+        {view.icon}
+      </span>
+      <span>{view.text}</span>
+    </>
+  )
+  const cls = `inline-flex items-center gap-1 text-sm ${view.tone}`
+  return clickable ? (
+    <button
+      type="button"
+      onClick={onOpen}
+      className={`${cls} rounded underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400`}
+    >
+      {body}
+    </button>
+  ) : (
+    <span
+      className={cls}
+      role="status"
+      aria-live="polite"
+      title={lastPushedAt ? `Backed up ${new Date(lastPushedAt).toLocaleString('en-GB')}` : undefined}
+    >
+      {body}
+    </span>
   )
 }
 
@@ -581,8 +640,19 @@ function useCloudSync(openPanel: () => void) {
     }
   }, [supabase, userId, hydrate, openPanel])
 
+  // Only a CHANGE of book marks it unsynced — not this effect re-running
+  // because sync turned on or the page loaded, which would show "Syncing…"
+  // over a book that is already up there.
+  const lastBook = useRef<{ contacts: unknown; tags: unknown } | null>(null)
   useEffect(() => {
-    if (!loaded || state !== 'on') return
+    if (!loaded || state !== 'on') {
+      lastBook.current = null
+      return
+    }
+    const changed =
+      lastBook.current !== null && (lastBook.current.contacts !== contacts || lastBook.current.tags !== tags)
+    lastBook.current = { contacts, tags }
+    if (changed) useSyncStore.getState().markDirty()
     const t = setTimeout(() => void push(supabase), AUTOSAVE_DELAY)
     return () => clearTimeout(t)
   }, [contacts, tags, loaded, state, push, supabase])
