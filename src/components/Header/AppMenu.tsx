@@ -1,10 +1,9 @@
-import { AdvancedMenu, MENU } from '@unisim/sdk'
+import { AdvancedMenu, AdvancedMenuItem, MENU } from '@unisim/sdk'
 // Generated — `npm run credits` after any dependency change. Never edit it by
 // hand: it is read off the installed tree, so a hand-kept list drifts from the
 // lockfile the first time anyone upgrades anything, and a credits list naming a
 // package we removed is worse than no list at all.
 import credits from '../../generated/credits.json'
-import { useSyncStore } from '../../stores/syncStore'
 
 // The per-app rows that slot into <UniversalAppsNavBar />'s `actions` prop —
 // ROWS ONLY, no trigger and no panel of its own. Inline styles match the SDK
@@ -30,41 +29,25 @@ import { useSyncStore } from '../../stores/syncStore'
 
 const C = MENU.dark
 const TINT = { bg: C.accentBg, fg: C.accentText }
+
+// ⚠️ No "Universal ID" / backup row (owner's call, 2026-09-17). Signing in with
+// the navbar IS turning the backup on: App's useCloudSync opens the backup
+// panel by itself after sign-in and on a two-device conflict, so a menu door
+// to the same place read as a second feature.
 const REST_COLOR = C.body
 const MUTED = C.muted
 
 export default function AppMenu({
   onTags,
   onImportExport,
-  onCloud,
 }: {
   onTags: () => void
   onImportExport: () => void
-  onCloud: () => void
 }) {
-  const state = useSyncStore((s) => s.state)
-
   return (
     <>
       <MenuLabel>Your book</MenuLabel>
       <MenuRow glyph="🏷️" label="Tags" onClick={onTags} />
-      <MenuRow glyph="📄" label="Import & export" onClick={onImportExport} />
-      {/* Nothing here while signed out: the navbar's own Sign in is the way
-          in, and signing in opens the backup by itself (App's useCloudSync).
-          A second "Save online" door beside it read as a second feature. */}
-      {state !== 'signed-out' && (
-        <>
-          <MenuLabel>Universal ID</MenuLabel>
-          <MenuRow
-            glyph={state === 'on' ? '☁️' : '🔒'}
-            label={
-              state === 'on' ? 'Online backup' : state === 'locked' ? 'Download my book' : 'Back up online'
-            }
-            selected={state === 'on'}
-            onClick={onCloud}
-          />
-        </>
-      )}
 
       {/* Advanced — the SDK's own category, so every app in the suite has one in
           the same place, and whatever goes in it next is one change rather than
@@ -81,7 +64,17 @@ export default function AppMenu({
           credits,
           noticesHref: 'https://github.com/universal-simulation-ltd/Universal_BlackBook/blob/main/THIRD-PARTY-NOTICES.md',
         }}
-      />
+      >
+        {/* Import & export lives here (owner's call, 2026-09-17): moving a whole
+            book in or out is occasional, and signing in now does the everyday
+            job of getting a book onto another device. */}
+        <AdvancedMenuItem
+          theme="dark"
+          icon={<span aria-hidden>📄</span>}
+          label="Import & export"
+          onSelect={onImportExport}
+        />
+      </AdvancedMenu>
     </>
   )
 }

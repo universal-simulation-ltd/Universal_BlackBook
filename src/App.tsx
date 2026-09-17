@@ -98,7 +98,6 @@ export default function App() {
           <AppMenu
             onTags={() => setPanel('tags')}
             onImportExport={() => setPanel('io')}
-            onCloud={() => setPanel('cloud')}
           />
         }
         suiteSwitcherIconSrc={`${import.meta.env.BASE_URL}unisim-icon.png`}

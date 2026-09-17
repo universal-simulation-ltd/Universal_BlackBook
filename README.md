@@ -145,7 +145,7 @@ so.
 **Your phone's own contacts** *(the iPhone app)* — **From my contacts** opens
 the system picker, and the person you choose arrives in the Add form with their
 name, email, number and birthday already filled in, ready for the part that is
-actually yours. **Import & export ▸ Import my phone contacts** does the whole
+actually yours. **Advanced ▸ Import & export ▸ Import my phone contacts** does the whole
 address book at once, skipping anybody already in your book so you can run it
 again whenever you add someone to your phone.
 
