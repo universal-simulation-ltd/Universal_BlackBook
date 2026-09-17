@@ -20,9 +20,13 @@ export interface ListImport {
  * point, so they gain the tag instead of being left out of the list.
  *
  * Blank rows are dropped; a row with only an email is named by its email.
+ *
+ * A row's note (the ＋ beside it) goes on a new person as their Notes. For
+ * somebody already in the book it is APPENDED under what they had, never in
+ * place of it, and not again if their notes already contain it.
  */
 export function planListImport(
-  rows: { name: string; email: string }[],
+  rows: { name: string; email: string; notes?: string }[],
   existing: Contact[],
   tagId: string,
   now = Date.now(),
@@ -37,6 +41,7 @@ export function planListImport(
   for (const r of rows) {
     const name = r.name.trim()
     const email = r.email.trim()
+    const note = (r.notes ?? '').trim()
     if (!name && !email) continue
     const row = { name: name || email, email, phone: '' }
     const keys = identityKeys(row)
@@ -44,18 +49,25 @@ export function planListImport(
     if (match && addedIds.has(match.id)) continue
     if (match) {
       const current = tagged.get(match.id) ?? match
-      if (current.tagIds.includes(tagId)) {
+      const addNote = note !== '' && !current.notes.includes(note)
+      const addTag = !current.tagIds.includes(tagId)
+      if (!addTag && !addNote) {
         already++
         continue
       }
-      tagged.set(match.id, { ...current, tagIds: [...current.tagIds, tagId], updatedAt: now })
+      tagged.set(match.id, {
+        ...current,
+        tagIds: addTag ? [...current.tagIds, tagId] : current.tagIds,
+        notes: addNote ? (current.notes.trim() ? `${current.notes.trimEnd()}\n\n${note}` : note) : current.notes,
+        updatedAt: now,
+      })
       continue
     }
     const contact: Contact = {
       id: newId(),
       ...row,
       tagIds: [tagId],
-      notes: '',
+      notes: note,
       createdAt: now,
       updatedAt: now,
     }

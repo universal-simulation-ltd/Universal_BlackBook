@@ -101,7 +101,7 @@ interface BookState {
    * are added with it, and people already in the book gain it. See
    * lib/emailListImport.ts.
    */
-  saveEmailList: (listName: string, rows: { name: string; email: string }[]) => Promise<void>
+  saveEmailList: (listName: string, rows: { name: string; email: string; notes?: string }[]) => Promise<void>
   setNotice: (notice: string | null) => void
 }
 

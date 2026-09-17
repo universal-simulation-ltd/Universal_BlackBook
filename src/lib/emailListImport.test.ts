@@ -37,6 +37,21 @@ describe('planListImport', () => {
     expect(plan.tagged).toEqual([{ ...ada, tagIds: ['work', 'list'], updatedAt: 5 }])
   })
 
+  it('a row note becomes a new person\'s notes, and is appended to an existing person\'s', () => {
+    const ada = person('a', 'Ada', 'ada@example.com', ['list'])
+    const plan = planListImport(
+      [
+        { name: 'Sam', email: 'sam@example.com', notes: 'Met at the fair' },
+        { name: 'Ada', email: 'ada@example.com', notes: 'Prefers post' },
+      ],
+      [{ ...ada, notes: 'Old note' }],
+      'list',
+    )
+    expect(plan.added[0].notes).toBe('Met at the fair')
+    expect(plan.tagged[0].notes).toBe('Old note\n\nPrefers post')
+    expect(plan.already).toBe(0)
+  })
+
   it('counts people already on the list, and a row typed twice once', () => {
     const plan = planListImport(
       [
