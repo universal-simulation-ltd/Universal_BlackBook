@@ -192,7 +192,7 @@ export function ContactList() {
               ? `${contacts.length} ${contacts.length === 1 ? 'contact' : 'contacts'}`
               : `${visible.length} of ${contacts.length}`}
         </p>
-        {visible.length > 0 && <ListExport contacts={visible} tags={tags} />}
+        {visible.length > 0 && <ListExport contacts={visible} tags={tags} tagIds={query.tagIds} />}
       </div>
       <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
         {visible.map((c) => (
@@ -636,7 +636,7 @@ function ContactRow({
  * ⚠️ The VISIBLE list, not the book. What the filters show is what goes out;
  * Advanced ▸ Import & export is still the whole-book export.
  */
-function ListExport({ contacts, tags }: { contacts: Contact[]; tags: Tag[] }) {
+function ListExport({ contacts, tags, tagIds }: { contacts: Contact[]; tags: Tag[]; tagIds: string[] }) {
   const recipients = useMemo(() => toRecipients(contacts), [contacts])
   const [said, setSaid] = useState<string | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
@@ -652,7 +652,11 @@ function ListExport({ contacts, tags }: { contacts: Contact[]; tags: Tag[] }) {
     const blob = new Blob([toCsv(contacts, tags)], { type: 'text/csv;charset=utf-8' })
     // saveBlob, not `a.download`: the phone's web view ignores the attribute.
     // See ImportExport.
-    saveBlob(blob, `blackbook-${new Date().toISOString().slice(0, 10)}.csv`)
+    // Named after the list when the screen is showing exactly one:
+    // "book-club-2026-09-17.csv" says what it is in a Downloads folder.
+    const list = tagIds.length === 1 ? tags.find((t) => t.id === tagIds[0]) : undefined
+    const slug = list ? list.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : ''
+    saveBlob(blob, `${slug || 'blackbook'}-${new Date().toISOString().slice(0, 10)}.csv`)
   }
 
   return (

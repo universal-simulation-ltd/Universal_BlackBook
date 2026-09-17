@@ -3,6 +3,7 @@ import type { Contact, Tag } from '../lib/types'
 import { DEFAULT_VIEW, EMPTY_QUERY, UNTAGGED, viewOf, type Query, type View } from '../lib/filter'
 import { newId } from '../lib/id'
 import { nextSwatch, SWATCHES } from '../lib/palette'
+import { planListImport } from '../lib/emailListImport'
 import {
   clearDefaultView as dbClearDefaultView,
   deleteTag as dbDeleteTag,
@@ -95,6 +96,12 @@ interface BookState {
   recolourTag: (id: string, colour: string) => Promise<void>
   removeTag: (id: string) => Promise<void>
   importBook: (contacts: Contact[], tags: Tag[], mode: 'merge' | 'replace', notice: string | null) => Promise<void>
+  /**
+   * Save an Email list: the list's name becomes (or finds) a tag, new people
+   * are added with it, and people already in the book gain it. See
+   * lib/emailListImport.ts.
+   */
+  saveEmailList: (listName: string, rows: { name: string; email: string }[]) => Promise<void>
   setNotice: (notice: string | null) => void
 }
 
@@ -387,6 +394,23 @@ export const useBookStore = create<BookState>((set, get) => ({
     const merged = [...get().contacts, ...contacts]
     set({ contacts: merged, tags, notice })
     await replaceAll(merged, tags)
+  },
+
+  saveEmailList: async (listName, rows) => {
+    const tag = await get().addTag(listName)
+    if (!tag) return
+    const { added, tagged, already } = planListImport(rows, get().contacts, tag.id)
+    const bits: string[] = []
+    if (added.length) bits.push(`added ${added.length} ${added.length === 1 ? 'person' : 'people'}`)
+    if (tagged.length) bits.push(`${tagged.length} already in your book`)
+    if (already) bits.push(`${already} already on it`)
+    const byId = new Map(tagged.map((c) => [c.id, c]))
+    set((s) => ({
+      contacts: [...s.contacts.map((c) => byId.get(c.id) ?? c), ...added],
+      editing: null,
+      notice: `${tag.name}: ${bits.join(', ') || 'nothing new'}.`,
+    }))
+    await Promise.all([...tagged, ...added].map(putContact))
   },
 
   setNotice: (notice) => set({ notice }),

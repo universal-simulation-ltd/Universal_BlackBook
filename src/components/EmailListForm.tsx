@@ -1,7 +1,7 @@
 import { useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
-import { planBulkImport } from '../lib/deviceContacts'
+import { fold } from '../lib/filter'
 import { useBookStore } from '../stores/bookStore'
-import { TagPicker } from './TagPicker'
+import { TagChip } from './TagChip'
 import { btnGhost, btnPrimary, inputCls, label } from './ui'
 
 // `label` minus its bottom margin: the grid's gap spaces the headings, and
@@ -31,20 +31,23 @@ const filled = (r: Row) => r.name.trim() !== '' || r.email.trim() !== ''
  * submitting: in a grid people fill in at speed, Enter-submits would save a
  * half-typed list on the first slip.
  *
- * The tags apply to EVERY row — the point of the feature is filing a whole
- * list under one tag. Saving goes through `planBulkImport`, the same rules the
- * phone-contacts import uses: somebody already in the book (name + email) is
- * skipped rather than added twice, and a row with only an email uses the email
- * as its name.
+ * ⚠️ **The list name IS a tag.** Saving makes a tag of that name — or finds
+ * the one that already exists, case-insensitively — and puts everybody on it,
+ * so the list is Filters ▸ that tag, and Copy emails / Export CSV from there.
+ * The existing tags sit under the name field so a list can be added to again.
+ * Somebody already in the book gains the tag rather than being added twice
+ * (`planListImport`, via the store's `saveEmailList`).
  */
 export function EmailListForm({ onCancel, onSaved }: { onCancel: () => void; onSaved: () => void }) {
-  const contacts = useBookStore((s) => s.contacts)
-  const importBook = useBookStore((s) => s.importBook)
+  const tags = useBookStore((s) => s.tags)
+  const saveEmailList = useBookStore((s) => s.saveEmailList)
+  const [listName, setListName] = useState('')
   const [rows, setRows] = useState<Row[]>(() => [blankRow()])
-  const [tagIds, setTagIds] = useState<string[]>([])
   const grid = useRef<HTMLDivElement>(null)
 
   const people = rows.filter(filled)
+  const existingList = tags.find((t) => fold(t.name) === fold(listName))
+  const valid = listName.trim() !== '' && people.length > 0
 
   const update = (key: number, patch: Partial<Row>) =>
     setRows((rs) => {
@@ -67,26 +70,47 @@ export function EmailListForm({ onCancel, onSaved }: { onCancel: () => void; onS
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    if (people.length === 0) return
-    const picked = people.map((r) => ({
-      name: r.name.trim(),
-      email: r.email.trim(),
-      phone: '',
-      tagIds: [],
-      notes: '',
-      birthdate: undefined,
-    }))
-    const { contacts: fresh, duplicates } = planBulkImport(picked, contacts)
-    const added = fresh.map((c) => ({ ...c, tagIds }))
-    const bits = [`Added ${added.length} ${added.length === 1 ? 'contact' : 'contacts'}`]
-    if (duplicates > 0) bits.push(`${duplicates} already in your book`)
-    // The book's tags as they are NOW — the picker may have just created one.
-    await importBook(added, useBookStore.getState().tags, 'merge', `${bits.join(', ')}.`)
+    if (!valid) return
+    await saveEmailList(listName, people)
     onSaved()
   }
 
   return (
     <form onSubmit={(e) => void submit(e)} className="space-y-4">
+      <div>
+        <label className={label} htmlFor="el-name">
+          List name
+        </label>
+        <input
+          id="el-name"
+          className={inputCls}
+          value={listName}
+          onChange={(e) => setListName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key !== 'Enter') return
+            e.preventDefault()
+            grid.current?.querySelector('input')?.focus()
+          }}
+          placeholder="Book club"
+          autoFocus
+          autoComplete="off"
+        />
+        {tags.length > 0 && (
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            <span className="text-xs text-slate-500">Or add to:</span>
+            {tags.map((t) => (
+              <TagChip
+                key={t.id}
+                name={t.name}
+                colour={t.colour}
+                selected={existingList?.id === t.id}
+                onClick={() => setListName(existingList?.id === t.id ? '' : t.name)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
       <div ref={grid} className="grid grid-cols-2 gap-x-2 gap-y-2">
         <span className={heading}>Name</span>
         <span className={heading}>Email</span>
@@ -99,7 +123,6 @@ export function EmailListForm({ onCancel, onSaved }: { onCancel: () => void; onS
               onKeyDown={onKeyDown}
               placeholder={i === 0 ? 'Sam Okonkwo' : ''}
               aria-label={`Name, row ${i + 1}`}
-              autoFocus={i === 0}
               autoComplete="off"
             />
             <input
@@ -121,19 +144,15 @@ export function EmailListForm({ onCancel, onSaved }: { onCancel: () => void; onS
         ))}
       </div>
 
-      <div>
-        <span className={label}>Tag everyone as</span>
-        <TagPicker value={tagIds} onChange={setTagIds} />
-      </div>
-
       <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-800 pt-4">
         <button type="button" className={btnGhost} onClick={onCancel}>
           Cancel
         </button>
-        <button type="submit" className={btnPrimary} disabled={people.length === 0}>
-          {people.length === 0 ? 'Save' : `Save ${people.length} ${people.length === 1 ? 'contact' : 'contacts'}`}
+        <button type="submit" className={btnPrimary} disabled={!valid}>
+          {people.length === 0 ? 'Save' : `Save ${people.length} ${people.length === 1 ? 'person' : 'people'}`}
         </button>
       </div>
+      {people.length > 0 && !listName.trim() && <p className="text-xs text-slate-500">Give the list a name first.</p>}
     </form>
   )
 }
