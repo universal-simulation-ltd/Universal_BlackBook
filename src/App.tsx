@@ -9,6 +9,7 @@ import ProductLogo from './components/Header/ProductLogo'
 import AppMenu from './components/Header/AppMenu'
 import { TagManager } from './components/TagManager'
 import { CloudPanel } from './components/CloudPanel'
+import { SettingsPanel } from './components/SettingsPanel'
 import { ContactForm } from './components/ContactForm'
 import { ContactList } from './components/ContactList'
 import { ContactView } from './components/ContactView'
@@ -39,7 +40,7 @@ const REPO_URL = 'https://github.com/universal-simulation-ltd/Universal_BlackBoo
 /** How long to wait after the last edit before pushing to the vault. */
 const AUTOSAVE_DELAY = 2500
 
-type Panel = 'tags' | 'io' | 'cloud' | 'lock' | null
+type Panel = 'tags' | 'io' | 'cloud' | 'lock' | 'settings' | null
 
 export default function App() {
   const init = useBookStore((s) => s.init)
@@ -98,6 +99,7 @@ export default function App() {
           <AppMenu
             onTags={() => setPanel('tags')}
             onImportExport={() => setPanel('io')}
+            onSettings={() => setPanel('settings')}
           />
         }
         suiteSwitcherIconSrc={`${import.meta.env.BASE_URL}unisim-icon.png`}
@@ -298,6 +300,7 @@ export default function App() {
       {panel === 'io' && <ImportExport onClose={() => setPanel(null)} />}
       {panel === 'cloud' && <CloudPanel onClose={() => setPanel(null)} />}
       {panel === 'lock' && <LockPanel onClose={() => setPanel(null)} />}
+      {panel === 'settings' && <SettingsPanel onClose={() => setPanel(null)} />}
     </div>
   )
 }

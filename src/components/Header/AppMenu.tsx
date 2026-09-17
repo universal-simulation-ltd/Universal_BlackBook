@@ -40,14 +40,17 @@ const MUTED = C.muted
 export default function AppMenu({
   onTags,
   onImportExport,
+  onSettings,
 }: {
   onTags: () => void
   onImportExport: () => void
+  onSettings: () => void
 }) {
   return (
     <>
       <MenuLabel>Your book</MenuLabel>
       <MenuRow glyph="🏷️" label="Tags" onClick={onTags} />
+      <MenuRow glyph="⚙️" label="Settings" onClick={onSettings} />
 
       {/* Advanced — the SDK's own category, so every app in the suite has one in
           the same place, and whatever goes in it next is one change rather than

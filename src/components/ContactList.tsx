@@ -15,6 +15,7 @@ import { toRecipients } from '../lib/emailList'
 import type { Side } from '../lib/swipe'
 import type { Contact, Tag } from '../lib/types'
 import { useBookStore } from '../stores/bookStore'
+import { useSettingsStore } from '../stores/settingsStore'
 import { Modal } from './Modal'
 import { SwipeRow, type SwipeAction } from './SwipeRow'
 import { TagChip } from './TagChip'
@@ -106,6 +107,7 @@ export function ContactList() {
   const contacts = useBookStore((s) => s.contacts)
   const tags = useBookStore((s) => s.tags)
   const query = useBookStore((s) => s.query)
+  const emailLists = useSettingsStore((s) => s.emailLists)
   const edit = useBookStore((s) => s.edit)
   // Tapping a card OPENS the person, it does not edit them — see ContactView.
   const openContact = useBookStore((s) => s.view)
@@ -192,7 +194,7 @@ export function ContactList() {
               ? `${contacts.length} ${contacts.length === 1 ? 'contact' : 'contacts'}`
               : `${visible.length} of ${contacts.length}`}
         </p>
-        {visible.length > 0 && <ListExport contacts={visible} tags={tags} tagIds={query.tagIds} />}
+        {emailLists && visible.length > 0 && <ListExport contacts={visible} tags={tags} tagIds={query.tagIds} />}
       </div>
       <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
         {visible.map((c) => (
@@ -630,7 +632,7 @@ function ContactRow({
 
 /**
  * "Copy emails" and "Export CSV" for exactly the people on screen (owner's
- * request, 2026-09-17). Filter the list to a tag — an email list — and this is
+ * request, 2026-09-17), with Settings ▸ Email lists on. Filter the list to a tag — an email list — and this is
  * how it leaves the app: pasted into a To: line, or opened in a spreadsheet.
  *
  * ⚠️ The VISIBLE list, not the book. What the filters show is what goes out;

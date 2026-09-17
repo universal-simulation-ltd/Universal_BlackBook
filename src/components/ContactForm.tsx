@@ -1,5 +1,6 @@
 import { useId, useState, type FormEvent, type ReactNode } from 'react'
 import { blankDraft, draftIsEmpty, useBookStore, type ContactDraft } from '../stores/bookStore'
+import { useSettingsStore } from '../stores/settingsStore'
 import { BirthdayField } from './BirthdayField'
 import { EmailListForm } from './EmailListForm'
 import { TagPicker } from './TagPicker'
@@ -112,6 +113,7 @@ export function ContactForm({ id }: { id: string }) {
   const moreId = useId()
   /** "Add new" only: one person, or a Name / Email list of many. */
   const [mode, setMode] = useState<'contact' | 'list'>('contact')
+  const emailLists = useSettingsStore((s) => s.emailLists)
 
   // Which of the four optional fields arrived with something in them. Read from
   // the draft's INITIAL value and never again — see the note above.
@@ -230,11 +232,12 @@ export function ContactForm({ id }: { id: string }) {
     close(null)
   }
 
-  // The tab bar is on a NEW contact only, and not over a contact just picked
-  // from the phone, which is one person by definition.
-  const tabs = id === 'new' && !prefill ? <AddTabs mode={mode} onChange={setMode} /> : null
+  // The tab bar is on a NEW contact only, only with Settings ▸ Email lists on,
+  // and not over a contact just picked from the phone, which is one person by
+  // definition.
+  const tabs = id === 'new' && !prefill && emailLists ? <AddTabs mode={mode} onChange={setMode} /> : null
 
-  if (mode === 'list') {
+  if (mode === 'list' && tabs) {
     return (
       <Modal title="Add new" onClose={() => close(null)}>
         {tabs}
