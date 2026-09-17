@@ -29,15 +29,24 @@ export function TagPicker({
   value,
   onChange,
   tagsOnly = false,
+  kind,
 }: {
   value: string[]
   onChange: (next: string[]) => void
   /** Leave the lists out — a list's own tags cannot be lists. */
   tagsOnly?: boolean
+  /**
+   * `'list'` turns this into the contact form's "Add to list" picker (owner's
+   * request, 2026-09-17): lists only, and what it creates is a list. `value`
+   * still holds the contact's WHOLE `tagIds`, tags included — only the list
+   * ids are toggled, so the tags ride through untouched.
+   */
+  kind?: 'list'
 }) {
   const all = useBookStore((s) => s.tags)
-  const tags = all.filter((t) => !isList(t))
-  const lists = tagsOnly ? [] : all.filter(isList)
+  const listMode = kind === 'list'
+  const tags = all.filter((t) => (listMode ? isList(t) : !isList(t)))
+  const lists = tagsOnly || listMode ? [] : all.filter(isList)
   const addTag = useBookStore((s) => s.addTag)
   const recolourTag = useBookStore((s) => s.recolourTag)
   const [draft, setDraft] = useState('')
@@ -53,7 +62,7 @@ export function TagPicker({
     if (!name || busy) return
     setBusy(true)
     try {
-      const created = await addTag(name)
+      const created = await addTag(name, kind)
       if (!created) return
       // A colour was picked before the name was submitted → apply it. Skipped
       // when nothing was picked so the store's own next-unused-swatch choice
@@ -74,13 +83,16 @@ export function TagPicker({
     <div>
       <div className="flex flex-wrap gap-1.5">
         {tags.length === 0 && (
-          <p className="text-sm text-slate-500">No tags yet — name one below. They're entirely yours.</p>
+          <p className="text-sm text-slate-500">
+            {listMode ? 'No lists yet — name one below.' : "No tags yet — name one below. They're entirely yours."}
+          </p>
         )}
         {tags.map((t) => (
           <TagChip
             key={t.id}
             name={t.name}
             colour={t.colour}
+            list={listMode}
             selected={value.includes(t.id)}
             onClick={() => toggle(t.id)}
           />
@@ -106,8 +118,8 @@ export function TagPicker({
           className={inputCls}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder="New tag…"
-          aria-label="New tag name"
+          placeholder={listMode ? 'New list…' : 'New tag…'}
+          aria-label={listMode ? 'New list name' : 'New tag name'}
           onKeyDown={(e) => {
             if (e.key !== 'Enter') return
             // The picker lives inside the contact <form>. Without this, Enter

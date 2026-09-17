@@ -1,6 +1,8 @@
 import { useId, useState, type FormEvent, type ReactNode } from 'react'
 import { blankDraft, draftIsEmpty, useBookStore, type ContactDraft } from '../stores/bookStore'
 import { useSettingsStore } from '../stores/settingsStore'
+import { listIdsOf } from '../lib/lists'
+import type { Tag } from '../lib/types'
 import { BirthdayField } from './BirthdayField'
 import { EmailListForm } from './EmailListForm'
 import { TagPicker } from './TagPicker'
@@ -116,11 +118,14 @@ export function ContactForm({ id }: { id: string }) {
     useBookStore.getState().listMode ? 'list' : 'contact',
   )
   const emailLists = useSettingsStore((s) => s.emailLists)
+  const tags = useBookStore((s) => s.tags)
 
-  // Which of the four optional fields arrived with something in them. Read from
+  // Which of the optional fields arrived with something in them. Read from
   // the draft's INITIAL value and never again — see the note above.
-  const [pinned] = useState<Extra[]>(() => EXTRAS.filter((k) => hasValue(k, draft)))
-  const hidden = EXTRAS.filter((k) => !pinned.includes(k))
+  const [pinned] = useState<Extra[]>(() => EXTRAS.filter((k) => hasValue(k, draft, tags)))
+  // Lists only offer themselves with App preferences ▸ Email lists on — but a
+  // contact already ON a list shows it regardless, by the content rule above.
+  const hidden = EXTRAS.filter((k) => !pinned.includes(k) && (k !== 'lists' || emailLists))
   // Rendered either side of Notes, in the order they were always in.
   const pinnedAbove = pinned.filter((k) => ABOVE_NOTES.includes(k))
   const pinnedBelow = pinned.filter((k) => !ABOVE_NOTES.includes(k))
@@ -200,7 +205,15 @@ export function ContactForm({ id }: { id: string }) {
       case 'tags':
         return (
           <Field key={k} name={EXTRA_LABELS[k]}>
-            <TagPicker value={draft.tagIds} onChange={(tagIds) => patch({ tagIds })} />
+            <TagPicker value={draft.tagIds} onChange={(tagIds) => patch({ tagIds })} tagsOnly />
+          </Field>
+        )
+      case 'lists':
+        return (
+          // "Lists" on the More button, but the heading says what the section
+          // does, in the owner's words.
+          <Field key={k} name="Add to list">
+            <TagPicker value={draft.tagIds} onChange={(tagIds) => patch({ tagIds })} kind="list" />
           </Field>
         )
     }
@@ -428,13 +441,13 @@ export function ContactForm({ id }: { id: string }) {
 }
 
 /**
- * The four fields that fold away when empty, in the order they are listed on
+ * The fields that fold away when empty, in the order they are listed on
  * the "More" button — which is also the order they appear in the form, reading
  * top to bottom THROUGH Notes (email and phone above it, birthday and tags
  * below). One list rather than two so the disclosure label cannot drift out of
  * step with the form.
  */
-const EXTRAS = ['email', 'phone', 'birthday', 'tags'] as const
+const EXTRAS = ['email', 'phone', 'birthday', 'tags', 'lists'] as const
 type Extra = (typeof EXTRAS)[number]
 
 /** Of those, the ones that render ABOVE the Notes field when they are pinned. */
@@ -445,10 +458,14 @@ const EXTRA_LABELS: Record<Extra, string> = {
   phone: 'Phone',
   birthday: 'Birthday',
   tags: 'Tags',
+  // "Add to list" (owner's request, 2026-09-17). Lists used to ride along
+  // underneath the tag chips, where nobody looking for them found them.
+  lists: 'Lists',
 }
 
 /** Did this field arrive with something in it? Decides pinned vs. folded. */
-function hasValue(k: Extra, draft: ContactDraft): boolean {
+function hasValue(k: Extra, draft: ContactDraft, tags: Tag[]): boolean {
+  const lists = listIdsOf(tags)
   switch (k) {
     case 'email':
       return draft.email.trim() !== ''
@@ -457,7 +474,9 @@ function hasValue(k: Extra, draft: ContactDraft): boolean {
     case 'birthday':
       return Boolean(draft.birthdate)
     case 'tags':
-      return draft.tagIds.length > 0
+      return draft.tagIds.some((id) => !lists.has(id))
+    case 'lists':
+      return draft.tagIds.some((id) => lists.has(id))
   }
 }
 
