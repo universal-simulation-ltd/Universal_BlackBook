@@ -1,9 +1,11 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import {
+  cycleTag,
   DEFAULT_VIEW,
   describeView,
   sameView,
   SORT_LABELS,
+  tagState,
   UNTAGGED,
   viewOf,
   type SortKey,
@@ -75,7 +77,7 @@ export function FilterBar() {
   // other part of the query is invisible while the panel is shut, which is
   // exactly what the badge is for — a list quietly filtered down to four
   // people with no visible reason is the failure this prevents.
-  const active = query.tagIds.length + (birthdays ? 1 : 0) + (!birthdays && query.sort !== 'name' ? 1 : 0)
+  const active = query.tagIds.length + query.hiddenTagIds.length + (birthdays ? 1 : 0) + (!birthdays && query.sort !== 'name' ? 1 : 0)
   const dirty = active > 0 || query.text.trim() !== ''
 
   // Escape and click-away, both only while the panel is open. On a phone the
@@ -97,10 +99,21 @@ export function FilterBar() {
     }
   }, [open])
 
-  const toggleTag = (id: string) =>
-    setQuery({
-      tagIds: query.tagIds.includes(id) ? query.tagIds.filter((x) => x !== id) : [...query.tagIds, id],
-    })
+  // off → ✓ shown → hidden → off. See `cycleTag`.
+  const toggleTag = (id: string) => setQuery(cycleTag(query, id))
+  const chipState = (id: string) => {
+    const state = tagState(query, id)
+    return {
+      selected: state === 'shown',
+      hidden: state === 'hidden',
+      title:
+        state === 'off'
+          ? 'Tap to show only these'
+          : state === 'shown'
+            ? 'Tap again to hide these from the list'
+            : 'Hidden from the list — tap to clear',
+    }
+  }
 
   return (
     <div ref={rootRef} className="flex flex-col-reverse gap-2 sm:flex-col sm:gap-3">
@@ -214,6 +227,12 @@ export function FilterBar() {
 
           <section>
             <span className={label}>Tags</span>
+            {tags.length > 0 && (
+              <p className="-mt-0.5 mb-2 text-xs text-slate-500">
+                Tap once to show only those people, again to hide them from the list, and again to clear.
+                {query.hiddenTagIds.length > 0 && ' Hidden people still turn up when you search.'}
+              </p>
+            )}
             {tags.length === 0 ? (
               <p className="text-sm text-slate-500">
                 No tags yet. Add one while you're filling in a contact — they're entirely yours.
@@ -225,14 +244,14 @@ export function FilterBar() {
                     key={t.id}
                     name={t.name}
                     colour={t.colour}
-                    selected={query.tagIds.includes(t.id)}
+                    {...chipState(t.id)}
                     onClick={() => toggleTag(t.id)}
                   />
                 ))}
                 <TagChip
                   name="Untagged"
                   colour="slate"
-                  selected={query.tagIds.includes(UNTAGGED)}
+                  {...chipState(UNTAGGED)}
                   onClick={() => toggleTag(UNTAGGED)}
                 />
               </div>

@@ -27,6 +27,7 @@ export function TagChip({
   colour,
   onClick,
   selected,
+  hidden,
   title,
   trailing,
 }: {
@@ -34,6 +35,12 @@ export function TagChip({
   colour: string
   onClick?: () => void
   selected?: boolean
+  /**
+   * The filter's third state: people with this tag are kept OUT of the list.
+   * An eye with a line through it in place of the dot, and the name struck
+   * through — so it can't be mistaken for "off" at a glance.
+   */
+  hidden?: boolean
   title?: string
   trailing?: ReactNode
 }) {
@@ -49,9 +56,17 @@ export function TagChip({
       <circle cx="7" cy="7" r="4" fill={s.dot} />
     </svg>
   )
+  const eyeOff = (
+    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+      <path d="M1.5 7s2-3.5 5.5-3.5S12.5 7 12.5 7s-2 3.5-5.5 3.5S1.5 7 1.5 7Z" />
+      <circle cx="7" cy="7" r="1.6" />
+      <path d="m2.5 2.5 9 9" />
+    </svg>
+  )
   const body = (
     <>
-      <span className="min-w-0 truncate">{name}</span>
+      <span className={`min-w-0 truncate ${hidden ? 'line-through opacity-60' : ''}`}>{name}</span>
+      {hidden && <span className="sr-only"> (hidden from the list)</span>}
       {trailing}
     </>
   )
@@ -68,7 +83,7 @@ export function TagChip({
       ground="dark"
       selected={selected === true}
       onClick={onClick}
-      icon={dot}
+      icon={hidden ? eyeOff : dot}
       title={title}
       style={style}
       className="max-w-full"

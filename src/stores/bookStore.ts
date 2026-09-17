@@ -182,7 +182,11 @@ export const useBookStore = create<BookState>((set, get) => ({
     // nobody, with no lit chip in the panel to explain why.
     const known = new Set(tags.map((t) => t.id))
     const defaultView: View = saved
-      ? { sort: saved.sort, tagIds: saved.tagIds.filter((id) => id === UNTAGGED || known.has(id)) }
+      ? {
+          sort: saved.sort,
+          tagIds: saved.tagIds.filter((id) => id === UNTAGGED || known.has(id)),
+          hiddenTagIds: saved.hiddenTagIds.filter((id) => id === UNTAGGED || known.has(id)),
+        }
       : DEFAULT_VIEW
 
     set({ contacts, tags, defaultView, query: { ...EMPTY_QUERY, ...defaultView }, loaded: true })
@@ -344,14 +348,22 @@ export const useBookStore = create<BookState>((set, get) => ({
     // the app would go on opening on a tag that no longer exists, with nothing
     // in the panel lit to say what it was filtering by.
     const defaultView = get().defaultView
-    const inDefault = defaultView.tagIds.includes(id)
+    const inDefault = defaultView.tagIds.includes(id) || defaultView.hiddenTagIds.includes(id)
     const nextDefault: View = inDefault
-      ? { ...defaultView, tagIds: defaultView.tagIds.filter((x) => x !== id) }
+      ? {
+          ...defaultView,
+          tagIds: defaultView.tagIds.filter((x) => x !== id),
+          hiddenTagIds: defaultView.hiddenTagIds.filter((x) => x !== id),
+        }
       : defaultView
     set((s) => ({
       tags: s.tags.filter((t) => t.id !== id),
       contacts,
-      query: { ...s.query, tagIds: s.query.tagIds.filter((x) => x !== id) },
+      query: {
+        ...s.query,
+        tagIds: s.query.tagIds.filter((x) => x !== id),
+        hiddenTagIds: s.query.hiddenTagIds.filter((x) => x !== id),
+      },
       defaultView: nextDefault,
     }))
     if (inDefault) await dbSaveDefaultView(nextDefault)

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   compare,
   DEFAULT_VIEW,
+  cycleTag,
   describeView,
   fold,
   hiddenBirthdays,
@@ -163,17 +164,17 @@ describe('runQuery', () => {
   ]
 
   it('applies text and tags together', () => {
-    const out = runQuery(people, { text: 'berlin', tagIds: ['work'], sort: 'name' }, TODAY)
+    const out = runQuery(people, { text: 'berlin', tagIds: ['work'], hiddenTagIds: [], sort: 'name' }, TODAY)
     expect(out.map((c) => c.id)).toEqual(['3'])
   })
 
   it('returns everything for an empty query', () => {
-    expect(runQuery(people, { text: '', tagIds: [], sort: 'name' }, TODAY)).toHaveLength(3)
+    expect(runQuery(people, { text: '', tagIds: [], hiddenTagIds: [], sort: 'name' }, TODAY)).toHaveLength(3)
   })
 
   it('does not mutate the array it was given', () => {
     const original = [...people]
-    runQuery(people, { text: '', tagIds: [], sort: 'name-desc' }, TODAY)
+    runQuery(people, { text: '', tagIds: [], hiddenTagIds: [], sort: 'name-desc' }, TODAY)
     expect(people).toEqual(original)
   })
 
@@ -181,12 +182,12 @@ describe('runQuery', () => {
     // Bob has none, so he is not in the list at all — the view answers "whose
     // birthday is coming up", and padding it with people who have none is a
     // worse answer than a shorter list.
-    const out = runQuery(people, { text: '', tagIds: [], sort: 'birthday' }, TODAY)
+    const out = runQuery(people, { text: '', tagIds: [], hiddenTagIds: [], sort: 'birthday' }, TODAY)
     expect(out.map((c) => c.id)).toEqual(['3', '1'])
   })
 
   it('still applies the text and tag filters in the birthdays view', () => {
-    const out = runQuery(people, { text: 'sister', tagIds: [], sort: 'birthday' }, TODAY)
+    const out = runQuery(people, { text: 'sister', tagIds: [], hiddenTagIds: [], sort: 'birthday' }, TODAY)
     expect(out.map((c) => c.id)).toEqual(['1'])
   })
 })
@@ -197,12 +198,12 @@ describe('hiding somebody from the birthdays view', () => {
   const noDate = contact({ id: 'nia', name: 'Nia' })
 
   it('keeps a hidden person out of the birthdays view', () => {
-    const out = runQuery([sam, ada], { text: '', tagIds: [], sort: 'birthday' }, TODAY)
+    const out = runQuery([sam, ada], { text: '', tagIds: [], hiddenTagIds: [], sort: 'birthday' }, TODAY)
     expect(out.map((c) => c.id)).toEqual(['sam'])
   })
 
   it('leaves them in every OTHER view — this hides a birthday, not a person', () => {
-    const out = runQuery([sam, ada], { text: '', tagIds: [], sort: 'name' }, TODAY)
+    const out = runQuery([sam, ada], { text: '', tagIds: [], hiddenTagIds: [], sort: 'name' }, TODAY)
     expect(out.map((c) => c.id).sort()).toEqual(['ada', 'sam'])
   })
 
@@ -238,7 +239,7 @@ describe('hiding somebody from the birthdays view', () => {
 describe('hiding somebody from the main list', () => {
   const plumber = contact({ id: 'p', name: 'Dave the Plumber', hideFromList: true, tagIds: [] })
   const sam = contact({ id: 's', name: 'Sam Okonkwo', tagIds: [] })
-  const browse = { text: '', tagIds: [] as string[], sort: 'name' as const }
+  const browse = { text: '', tagIds: [] as string[], hiddenTagIds: [], sort: 'name' as const }
 
   it('drops them while browsing', () => {
     expect(runQuery([plumber, sam], browse, TODAY).map((c) => c.id)).toEqual(['s'])
@@ -279,38 +280,78 @@ describe('the view the app opens on', () => {
   const name = (id: string) => ({ work: 'Work', family: 'Family' })[id] ?? null
 
   it('copies the tag list, so a later edit of the query cannot reach it', () => {
-    const query = { text: 'sam', tagIds: ['work'], sort: 'recent' as const }
+    const query = { text: 'sam', tagIds: ['work'], hiddenTagIds: [], sort: 'recent' as const }
     const view = viewOf(query)
     query.tagIds.push('family')
-    expect(view).toEqual({ tagIds: ['work'], sort: 'recent' })
+    expect(view).toEqual({ tagIds: ['work'], hiddenTagIds: [], sort: 'recent' })
   })
 
   it('leaves the search box out — a saved question is not a saved view', () => {
-    expect(viewOf({ text: 'sam', tagIds: [], sort: 'name' })).toEqual({ tagIds: [], sort: 'name' })
+    expect(viewOf({ text: 'sam', tagIds: [], hiddenTagIds: [], sort: 'name' })).toEqual({ tagIds: [], hiddenTagIds: [], sort: 'name' })
   })
 
   it('compares tags as a SET: the order chips were tapped in never counts', () => {
-    expect(sameView({ tagIds: ['a', 'b'], sort: 'name' }, { tagIds: ['b', 'a'], sort: 'name' })).toBe(true)
-    expect(sameView({ tagIds: ['a'], sort: 'name' }, { tagIds: ['a', 'b'], sort: 'name' })).toBe(false)
-    expect(sameView({ tagIds: [], sort: 'name' }, { tagIds: [], sort: 'recent' })).toBe(false)
-    expect(sameView(DEFAULT_VIEW, { tagIds: [], sort: 'name' })).toBe(true)
+    expect(sameView({ tagIds: ['a', 'b'], hiddenTagIds: [], sort: 'name' }, { tagIds: ['b', 'a'], hiddenTagIds: [], sort: 'name' })).toBe(true)
+    expect(sameView({ tagIds: ['a'], hiddenTagIds: [], sort: 'name' }, { tagIds: ['a', 'b'], hiddenTagIds: [], sort: 'name' })).toBe(false)
+    expect(sameView({ tagIds: [], hiddenTagIds: [], sort: 'name' }, { tagIds: [], hiddenTagIds: [], sort: 'recent' })).toBe(false)
+    expect(sameView(DEFAULT_VIEW, { tagIds: [], hiddenTagIds: [], sort: 'name' })).toBe(true)
   })
 
   it('describes itself in English', () => {
-    expect(describeView({ tagIds: [], sort: 'name' }, name)).toBe('Name A–Z')
-    expect(describeView({ tagIds: [], sort: 'birthday' }, name)).toBe('Birthdays')
-    expect(describeView({ tagIds: ['work'], sort: 'recent' }, name)).toBe('Recently added · Work')
-    expect(describeView({ tagIds: ['work', 'family'], sort: 'name' }, name)).toBe(
+    expect(describeView({ tagIds: [], hiddenTagIds: [], sort: 'name' }, name)).toBe('Name A–Z')
+    expect(describeView({ tagIds: [], hiddenTagIds: [], sort: 'birthday' }, name)).toBe('Birthdays')
+    expect(describeView({ tagIds: ['work'], hiddenTagIds: [], sort: 'recent' }, name)).toBe('Recently added · Work')
+    expect(describeView({ tagIds: ['work', 'family'], hiddenTagIds: [], sort: 'name' }, name)).toBe(
       'Name A–Z · Work and Family',
     )
   })
 
   it('names the untagged pseudo-tag rather than printing its id', () => {
-    expect(describeView({ tagIds: [UNTAGGED], sort: 'name' }, name)).toBe('Name A–Z · Untagged')
+    expect(describeView({ tagIds: [UNTAGGED], hiddenTagIds: [], sort: 'name' }, name)).toBe('Name A–Z · Untagged')
   })
 
   it('drops a tag it cannot name — a default outliving a deleted tag', () => {
-    expect(describeView({ tagIds: ['gone', 'work'], sort: 'name' }, name)).toBe('Name A–Z · Work')
-    expect(describeView({ tagIds: ['gone'], sort: 'name' }, name)).toBe('Name A–Z')
+    expect(describeView({ tagIds: ['gone', 'work'], hiddenTagIds: [], sort: 'name' }, name)).toBe('Name A–Z · Work')
+    expect(describeView({ tagIds: ['gone'], hiddenTagIds: [], sort: 'name' }, name)).toBe('Name A–Z')
+  })
+})
+
+describe('hiding a tag — the second tap on its chip', () => {
+  const list = contact({ id: 'l', name: 'Newsletter crowd', tagIds: ['lists'] })
+  const both = contact({ id: 'b', name: 'Bea', tagIds: ['work', 'lists'] })
+  const sam = contact({ id: 's', name: 'Sam', tagIds: ['work'] })
+  const loose = contact({ id: 'u', name: 'Uma', tagIds: [] })
+  const browse = { text: '', tagIds: [] as string[], hiddenTagIds: ['lists'], sort: 'name' as const }
+  const ids = (q: typeof browse) => runQuery([list, both, sam, loose], q, TODAY).map((c) => c.id).sort()
+
+  it('cycles off → shown → hidden → off', () => {
+    let q = { tagIds: [] as string[], hiddenTagIds: [] as string[] }
+    q = cycleTag(q, 'lists')
+    expect(q).toEqual({ tagIds: ['lists'], hiddenTagIds: [] })
+    q = cycleTag(q, 'lists')
+    expect(q).toEqual({ tagIds: [], hiddenTagIds: ['lists'] })
+    q = cycleTag(q, 'lists')
+    expect(q).toEqual({ tagIds: [], hiddenTagIds: [] })
+  })
+
+  it('keeps anyone carrying the tag out of the list, even with a shown tag too', () => {
+    expect(ids(browse)).toEqual(['s', 'u'])
+    expect(ids({ ...browse, tagIds: ['work'] })).toEqual(['s'])
+  })
+
+  it('does not hide them from a search', () => {
+    expect(ids({ ...browse, text: 'newsletter' })).toEqual(['l'])
+  })
+
+  it('can hide the untagged', () => {
+    expect(ids({ ...browse, hiddenTagIds: [UNTAGGED] })).toEqual(['b', 'l', 's'])
+  })
+
+  it('counts in the saved view and its description', () => {
+    expect(sameView({ tagIds: [], hiddenTagIds: ['a'], sort: 'name' }, DEFAULT_VIEW)).toBe(false)
+    const name = (id: string) => ({ work: 'Work', lists: 'Email lists' })[id] ?? null
+    expect(describeView({ tagIds: ['work'], hiddenTagIds: ['lists'], sort: 'name' }, name)).toBe(
+      'Name A–Z · Work · hiding Email lists',
+    )
   })
 })

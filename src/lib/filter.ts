@@ -36,10 +36,19 @@ export interface Query {
   text: string
   /** Tag ids, plus possibly UNTAGGED. Empty = no tag filter. */
   tagIds: string[]
+  /**
+   * Tags whose people are kept OUT of the list — the second tap on a chip
+   * (owner's request, 2026-09-17: "I am using it for email lists, but don't
+   * want them to show in my main feed"). Also may hold UNTAGGED.
+   *
+   * A tag is in one of the two lists or neither, never both; `cycleTag` keeps
+   * it that way. Hidden wins over shown for a person carrying one of each.
+   */
+  hiddenTagIds: string[]
   sort: SortKey
 }
 
-export const EMPTY_QUERY: Query = { text: '', tagIds: [], sort: 'name' }
+export const EMPTY_QUERY: Query = { text: '', tagIds: [], hiddenTagIds: [], sort: 'name' }
 
 /**
  * The part of a Query that can be REMEMBERED as the view the app opens on.
@@ -49,21 +58,55 @@ export const EMPTY_QUERY: Query = { text: '', tagIds: [], sort: 'name' }
  * that reopened three weeks later still filtered to "sam" would look like it
  * had lost everybody else.
  */
-export type View = Pick<Query, 'tagIds' | 'sort'>
+export type View = Pick<Query, 'tagIds' | 'hiddenTagIds' | 'sort'>
 
 /** What the app opens on when nobody has saved a view of their own. */
-export const DEFAULT_VIEW: View = { tagIds: [], sort: 'name' }
+export const DEFAULT_VIEW: View = { tagIds: [], hiddenTagIds: [], sort: 'name' }
 
 /** The rememberable part of a query, copied so the caller cannot mutate it. */
 export function viewOf(query: Query): View {
-  return { tagIds: [...query.tagIds], sort: query.sort }
+  return { tagIds: [...query.tagIds], hiddenTagIds: [...query.hiddenTagIds], sort: query.sort }
+}
+
+/** Same members, in any order. */
+function sameSet(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false
+  const seen = new Set(b)
+  return a.every((id) => seen.has(id))
 }
 
 /** A query showing exactly this view? Order of the chosen tags never counts. */
 export function sameView(a: View, b: View): boolean {
-  if (a.sort !== b.sort || a.tagIds.length !== b.tagIds.length) return false
-  const seen = new Set(b.tagIds)
-  return a.tagIds.every((id) => seen.has(id))
+  return a.sort === b.sort && sameSet(a.tagIds, b.tagIds) && sameSet(a.hiddenTagIds, b.hiddenTagIds)
+}
+
+/** Where a tag's chip is in its cycle. */
+export type TagState = 'off' | 'shown' | 'hidden'
+
+export function tagState(query: Pick<Query, 'tagIds' | 'hiddenTagIds'>, id: string): TagState {
+  if (query.tagIds.includes(id)) return 'shown'
+  if (query.hiddenTagIds.includes(id)) return 'hidden'
+  return 'off'
+}
+
+/**
+ * One tap on a tag chip: off → shown (✓, only people with it) → hidden (people
+ * with it are kept out) → off. Returns the patch for `setQuery`.
+ */
+export function cycleTag(
+  query: Pick<Query, 'tagIds' | 'hiddenTagIds'>,
+  id: string,
+): Pick<Query, 'tagIds' | 'hiddenTagIds'> {
+  const tagIds = query.tagIds.filter((x) => x !== id)
+  const hiddenTagIds = query.hiddenTagIds.filter((x) => x !== id)
+  switch (tagState(query, id)) {
+    case 'off':
+      return { tagIds: [...tagIds, id], hiddenTagIds }
+    case 'shown':
+      return { tagIds, hiddenTagIds: [...hiddenTagIds, id] }
+    case 'hidden':
+      return { tagIds, hiddenTagIds }
+  }
 }
 
 /**
@@ -76,16 +119,18 @@ export function sameView(a: View, b: View): boolean {
  * are left, not as a line of gibberish.
  */
 export function describeView(view: View, tagName: (id: string) => string | null): string {
-  const names = view.tagIds
-    .map((id) => (id === UNTAGGED ? 'Untagged' : tagName(id)))
-    .filter((n): n is string => Boolean(n))
-  const order = SORT_LABELS[view.sort] ?? SORT_LABELS.name
-  if (names.length === 0) return order
-  const tags =
-    names.length === 1
-      ? names[0]
-      : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
-  return `${order} · ${tags}`
+  const list = (ids: string[]) => {
+    const names = ids
+      .map((id) => (id === UNTAGGED ? 'Untagged' : tagName(id)))
+      .filter((n): n is string => Boolean(n))
+    if (names.length <= 1) return names[0] ?? null
+    return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
+  }
+  const shown = list(view.tagIds)
+  const hidden = list(view.hiddenTagIds)
+  return [SORT_LABELS[view.sort] ?? SORT_LABELS.name, shown, hidden && `hiding ${hidden}`]
+    .filter(Boolean)
+    .join(' · ')
 }
 
 /**
@@ -157,6 +202,16 @@ export function matchesTags(contact: Contact, tagIds: string[]): boolean {
 }
 
 /**
+ * Hidden tags: out if the contact carries ANY of them. UNTAGGED hides everyone
+ * with no tags.
+ */
+export function clearOfHiddenTags(contact: Contact, hiddenTagIds: string[]): boolean {
+  if (hiddenTagIds.length === 0) return true
+  if (hiddenTagIds.includes(UNTAGGED) && contact.tagIds.length === 0) return false
+  return !contact.tagIds.some((id) => hiddenTagIds.includes(id))
+}
+
+/**
  * `localeCompare` with `numeric` so "Flat 10" sorts after "Flat 9", and
  * `sensitivity: 'base'` so case and accents do not split the alphabet.
  */
@@ -205,6 +260,10 @@ export function runQuery(contacts: Contact[], query: Query, today: Today): Conta
       (c) =>
         matchesText(c, query.text) &&
         matchesTags(c, query.tagIds) &&
+        // ⚠️ Searching sees past hidden tags, for the reason `isSearching`
+        // gives: hiding the email lists tidies the list you scroll, and typing
+        // somebody's name is asking for them whatever they are tagged.
+        (searching || clearOfHiddenTags(c, query.hiddenTagIds)) &&
         (query.sort !== 'birthday' || showsInBirthdays(c, today)) &&
         // ⚠️ `hideFromList` does NOT apply to the birthdays view. The two flags
         // mean different things — clutter and reminders — and the birthdays

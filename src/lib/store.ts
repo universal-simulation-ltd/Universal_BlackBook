@@ -255,8 +255,10 @@ function toView(raw: unknown): View | null {
   const r = raw as Record<string, unknown>
   const sort = SORT_KEYS.includes(r.sort as SortKey) ? (r.sort as SortKey) : null
   if (!sort) return null
-  const ids = Array.isArray(r.tagIds) ? r.tagIds.filter((v): v is string => typeof v === 'string') : []
-  return { tagIds: ids, sort }
+  const ids = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [])
+  // `hiddenTagIds` is absent from every view saved before 2026-09-17, which
+  // reads correctly as "nothing hidden".
+  return { tagIds: ids(r.tagIds), hiddenTagIds: ids(r.hiddenTagIds), sort }
 }
 
 export async function loadDefaultView(): Promise<View | null> {
@@ -267,7 +269,7 @@ export async function loadDefaultView(): Promise<View | null> {
 export async function saveDefaultView(view: View): Promise<void> {
   // A plain object, not the store's own state: whatever is handed in is copied
   // so a later edit of the live query cannot reach the record on disk.
-  await tx(SYNC, 'readwrite', (s) => s.put({ tagIds: [...view.tagIds], sort: view.sort }, 'view'))
+  await tx(SYNC, 'readwrite', (s) => s.put({ tagIds: [...view.tagIds], hiddenTagIds: [...view.hiddenTagIds], sort: view.sort }, 'view'))
 }
 
 export async function clearDefaultView(): Promise<void> {

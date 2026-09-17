@@ -114,8 +114,8 @@ describe('the two starting tags', () => {
 describe('the view the app opens on', () => {
   it('is Name A–Z with no filter until somebody says otherwise', async () => {
     const store = await reopen()
-    expect(store.getState().query).toEqual({ text: '', tagIds: [], sort: 'name' })
-    expect(store.getState().defaultView).toEqual({ tagIds: [], sort: 'name' })
+    expect(store.getState().query).toEqual({ text: '', tagIds: [], hiddenTagIds: [], sort: 'name' })
+    expect(store.getState().defaultView).toEqual({ tagIds: [], hiddenTagIds: [], sort: 'name' })
   })
 
   it('opens on what was saved, on the NEXT launch', async () => {
@@ -126,7 +126,7 @@ describe('the view the app opens on', () => {
 
     const second = await reopen()
     // The tags and the order come back; the search box never does.
-    expect(second.getState().query).toEqual({ text: '', tagIds: [people.id], sort: 'birthday' })
+    expect(second.getState().query).toEqual({ text: '', tagIds: [people.id], hiddenTagIds: [], sort: 'birthday' })
   })
 
   it('puts the list back to it without touching what is saved', async () => {
@@ -136,8 +136,8 @@ describe('the view the app opens on', () => {
 
     store.getState().setQuery({ sort: 'name-desc', text: 'sam' })
     store.getState().applyDefaultView()
-    expect(store.getState().query).toEqual({ text: '', tagIds: [], sort: 'recent' })
-    expect(store.getState().defaultView).toEqual({ tagIds: [], sort: 'recent' })
+    expect(store.getState().query).toEqual({ text: '', tagIds: [], hiddenTagIds: [], sort: 'recent' })
+    expect(store.getState().defaultView).toEqual({ tagIds: [], hiddenTagIds: [], sort: 'recent' })
   })
 
   it('is not the same button as "clear everything"', async () => {
@@ -177,11 +177,11 @@ describe('the view the app opens on', () => {
     // Belt and braces for the same failure: a vault adopted from another
     // device replaces the whole tag list without going through removeTag.
     const first = await reopen()
-    first.getState().setQuery({ tagIds: ['ghost'], sort: 'recent' })
+    first.getState().setQuery({ tagIds: ['ghost'], hiddenTagIds: [], sort: 'recent' })
     await first.getState().saveDefaultView()
 
     const second = await reopen()
-    expect(second.getState().query).toEqual({ text: '', tagIds: [], sort: 'recent' })
+    expect(second.getState().query).toEqual({ text: '', tagIds: [], hiddenTagIds: [], sort: 'recent' })
   })
 })
 
