@@ -1,4 +1,5 @@
-import { useId, useMemo, useState } from 'react'
+import { useId, useMemo, useRef, useState } from 'react'
+import { saveBlob } from '@unisim/media/save'
 import {
   countdownLabel,
   currentAge,
@@ -8,13 +9,16 @@ import {
   type NextBirthday,
 } from '../lib/birthday'
 import { hiddenBirthdays, hiddenFromList, isSearching, runQuery } from '../lib/filter'
+import { copyText } from '../lib/clipboard'
+import { toCsv } from '../lib/csv'
+import { toRecipients } from '../lib/emailList'
 import type { Side } from '../lib/swipe'
 import type { Contact, Tag } from '../lib/types'
 import { useBookStore } from '../stores/bookStore'
 import { Modal } from './Modal'
 import { SwipeRow, type SwipeAction } from './SwipeRow'
 import { TagChip } from './TagChip'
-import { btnDanger, btnGhost, btnPrimary } from './ui'
+import { btnDanger, btnGhost, btnPrimary, btnSubtle } from './ui'
 
 // The glyphs the swipe actions carry. SVG and not emoji: 🗑 is one of the
 // codepoints with no glyph in iOS's system font (see Modal's CloseGlyph), and
@@ -176,17 +180,20 @@ export function ContactList() {
 
   return (
     <>
-      <p className="mb-2 text-xs text-slate-500 tabular-nums" aria-live="polite">
-        {birthdays
-          ? visible.length === 0
-            ? 'Every birthday you have is hidden'
-            : `${visible.length} ${visible.length === 1 ? 'birthday' : 'birthdays'}, soonest first`
-          : visible.length === 0
-            ? 'Everybody is hidden from this list'
-            : visible.length === contacts.length
-            ? `${contacts.length} ${contacts.length === 1 ? 'contact' : 'contacts'}`
-            : `${visible.length} of ${contacts.length}`}
-      </p>
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+        <p className="text-xs text-slate-500 tabular-nums" aria-live="polite">
+          {birthdays
+            ? visible.length === 0
+              ? 'Every birthday you have is hidden'
+              : `${visible.length} ${visible.length === 1 ? 'birthday' : 'birthdays'}, soonest first`
+            : visible.length === 0
+              ? 'Everybody is hidden from this list'
+              : visible.length === contacts.length
+              ? `${contacts.length} ${contacts.length === 1 ? 'contact' : 'contacts'}`
+              : `${visible.length} of ${contacts.length}`}
+        </p>
+        {visible.length > 0 && <ListExport contacts={visible} tags={tags} />}
+      </div>
       <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
         {visible.map((c) => (
           <li key={c.id}>
@@ -617,6 +624,60 @@ function ContactRow({
           )}
         </button>
       )}
+    </div>
+  )
+}
+
+/**
+ * "Copy emails" and "Export CSV" for exactly the people on screen (owner's
+ * request, 2026-09-17). Filter the list to a tag — an email list — and this is
+ * how it leaves the app: pasted into a To: line, or opened in a spreadsheet.
+ *
+ * ⚠️ The VISIBLE list, not the book. What the filters show is what goes out;
+ * Advanced ▸ Import & export is still the whole-book export.
+ */
+function ListExport({ contacts, tags }: { contacts: Contact[]; tags: Tag[] }) {
+  const recipients = useMemo(() => toRecipients(contacts), [contacts])
+  const [said, setSaid] = useState<string | null>(null)
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  const copy = async () => {
+    const ok = await copyText(recipients.text)
+    setSaid(ok ? `Copied ${recipients.count} ${recipients.count === 1 ? 'address' : 'addresses'}` : 'Could not copy')
+    clearTimeout(timer.current)
+    timer.current = setTimeout(() => setSaid(null), 2500)
+  }
+
+  const csv = () => {
+    const blob = new Blob([toCsv(contacts, tags)], { type: 'text/csv;charset=utf-8' })
+    // saveBlob, not `a.download`: the phone's web view ignores the attribute.
+    // See ImportExport.
+    saveBlob(blob, `blackbook-${new Date().toISOString().slice(0, 10)}.csv`)
+  }
+
+  return (
+    <div className="flex items-center gap-1">
+      {said && (
+        <span className="text-xs text-emerald-300" role="status">
+          {said}
+        </span>
+      )}
+      <button
+        type="button"
+        className={`${btnSubtle} disabled:cursor-not-allowed disabled:opacity-40`}
+        onClick={() => void copy()}
+        disabled={recipients.count === 0}
+        title={
+          recipients.count === 0
+            ? 'Nobody in this list has an email address'
+            : `Copy ${recipients.count} addresses to paste into an email`
+        }
+      >
+        Copy emails
+      </button>
+      <button type="button" className={btnSubtle} onClick={csv} title="Download this list as a CSV">
+        Export CSV
+      </button>
     </div>
   )
 }

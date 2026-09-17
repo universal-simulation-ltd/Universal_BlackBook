@@ -1,6 +1,7 @@
 import { useId, useState, type FormEvent, type ReactNode } from 'react'
 import { blankDraft, draftIsEmpty, useBookStore, type ContactDraft } from '../stores/bookStore'
 import { BirthdayField } from './BirthdayField'
+import { EmailListForm } from './EmailListForm'
 import { TagPicker } from './TagPicker'
 import { Modal } from './Modal'
 import { ExpandGlyph, NotesFullscreen } from './NotesFullscreen'
@@ -109,6 +110,8 @@ export function ContactForm({ id }: { id: string }) {
   /** Is Notes showing on its own, full screen? */
   const [notesFull, setNotesFull] = useState(false)
   const moreId = useId()
+  /** "Add new" only: one person, or a Name / Email list of many. */
+  const [mode, setMode] = useState<'contact' | 'list'>('contact')
 
   // Which of the four optional fields arrived with something in them. Read from
   // the draft's INITIAL value and never again — see the note above.
@@ -227,8 +230,22 @@ export function ContactForm({ id }: { id: string }) {
     close(null)
   }
 
+  // The tab bar is on a NEW contact only, and not over a contact just picked
+  // from the phone, which is one person by definition.
+  const tabs = id === 'new' && !prefill ? <AddTabs mode={mode} onChange={setMode} /> : null
+
+  if (mode === 'list') {
+    return (
+      <Modal title="Add new" onClose={() => close(null)}>
+        {tabs}
+        <EmailListForm onCancel={() => close(null)} onSaved={() => close(null)} />
+      </Modal>
+    )
+  }
+
   return (
-    <Modal title={existing ? 'Edit contact' : 'Add new contact'} onClose={dismiss}>
+    <Modal title={existing ? 'Edit contact' : 'Add new'} onClose={dismiss}>
+      {tabs}
       <form onSubmit={submit} className="space-y-4">
         {offering && (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-orange-900/60 bg-orange-950/30 px-3 py-2.5">
@@ -460,6 +477,37 @@ function Field({ name, children }: { name: string; children: ReactNode }) {
     <div>
       <span className={label}>{name}</span>
       {children}
+    </div>
+  )
+}
+
+/** "Contact | Email list" at the top of the Add new dialog. */
+function AddTabs({ mode, onChange }: { mode: 'contact' | 'list'; onChange: (m: 'contact' | 'list') => void }) {
+  return (
+    <div
+      role="tablist"
+      aria-label="What to add"
+      className="mb-4 grid grid-cols-2 gap-1 rounded-lg border border-slate-800 bg-slate-950 p-1"
+    >
+      {(
+        [
+          ['contact', 'Contact'],
+          ['list', 'Email list'],
+        ] as const
+      ).map(([m, name]) => (
+        <button
+          key={m}
+          type="button"
+          role="tab"
+          aria-selected={mode === m}
+          onClick={() => onChange(m)}
+          className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+            mode === m ? 'bg-orange-500/15 text-orange-300' : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          {name}
+        </button>
+      ))}
     </div>
   )
 }
