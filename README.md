@@ -129,13 +129,14 @@ account, no server and no telemetry about its contents.
 Two ways to get it out or move it elsewhere:
 
 **CSV** — a plain `Name, Email, Tags, Notes, Birthday, Phone, Hide birthday,
-Hide from list` file.
+Hide from list, Company` file.
 Opens in any spreadsheet and imports straight back. This is the backup story if
 you never want an account.
 
 The importer reads the column names Google Contacts and Outlook use — a
 `Categories`, `Groups` or `Labels` column all count as tags, and `Mobile`,
-`Telephone` or Google's `Phone 1 - Value` all count as the number — and takes
+`Telephone` or Google's `Phone 1 - Value` all count as the number, and
+`Organisation` or Google's `Organization 1 - Name` as the company — and takes
 birthdays as `1990-06-04`, `4 June 1990`, `June 4` or `--06-04`. It deliberately
 **refuses** `04/06/1990` rather than guessing — that is the 4th of June to a
 British reader and the 6th of April to an American one, and an address book that
