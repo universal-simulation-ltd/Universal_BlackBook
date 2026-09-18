@@ -5,7 +5,7 @@ import type { Contact, Tag } from '../lib/types'
 import { useBookStore } from '../stores/bookStore'
 import { Modal } from './Modal'
 import { NotesFullscreen } from './NotesFullscreen'
-import { TagChip } from './TagChip'
+import { ListChip } from './ListChip'
 import { TagPicker } from './TagPicker'
 import { btnGhost, btnPrimary, inputCls, label } from './ui'
 
@@ -18,12 +18,15 @@ interface Row {
   name: string
   email: string
   notes: string
+  company: string
+  /** ＋ ▸ Add company was chosen: the row shows a Company field. */
+  withCompany?: boolean
   /** Linked to this existing contact (＋ ▸ Link to a contact). */
   contactId?: string
 }
 
 let nextKey = 0
-const blankRow = (): Row => ({ key: nextKey++, name: '', email: '', notes: '' })
+const blankRow = (): Row => ({ key: nextKey++, name: '', email: '', notes: '', company: '' })
 const filled = (r: Row) => r.name.trim() !== '' || r.email.trim() !== ''
 
 /**
@@ -39,8 +42,10 @@ const filled = (r: Row) => r.name.trim() !== '' || r.email.trim() !== ''
  * submitting: in a grid people fill in at speed, Enter-submits would save a
  * half-typed list on the first slip.
  *
- * Each row ends in a ＋ with two things behind it: a note for that person,
- * full screen (the contact form's editor), and **Link to a contact** — pick
+ * Each row ends in a ＋ with three things behind it: a note for that person,
+ * full screen (the contact form's editor), **Add company** (owner's request,
+ * 2026-09-18), which opens a Company field under the row, and **Link to a
+ * contact** — pick
  * somebody already in the book, see which lists they are on, and the row is
  * them. Once a row has a note the ＋ becomes a paper-and-pencil; linked, a
  * chain. It is disabled on the empty last row: a note with nobody to belong
@@ -53,11 +58,20 @@ const filled = (r: Row) => r.name.trim() !== '' || r.email.trim() !== ''
  * the book joins the list rather than being added twice; new people are
  * list-only and stay off Contacts (`planListImport`, via `saveEmailList`).
  */
-export function EmailListForm({ onCancel, onSaved }: { onCancel: () => void; onSaved: () => void }) {
+export function EmailListForm({
+  initialName = '',
+  onCancel,
+  onSaved,
+}: {
+  /** Opened from a list's own page: that list, already chosen. */
+  initialName?: string
+  onCancel: () => void
+  onSaved: () => void
+}) {
   const all = useBookStore((s) => s.tags)
   const lists = useMemo(() => all.filter(isList), [all])
   const saveEmailList = useBookStore((s) => s.saveEmailList)
-  const [listName, setListName] = useState('')
+  const [listName, setListName] = useState(initialName)
   const [listTagIds, setListTagIds] = useState<string[]>([])
   /** The row whose ＋ menu is open, and the row being linked. */
   const [menuFor, setMenuFor] = useState<number | null>(null)
@@ -122,18 +136,16 @@ export function EmailListForm({ onCancel, onSaved }: { onCancel: () => void; onS
             grid.current?.querySelector('input')?.focus()
           }}
           placeholder="Book club"
-          autoFocus
+          autoFocus={!initialName}
           autoComplete="off"
         />
         {lists.length > 0 && (
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <span className="text-xs text-slate-500">Or add to:</span>
             {lists.map((t) => (
-              <TagChip
+              <ListChip
                 key={t.id}
                 name={t.name}
-                colour={t.colour}
-                list
                 selected={existingList?.id === t.id}
                 onClick={() => setListName(existingList?.id === t.id ? '' : t.name)}
               />
@@ -193,6 +205,14 @@ export function EmailListForm({ onCancel, onSaved }: { onCancel: () => void; onS
               {menuFor === r.key && (
                 <RowMenu
                   hasNote={r.notes.trim() !== ''}
+                  hasCompany={Boolean(r.withCompany)}
+                  onCompany={() => {
+                    update(r.key, { withCompany: true })
+                    // The field renders on the next frame.
+                    requestAnimationFrame(() =>
+                      grid.current?.querySelector<HTMLInputElement>(`[data-company="${r.key}"]`)?.focus(),
+                    )
+                  }}
                   linked={Boolean(r.contactId)}
                   onClose={() => setMenuFor(null)}
                   onNote={() => setNoting(r.key)}
@@ -201,6 +221,19 @@ export function EmailListForm({ onCancel, onSaved }: { onCancel: () => void; onS
                 />
               )}
             </div>
+            {r.withCompany && (
+              <input
+                data-company={r.key}
+                className={`${inputCls} col-span-2`}
+                value={r.company}
+                onChange={(e) => update(r.key, { company: e.target.value })}
+                onKeyDown={onKeyDown}
+                placeholder="Company"
+                aria-label={`Company, row ${i + 1}`}
+                autoComplete="off"
+              />
+            )}
+            {r.withCompany && <span aria-hidden />}
             {r.contactId && (
               <p className="col-span-3 -mt-1 text-xs text-slate-500">
                 <span aria-hidden>🔗</span> Linked to an existing contact
@@ -212,7 +245,7 @@ export function EmailListForm({ onCancel, onSaved }: { onCancel: () => void; onS
 
       <div>
         <span className={label}>Tags for this list</span>
-        <TagPicker value={listTagIds} onChange={setListTagIds} tagsOnly />
+        <TagPicker value={listTagIds} onChange={setListTagIds} />
       </div>
 
       <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-800 pt-4">
@@ -241,6 +274,9 @@ export function EmailListForm({ onCancel, onSaved }: { onCancel: () => void; onS
           onPick={(c) => {
             const row = rows.find((x) => x.key === linking)
             update(linking, { contactId: c.id, name: c.name, email: c.email || row?.email || '' })
+            // Their card's company, shown so the row says who this is. Saving
+            // never overwrites it — see planListImport.
+            if (c.company && !row?.company.trim()) update(linking, { company: c.company, withCompany: true })
             setLinking(null)
           }}
         />
@@ -280,16 +316,20 @@ function NoteGlyph() {
 /** Behind a row's ＋: the note, and linking the row to an existing contact. */
 function RowMenu({
   hasNote,
+  hasCompany,
   linked,
   onClose,
   onNote,
+  onCompany,
   onLink,
   onUnlink,
 }: {
   hasNote: boolean
+  hasCompany: boolean
   linked: boolean
   onClose: () => void
   onNote: () => void
+  onCompany: () => void
   onLink: () => void
   onUnlink: () => void
 }) {
@@ -317,6 +357,11 @@ function RowMenu({
       <button type="button" role="menuitem" className={item} onClick={run(onNote)}>
         {hasNote ? 'Edit note' : 'Add a note'}
       </button>
+      {!hasCompany && (
+        <button type="button" role="menuitem" className={item} onClick={run(onCompany)}>
+          Add company
+        </button>
+      )}
       <button type="button" role="menuitem" className={item} onClick={run(onLink)}>
         {linked ? 'Link to a different contact' : 'Link to a contact'}
       </button>
@@ -381,7 +426,7 @@ function LinkPicker({ tags, onClose, onPick }: { tags: Tag[]; onClose: () => voi
                     {onLists.length > 0 && (
                       <span className="flex flex-wrap gap-1 pt-0.5">
                         {onLists.map((t) => (
-                          <TagChip key={t.id} name={t.name} colour={t.colour} list />
+                          <ListChip key={t.id} name={t.name} />
                         ))}
                       </span>
                     )}

@@ -50,6 +50,12 @@ export interface Contact {
    * stays exactly what was typed or what the phone handed over.
    */
   phone: string
+  /**
+   * Where they work (owner's request, 2026-09-18 — first asked for on an
+   * Email list row's ＋). Optional, and absent on every record written before
+   * it, which read as no company.
+   */
+  company?: string
   /** Many-to-many, by id. A contact may carry no tags at all. */
   tagIds: string[]
   /**
@@ -94,9 +100,9 @@ export interface Contact {
   /**
    * Added by an Email list and never as a contact (owner's request,
    * 2026-09-17: "if the user is only in a list then don't show them in the
-   * contact tab"). Such a person is left out of Contacts while they are on any
-   * list — still found by search, and shown when that list is open. Adding
-   * them to Contacts from their card clears it.
+   * contact tab"). Such a person is left out of Contacts — search included —
+   * while they are on any list, and seen by opening that list on the Lists
+   * tab. Adding them to Contacts from their card clears it.
    *
    * Absent means an ordinary contact, so nothing written before this moves.
    */

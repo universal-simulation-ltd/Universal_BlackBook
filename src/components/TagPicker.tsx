@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { SWATCHES } from '../lib/palette'
 import { useBookStore } from '../stores/bookStore'
 import { isList } from '../lib/lists'
+import { ListChip } from './ListChip'
 import { TagChip } from './TagChip'
 import { btnGhost, inputCls } from './ui'
 
@@ -28,25 +29,23 @@ import { btnGhost, inputCls } from './ui'
 export function TagPicker({
   value,
   onChange,
-  tagsOnly = false,
   kind,
 }: {
   value: string[]
   onChange: (next: string[]) => void
-  /** Leave the lists out — a list's own tags cannot be lists. */
-  tagsOnly?: boolean
   /**
    * `'list'` turns this into the contact form's "Add to list" picker (owner's
    * request, 2026-09-17): lists only, and what it creates is a list. `value`
    * still holds the contact's WHOLE `tagIds`, tags included — only the list
    * ids are toggled, so the tags ride through untouched.
+   *
+   * Without it, TAGS only — a list is never offered as a tag (2026-09-18).
    */
   kind?: 'list'
 }) {
   const all = useBookStore((s) => s.tags)
   const listMode = kind === 'list'
   const tags = all.filter((t) => (listMode ? isList(t) : !isList(t)))
-  const lists = tagsOnly || listMode ? [] : all.filter(isList)
   const addTag = useBookStore((s) => s.addTag)
   const recolourTag = useBookStore((s) => s.recolourTag)
   const [draft, setDraft] = useState('')
@@ -70,7 +69,7 @@ export function TagPicker({
       // that already had that name, and silently recolouring somebody's
       // "Family" because they retyped it is not what they asked for.
       const isNew = !tags.some((t) => t.id === created.id)
-      if (colour && isNew) await recolourTag(created.id, colour)
+      if (colour && isNew && !listMode) await recolourTag(created.id, colour)
       if (!value.includes(created.id)) onChange([...value, created.id])
       setDraft('')
       setColour(null)
@@ -87,32 +86,20 @@ export function TagPicker({
             {listMode ? 'No lists yet — name one below.' : "No tags yet — name one below. They're entirely yours."}
           </p>
         )}
-        {tags.map((t) => (
-          <TagChip
-            key={t.id}
-            name={t.name}
-            colour={t.colour}
-            list={listMode}
-            selected={value.includes(t.id)}
-            onClick={() => toggle(t.id)}
-          />
-        ))}
-      </div>
-      {lists.length > 0 && (
-        <div className="mt-2 flex flex-wrap items-center gap-1.5">
-          <span className="mr-0.5 text-xs text-slate-500">Lists</span>
-          {lists.map((t) => (
+        {tags.map((t) =>
+          listMode ? (
+            <ListChip key={t.id} name={t.name} selected={value.includes(t.id)} onClick={() => toggle(t.id)} />
+          ) : (
             <TagChip
               key={t.id}
               name={t.name}
               colour={t.colour}
-              list
               selected={value.includes(t.id)}
               onClick={() => toggle(t.id)}
             />
-          ))}
-        </div>
-      )}
+          ),
+        )}
+      </div>
       <div className="mt-2.5 flex gap-2">
         <input
           className={inputCls}
@@ -133,7 +120,8 @@ export function TagPicker({
           Add
         </button>
       </div>
-      {draft.trim() && (
+      {/* Lists have no colour of their own to pick — see ListChip. */}
+      {draft.trim() && !listMode && (
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           <span className="mr-0.5 text-xs text-slate-500">Colour</span>
           {SWATCHES.map((s) => (

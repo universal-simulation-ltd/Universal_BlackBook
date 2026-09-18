@@ -177,6 +177,7 @@ export function matchesText(contact: Contact, text: string): boolean {
   const haystack = [
     fold(contact.name),
     fold(contact.email),
+    fold(contact.company ?? ''),
     fold(contact.phone),
     fold(contact.notes),
     fold(formatBirthday(contact.birthdate)),
@@ -196,19 +197,24 @@ export function matchesText(contact: Contact, text: string): boolean {
 }
 
 /** Tag filter: OR within the selection — a person carrying ANY chosen tag. */
-export function matchesTags(contact: Contact, tagIds: string[]): boolean {
+export function matchesTags(contact: Contact, tagIds: string[], listIds: Set<string> = new Set()): boolean {
   if (tagIds.length === 0) return true
-  if (tagIds.includes(UNTAGGED) && contact.tagIds.length === 0) return true
+  if (tagIds.includes(UNTAGGED) && untagged(contact, listIds)) return true
   return contact.tagIds.some((id) => tagIds.includes(id))
+}
+
+/** No TAGS — being on a list does not count, lists not being tags. */
+function untagged(contact: Contact, listIds: Set<string>): boolean {
+  return contact.tagIds.every((id) => listIds.has(id))
 }
 
 /**
  * Hidden tags: out if the contact carries ANY of them. UNTAGGED hides everyone
  * with no tags.
  */
-export function clearOfHiddenTags(contact: Contact, hiddenTagIds: string[]): boolean {
+export function clearOfHiddenTags(contact: Contact, hiddenTagIds: string[], listIds: Set<string> = new Set()): boolean {
   if (hiddenTagIds.length === 0) return true
-  if (hiddenTagIds.includes(UNTAGGED) && contact.tagIds.length === 0) return false
+  if (hiddenTagIds.includes(UNTAGGED) && untagged(contact, listIds)) return false
   return !contact.tagIds.some((id) => hiddenTagIds.includes(id))
 }
 
@@ -261,17 +267,23 @@ export function runQuery(
   listIds: Set<string> = new Set(),
 ): Contact[] {
   const searching = isSearching(query)
+  // ⚠️ Lists are not tags and have no chip in the filter panel any more
+  // (2026-09-18), but a saved default or an old session can still hold a list
+  // id. Left in, it would filter by something nothing on screen can turn off.
+  const tagIds = query.tagIds.filter((id) => !listIds.has(id))
+  const hiddenTagIds = query.hiddenTagIds.filter((id) => !listIds.has(id))
   return contacts
     .filter(
       (c) =>
         matchesText(c, query.text) &&
-        matchesTags(c, query.tagIds) &&
+        matchesTags(c, tagIds, listIds) &&
         // ⚠️ Searching sees past hidden tags, for the reason `isSearching`
         // gives: hiding the email lists tidies the list you scroll, and typing
         // somebody's name is asking for them whatever they are tagged.
-        (searching || clearOfHiddenTags(c, query.hiddenTagIds)) &&
-        // People who are only on a list stay off Contacts — see `listOnly`.
-        (searching || !keptOffContacts(c, listIds, query.tagIds)) &&
+        (searching || clearOfHiddenTags(c, hiddenTagIds, listIds)) &&
+        // People who are only on a list are never on Contacts, searching or
+        // not — see `keptOffContacts`.
+        !keptOffContacts(c, listIds) &&
         (query.sort !== 'birthday' || showsInBirthdays(c, today)) &&
         // ⚠️ `hideFromList` does NOT apply to the birthdays view. The two flags
         // mean different things — clutter and reminders — and the birthdays

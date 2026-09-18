@@ -79,4 +79,24 @@ describe('planListImport', () => {
     expect(plan.already).toBe(1)
     expect(plan.added).toHaveLength(1)
   })
+
+  it("puts a row's company on a new person, and only fills a blank one on somebody known", () => {
+    const known = { ...person('a', 'Ada', 'ada@example.com'), company: 'Old Co' }
+    const blank = person('b', 'Bob', 'bob@example.com', ['list'])
+    const plan = planListImport(
+      [
+        { name: 'Sam', email: 'sam@example.com', company: ' Acme Ltd ' },
+        { name: 'Ada', email: 'ada@example.com', company: 'New Co' },
+        { name: 'Bob', email: 'bob@example.com', company: 'Bob Co' },
+      ],
+      [known, blank],
+      'list',
+    )
+    expect(plan.added[0].company).toBe('Acme Ltd')
+    const byId = new Map(plan.tagged.map((c) => [c.id, c]))
+    expect(byId.get('a')?.company).toBe('Old Co')
+    // Already on the list, but the company is news — so not counted as "already".
+    expect(byId.get('b')?.company).toBe('Bob Co')
+    expect(plan.already).toBe(0)
+  })
 })

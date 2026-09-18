@@ -39,6 +39,8 @@ import { nextSwatch } from './palette'
 // somebody from the list does not stop their birthday counting down — so they
 // are two columns and not one.
 //
+// `Company` was appended on 2026-09-18, same rule.
+//
 // ⚠️ Appending also makes a SEVENTH cell a fact worth having: anything wider
 // than six cells cannot be the legacy layout, which had exactly six, so a
 // headerless file that wide needs none of the guessing `positionalMap` does
@@ -52,6 +54,7 @@ export const COLUMNS = [
   'Phone',
   'Hide birthday',
   'Hide from list',
+  'Company',
 ] as const
 
 const LEGACY_COLUMN_COUNT = 6
@@ -122,6 +125,7 @@ export function toCsv(contacts: Contact[], tags: Tag[]): string {
         // the column only says anything about the people it applies to.
         c.hideBirthday ? HIDDEN_CELL : '',
         c.hideFromList ? HIDDEN_CELL : '',
+        c.company ?? '',
       ]
         .map(escapeCell)
         .join(','),
@@ -213,6 +217,7 @@ type Column =
   | 'phone'
   | 'hideBirthday'
   | 'hideFromList'
+  | 'company'
 
 /**
  * What a header cell may be called.
@@ -296,6 +301,15 @@ const HEADER_ALIASES: Record<string, Column> = {
   'hide from the list': 'hideFromList',
   'hidden': 'hideFromList',
   'hide': 'hideFromList',
+  'company': 'company',
+  'company name': 'company',
+  'organisation': 'company',
+  'organization': 'company',
+  'organisation name': 'company',
+  'organization name': 'company',
+  'employer': 'company',
+  // Google Contacts' own header, taken the way `Phone 1 - Value` is.
+  'organization 1 - name': 'company',
 }
 
 /**
@@ -315,6 +329,7 @@ function headerIndex(header: string[]): Record<Column, number> {
     phone: -1,
     hideBirthday: -1,
     hideFromList: -1,
+    company: -1,
   }
   header.forEach((h, i) => {
     const column = HEADER_ALIASES[h.trim().toLowerCase()]
@@ -377,6 +392,7 @@ function positionalMap(rows: string[][]): Record<Column, number> {
       // 7 is simply absent from a seven-cell file exported before this column
       // existed; `cell` reads a missing index as '', which is "not hidden".
       hideFromList: 7,
+      company: 8,
     }
   }
   if (width < LEGACY_COLUMN_COUNT) {
@@ -389,12 +405,13 @@ function positionalMap(rows: string[][]): Record<Column, number> {
       phone: -1,
       hideBirthday: -1,
       hideFromList: -1,
+      company: -1,
     }
   }
   const dates = (i: number) => rows.filter((r) => parseBirthdayInput((r[i] ?? '').trim())).length
   return dates(4) > dates(5)
-    ? { name: 0, email: 1, tags: 2, notes: 3, birthday: 4, phone: 5, hideBirthday: -1, hideFromList: -1 }
-    : { name: 0, email: 1, tags: 2, notes: 4, birthday: 5, phone: -1, hideBirthday: -1, hideFromList: -1 }
+    ? { name: 0, email: 1, tags: 2, notes: 3, birthday: 4, phone: 5, hideBirthday: -1, hideFromList: -1, company: -1 }
+    : { name: 0, email: 1, tags: 2, notes: 4, birthday: 5, phone: -1, hideBirthday: -1, hideFromList: -1, company: -1 }
 }
 
 /**
@@ -467,6 +484,7 @@ export function fromCsv(text: string, existing: Tag[]): ImportResult {
         .filter(Boolean)
         .map(ensureTag),
       phone: cell(row, at.phone),
+      company: cell(row, at.company) || undefined,
       birthdate,
       // ⚠️ Only alongside a birthday that actually parsed. A row flagged hidden
       // whose date was unreadable would otherwise land a flag on somebody with

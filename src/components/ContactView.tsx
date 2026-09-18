@@ -5,6 +5,7 @@ import { isList } from '../lib/lists'
 import type { Tag } from '../lib/types'
 import { useBookStore } from '../stores/bookStore'
 import { CloseGlyph } from './Modal'
+import { ListChip } from './ListChip'
 import { TagChip } from './TagChip'
 import { btnGhost, btnPrimary, label } from './ui'
 
@@ -88,6 +89,7 @@ export function ContactView({ id }: { id: string }) {
   const bare =
     !contact.email.trim() &&
     !contact.phone.trim() &&
+    !contact.company?.trim() &&
     !contact.birthdate &&
     chips.length === 0 &&
     !contact.notes.trim()
@@ -171,6 +173,12 @@ export function ContactView({ id }: { id: string }) {
             </Row>
           )}
 
+          {contact.company?.trim() && (
+            <Row name="Company">
+              <p className="text-base text-slate-200">{contact.company}</p>
+            </Row>
+          )}
+
           {contact.phone.trim() && (
             <Row name="Phone">
               {/* The stored string is what is SHOWN — spacing, brackets and all
@@ -224,7 +232,7 @@ export function ContactView({ id }: { id: string }) {
             <Row name="Lists">
               <div className="flex flex-wrap gap-1.5">
                 {listChips.map((t) => (
-                  <TagChip key={t.id} name={t.name} colour={t.colour} list />
+                  <ListChip key={t.id} name={t.name} />
                 ))}
               </div>
             </Row>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { EMPTY_QUERY, runQuery } from './filter'
-import { keptOffContacts, listIdsOf } from './lists'
+import { EMPTY_QUERY, runQuery, UNTAGGED } from './filter'
+import { keptOffContacts, listIdsOf, membersOf } from './lists'
 import type { Contact, Tag } from './types'
 
 const TODAY = { year: 2026, month: 9, day: 17 }
@@ -27,16 +27,28 @@ describe('people only on a list', () => {
   const dropped = person('dropped', [], true)
   const ids = (q = EMPTY_QUERY) => runQuery([onlyList, both, dropped], q, TODAY, lists).map((c) => c.id)
 
-  it('are kept off Contacts, unless a list they are on is the filter', () => {
+  it('are kept off Contacts', () => {
     expect(ids()).toEqual(['both', 'dropped'])
-    expect(ids({ ...EMPTY_QUERY, tagIds: ['club'] })).toEqual(['both', 'only'])
   })
 
-  it('are still found by search', () => {
-    expect(ids({ ...EMPTY_QUERY, text: 'only' })).toEqual(['only'])
+  it('stay off Contacts when searched for — their list is where they are seen', () => {
+    expect(ids({ ...EMPTY_QUERY, text: 'only' })).toEqual([])
+  })
+
+  it('a list id left in a query filters nothing — lists are not tags', () => {
+    expect(ids({ ...EMPTY_QUERY, tagIds: ['club'] })).toEqual(['both', 'dropped'])
+    expect(ids({ ...EMPTY_QUERY, hiddenTagIds: ['club'] })).toEqual(['both', 'dropped'])
+  })
+
+  it('a contact only on lists is Untagged', () => {
+    expect(ids({ ...EMPTY_QUERY, tagIds: [UNTAGGED] })).toEqual(['both', 'dropped'])
   })
 
   it('come back once they are on no list at all', () => {
-    expect(keptOffContacts(dropped, lists, [])).toBe(false)
+    expect(keptOffContacts(dropped, lists)).toBe(false)
+  })
+
+  it('are on their list, by name', () => {
+    expect(membersOf([onlyList, both, dropped], 'club').map((c) => c.id)).toEqual(['both', 'only'])
   })
 })

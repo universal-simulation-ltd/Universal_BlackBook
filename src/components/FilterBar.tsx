@@ -10,6 +10,7 @@ import {
   viewOf,
   type SortKey,
 } from '../lib/filter'
+import { isList } from '../lib/lists'
 import { useBookStore } from '../stores/bookStore'
 import { TagChip } from './TagChip'
 import { btnSubtle, inputCls, label } from './ui'
@@ -51,7 +52,10 @@ const SORTS: SortKey[] = ['name', 'name-desc', 'recent']
  * switch you can see is on, it is a different view — which is what it is.
  */
 export function FilterBar() {
-  const tags = useBookStore((s) => s.tags)
+  const allTags = useBookStore((s) => s.tags)
+  // Tags only. Lists are not tags and are not filtered by here (2026-09-18) —
+  // they have the Lists tab, and runQuery ignores a list id left in a query.
+  const tags = useMemo(() => allTags.filter((t) => !isList(t)), [allTags])
   const query = useBookStore((s) => s.query)
   const setQuery = useBookStore((s) => s.setQuery)
   const resetQuery = useBookStore((s) => s.resetQuery)
@@ -239,13 +243,12 @@ export function FilterBar() {
               </p>
             ) : (
               <div className="flex flex-wrap gap-1.5">
-                {[...tags].sort((a, b) => Number(a.kind === 'list') - Number(b.kind === 'list')).map((t) => (
+                {tags.map((t) => (
                   <TagChip
                     key={t.id}
                     name={t.name}
                     colour={t.colour}
                     {...chipState(t.id)}
-                    list={t.kind === 'list'}
                     onClick={() => toggleTag(t.id)}
                   />
                 ))}

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { isList } from '../lib/lists'
 import { SWATCHES, swatch } from '../lib/palette'
 import { useBookStore } from '../stores/bookStore'
 import { useSettingsStore } from '../stores/settingsStore'
@@ -34,8 +35,11 @@ export function TagManager({ onClose }: { onClose: () => void }) {
     return out
   }, [contacts])
 
+  // Tags only (2026-09-18: lists must not "pollute the tags lists"). A list is
+  // renamed and deleted from its own page on the Lists tab.
   const sorted = useMemo(
-    () => [...tags].sort((a, b) => a.name.localeCompare(b.name, 'en-GB', { sensitivity: 'base' })),
+    () =>
+      tags.filter((t) => !isList(t)).sort((a, b) => a.name.localeCompare(b.name, 'en-GB', { sensitivity: 'base' })),
     [tags],
   )
 
@@ -76,17 +80,11 @@ export function TagManager({ onClose }: { onClose: () => void }) {
               return (
                 <li key={c.id} className="py-3">
                   <div className="flex flex-wrap items-center gap-2">
-                    {c.kind === 'list' ? (
-                      <svg aria-hidden viewBox="0 0 14 14" className="h-3 w-3 shrink-0" fill="none" stroke={swatch(c.colour).dot} strokeWidth="2" strokeLinecap="round">
-                        <path d="M2 3.5h10M2 7h10M2 10.5h6" />
-                      </svg>
-                    ) : (
-                      <span
-                        aria-hidden
-                        className="h-3 w-3 shrink-0 rounded-full"
-                        style={{ background: swatch(c.colour).dot }}
-                      />
-                    )}
+                    <span
+                      aria-hidden
+                      className="h-3 w-3 shrink-0 rounded-full"
+                      style={{ background: swatch(c.colour).dot }}
+                    />
                     <input
                       className={`${inputCls} flex-1`}
                       value={c.name}
@@ -129,18 +127,19 @@ export function TagManager({ onClose }: { onClose: () => void }) {
                       lose this tag.
                     </p>
                   )}
-                  {/* Tag ⇄ list. Only with Email lists on, and it is how a list
+                  {/* Tag → list. Only with Email lists on, and it is how a list
                       made before lists were their own kind (as a plain tag)
-                      becomes one. Membership is untouched either way. */}
+                      becomes one — after which it leaves this panel for the
+                      Lists tab. Membership is untouched. */}
                   {emailLists && (
                     <label className="mt-2 flex items-center gap-2 pl-5 text-xs text-slate-400">
                       <input
                         type="checkbox"
                         className={checkboxCls}
-                        checked={c.kind === 'list'}
-                        onChange={(e) => void setTagKind(c.id, e.target.checked ? 'list' : undefined)}
+                        checked={false}
+                        onChange={(e) => e.target.checked && void setTagKind(c.id, 'list')}
                       />
-                      This is an email list
+                      This is an email list (moves it to Lists)
                     </label>
                   )}
                   <div className="mt-2 flex flex-wrap gap-1.5 pl-5">

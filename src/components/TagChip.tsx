@@ -28,7 +28,6 @@ export function TagChip({
   onClick,
   selected,
   hidden,
-  list,
   title,
   trailing,
 }: {
@@ -42,12 +41,6 @@ export function TagChip({
    * through — so it can't be mistaken for "off" at a glance.
    */
   hidden?: boolean
-  /**
-   * Draw it as a LIST (Tag.kind): three lines in place of the colour dot, so a
-   * list and a tag of the same colour never read as the same thing. The arc
-   * and the tinted label still carry the colour.
-   */
-  list?: boolean
   title?: string
   trailing?: ReactNode
 }) {
@@ -63,12 +56,8 @@ export function TagChip({
       <circle cx="7" cy="7" r="4" fill={s.dot} />
     </svg>
   )
-  const listGlyph = (
-    <svg viewBox="0 0 14 14" fill="none" stroke={s.dot} strokeWidth="1.6" strokeLinecap="round">
-      <path d="M3 4h8M3 7h8M3 10h5" />
-    </svg>
-  )
-  const mark = list ? listGlyph : dot
+  // Lists are never drawn with this — see ListChip.
+  const mark = dot
   const eyeOff = (
     <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
       <path d="M1.5 7s2-3.5 5.5-3.5S12.5 7 12.5 7s-2 3.5-5.5 3.5S1.5 7 1.5 7Z" />

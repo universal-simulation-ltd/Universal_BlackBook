@@ -68,8 +68,9 @@ describe('toCsv', () => {
       'Phone',
       'Hide birthday',
       'Hide from list',
+      'Company',
     ])
-    expect(rows[1]).toEqual(['Sam Okonkwo', 'sam@example.com', '', '', '', '', '', ''])
+    expect(rows[1]).toEqual(['Sam Okonkwo', 'sam@example.com', '', '', '', '', '', '', ''])
   })
 
   it('writes tag NAMES, not ids', () => {
@@ -415,5 +416,22 @@ describe('the Hide from list column', () => {
     const back = Object.fromEntries(contacts.map((c) => [c.name, c]))
     expect(back.Plumber.hideFromList).toBe(true)
     expect(back.Sam.hideFromList).toBeUndefined()
+  })
+})
+
+describe('the Company column', () => {
+  it('round-trips', () => {
+    const { contacts } = fromCsv(toCsv([contact({ company: 'Acme Ltd' }), contact({ name: 'Ada' })], []), [])
+    expect(contacts.map((c) => c.company)).toEqual(['Acme Ltd', undefined])
+  })
+
+  it("reads Google Contacts' own header", () => {
+    const { contacts } = fromCsv('Name,Organization 1 - Name\r\nSam,Acme Ltd\r\n', [])
+    expect(contacts[0].company).toBe('Acme Ltd')
+  })
+
+  it('is read from a headerless file of the current width', () => {
+    const { contacts } = fromCsv('Sam,,,,,,,,Acme Ltd\r\n', [])
+    expect(contacts[0].company).toBe('Acme Ltd')
   })
 })

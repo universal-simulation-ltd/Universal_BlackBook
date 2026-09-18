@@ -2,6 +2,15 @@ import { identityKeys } from './deviceContacts'
 import { newId } from './id'
 import type { Contact } from './types'
 
+/** One row of the Email list form. */
+export interface ListRow {
+  name: string
+  email: string
+  notes?: string
+  company?: string
+  contactId?: string
+}
+
 export interface ListImport {
   /** People not in the book yet, already carrying the list's tag. */
   added: Contact[]
@@ -29,9 +38,13 @@ export interface ListImport {
  * A row's note (the ＋ beside it) goes on a new person as their Notes. For
  * somebody already in the book it is APPENDED under what they had, never in
  * place of it, and not again if their notes already contain it.
+ *
+ * A row's company (also behind the ＋) goes on a new person as typed. For
+ * somebody already in the book it only fills a BLANK company — a list row is
+ * a quick jotting, and it must not overwrite what their card says.
  */
 export function planListImport(
-  rows: { name: string; email: string; notes?: string; contactId?: string }[],
+  rows: ListRow[],
   existing: Contact[],
   tagId: string,
   now = Date.now(),
@@ -48,6 +61,7 @@ export function planListImport(
     const name = r.name.trim()
     const email = r.email.trim()
     const note = (r.notes ?? '').trim()
+    const company = (r.company ?? '').trim()
     if (!name && !email) continue
     const row = { name: name || email, email, phone: '' }
     const keys = identityKeys(row)
@@ -57,7 +71,8 @@ export function planListImport(
       const current = tagged.get(match.id) ?? match
       const addNote = note !== '' && !current.notes.includes(note)
       const addTag = !current.tagIds.includes(tagId)
-      if (!addTag && !addNote) {
+      const addCompany = company !== '' && !(current.company ?? '').trim()
+      if (!addTag && !addNote && !addCompany) {
         already++
         continue
       }
@@ -65,6 +80,7 @@ export function planListImport(
         ...current,
         tagIds: addTag ? [...current.tagIds, tagId] : current.tagIds,
         notes: addNote ? (current.notes.trim() ? `${current.notes.trimEnd()}\n\n${note}` : note) : current.notes,
+        ...(addCompany ? { company } : {}),
         updatedAt: now,
       })
       continue
@@ -72,6 +88,7 @@ export function planListImport(
     const contact: Contact = {
       id: newId(),
       ...row,
+      ...(company ? { company } : {}),
       tagIds: [tagId],
       listOnly: true,
       notes: note,

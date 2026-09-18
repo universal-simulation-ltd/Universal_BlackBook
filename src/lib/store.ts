@@ -103,6 +103,7 @@ function toContact(raw: unknown): Contact | null {
     // all, and this is the whole migration for them: absent reads as empty,
     // and the record gains the field the next time it is saved.
     phone: typeof r.phone === 'string' ? r.phone : '',
+    company: typeof r.company === 'string' && r.company ? r.company : undefined,
     tagIds: ids.filter((v): v is string => typeof v === 'string'),
     // Dropped rather than kept when unparseable. A malformed birthdate would
     // otherwise reach formatBirthday on every render of that card, and an

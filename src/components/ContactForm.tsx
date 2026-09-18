@@ -96,6 +96,7 @@ export function ContactForm({ id }: { id: string }) {
           name: existing.name,
           email: existing.email,
           phone: existing.phone,
+          company: existing.company,
           tagIds: existing.tagIds,
           birthdate: existing.birthdate,
           notes: existing.notes,
@@ -113,10 +114,13 @@ export function ContactForm({ id }: { id: string }) {
   /** Is Notes showing on its own, full screen? */
   const [notesFull, setNotesFull] = useState(false)
   const moreId = useId()
-  /** "Add new" only: one person, or a Name / Email list of many. */
-  const [mode, setMode] = useState<'contact' | 'list'>(() =>
-    useBookStore.getState().listMode ? 'list' : 'contact',
-  )
+  /**
+   * The Lists tab's Add new opens the Email list form here instead of a
+   * person; a string is the open list's name. Read once, at mount, like
+   * `prefill`. There is no switch between the two inside the dialog any more
+   * (owner's call, 2026-09-18) — which one you get is where you pressed it.
+   */
+  const [listMode] = useState(() => (id === 'new' && !prefill ? useBookStore.getState().listMode : false))
   const emailLists = useSettingsStore((s) => s.emailLists)
   const tags = useBookStore((s) => s.tags)
 
@@ -172,6 +176,22 @@ export function ContactForm({ id }: { id: string }) {
             />
           </div>
         )
+      case 'company':
+        return (
+          <div key={k}>
+            <label className={label} htmlFor="cf-company">
+              Company
+            </label>
+            <input
+              id="cf-company"
+              className={inputCls}
+              value={draft.company ?? ''}
+              onChange={(e) => patch({ company: e.target.value })}
+              placeholder="Acme Ltd"
+              autoComplete="off"
+            />
+          </div>
+        )
       case 'phone':
         return (
           <div key={k}>
@@ -205,7 +225,7 @@ export function ContactForm({ id }: { id: string }) {
       case 'tags':
         return (
           <Field key={k} name={EXTRA_LABELS[k]}>
-            <TagPicker value={draft.tagIds} onChange={(tagIds) => patch({ tagIds })} tagsOnly />
+            <TagPicker value={draft.tagIds} onChange={(tagIds) => patch({ tagIds })} />
           </Field>
         )
       case 'lists':
@@ -247,23 +267,20 @@ export function ContactForm({ id }: { id: string }) {
     close(null)
   }
 
-  // The tab bar is on a NEW contact only, only with App preferences ▸ Email lists on,
-  // and not over a contact just picked from the phone, which is one person by
-  // definition.
-  const tabs = id === 'new' && !prefill && emailLists ? <AddTabs mode={mode} onChange={setMode} /> : null
-
-  if (mode === 'list' && tabs) {
+  if (listMode !== false) {
     return (
-      <Modal title="Add new" onClose={() => close(null)}>
-        {tabs}
-        <EmailListForm onCancel={() => close(null)} onSaved={() => close(null)} />
+      <Modal title={typeof listMode === 'string' ? `Add to ${listMode}` : 'New list'} onClose={() => close(null)}>
+        <EmailListForm
+          initialName={typeof listMode === 'string' ? listMode : ''}
+          onCancel={() => close(null)}
+          onSaved={() => close(null)}
+        />
       </Modal>
     )
   }
 
   return (
     <Modal title={existing ? 'Edit contact' : 'Add new'} onClose={dismiss}>
-      {tabs}
       <form onSubmit={submit} className="space-y-4">
         {offering && (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-orange-900/60 bg-orange-950/30 px-3 py-2.5">
@@ -447,14 +464,15 @@ export function ContactForm({ id }: { id: string }) {
  * below). One list rather than two so the disclosure label cannot drift out of
  * step with the form.
  */
-const EXTRAS = ['email', 'phone', 'birthday', 'tags', 'lists'] as const
+const EXTRAS = ['email', 'company', 'phone', 'birthday', 'tags', 'lists'] as const
 type Extra = (typeof EXTRAS)[number]
 
 /** Of those, the ones that render ABOVE the Notes field when they are pinned. */
-const ABOVE_NOTES: readonly Extra[] = ['email', 'phone']
+const ABOVE_NOTES: readonly Extra[] = ['email', 'company', 'phone']
 
 const EXTRA_LABELS: Record<Extra, string> = {
   email: 'Email',
+  company: 'Company',
   phone: 'Phone',
   birthday: 'Birthday',
   tags: 'Tags',
@@ -469,6 +487,8 @@ function hasValue(k: Extra, draft: ContactDraft, tags: Tag[]): boolean {
   switch (k) {
     case 'email':
       return draft.email.trim() !== ''
+    case 'company':
+      return (draft.company ?? '').trim() !== ''
     case 'phone':
       return draft.phone.trim() !== ''
     case 'birthday':
@@ -501,37 +521,6 @@ function Field({ name, children }: { name: string; children: ReactNode }) {
     <div>
       <span className={label}>{name}</span>
       {children}
-    </div>
-  )
-}
-
-/** "Contact | Email list" at the top of the Add new dialog. */
-function AddTabs({ mode, onChange }: { mode: 'contact' | 'list'; onChange: (m: 'contact' | 'list') => void }) {
-  return (
-    <div
-      role="tablist"
-      aria-label="What to add"
-      className="mb-4 grid grid-cols-2 gap-1 rounded-lg border border-slate-800 bg-slate-950 p-1"
-    >
-      {(
-        [
-          ['contact', 'Contact'],
-          ['list', 'Email list'],
-        ] as const
-      ).map(([m, name]) => (
-        <button
-          key={m}
-          type="button"
-          role="tab"
-          aria-selected={mode === m}
-          onClick={() => onChange(m)}
-          className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
-            mode === m ? 'bg-orange-500/15 text-orange-300' : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          {name}
-        </button>
-      ))}
     </div>
   )
 }

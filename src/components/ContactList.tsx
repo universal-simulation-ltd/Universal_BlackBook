@@ -19,6 +19,7 @@ import { useBookStore } from '../stores/bookStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { Modal } from './Modal'
 import { SwipeRow, type SwipeAction } from './SwipeRow'
+import { ListChip } from './ListChip'
 import { TagChip } from './TagChip'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle } from './ui'
 
@@ -139,7 +140,7 @@ export function ContactList() {
   // list-only person is not one of them, so they must not make a full list
   // read as "1 of 2".
   const inContacts = useMemo(
-    () => contacts.filter((c) => !keptOffContacts(c, listIds, [])).length,
+    () => contacts.filter((c) => !keptOffContacts(c, listIds)).length,
     [contacts, listIds],
   )
   const birthdays = query.sort === 'birthday'
@@ -199,8 +200,8 @@ export function ContactList() {
               : `${visible.length} ${visible.length === 1 ? 'birthday' : 'birthdays'}, soonest first`
             : visible.length === 0
               ? 'Everybody is hidden from this list'
-              : // `>=`: a list filter shows its list-only people too, so it can
-              // show MORE than Contacts holds — "2 of 1" would be nonsense.
+              : // `>=` is belt and braces: nothing visible is outside
+              // `inContacts` now that a list filter no longer exists.
               visible.length >= inContacts
               ? `${visible.length} ${visible.length === 1 ? 'contact' : 'contacts'}`
               : `${visible.length} of ${inContacts}`}
@@ -480,7 +481,7 @@ function BirthdayBanner({ next }: { next: NextBirthday }) {
   )
 }
 
-function ContactRow({
+export function ContactRow({
   contact,
   byId,
   onOpen,
@@ -513,11 +514,10 @@ function ContactRow({
   // shouldn't exist — removeTag strips them — but an imported or hand-edited
   // book can carry one, and a broken chip in the list is a worse outcome than
   // a missing one.
-  // Tags, then lists — each list drawn as one (TagChip `list`).
-  const chips = contact.tagIds
-    .map((id) => byId.get(id))
-    .filter((t): t is Tag => Boolean(t))
-    .sort((a, b) => Number(isList(a)) - Number(isList(b)))
+  // Tags, then lists — each list as a ListChip, a different kind of chip.
+  const chips = contact.tagIds.map((id) => byId.get(id)).filter((t): t is Tag => Boolean(t))
+  const tagChips = chips.filter((t) => !isList(t))
+  const listChips = chips.filter(isList)
   const isToday = countdown?.inDays === 0
 
   return (
@@ -555,6 +555,7 @@ function ContactRow({
           <p className={`truncate font-semibold text-slate-100 ${onToggleHidden ? 'pr-8' : ''}`}>
             {contact.name || 'Unnamed'}
           </p>
+          {contact.company && <p className="truncate text-sm text-slate-300">{contact.company}</p>}
           {contact.email && <p className="truncate text-sm text-slate-400">{contact.email}</p>}
           {/* Plain text, not a `tel:` link. The whole card is already a button
               that opens the contact, and an anchor nested inside a button is
@@ -595,8 +596,11 @@ function ContactRow({
 
         {chips.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
-            {chips.map((t) => (
-              <TagChip key={t.id} name={t.name} colour={t.colour} list={isList(t)} />
+            {tagChips.map((t) => (
+              <TagChip key={t.id} name={t.name} colour={t.colour} />
+            ))}
+            {listChips.map((t) => (
+              <ListChip key={t.id} name={t.name} />
             ))}
           </div>
         )}

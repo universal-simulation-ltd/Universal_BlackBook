@@ -3,7 +3,7 @@ import type { Contact, Tag } from '../lib/types'
 import { DEFAULT_VIEW, EMPTY_QUERY, UNTAGGED, viewOf, type Query, type View } from '../lib/filter'
 import { newId } from '../lib/id'
 import { nextSwatch, SWATCHES } from '../lib/palette'
-import { planListImport } from '../lib/emailListImport'
+import { planListImport, type ListRow } from '../lib/emailListImport'
 import {
   clearDefaultView as dbClearDefaultView,
   deleteTag as dbDeleteTag,
@@ -84,12 +84,17 @@ interface BookState {
   /** Open the blank form with these values already in it. */
   startWith: (draft: ContactDraft) => void
   /**
-   * The Add new form should open on its Email list tab. Read once when the
-   * form mounts, like `prefill`, and cleared by the next `edit`.
+   * The Add new form should be the Email list form, and not a contact. Read
+   * once when the form mounts, like `prefill`, and cleared by the next `edit`.
+   * A string is the list to add to, already named (an open list's Add new).
    */
-  listMode: boolean
-  /** Open Add new on its Email list tab — the Lists screen's New list. */
-  newList: () => void
+  listMode: boolean | string
+  /**
+   * The Lists tab's Add new. There is no Contact | Email list switch in the
+   * dialog any more (owner's call, 2026-09-18): Contacts ▸ Add new is a
+   * person, Lists ▸ Add new is a list.
+   */
+  newList: (listName?: string) => void
   stashDraft: (draft: ContactDraft) => void
   clearStash: () => void
   saveContact: (draft: ContactDraft) => Promise<void>
@@ -115,11 +120,7 @@ interface BookState {
    * are added with it, and people already in the book gain it. See
    * lib/emailListImport.ts.
    */
-  saveEmailList: (
-    listName: string,
-    rows: { name: string; email: string; notes?: string; contactId?: string }[],
-    listTagIds?: string[],
-  ) => Promise<void>
+  saveEmailList: (listName: string, rows: ListRow[], listTagIds?: string[]) => Promise<void>
   setNotice: (notice: string | null) => void
 }
 
@@ -128,6 +129,8 @@ export interface ContactDraft {
   name: string
   email: string
   phone: string
+  /** Optional so the phone-contacts picker, which never fills it, need not. */
+  company?: string
   tagIds: string[]
   birthdate?: string
   notes: string
@@ -139,6 +142,7 @@ export function draftIsEmpty(d: ContactDraft): boolean {
     !d.name.trim() &&
     !d.email.trim() &&
     !d.phone.trim() &&
+    !d.company?.trim() &&
     !d.notes.trim() &&
     d.tagIds.length === 0 &&
     !d.birthdate
@@ -242,7 +246,7 @@ export const useBookStore = create<BookState>((set, get) => ({
   // with the last one's details.
   edit: (id) => set({ editing: id, prefill: null, listMode: false }),
   startWith: (draft) => set({ prefill: draft, editing: 'new', listMode: false }),
-  newList: () => set({ editing: 'new', prefill: null, listMode: true }),
+  newList: (listName) => set({ editing: 'new', prefill: null, listMode: listName ?? true }),
 
   /**
    * Keep what was typed when a new-contact form is closed without saving.
@@ -273,6 +277,7 @@ export const useBookStore = create<BookState>((set, get) => ({
       name: draft.name.trim(),
       email: draft.email.trim(),
       phone: draft.phone.trim(),
+      company: draft.company?.trim() || undefined,
       tagIds: draft.tagIds,
       birthdate: draft.birthdate,
       // ⚠️ Carried from the existing record, never from the draft. The form has

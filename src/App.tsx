@@ -211,7 +211,7 @@ export default function App() {
           </div>
         )}
 
-        {onLists && loaded && <ListsView onOpen={() => setTab('contacts')} />}
+        {onLists && loaded && <ListsView />}
 
         {/* ⚠️ Hidden with a class, not unmounted, while Lists is showing: the
             dock's keyboard hook attaches to its element once, at mount, and a

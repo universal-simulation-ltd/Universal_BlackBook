@@ -9,17 +9,23 @@ export function listIdsOf(tags: Tag[]): Set<string> {
 }
 
 /**
- * Is this person kept off Contacts right now?
+ * Is this person kept off Contacts?
  *
- * Only a `listOnly` person who is on at least one list — somebody taken off
- * every list is back to being just a person, and must not vanish. And not
- * while one of their lists is the filter: tapping a list on the Lists tab
- * opens Contacts filtered to it, and a list showing none of its members would
- * be a lie.
+ * A `listOnly` person who is on at least one list — somebody taken off every
+ * list is back to being just a person, and must not vanish. ⚠️ Always, with no
+ * exception for searching or for a filter (owner's call, 2026-09-18: "that's
+ * the whole point of the link contact feature"). Somebody who belongs in both
+ * places is a CONTACT linked onto the list; a list-only person is seen by
+ * opening their list on the Lists tab.
  */
-export function keptOffContacts(contact: Contact, listIds: Set<string>, filterTagIds: string[]): boolean {
+export function keptOffContacts(contact: Contact, listIds: Set<string>): boolean {
   if (!contact.listOnly) return false
-  const lists = contact.tagIds.filter((id) => listIds.has(id))
-  if (lists.length === 0) return false
-  return !lists.some((id) => filterTagIds.includes(id))
+  return contact.tagIds.some((id) => listIds.has(id))
+}
+
+/** The people on this list, by name. What the Lists tab shows when one is open. */
+export function membersOf(contacts: Contact[], listId: string): Contact[] {
+  return contacts
+    .filter((c) => c.tagIds.includes(listId))
+    .sort((a, b) => a.name.localeCompare(b.name, 'en-GB', { sensitivity: 'base', numeric: true }))
 }
