@@ -1,4 +1,5 @@
 import { AdvancedMenu, AdvancedMenuItem } from '@unisim/sdk'
+import { KNOWLEDGE_BASE } from '../../knowledge'
 
 // The per-app rows that slot into <UniversalAppsNavBar />'s `actions` prop —
 // ROWS ONLY, no trigger and no panel of its own. Inline styles match the SDK
@@ -27,8 +28,9 @@ export default function AppMenu({
     <>
       {/* Advanced — the SDK's own category, so every app in the suite has one in
           the same place, and whatever goes in it next is one change rather than
-          nineteen. */}
-      <AdvancedMenu theme="dark">
+          nineteen. The knowledge base goes HERE, not on the navbar: the navbar's
+          `knowledgeBase` would draw a second Advanced section under this one. */}
+      <AdvancedMenu theme="dark" knowledgeBase={KNOWLEDGE_BASE}>
         {/* Tags moved in here too (owner's call, 2026-09-17: "tags can move
             into advanced, you can manage them from normal use and adding
             contacts etc"). Tags are made and applied while adding or editing a
