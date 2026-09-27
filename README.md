@@ -184,6 +184,14 @@ never added twice. After that, the online copy is a whole-book snapshot: if two
 signed-in devices have both changed, BlackBook stops and asks which one to keep
 rather than silently picking.
 
+**Changing the passphrase** — Online backup → Change passphrase. It asks for
+the current one (even on a device that remembers the key), then re-encrypts the
+book under a new salt in a single write. Your other devices stop syncing and
+ask for the new passphrase; nothing on them is lost, and unlocking offers to
+merge their contacts back in. A device still holding the old key can never
+write it back over the change. Knowing the current passphrase is required, so
+this is not a recovery route.
+
 ## Dark only
 
 BlackBook has one appearance. It is a little black book; there is no theme

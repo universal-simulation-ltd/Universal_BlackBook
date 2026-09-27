@@ -8,9 +8,11 @@ import {
   updateVault,
   VaultConflictError,
   type VaultPayload,
+  type VaultRow,
 } from '../lib/cloud'
 import {
   forgetVault,
+  forgetVaultKey,
   loadSyncMeta,
   loadVaultKey,
   saveSyncMeta,
@@ -79,6 +81,13 @@ interface SyncStore {
   mergePending: (supabase: SupabaseClient) => Promise<void>
   push: (supabase: SupabaseClient, force?: boolean) => Promise<void>
   pull: (supabase: SupabaseClient) => Promise<void>
+  /**
+   * Re-encrypt the online copy under a new passphrase. Resolves true once it
+   * has landed. Needs the CURRENT passphrase even on a remembered device —
+   * whoever is holding an unlocked phone must not be able to lock its owner
+   * out of their own backup.
+   */
+  changePassphrase: (supabase: SupabaseClient, current: string, next: string) => Promise<boolean>
   disable: (supabase: SupabaseClient) => Promise<void>
   forgetDevice: () => Promise<void>
   reset: () => void
@@ -104,6 +113,34 @@ async function adopt(payload: VaultPayload) {
   const tags: Tag[] = payloadTags(payload)
   await useBookStore.getState().importBook(contacts, tags, 'replace', null)
 }
+
+/**
+ * If the server's salt is not the one this device's key was derived with, the
+ * passphrase was changed on another device: lock this one and say so.
+ * Returns true when it locked.
+ *
+ * Nothing local is lost. Unlocking with the new passphrase offers to merge
+ * this device's contacts in, the same as any second device.
+ */
+async function lockIfPassphraseChanged(row: VaultRow): Promise<boolean> {
+  if (row.kdf_salt === useSyncStore.getState().salt) return false
+  await forgetVaultKey()
+  useSyncStore.setState({
+    state: 'locked',
+    status: 'idle',
+    rev: row.rev,
+    salt: row.kdf_salt,
+    iterations: row.kdf_iterations,
+    key: null,
+    remembered: false,
+    message: PASSPHRASE_CHANGED,
+  })
+  return true
+}
+
+/** Shown on a device whose key stopped working because of `changePassphrase` elsewhere. */
+export const PASSPHRASE_CHANGED =
+  'The passphrase for your online copy was changed on another device. Enter the new one to carry on syncing.'
 
 export const useSyncStore = create<SyncStore>((set, get) => ({
   state: 'signed-out',
@@ -170,7 +207,21 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       }
       const payload = await decryptJson<VaultPayload>(row.ciphertext, storedKey)
       if (!payload) {
-        set({ state: 'locked', status: 'idle', rev: row.rev, salt: row.kdf_salt, iterations: row.kdf_iterations, key: null })
+        // A new salt on the server is how a passphrase change elsewhere shows
+        // up. Say so, and drop the dead key so the next opening does not try
+        // it again.
+        const changed = meta.salt !== row.kdf_salt
+        if (changed) await forgetVaultKey()
+        set({
+          state: 'locked',
+          status: 'idle',
+          rev: row.rev,
+          salt: row.kdf_salt,
+          iterations: row.kdf_iterations,
+          key: null,
+          remembered: false,
+          message: changed ? PASSPHRASE_CHANGED : null,
+        })
         return
       }
       // The device is up to date with the server → nothing to ask, just adopt.
@@ -321,6 +372,10 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
         // from an explicit "overwrite the online copy" — never automatically,
         // or the compare-and-set would be decorative.
         const row = await fetchVault(supabase)
+        // ⚠️ Not after a passphrase change elsewhere. This device's key is the
+        // OLD one, and "keep this device" would quietly put the old passphrase
+        // back — undoing the change, and locking out the device that made it.
+        if (row && (await lockIfPassphraseChanged(row))) return
         expected = row?.rev ?? 0
         if (!row) {
           const created = await createVault(supabase, ciphertext, salt, iterations)
@@ -334,6 +389,10 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       set({ status: 'saved', rev: next, lastPushedAt: Date.now(), dirty: false })
     } catch (e) {
       if (e instanceof VaultConflictError) {
+        // A passphrase change moves the rev too. Offering "keep this device"
+        // for that would be offering to revert it — see the force branch.
+        const row = await fetchVault(supabase).catch(() => null)
+        if (row && (await lockIfPassphraseChanged(row))) return
         set({
           status: 'conflict',
           message: 'Another device saved a newer copy. Choose which one to keep.',
@@ -356,6 +415,7 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       }
       const payload = await decryptJson<VaultPayload>(row.ciphertext, key)
       if (!payload) {
+        if (await lockIfPassphraseChanged(row)) return
         set({ status: 'error', message: 'The online copy could not be opened with this device’s key.' })
         return
       }
@@ -365,6 +425,72 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       set({ status: 'saved', rev: row.rev, message: null })
     } catch (e) {
       set({ status: 'error', message: e instanceof Error ? e.message : 'Could not reach the server' })
+    }
+  },
+
+  changePassphrase: async (supabase, current, next) => {
+    const { state, rev, remembered } = get()
+    if (state !== 'on') return false
+    set({ status: 'working', message: null })
+    try {
+      const row = await fetchVault(supabase)
+      if (!row) {
+        set({ state: 'off', status: 'idle', rev: 0, salt: null, key: null, remembered: false })
+        return false
+      }
+      // Checked against the server, not against the key in memory: the proof
+      // asked for is "you know the passphrase", and a remembered device holds
+      // the key without anybody having typed it.
+      const oldKey = await deriveKey(current, row.kdf_salt, row.kdf_iterations)
+      if (!(await decryptJson<VaultPayload>(row.ciphertext, oldKey))) {
+        set({ status: 'error', message: 'That is not your current passphrase.' })
+        return false
+      }
+      if (row.rev !== rev) {
+        // Re-encrypting THIS device's book over a newer one would lose the
+        // other device's edits under cover of a passphrase change. Settle
+        // which book is current first.
+        set({ status: 'conflict', message: 'Another device saved a newer copy. Choose which one to keep, then change the passphrase.' })
+        return false
+      }
+      // A fresh salt, and today's iteration count — so a change is also how an
+      // old vault picks up a raised KDF_ITERATIONS.
+      const salt = newSalt()
+      const key = await deriveKey(next, salt, KDF_ITERATIONS)
+      const ciphertext = await encryptJson(bookPayload(), key)
+      const tooBig = vaultSizeError(ciphertext)
+      if (tooBig) {
+        set({ status: 'error', message: tooBig })
+        return false
+      }
+      // The same compare-and-set as every push. Ciphertext and salt go in ONE
+      // row update, so there is no moment when the server holds a blob its
+      // stored salt cannot open.
+      const nextRev = await updateVault(supabase, ciphertext, salt, KDF_ITERATIONS, rev)
+      const pushedAt = Date.now()
+      const meta = await loadSyncMeta()
+      if (meta) await saveSyncMeta({ ...meta, rev: nextRev, salt, iterations: KDF_ITERATIONS, pushedAt })
+      // Replace the remembered key rather than leaving the old one on disk,
+      // where the next opening would fail with it and ask for a passphrase.
+      if (remembered) await saveVaultKey(key)
+      set({
+        key,
+        salt,
+        iterations: KDF_ITERATIONS,
+        rev: nextRev,
+        lastPushedAt: pushedAt,
+        dirty: false,
+        status: 'saved',
+        message: 'Passphrase changed. Your other devices will ask for the new one.',
+      })
+      return true
+    } catch (e) {
+      if (e instanceof VaultConflictError) {
+        set({ status: 'conflict', message: 'Another device saved a newer copy. Choose which one to keep, then change the passphrase.' })
+        return false
+      }
+      set({ status: 'error', message: e instanceof Error ? e.message : 'Could not change the passphrase' })
+      return false
     }
   },
 

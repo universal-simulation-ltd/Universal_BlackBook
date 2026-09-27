@@ -34,6 +34,7 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
   const [remember, setRemember] = useState(true)
   const [acknowledged, setAcknowledged] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [changing, setChanging] = useState(false)
 
   const busy = sync.status === 'working'
 
@@ -243,7 +244,21 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
                     Forget this device
                   </button>
                 )}
+                {!changing && (
+                  <button type="button" className={btnGhost} disabled={busy} onClick={() => setChanging(true)}>
+                    Change passphrase
+                  </button>
+                )}
               </div>
+              {changing && (
+                <ChangePassphraseForm
+                  busy={busy}
+                  onSubmit={async (current, next) => {
+                    if (await sync.changePassphrase(supabase, current, next)) setChanging(false)
+                  }}
+                  onCancel={() => setChanging(false)}
+                />
+              )}
               <div className="border-t border-slate-800 pt-3">
                 {confirmDelete ? (
                   <div className="space-y-2">
@@ -282,6 +297,120 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
       </Modal>
       <SignInDialog open={signInOpen} onClose={() => setSignInOpen(false)} />
     </>
+  )
+}
+
+/**
+ * Change the online copy's passphrase.
+ *
+ * Asks for the current one even when this device remembers the key — see
+ * `changePassphrase` in syncStore for why.
+ */
+function ChangePassphraseForm({
+  busy,
+  onSubmit,
+  onCancel,
+}: {
+  busy: boolean
+  onSubmit: (current: string, next: string) => Promise<void>
+  onCancel: () => void
+}) {
+  const [current, setCurrent] = useState('')
+  const [next, setNext] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [acknowledged, setAcknowledged] = useState(false)
+
+  return (
+    <form
+      className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-3"
+      onSubmit={(e) => {
+        e.preventDefault()
+        void onSubmit(current, next)
+      }}
+    >
+      <p className="text-sm font-semibold text-slate-200">Change passphrase</p>
+      <div>
+        <label className={label} htmlFor="cp-current">
+          Current passphrase
+        </label>
+        <input
+          id="cp-current"
+          className={inputCls}
+          type="password"
+          autoComplete="current-password"
+          value={current}
+          onChange={(e) => setCurrent(e.target.value)}
+          autoFocus
+        />
+      </div>
+      <div>
+        <label className={label} htmlFor="cp-new">
+          New passphrase
+        </label>
+        <input
+          id="cp-new"
+          className={inputCls}
+          type="password"
+          autoComplete="new-password"
+          value={next}
+          onChange={(e) => setNext(e.target.value)}
+          placeholder={`At least ${MIN_PASSPHRASE} characters`}
+        />
+      </div>
+      <div>
+        <label className={label} htmlFor="cp-new-confirm">
+          New passphrase again
+        </label>
+        <input
+          id="cp-new-confirm"
+          className={inputCls}
+          type="password"
+          autoComplete="new-password"
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+        />
+      </div>
+      <p className="text-xs text-slate-500">
+        Your other devices stop syncing until you enter the new passphrase on them. Nothing on them is
+        lost — they offer to merge their contacts back in.
+      </p>
+      <label className="flex items-start gap-2 text-sm text-slate-300">
+        <input
+          type="checkbox"
+          className={`${checkboxCls} mt-0.5`}
+          checked={acknowledged}
+          onChange={(e) => setAcknowledged(e.target.checked)}
+        />
+        <span>
+          I understand there is <strong className="font-semibold">no way to recover</strong> the new
+          passphrase either.
+        </span>
+      </label>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="submit"
+          className={btnPrimary}
+          disabled={
+            busy ||
+            !acknowledged ||
+            current.length === 0 ||
+            next.length < MIN_PASSPHRASE ||
+            next !== confirm
+          }
+        >
+          {busy ? 'Re-encrypting…' : 'Change passphrase'}
+        </button>
+        <button type="button" className={btnGhost} onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+      {next.length > 0 && next.length < MIN_PASSPHRASE && (
+        <p className="text-xs text-slate-500">A few more characters — {MIN_PASSPHRASE} minimum.</p>
+      )}
+      {confirm.length > 0 && next !== confirm && (
+        <p className="text-xs text-rose-300">The two passphrases don't match.</p>
+      )}
+    </form>
   )
 }
 

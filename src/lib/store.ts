@@ -384,6 +384,18 @@ export async function wipeDevice(): Promise<void> {
  * machine must not leave a key behind that decrypts the next person's view of
  * an account they have just signed into.
  */
+/**
+ * Drop only the remembered key, keeping `meta`.
+ *
+ * For a device whose key has gone stale because the passphrase was changed
+ * somewhere else. The vault is still there and still this account's, so the
+ * bookkeeping stays — `hasOnlineCopy` reads it to decide which warning the PIN
+ * reset shows, and losing it would make that warning the wrong one.
+ */
+export async function forgetVaultKey(): Promise<void> {
+  await tx(SYNC, 'readwrite', (s) => s.delete('key'))
+}
+
 export async function forgetVault(): Promise<void> {
   await tx(SYNC, 'readwrite', (s) => s.delete('key'))
   await tx(SYNC, 'readwrite', (s) => s.delete('meta'))

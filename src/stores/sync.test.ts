@@ -111,6 +111,16 @@ async function seed(device: Device, names: string[], tags: Tag[] = []) {
   await use(device).book.getState().importBook(names.map(contact), tags, 'replace', null)
 }
 
+/** Two devices on `server`, both unlocked and in sync at rev 1. */
+async function twoUnlockedDevices(server: FakeServer) {
+  const a = await boot(server)
+  await seed(a, ['Ada'])
+  await use(a).sync.getState().enable(a.client, USER, PASS, true)
+  const b = await boot(server)
+  await use(b).sync.getState().unlock(b.client, USER, PASS, true)
+  return { a, b }
+}
+
 const names = (device: Device) => device.book.getState().contacts.map((c) => c.name).sort()
 
 describe('two devices, one account', () => {
@@ -206,18 +216,9 @@ describe('the compare-and-set, from both sides', () => {
     server = newServer()
   })
 
-  /** Both devices unlocked and in sync at rev 1. */
-  async function twoUnlockedDevices() {
-    const a = await boot(server)
-    await seed(a, ['Ada'])
-    await use(a).sync.getState().enable(a.client, USER, PASS, true)
-    const b = await boot(server)
-    await use(b).sync.getState().unlock(b.client, USER, PASS, true)
-    return { a, b }
-  }
 
   it('the device that pushes second is told, not silently overwritten', async () => {
-    const { a, b } = await twoUnlockedDevices()
+    const { a, b } = await twoUnlockedDevices(server)
 
     await seed(a, ['Ada', 'Alan'])
     await use(a).sync.getState().push(a.client)
@@ -240,7 +241,7 @@ describe('the compare-and-set, from both sides', () => {
   })
 
   it('a forced push wins, deliberately, and the loser can pull it back', async () => {
-    const { a, b } = await twoUnlockedDevices()
+    const { a, b } = await twoUnlockedDevices(server)
 
     await seed(a, ['Ada', 'Alan'])
     await use(a).sync.getState().push(a.client)
@@ -260,7 +261,7 @@ describe('the compare-and-set, from both sides', () => {
   })
 
   it('a conflict does not advance this device’s rev, so the retry is still a conflict', async () => {
-    const { a, b } = await twoUnlockedDevices()
+    const { a, b } = await twoUnlockedDevices(server)
     await seed(a, ['Ada', 'Alan'])
     await use(a).sync.getState().push(a.client)
 
@@ -374,6 +375,124 @@ describe('the remembered key, across a reload', () => {
     const reloaded = await reload(server, a)
     await use(reloaded).sync.getState().hydrate(reloaded.client, USER)
     expect(use(reloaded).sync.getState().state).toBe('locked')
+  })
+})
+
+describe('changing the passphrase', () => {
+  let server: FakeServer
+  const NEW = 'a much better passphrase'
+
+  beforeEach(() => {
+    server = newServer()
+  })
+
+  it('re-encrypts under a new salt, and only the new passphrase opens it', async () => {
+    const a = await boot(server)
+    await seed(a, ['Ada', 'Grace'])
+    await use(a).sync.getState().enable(a.client, USER, PASS, false)
+    const oldSalt = server.row!.kdf_salt
+
+    expect(await use(a).sync.getState().changePassphrase(a.client, PASS, NEW)).toBe(true)
+    expect(server.row!.kdf_salt).not.toBe(oldSalt)
+    expect(server.row!.rev).toBe(2)
+    expect(use(a).sync.getState().salt).toBe(server.row!.kdf_salt)
+
+    // A's in-memory key is the new one, so ordinary syncing carries on.
+    await seed(a, ['Ada', 'Grace', 'Alan'])
+    await use(a).sync.getState().push(a.client)
+    expect(use(a).sync.getState().status).toBe('saved')
+
+    const old = await boot(server)
+    await use(old).sync.getState().unlock(old.client, USER, PASS, false)
+    expect(use(old).sync.getState().state).not.toBe('on')
+    expect(use(old).sync.getState().message).toMatch(/does not open this book/i)
+
+    const fresh = await boot(server)
+    await use(fresh).sync.getState().unlock(fresh.client, USER, NEW, false)
+    expect(use(fresh).sync.getState().state).toBe('on')
+    expect(names(fresh)).toEqual(['Ada', 'Alan', 'Grace'])
+  })
+
+  it('refuses the wrong CURRENT passphrase, even on a remembered device', async () => {
+    const a = await boot(server)
+    await seed(a, ['Ada'])
+    await use(a).sync.getState().enable(a.client, USER, PASS, true)
+    const before = { ...server.row! }
+
+    expect(await use(a).sync.getState().changePassphrase(a.client, 'not it at all', NEW)).toBe(false)
+    expect(use(a).sync.getState().status).toBe('error')
+    expect(use(a).sync.getState().message).toMatch(/not your current passphrase/i)
+    expect(server.row).toEqual(before)
+  })
+
+  it('a remembered device comes back unlocked after a reload with the NEW key', async () => {
+    const a = await boot(server)
+    await seed(a, ['Ada'])
+    await use(a).sync.getState().enable(a.client, USER, PASS, true)
+    await use(a).sync.getState().changePassphrase(a.client, PASS, NEW)
+
+    const again = await reload(server, a)
+    await use(again).sync.getState().hydrate(again.client, USER)
+    expect(use(again).sync.getState().state).toBe('on')
+  })
+
+  it('will not re-encrypt over a newer online copy', async () => {
+    const { a, b } = await twoUnlockedDevices(server)
+    await seed(a, ['Ada', 'Alan'])
+    await use(a).sync.getState().push(a.client)
+
+    expect(await use(b).sync.getState().changePassphrase(b.client, PASS, NEW)).toBe(false)
+    expect(use(b).sync.getState().status).toBe('conflict')
+    expect(server.row!.rev).toBe(2)
+  })
+
+  it('the OTHER device is locked and told, and cannot force the old passphrase back', async () => {
+    const { a, b } = await twoUnlockedDevices(server)
+    await use(a).sync.getState().changePassphrase(a.client, PASS, NEW)
+    const salt = server.row!.kdf_salt
+
+    // B edits and saves with its stale key. A plain conflict here would offer
+    // "keep this device, overwrite online" — which would restore the OLD
+    // passphrase. It must lock instead.
+    await seed(b, ['Ada', 'Barbara'])
+    await use(b).sync.getState().push(b.client)
+    expect(use(b).sync.getState().state).toBe('locked')
+    expect(use(b).sync.getState().message).toMatch(/changed on another device/i)
+
+    await use(b).sync.getState().push(b.client, true)
+    expect(server.row!.kdf_salt).toBe(salt)
+    expect(server.row!.rev).toBe(2)
+
+    // B's contacts survived, and the new passphrase gets them merged up.
+    expect(names(b)).toEqual(['Ada', 'Barbara'])
+    await use(b).sync.getState().unlock(b.client, USER, NEW, true)
+    await use(b).sync.getState().mergePending(b.client)
+    await use(a).sync.getState().pull(a.client)
+    expect(names(a)).toEqual(['Ada', 'Barbara'])
+  })
+
+  it('a remembered other device, reloaded, drops its dead key and says why', async () => {
+    const { a, b } = await twoUnlockedDevices(server)
+    await use(a).sync.getState().changePassphrase(a.client, PASS, NEW)
+
+    const b2 = await reload(server, b)
+    await use(b2).sync.getState().hydrate(b2.client, USER)
+    expect(use(b2).sync.getState().state).toBe('locked')
+    expect(use(b2).sync.getState().message).toMatch(/changed on another device/i)
+
+    // And the dead key is gone from disk, so the next opening does not retry it.
+    const b3 = await reload(server, b)
+    await use(b3).sync.getState().hydrate(b3.client, USER)
+    expect(use(b3).sync.getState().state).toBe('locked')
+    expect(use(b3).sync.getState().message).toBeNull()
+  })
+
+  it('pulling with a stale key locks rather than erroring', async () => {
+    const { a, b } = await twoUnlockedDevices(server)
+    await use(a).sync.getState().changePassphrase(a.client, PASS, NEW)
+    await use(b).sync.getState().pull(b.client)
+    expect(use(b).sync.getState().state).toBe('locked')
+    expect(names(b)).toEqual(['Ada'])
   })
 })
 
