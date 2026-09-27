@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { UniversalAppsNavBar, UpdateNotice, useUniversal, useUser } from '@unisim/sdk'
+import { UniversalAppsNavBar, UpdateNotice, useUniversal, useUser, type AboutAppConfig } from '@unisim/sdk'
 // <UsageTracker /> sends one "session.opened" row for a signed-in visitor, and
 // nothing else may ever be tracked here: no names, email addresses, category
 // names or counts. The vault goes to the server encrypted precisely so we cannot
@@ -7,6 +7,11 @@ import { UniversalAppsNavBar, UpdateNotice, useUniversal, useUser } from '@unisi
 import { UsageTracker } from '@unisim/sdk'
 import ProductLogo from './components/Header/ProductLogo'
 import AppMenu from './components/Header/AppMenu'
+// Generated — `npm run credits` after any dependency change. Never edit it by
+// hand: it is read off the installed tree, so a hand-kept list drifts from the
+// lockfile the first time anyone upgrades anything, and a credits list naming a
+// package we removed is worse than no list at all.
+import credits from './generated/credits.json'
 import { TagManager } from './components/TagManager'
 import { CloudPanel } from './components/CloudPanel'
 import { EmailListsPreference } from './components/EmailListsPreference'
@@ -45,6 +50,20 @@ const REPO_URL = 'https://github.com/universal-simulation-ltd/Universal_BlackBoo
 const AUTOSAVE_DELAY = 2500
 
 type Panel = 'tags' | 'io' | 'cloud' | 'lock' | null
+
+// "About this app" — handed to <UniversalAppsNavBar about>, which draws it at
+// the foot of "Tune this app" (SDK 0.161.0+) and opens its own AboutAppDialog.
+// It used to be the last row of the Advanced menu (Header/AppMenu.tsx).
+const APP_ABOUT: AboutAppConfig = {
+  repo:    'https://github.com/universal-simulation-ltd/Universal_BlackBook',
+  subject: 'Your contacts',
+  plural:  true,
+  except:  'the end-to-end encrypted backup you choose to store',
+  headline: 'Other address books keep your contacts on their servers.',
+  version: __APP_VERSION__,
+  credits,
+  noticesHref: 'https://github.com/universal-simulation-ltd/Universal_BlackBook/blob/main/THIRD-PARTY-NOTICES.md',
+}
 
 export default function App() {
   const init = useBookStore((s) => s.init)
@@ -122,6 +141,7 @@ export default function App() {
         product="blackbook"
         productLogo={<ProductLogo />}
         productHomeHref={import.meta.env.BASE_URL}
+        about={APP_ABOUT}
         actions={
           <AppMenu
             onTags={() => setPanel('tags')}
