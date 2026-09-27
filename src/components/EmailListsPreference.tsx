@@ -12,9 +12,11 @@ import { checkboxCls } from './ui'
  */
 export function EmailListsPreference() {
   const emailLists = useSettingsStore((s) => s.emailLists)
+  const todos = useSettingsStore((s) => s.todos)
   const set = useSettingsStore((s) => s.set)
 
   return (
+    <>
     <label className="flex items-start gap-3 py-1 text-sm text-slate-200">
       <input
         type="checkbox"
@@ -30,5 +32,21 @@ export function EmailListsPreference() {
         </span>
       </span>
     </label>
+    <label className="flex items-start gap-3 py-1 text-sm text-slate-200">
+      <input
+        type="checkbox"
+        className={`${checkboxCls} mt-0.5`}
+        checked={todos}
+        onChange={(e) => set({ todos: e.target.checked })}
+      />
+      <span>
+        To-do
+        <span className="mt-0.5 block text-xs text-slate-400">
+          Adds a To-do tab beside Contacts: things to do, with details, a deadline and your tags. Turning it
+          off hides the tab and keeps the list.
+        </span>
+      </span>
+    </label>
+    </>
   )
 }

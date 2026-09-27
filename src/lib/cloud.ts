@@ -8,6 +8,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Contact, Tag } from './types'
+import type { Todo } from './todos'
 
 export const TABLE = 'blackbook_vaults'
 
@@ -34,6 +35,13 @@ export interface VaultPayload {
   tags?: Tag[]
   /** @deprecated Legacy mirror of `tags`, for pre-2026-08-24 clients. */
   categories?: Tag[]
+  /**
+   * The To-do tab's list (2026-09-27). ABSENT — not empty — means "this blob
+   * says nothing about to-dos": written by a build from before them, or by a
+   * device whose list had not loaded. Reading an absent field as "no to-dos"
+   * would let either wipe them.
+   */
+  todos?: Todo[]
   /** Epoch ms the writing device stamped. Advisory — used only in messages. */
   savedAt: number
 }

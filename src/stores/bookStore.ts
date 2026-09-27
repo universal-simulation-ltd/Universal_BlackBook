@@ -3,6 +3,7 @@ import type { Contact, Tag } from '../lib/types'
 import { DEFAULT_VIEW, EMPTY_QUERY, UNTAGGED, viewOf, type Query, type View } from '../lib/filter'
 import { newId } from '../lib/id'
 import { listIdsOf } from '../lib/lists'
+import { useTodoStore } from './todoStore'
 import { nextSwatch, SWATCHES } from '../lib/palette'
 import { planListImport, type ListRow } from '../lib/emailListImport'
 import {
@@ -518,6 +519,8 @@ export const useBookStore = create<BookState>((set, get) => ({
     }))
     if (inDefault) await dbSaveDefaultView(nextDefault)
     await dbDeleteTag(id)
+    // To-dos carry the same tags (lib/todos.ts).
+    await useTodoStore.getState().dropTag(id)
     await Promise.all(lists.map(putTag))
     await Promise.all(
       touched.map((t) => {

@@ -89,6 +89,28 @@ Everywhere else — and with a keyboard or a screen reader anywhere — Delete i
 where it has always been: inside the contact's own form, behind the same
 confirmation.
 
+**Several at once:** Select, above the list, turns every card into a tick box.
+Tick the people you want, then Delete, Tag (adds tags to all of them) or Hide /
+Show. Delete asks first and names who is going. Only people still on screen are
+acted on — narrow the filter after ticking and the ones filtered out are left
+alone.
+
+## Adding somebody lands you on their tags
+
+Save a new contact tagged Family and Work and the list switches to Family-or-Work,
+with them in it. Save one with no tags while a tag filter is on and the filter is
+dropped, so the person you just added is never saved out of sight. Editing
+somebody leaves the view alone.
+
+## To-do
+
+⚙ menu ▸ App preferences ▸ **To-do** adds a To-do tab beside Contacts: a name,
+details, a deadline and your tags — the same tags your contacts use. Open ones
+sort by deadline (overdue first, in red), then a "done" drawer. Adding a tagged
+to-do filters the tab to its tags, as contacts do. To-dos live on this device and
+go into the encrypted online backup with the rest of the book. Turning the switch
+off hides the tab and keeps the list.
+
 ## Locking the app
 
 **🔓 Unlocked / 🔒 Locked**, beside the page title. Tap it to set a 4-digit PIN,

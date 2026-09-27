@@ -16,6 +16,7 @@ import { ContactView } from './components/ContactView'
 import { FilterBar } from './components/FilterBar'
 import { ImportExport } from './components/ImportExport'
 import { ListsView } from './components/ListsView'
+import { TodoView } from './components/TodoView'
 import { LockPanel, LockScreen } from './components/Lock'
 import { btnGhost, btnPrimary } from './components/ui'
 import { contactsAvailability, ContactsPermissionError, pickOneContact } from './lib/deviceContacts'
@@ -24,6 +25,7 @@ import { useBookStore } from './stores/bookStore'
 import { useLockStore } from './stores/lockStore'
 import { useSettingsStore } from './stores/settingsStore'
 import { useSyncStore } from './stores/syncStore'
+import { useTodoStore } from './stores/todoStore'
 
 // The single page container. The navbar (via the SDK's `contentClassName`), the
 // page body and the footer all share it, so the suite switcher lines up with
@@ -53,11 +55,22 @@ export default function App() {
   const notice = useBookStore((s) => s.notice)
   const setNotice = useBookStore((s) => s.setNotice)
   const [panel, setPanel] = useState<Panel>(null)
-  // Contacts | Lists, on the landing screen. Lists only exists with App preferences ▸
-  // Email lists on; turning that off drops back to Contacts.
+  // Contacts | Lists | To-do, on the landing screen. Lists only exists with App
+  // preferences ▸ Email lists on, To-do with ▸ To-do; turning either off drops
+  // back to Contacts.
   const emailLists = useSettingsStore((s) => s.emailLists)
-  const [tab, setTab] = useState<'contacts' | 'lists'>('contacts')
+  const todosOn = useSettingsStore((s) => s.todos)
+  const [tab, setTab] = useState<'contacts' | 'lists' | 'todos'>('contacts')
   const onLists = emailLists && tab === 'lists'
+  const onTodos = todosOn && tab === 'todos'
+  const offContacts = onLists || onTodos
+  const tabs = [
+    ['contacts', 'Contacts'],
+    ...(emailLists ? [['lists', 'Lists'] as const] : []),
+    ...(todosOn ? [['todos', 'To-do'] as const] : []),
+  ] as const
+  const current = offContacts ? tab : 'contacts'
+  const initTodos = useTodoStore((s) => s.init)
   const { canPick, picking, pick } = useContactPicker()
   const dock = useKeyboardAwareDock()
   const lockStatus = useLockStore((s) => s.status)
@@ -70,6 +83,13 @@ export default function App() {
   useEffect(() => {
     void initLock()
   }, [initLock])
+
+  // ⚠️ Whether or not the To-do tab is on. The vault carries the list either
+  // way, and a push made before it was read would say nothing about to-dos
+  // rather than the truth (see VaultPayload.todos).
+  useEffect(() => {
+    void initTodos()
+  }, [initTodos])
 
 
   // Stable, not an inline arrow: `openPanel` is a dependency of an effect in
@@ -183,26 +203,23 @@ export default function App() {
           </div>
         )}
 
-        {emailLists && (
+        {tabs.length > 1 && (
           <div
             role="tablist"
-            aria-label="Contacts or lists"
-            className="mb-5 grid grid-cols-2 gap-1 rounded-lg border border-slate-800 bg-slate-900 p-1 sm:max-w-xs"
+            aria-label="Contacts, lists or to-do"
+            className={`mb-5 grid gap-1 rounded-lg border border-slate-800 bg-slate-900 p-1 ${
+              tabs.length === 3 ? 'grid-cols-3 sm:max-w-sm' : 'grid-cols-2 sm:max-w-xs'
+            }`}
           >
-            {(
-              [
-                ['contacts', 'Contacts'],
-                ['lists', 'Lists'],
-              ] as const
-            ).map(([t, name]) => (
+            {tabs.map(([t, name]) => (
               <button
                 key={t}
                 type="button"
                 role="tab"
-                aria-selected={(t === 'lists') === onLists}
+                aria-selected={t === current}
                 onClick={() => setTab(t)}
                 className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
-                  (t === 'lists') === onLists ? 'bg-orange-500/15 text-orange-300' : 'text-slate-400 hover:text-slate-200'
+                  t === current ? 'bg-orange-500/15 text-orange-300' : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
                 {name}
@@ -212,11 +229,12 @@ export default function App() {
         )}
 
         {onLists && loaded && <ListsView />}
+        {onTodos && <TodoView />}
 
         {/* ⚠️ Hidden with a class, not unmounted, while Lists is showing: the
             dock's keyboard hook attaches to its element once, at mount, and a
             remounted dock would be a new element it never hears about. */}
-        <div className={onLists ? 'hidden' : undefined}>
+        <div className={offContacts ? 'hidden' : undefined}>
           <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
             <div>
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -604,6 +622,7 @@ function useCloudSync(openPanel: () => void) {
   const userId = user?.id ?? null
   const contacts = useBookStore((s) => s.contacts)
   const tags = useBookStore((s) => s.tags)
+  const todos = useTodoStore((s) => s.todos)
   const loaded = useBookStore((s) => s.loaded)
   const hydrate = useSyncStore((s) => s.hydrate)
   const push = useSyncStore((s) => s.push)
@@ -643,19 +662,20 @@ function useCloudSync(openPanel: () => void) {
   // Only a CHANGE of book marks it unsynced — not this effect re-running
   // because sync turned on or the page loaded, which would show "Syncing…"
   // over a book that is already up there.
-  const lastBook = useRef<{ contacts: unknown; tags: unknown } | null>(null)
+  const lastBook = useRef<{ contacts: unknown; tags: unknown; todos: unknown } | null>(null)
   useEffect(() => {
     if (!loaded || state !== 'on') {
       lastBook.current = null
       return
     }
     const changed =
-      lastBook.current !== null && (lastBook.current.contacts !== contacts || lastBook.current.tags !== tags)
-    lastBook.current = { contacts, tags }
+      lastBook.current !== null &&
+      (lastBook.current.contacts !== contacts || lastBook.current.tags !== tags || lastBook.current.todos !== todos)
+    lastBook.current = { contacts, tags, todos }
     if (changed) useSyncStore.getState().markDirty()
     const t = setTimeout(() => void push(supabase), AUTOSAVE_DELAY)
     return () => clearTimeout(t)
-  }, [contacts, tags, loaded, state, push, supabase])
+  }, [contacts, tags, todos, loaded, state, push, supabase])
 
   // A conflict is the one sync outcome the user MUST answer — it is the only
   // one where the app cannot proceed without destroying somebody's edits — so

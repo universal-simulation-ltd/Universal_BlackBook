@@ -31,6 +31,8 @@ import {
 } from '../lib/vault'
 import { mergeBooks } from '../lib/merge'
 import { useBookStore } from './bookStore'
+import { useTodoStore } from './todoStore'
+import { mergeTodos, toTodos } from '../lib/todos'
 
 /**
  * Where this device stands with the online copy.
@@ -95,9 +97,19 @@ interface SyncStore {
 
 function bookPayload(): VaultPayload {
   const { contacts, tags } = useBookStore.getState()
+  const todo = useTodoStore.getState()
   // `categories` is the deprecated mirror of `tags` — see VaultPayload for why
   // a stale PWA build reading this blob makes the duplication necessary.
-  return { version: VAULT_VERSION, contacts, tags, categories: tags, savedAt: Date.now() }
+  // `todos` only once the list has been read off the disk: an empty array
+  // before then would overwrite the online list with nothing.
+  return {
+    version: VAULT_VERSION,
+    contacts,
+    tags,
+    categories: tags,
+    ...(todo.loaded && { todos: todo.todos }),
+    savedAt: Date.now(),
+  }
 }
 
 /**
@@ -112,6 +124,8 @@ async function adopt(payload: VaultPayload) {
   const contacts: Contact[] = Array.isArray(payload.contacts) ? payload.contacts : []
   const tags: Tag[] = payloadTags(payload)
   await useBookStore.getState().importBook(contacts, tags, 'replace', null)
+  // Absent = the blob says nothing about to-dos (see VaultPayload): keep ours.
+  if (Array.isArray(payload.todos)) await useTodoStore.getState().replace(toTodos(payload.todos))
 }
 
 /**
@@ -311,7 +325,10 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       }
       await saveSyncMeta(meta)
       if (remember) await saveVaultKey(key)
-      const local = useBookStore.getState().contacts.length
+      // To-dos count as local data too: a device holding only to-dos must be
+      // asked, not have them replaced by the online list.
+      await useTodoStore.getState().init()
+      const local = useBookStore.getState().contacts.length + useTodoStore.getState().todos.length
       set({
         state: 'on',
         rev: row.rev,
@@ -345,6 +362,10 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
     const { contacts, tags } = useBookStore.getState()
     const merged = mergeBooks({ contacts: pending.contacts ?? [], tags: payloadTags(pending) }, { contacts, tags })
     await useBookStore.getState().importBook(merged.contacts, merged.tags, 'replace', null)
+    await useTodoStore.getState().init()
+    await useTodoStore
+      .getState()
+      .replace(mergeTodos(toTodos(pending.todos), useTodoStore.getState().todos, merged.remap))
     set({ pending: null })
     // Straight up, rather than on the autosave timer: the online copy is
     // missing this device's contacts until it goes, and a second device

@@ -15,6 +15,7 @@ import type { Contact, Tag } from './types'
 import { isValidBirthday } from './birthday'
 import { SORT_KEYS, type SortKey, type View } from './filter'
 import { toLockRecord, type LockRecord } from './lock'
+import { toTodos, type Todo } from './todos'
 
 const DB_NAME = 'blackbook'
 const DB_VERSION = 1
@@ -217,6 +218,11 @@ export async function replaceAll(contacts: Contact[], tags: Tag[]): Promise<void
 //           reason the lock is: which tags you want in front of you on the
 //           phone in your pocket is not a fact about your address book, and
 //           syncing it would mean a laptop deciding how the phone opens.
+//   'todos' the To-do tab's whole list, as ONE array. Here rather than in an
+//           object store of its own for the reason the lock is: a new store is
+//           a DB_VERSION bump. A to-do list is small enough that rewriting it
+//           whole on every tick costs nothing. Unlike 'view' and 'lock' it IS
+//           part of the vault — it is data, not a preference.
 //   'seed'  whether this device has ever been given its two starting tags. A
 //           marker and not a count, so deleting them is a decision that sticks.
 
@@ -269,6 +275,14 @@ function toView(raw: unknown): View | null {
   // `hiddenTagIds` is absent from every view saved before 2026-09-17, which
   // reads correctly as "nothing hidden".
   return { tagIds: ids(r.tagIds), hiddenTagIds: ids(r.hiddenTagIds), sort }
+}
+
+export async function loadTodos(): Promise<Todo[]> {
+  return toTodos(await tx<unknown>(SYNC, 'readonly', (s) => s.get('todos') as IDBRequest<unknown>))
+}
+
+export async function saveTodos(todos: Todo[]): Promise<void> {
+  await tx(SYNC, 'readwrite', (s) => s.put(todos, 'todos'))
 }
 
 export async function loadDefaultView(): Promise<View | null> {
@@ -374,6 +388,8 @@ export async function wipeDevice(): Promise<void> {
   // rather than on a filter belonging to a book that no longer exists.
   await tx(SYNC, 'readwrite', (s) => s.delete('view'))
   await tx(SYNC, 'readwrite', (s) => s.delete('seed'))
+  // The to-do list is part of the book, and goes with it.
+  await tx(SYNC, 'readwrite', (s) => s.delete('todos'))
 }
 
 /**

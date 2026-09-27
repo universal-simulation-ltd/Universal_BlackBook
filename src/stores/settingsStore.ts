@@ -14,15 +14,17 @@ import { create } from 'zustand'
 export interface Settings {
   /** Add new ▸ Email list, and Copy emails / Export CSV above the list. */
   emailLists: boolean
+  /** The To-do tab beside Contacts (2026-09-27). */
+  todos: boolean
 }
 
 const KEY = 'blackbook.settings'
-const DEFAULTS: Settings = { emailLists: false }
+const DEFAULTS: Settings = { emailLists: false, todos: false }
 
 function load(): Settings {
   try {
     const raw = JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<Settings>
-    return { emailLists: raw.emailLists === true }
+    return { emailLists: raw.emailLists === true, todos: raw.todos === true }
   } catch {
     return DEFAULTS
   }
@@ -37,7 +39,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   set: (patch) => {
     set(patch)
     try {
-      localStorage.setItem(KEY, JSON.stringify({ emailLists: get().emailLists }))
+      localStorage.setItem(KEY, JSON.stringify({ emailLists: get().emailLists, todos: get().todos }))
     } catch {
       // See the note above: the switch still works until the app is closed.
     }

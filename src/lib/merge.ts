@@ -27,6 +27,8 @@ export interface MergedBook {
   added: number
   /** Contacts in both, where this device's copy was the newer edit. */
   updated: number
+  /** Local tag id → the online tag of the same name it was folded into. */
+  remap: Map<string, string>
 }
 
 export function mergeBooks(
@@ -75,5 +77,5 @@ export function mergeBooks(
     added++
   }
 
-  return { contacts, tags, added, updated }
+  return { contacts, tags, added, updated, remap }
 }
