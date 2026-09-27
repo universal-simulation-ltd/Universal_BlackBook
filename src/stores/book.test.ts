@@ -220,3 +220,87 @@ describe('the full-screen view', () => {
     expect(store.getState().viewing).toBeNull()
   })
 })
+
+describe('a new contact with tags', () => {
+  const draft = (tagIds: string[], over = {}) => ({ name: 'Ada', email: '', phone: '', notes: '', tagIds, ...over })
+
+  it('lands the list on exactly those tags, search cleared', async () => {
+    const store = await reopen()
+    const [a, b] = store.getState().tags
+    store.getState().setQuery({ text: 'zzz', tagIds: [], hiddenTagIds: [a.id] })
+    await store.getState().saveContact(draft([a.id, b.id]))
+    const q = store.getState().query
+    expect(q.tagIds).toEqual([a.id, b.id])
+    expect(q.text).toBe('')
+    expect(q.hiddenTagIds).toEqual([])
+  })
+
+  it('leaves the view alone when untagged and already visible, or when editing', async () => {
+    const store = await reopen()
+    const [a] = store.getState().tags
+    store.getState().setQuery({ text: 'x' })
+    await store.getState().saveContact(draft([]))
+    expect(store.getState().query.text).toBe('x')
+    const id = store.getState().contacts[0].id
+    await store.getState().saveContact(draft([a.id], { id }))
+    expect(store.getState().query.tagIds).toEqual([])
+  })
+
+  it('untagged, drops a tag filter that would hide them', async () => {
+    const store = await reopen()
+    const [a] = store.getState().tags
+    await store.getState().saveContact(draft([a.id]))
+    expect(store.getState().query.tagIds).toEqual([a.id])
+    await store.getState().saveContact(draft([], { name: 'Cy' }))
+    expect(store.getState().query.tagIds).toEqual([])
+  })
+
+  it('ignores lists — they are not tags', async () => {
+    const store = await reopen()
+    const list = await store.getState().addTag('Book club', 'list')
+    await store.getState().saveContact(draft([list!.id]))
+    expect(store.getState().query.tagIds).toEqual([])
+  })
+
+  it('leaves the birthdays view when they have no birthday', async () => {
+    const store = await reopen()
+    const [a] = store.getState().tags
+    store.getState().setQuery({ sort: 'birthday' })
+    await store.getState().saveContact(draft([a.id]))
+    expect(store.getState().query.sort).toBe('name')
+  })
+})
+
+describe('the bulk actions', () => {
+  it('delete several at once, and for good', async () => {
+    await seedDisk({ contacts: [someone({ id: 'a' }), someone({ id: 'b' }), someone({ id: 'c' })] })
+    const store = await reopen()
+    store.getState().view('a')
+    await store.getState().removeContacts(['a', 'b'])
+    expect(store.getState().contacts.map((c) => c.id)).toEqual(['c'])
+    expect(store.getState().viewing).toBeNull()
+    const again = await reopen()
+    expect(again.getState().contacts.map((c) => c.id)).toEqual(['c'])
+  })
+
+  it('hide and show several from the list', async () => {
+    await seedDisk({ contacts: [someone({ id: 'a' }), someone({ id: 'b' })] })
+    const store = await reopen()
+    await store.getState().setListHiddenMany(['a', 'b'], true)
+    expect(store.getState().contacts.every((c) => c.hideFromList)).toBe(true)
+    await store.getState().setListHiddenMany(['a'], false)
+    const again = await reopen()
+    const byId = new Map(again.getState().contacts.map((c) => [c.id, c]))
+    expect(byId.get('a')?.hideFromList).toBeUndefined()
+    expect(byId.get('b')?.hideFromList).toBe(true)
+  })
+
+  it('add tags without duplicating or dropping any', async () => {
+    await seedDisk({ contacts: [someone({ id: 'a', tagIds: ['t1'] }), someone({ id: 'b' })] })
+    const store = await reopen()
+    await store.getState().addTagsTo(['a', 'b'], ['t1', 't2'])
+    const byId = new Map(store.getState().contacts.map((c) => [c.id, c]))
+    expect(byId.get('a')?.tagIds).toEqual(['t1', 't2'])
+    expect(byId.get('b')?.tagIds).toEqual(['t1', 't2'])
+  })
+})

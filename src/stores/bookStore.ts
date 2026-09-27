@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type { Contact, Tag } from '../lib/types'
 import { DEFAULT_VIEW, EMPTY_QUERY, UNTAGGED, viewOf, type Query, type View } from '../lib/filter'
 import { newId } from '../lib/id'
+import { listIdsOf } from '../lib/lists'
 import { nextSwatch, SWATCHES } from '../lib/palette'
 import { planListImport, type ListRow } from '../lib/emailListImport'
 import {
@@ -103,6 +104,11 @@ interface BookState {
   /** Show or hide this person in the main list. Search still finds them. */
   setListHidden: (id: string, hidden: boolean) => Promise<void>
   removeContact: (id: string) => Promise<void>
+  /** Select mode's bulk actions — see ContactList. */
+  removeContacts: (ids: string[]) => Promise<void>
+  setListHiddenMany: (ids: string[], hidden: boolean) => Promise<void>
+  /** Adds (never removes) these tags to each of these people. */
+  addTagsTo: (ids: string[], tagIds: string[]) => Promise<void>
   /** A tag, or with `kind: 'list'` a list. A name is only a clash within its kind. */
   addTag: (name: string, kind?: 'list') => Promise<Tag | null>
   /** Turn a tag into a list or a list back into a tag (Tags ▸ "This is a list"). */
@@ -291,8 +297,38 @@ export const useBookStore = create<BookState>((set, get) => ({
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     }
+    // A NEW person with tags lands the list on those tags (owner's request,
+    // 2026-09-27): add somebody tagged Family and Work and the home view shows
+    // Family-or-Work, with them in it. Lists are not tags (`runQuery` drops
+    // them from a filter anyway), so only real tags count. An edit of an
+    // existing person leaves the view alone.
+    //
+    // ⚠️ The untagged case is the other half of the same promise, and it is
+    // what the first half CAUSES: once adding a tagged person has set a tag
+    // filter, the next person added with no tags would be saved straight out of
+    // sight. So an untagged newcomer drops a tag filter that would hide them.
+    // Either way the search box is cleared and their tags come out of "hidden",
+    // or the filter could hide the very person it was set to show.
+    const listIds = listIdsOf(get().tags)
+    const ownTags = contact.tagIds.filter((id) => !listIds.has(id))
+    const reveal = (q: Query): Query | null => {
+      if (existing) return null
+      if (ownTags.length === 0 && (q.tagIds.length === 0 || q.tagIds.includes(UNTAGGED)) && !q.hiddenTagIds.includes(UNTAGGED)) {
+        return null
+      }
+      return {
+        ...q,
+        text: '',
+        tagIds: ownTags.length > 0 ? ownTags : q.tagIds.includes(UNTAGGED) ? q.tagIds : [],
+        hiddenTagIds: q.hiddenTagIds.filter((id) => id !== UNTAGGED && !contact.tagIds.includes(id)),
+        // The birthdays view only holds people with a birthday; somebody
+        // added without one would be filtered straight back out of sight.
+        sort: q.sort === 'birthday' && !contact.birthdate ? 'name' : q.sort,
+      }
+    }
     set((s) => ({
       contacts: existing ? s.contacts.map((c) => (c.id === contact.id ? contact : c)) : [...s.contacts, contact],
+      query: reveal(s.query) ?? s.query,
       editing: null,
       // A saved draft is not an abandoned one. Without this, saving and then
       // reopening the form would offer to restore what was just filed.
@@ -331,6 +367,51 @@ export const useBookStore = create<BookState>((set, get) => ({
       viewing: s.viewing === id ? null : s.viewing,
     }))
     await dbDeleteContact(id)
+  },
+
+  // The bulk actions behind the list's Select mode. ONE `set` each, so the
+  // list re-renders — and the vault's autosave timer restarts — once for the
+  // whole batch rather than once per person.
+  removeContacts: async (ids) => {
+    const gone = new Set(ids)
+    set((s) => ({
+      contacts: s.contacts.filter((c) => !gone.has(c.id)),
+      editing: s.editing && gone.has(s.editing) ? null : s.editing,
+      viewing: s.viewing && gone.has(s.viewing) ? null : s.viewing,
+    }))
+    await Promise.all(ids.map(dbDeleteContact))
+  },
+
+  setListHiddenMany: async (ids, hidden) => {
+    const now = Date.now()
+    const picked = new Set(ids)
+    const changed: Contact[] = []
+    set((s) => ({
+      contacts: s.contacts.map((c) => {
+        if (!picked.has(c.id) || Boolean(c.hideFromList) === hidden) return c
+        const next: Contact = { ...c, hideFromList: hidden ? true : undefined, updatedAt: now }
+        changed.push(next)
+        return next
+      }),
+    }))
+    await Promise.all(changed.map(putContact))
+  },
+
+  addTagsTo: async (ids, tagIds) => {
+    const now = Date.now()
+    const picked = new Set(ids)
+    const changed: Contact[] = []
+    set((s) => ({
+      contacts: s.contacts.map((c) => {
+        if (!picked.has(c.id)) return c
+        const extra = tagIds.filter((t) => !c.tagIds.includes(t))
+        if (extra.length === 0) return c
+        const next: Contact = { ...c, tagIds: [...c.tagIds, ...extra], updatedAt: now }
+        changed.push(next)
+        return next
+      }),
+    }))
+    await Promise.all(changed.map(putContact))
   },
 
   addTag: async (name, kind) => {

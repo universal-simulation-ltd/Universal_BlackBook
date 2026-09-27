@@ -21,6 +21,7 @@ import { Modal } from './Modal'
 import { SwipeRow, type SwipeAction } from './SwipeRow'
 import { ListChip } from './ListChip'
 import { TagChip } from './TagChip'
+import { TagPicker } from './TagPicker'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle } from './ui'
 
 // The glyphs the swipe actions carry. SVG and not emoji: 🗑 is one of the
@@ -125,6 +126,16 @@ export function ContactList() {
       management view, and it should be shut again the next time you come
       looking for whose birthday is next. */
   const [showHidden, setShowHidden] = useState(false)
+  /**
+   * Select mode (owner's request, 2026-09-27): tap cards to pick several, then
+   * act on them all at once. `null` when off. While it is on a tap SELECTS
+   * rather than opens, and the swipe actions are gone — a card that could be
+   * flicked open to a Delete while you are ticking it is two meanings for one
+   * gesture.
+   */
+  const [selected, setSelected] = useState<Set<string> | null>(null)
+  const selecting = selected !== null
+  const [bulk, setBulk] = useState<'delete' | 'tag' | null>(null)
   const tidiedId = useId()
   const hiddenBirthdaysId = useId()
 
@@ -150,6 +161,9 @@ export function ContactList() {
   )
   const setBirthdayHidden = useBookStore((s) => s.setBirthdayHidden)
   const setListHidden = useBookStore((s) => s.setListHidden)
+  const setListHiddenMany = useBookStore((s) => s.setListHiddenMany)
+  const removeContacts = useBookStore((s) => s.removeContacts)
+  const addTagsTo = useBookStore((s) => s.addTagsTo)
   const searching = isSearching(query)
   // Only outside the birthdays view: that view has its own hidden drawer, and
   // two of them stacked would be asking the reader to hold two different
@@ -158,6 +172,20 @@ export function ContactList() {
     () => (birthdays || searching ? [] : hiddenFromList(contacts)),
     [birthdays, searching, contacts],
   )
+  // ⚠️ What an action acts on is the selection AS SEEN — the ticked people
+  // still on screen. Tick five, then narrow the filter to a tag two of them
+  // lack, and Delete must not take out two people you can no longer see.
+  const picked = useMemo(
+    () => (selected ? visible.filter((c) => selected.has(c.id)) : []),
+    [selected, visible],
+  )
+  const toggle = (id: string) =>
+    setSelected((s) => {
+      const next = new Set(s)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
 
   if (contacts.length === 0) {
     return (
@@ -206,11 +234,63 @@ export function ContactList() {
               ? `${visible.length} ${visible.length === 1 ? 'contact' : 'contacts'}`
               : `${visible.length} of ${inContacts}`}
         </p>
-        {emailLists && visible.length > 0 && <ListExport contacts={visible} tags={tags} tagIds={query.tagIds} />}
+        <div className="flex items-center gap-1">
+          {emailLists && visible.length > 0 && !selecting && (
+            <ListExport contacts={visible} tags={tags} tagIds={query.tagIds} />
+          )}
+          {visible.length > 0 && !selecting && (
+            <button
+              type="button"
+              className={btnSubtle}
+              onClick={() => {
+                setSelected(new Set())
+                setOpenRow(null)
+              }}
+            >
+              Select
+            </button>
+          )}
+        </div>
       </div>
+      {selecting && (
+        <SelectBar
+          count={picked.length}
+          allPicked={picked.length === visible.length}
+          onAll={() => setSelected(picked.length === visible.length ? new Set() : new Set(visible.map((c) => c.id)))}
+          // Hide/Show is the main list's flag; the birthdays view has its own
+          // meaning of "hidden" and a separate drawer for it.
+          hide={
+            birthdays || picked.length === 0
+              ? null
+              : picked.every((c) => c.hideFromList)
+                ? 'show'
+                : 'hide'
+          }
+          onHide={(hidden) => {
+            void setListHiddenMany(
+              picked.map((c) => c.id),
+              hidden,
+            )
+            setSelected(null)
+          }}
+          onTag={() => setBulk('tag')}
+          onDelete={() => setBulk('delete')}
+          onDone={() => setSelected(null)}
+        />
+      )}
       <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
         {visible.map((c) => (
           <li key={c.id}>
+            {selecting ? (
+              <SelectableRow
+                contact={c}
+                byId={byId}
+                selected={selected.has(c.id)}
+                onToggle={() => toggle(c.id)}
+                countdown={birthdays ? nextBirthday(c.birthdate, today) : null}
+                age={currentAge(c.birthdate, today)}
+              />
+            ) : (
             <SwipeRow
               open={openRow?.id === c.id ? openRow.side : null}
               onOpenChange={(side) => setOpenRow(side ? { id: c.id, side } : null)}
@@ -264,11 +344,14 @@ export function ContactList() {
                 dimmed={Boolean(c.hideFromList)}
               />
             </SwipeRow>
+            )}
           </li>
         ))}
       </ul>
 
-      {tidiedAway.length > 0 && (
+      {/* The drawers are not selectable, so they step aside while selecting
+          rather than sit there as cards a tap would unexpectedly open. */}
+      {tidiedAway.length > 0 && !selecting && (
         <section className="mt-4 border-t border-slate-800 pt-3">
           <button
             type="button"
@@ -323,7 +406,7 @@ export function ContactList() {
         </section>
       )}
 
-      {birthdays && hidden.length > 0 && (
+      {birthdays && hidden.length > 0 && !selecting && (
         <section className="mt-4 border-t border-slate-800 pt-3">
           <button
             type="button"
@@ -387,6 +470,33 @@ export function ContactList() {
         </section>
       )}
 
+      {bulk === 'delete' && (
+        <ConfirmBulkDelete
+          people={picked}
+          onKeep={() => setBulk(null)}
+          onDelete={() => {
+            void removeContacts(picked.map((c) => c.id))
+            setBulk(null)
+            setSelected(null)
+          }}
+        />
+      )}
+
+      {bulk === 'tag' && (
+        <BulkTag
+          count={picked.length}
+          onClose={() => setBulk(null)}
+          onAdd={(tagIds) => {
+            void addTagsTo(
+              picked.map((c) => c.id),
+              tagIds,
+            )
+            setBulk(null)
+            setSelected(null)
+          }}
+        />
+      )}
+
       {pending && (
         <ConfirmDelete
           contact={pending}
@@ -447,6 +557,168 @@ function ConfirmDelete({
 }
 
 /**
+ * The strip that replaces nothing and sits over the list while selecting.
+ *
+ * `sticky top-0`, so the actions stay in reach while you scroll down ticking
+ * people. On a phone the search dock is fixed to the BOTTOM, so the top of the
+ * screen is the one edge free for it.
+ */
+function SelectBar({
+  count,
+  allPicked,
+  onAll,
+  hide,
+  onHide,
+  onTag,
+  onDelete,
+  onDone,
+}: {
+  count: number
+  allPicked: boolean
+  onAll: () => void
+  hide: 'hide' | 'show' | null
+  onHide: (hidden: boolean) => void
+  onTag: () => void
+  onDelete: () => void
+  onDone: () => void
+}) {
+  const none = count === 0
+  const act = `${btnSubtle} disabled:cursor-not-allowed disabled:opacity-40`
+  return (
+    <div className="sticky top-0 z-30 -mx-1 mb-2 flex flex-wrap items-center gap-x-1 gap-y-1 rounded-xl border border-slate-800 bg-slate-900 px-2 py-1.5">
+      <p className="mr-auto px-1 text-sm font-medium text-slate-200 tabular-nums" aria-live="polite">
+        {count} selected
+      </p>
+      <button type="button" className={act} onClick={onAll}>
+        {allPicked ? 'Select none' : 'Select all'}
+      </button>
+      <button type="button" className={act} onClick={onTag} disabled={none}>
+        Tag
+      </button>
+      {hide && (
+        <button type="button" className={act} onClick={() => onHide(hide === 'hide')} disabled={none}>
+          {hide === 'hide' ? 'Hide' : 'Show'}
+        </button>
+      )}
+      <button
+        type="button"
+        className={`${act} text-rose-300 hover:bg-rose-950 hover:text-rose-200`}
+        onClick={onDelete}
+        disabled={none}
+      >
+        Delete
+      </button>
+      <button type="button" className={`${act} text-orange-300`} onClick={onDone}>
+        Done
+      </button>
+    </div>
+  )
+}
+
+/** A card in select mode: the whole card is the tick box. */
+function SelectableRow({
+  contact,
+  byId,
+  selected,
+  onToggle,
+  countdown,
+  age,
+}: {
+  contact: Contact
+  byId: Map<string, Tag>
+  selected: boolean
+  onToggle: () => void
+  countdown: NextBirthday | null
+  age: number | null
+}) {
+  return (
+    <div
+      // The card's own button carries `aria-pressed`, so a screen reader hears
+      // "selected" on it; the tick box here is only the visible half of that.
+      className={`relative h-full rounded-xl ${selected ? 'ring-2 ring-orange-500' : ''}`}
+    >
+      <ContactRow contact={contact} byId={byId} onOpen={onToggle} countdown={countdown} age={age} pressed={selected} />
+      <span
+        aria-hidden
+        className={`pointer-events-none absolute right-2.5 top-2.5 flex h-5 w-5 items-center justify-center rounded-md border ${
+          selected ? 'border-orange-500 bg-orange-500 text-slate-950' : 'border-slate-600 bg-slate-950'
+        }`}
+      >
+        {selected && (
+          <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.25">
+            <path d="m3.5 8.5 3 3 6-7" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+      </span>
+    </div>
+  )
+}
+
+/**
+ * "Delete 4 people?" — the bulk twin of ConfirmDelete, and for the same
+ * reasons Keep comes first and is what Escape does. Names the first few, so a
+ * stray tick is caught before it costs somebody.
+ */
+function ConfirmBulkDelete({
+  people,
+  onKeep,
+  onDelete,
+}: {
+  people: Contact[]
+  onKeep: () => void
+  onDelete: () => void
+}) {
+  const names = people.slice(0, 5).map((c) => c.name || 'Unnamed')
+  const more = people.length - names.length
+  return (
+    <Modal title="Delete contacts" onClose={onKeep}>
+      <p className="text-sm text-slate-300">
+        Delete{' '}
+        <span className="font-semibold text-slate-100">
+          {people.length} {people.length === 1 ? 'person' : 'people'}
+        </span>
+        ?
+      </p>
+      <p className="mt-2 text-sm text-slate-400">
+        {names.join(', ')}
+        {more > 0 && ` and ${more} more`}
+      </p>
+      <p className="mt-2 text-sm text-slate-500">
+        Their notes, tags and birthdays go with them. There is no undo — if you save your book online,
+        the deletion is copied there the next time it syncs.
+      </p>
+      <div className="mt-5 flex justify-end gap-2">
+        <button type="button" className={btnGhost} onClick={onKeep} autoFocus>
+          Keep
+        </button>
+        <button type="button" className={btnDanger} onClick={onDelete}>
+          Delete {people.length}
+        </button>
+      </div>
+    </Modal>
+  )
+}
+
+/** Add tags to everybody selected. Adds only — nobody loses a tag here. */
+function BulkTag({ count, onClose, onAdd }: { count: number; onClose: () => void; onAdd: (tagIds: string[]) => void }) {
+  const [tagIds, setTagIds] = useState<string[]>([])
+  return (
+    <Modal title={`Tag ${count} ${count === 1 ? 'person' : 'people'}`} onClose={onClose}>
+      <p className="mb-3 text-sm text-slate-400">The tags you pick are added to everybody selected.</p>
+      <TagPicker value={tagIds} onChange={setTagIds} />
+      <div className="mt-5 flex justify-end gap-2">
+        <button type="button" className={btnGhost} onClick={onClose}>
+          Cancel
+        </button>
+        <button type="button" className={btnPrimary} onClick={() => onAdd(tagIds)} disabled={tagIds.length === 0}>
+          Add tags
+        </button>
+      </div>
+    </Modal>
+  )
+}
+
+/**
  * The birthday banner: "🎂 Today · Turning 34".
  *
  * Colour is never the only signal — today's birthdays are orange AND say
@@ -490,6 +762,7 @@ export function ContactRow({
   onToggleHidden,
   hideLabel,
   dimmed,
+  pressed,
 }: {
   contact: Contact
   byId: Map<string, Tag>
@@ -509,6 +782,8 @@ export function ContactRow({
   hideLabel?: { on: string; hidden: boolean }
   /** Dim the card: this person is hidden from the list they are showing in. */
   dimmed?: boolean
+  /** Select mode: is this card ticked? Sets `aria-pressed` on the card. */
+  pressed?: boolean
 }) {
   // A dangling id renders as nothing rather than as an "undefined" chip. They
   // shouldn't exist — removeTag strips them — but an imported or hand-edited
@@ -540,6 +815,7 @@ export function ContactRow({
       <button
         type="button"
         onClick={onOpen}
+        aria-pressed={pressed}
         // ⚠️ `hover:bg-slate-800`, and never a translucent one. This was
         // `hover:bg-slate-800/70`, and a card is the only thing hiding the
         // swipe buttons behind it — so on web, hovering a card made the Delete
@@ -552,7 +828,7 @@ export function ContactRow({
         } ${dimmed ? 'opacity-60' : ''}`}
       >
         <div className="min-w-0">
-          <p className={`truncate font-semibold text-slate-100 ${onToggleHidden ? 'pr-8' : ''}`}>
+          <p className={`truncate font-semibold text-slate-100 ${onToggleHidden || pressed !== undefined ? 'pr-8' : ''}`}>
             {contact.name || 'Unnamed'}
           </p>
           {contact.company && <p className="truncate text-sm text-slate-300">{contact.company}</p>}
