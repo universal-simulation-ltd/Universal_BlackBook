@@ -23,13 +23,12 @@
     "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
-    "@capacitor-community/contacts": "^7.2.0",
-    "@capacitor/android": "^7.6.8",
-    "@capacitor/cli": "^7.6.8",
-    "@capacitor/core": "^7.6.8",
-    "@capacitor/filesystem": "^7.1.8",
-    "@capacitor/ios": "^7.6.8",
-    "@capacitor/share": "^7.0.4",
+    "@capacitor-community/contacts": "^8.0.0",
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/filesystem": "^8.1.3",
+    "@capacitor/ios": "^8.5.2",
+    "@capacitor/share": "^8.0.2",
     "@unisim/media": "^0.7.0",
     "@unisim/sdk": "^0.163.0",
     "react": "^18.3.1",
@@ -37,6 +36,7 @@
     "zustand": "^5.0.2"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.2",
     "@eslint/js": "^9.17.0",
     "@tailwindcss/vite": "^4.0.0",
     "@types/react": "^18.3.18",
