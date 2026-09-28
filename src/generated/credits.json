@@ -1,12 +1,12 @@
 {
   "app": "universal-blackbook",
   "appVersion": "0.1.0",
-  "generated": "2026-09-08",
-  "noticesCount": 107,
+  "generated": "2026-09-28",
+  "noticesCount": 18,
   "ships": [
     {
       "name": "@capacitor-community/contacts",
-      "version": "7.2.0",
+      "version": "8.0.0",
       "licence": "MIT",
       "repo": "https://github.com/capacitor-community/contacts",
       "authors": [],
@@ -64,6 +64,17 @@
     }
   ],
   "builds": [
+    {
+      "name": "@capacitor/*",
+      "title": "Capacitor",
+      "licence": "MIT",
+      "repo": "https://github.com/ionic-team/capacitor",
+      "description": "wraps the web app as a real iPhone and Android app",
+      "authors": [
+        "Ionic Team"
+      ],
+      "source": "overlay"
+    },
     {
       "name": "@eslint/js",
       "version": "9.39.5",
