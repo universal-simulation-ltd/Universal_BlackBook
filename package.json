@@ -17,7 +17,8 @@
     "build:desktop": "tsc -b && vite build --mode desktop",
     "build:mobile": "npm run build:desktop",
     "check:mobile-bundle": "node scripts/verify-mobile-bundle.mjs",
-    "cap:sync": "npm run build:mobile && npx cap sync && npm run check:mobile-bundle",
+    "check:ios-launch": "node scripts/verify-ios-launch.mjs",
+    "cap:sync": "npm run build:mobile && npx cap sync && npm run check:mobile-bundle && npm run check:ios-launch",
     "cap:open:ios": "npx cap open ios",
     "deploy": "npm run build && wrangler deploy"
   },
