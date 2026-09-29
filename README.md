@@ -151,14 +151,15 @@ account, no server and no telemetry about its contents.
 Two ways to get it out or move it elsewhere:
 
 **CSV** — a plain `Name, Email, Tags, Notes, Birthday, Phone, Hide birthday,
-Hide from list, Company` file.
+Hide from list, Company, Address` file.
 Opens in any spreadsheet and imports straight back. This is the backup story if
 you never want an account.
 
 The importer reads the column names Google Contacts and Outlook use — a
 `Categories`, `Groups` or `Labels` column all count as tags, and `Mobile`,
 `Telephone` or Google's `Phone 1 - Value` all count as the number, and
-`Organisation` or Google's `Organization 1 - Name` as the company — and takes
+`Organisation` or Google's `Organization 1 - Name` as the company, and
+`Postal address` or Google's `Address 1 - Formatted` as the address — and takes
 birthdays as `1990-06-04`, `4 June 1990`, `June 4` or `--06-04`. It deliberately
 **refuses** `04/06/1990` rather than guessing — that is the 4th of June to a
 British reader and the 6th of April to an American one, and an address book that
@@ -167,7 +168,7 @@ so.
 
 **Your phone's own contacts** *(the iPhone app)* — **From my contacts** opens
 the system picker, and the person you choose arrives in the Add form with their
-name, email, number and birthday already filled in, ready for the part that is
+name, email, number, postal address and birthday already filled in, ready for the part that is
 actually yours. **Advanced ▸ Import & export ▸ Import my phone contacts** does the whole
 address book at once, skipping anybody already in your book so you can run it
 again whenever you add someone to your phone.
