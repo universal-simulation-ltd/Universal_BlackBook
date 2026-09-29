@@ -407,3 +407,12 @@ describe('addedWhen', () => {
     expect(addedWhen(new Date(2025, 8, 12).getTime(), now)).toBe('12 Sept 2025')
   })
 })
+
+describe('searching an address', () => {
+  it('finds somebody by their postcode, however it is spaced or cased', () => {
+    const c = contact({ address: '12 High Street\nLeeds\nLS1 1AA' })
+    expect(matchesText(c, 'ls1')).toBe(true)
+    expect(matchesText(c, 'high street leeds')).toBe(true)
+    expect(matchesText(contact(), 'leeds')).toBe(false)
+  })
+})

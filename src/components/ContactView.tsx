@@ -90,6 +90,7 @@ export function ContactView({ id }: { id: string }) {
     !contact.email.trim() &&
     !contact.phone.trim() &&
     !contact.company?.trim() &&
+    !contact.address?.trim() &&
     !contact.birthdate &&
     chips.length === 0 &&
     !contact.notes.trim()
@@ -191,6 +192,13 @@ export function ContactView({ id }: { id: string }) {
               >
                 {contact.phone}
               </a>
+            </Row>
+          )}
+
+          {contact.address?.trim() && (
+            <Row name="Address">
+              {/* `pre-line`: the line breaks are the address. */}
+              <p className="whitespace-pre-line text-base text-slate-200">{contact.address.trim()}</p>
             </Row>
           )}
 

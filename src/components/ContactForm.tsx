@@ -1,7 +1,8 @@
-import { useId, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useId, useState, type FormEvent, type ReactNode } from 'react'
 import { blankDraft, draftIsEmpty, useBookStore, type ContactDraft } from '../stores/bookStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { listIdsOf } from '../lib/lists'
+import { ABOVE_NOTES, FIELD_LABELS, FORM_FIELDS, type FormField } from '../lib/formFields'
 import type { Tag } from '../lib/types'
 import { BirthdayField } from './BirthdayField'
 import { EmailListForm } from './EmailListForm'
@@ -52,6 +53,12 @@ import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label, textareaCl
  * be below it. Rendering all four in one block after Notes would have shuffled
  * a form people already know, for no reason beyond it being less code.
  *
+ * ⚠️ **Which fields a BLANK form shows is the user's to choose** (owner's
+ * request, 2026-09-29): Customise, under More, opens Tune this app at its
+ * "Contact form" section, and a ticked field is out in the open on every new
+ * contact. Nothing ticked is the form described above. The content rule still
+ * wins either way — a filled-in field is never hidden.
+ *
  * ⚠️ The split is decided ONCE, at mount, and deliberately does not re-run.
  * Recomputing it would make a field you just filled in inside "More" jump out
  * of the section you are looking at and land somewhere else on the page,
@@ -79,6 +86,14 @@ export function ContactForm({ id }: { id: string }) {
   // Same rule, and read at the same moment: a contact just chosen out of the
   // phone's address book (bookStore.startWith).
   const [prefill] = useState(() => useBookStore.getState().prefill)
+  // A form Customise set aside (see bookStore.parked) — read once, then let go.
+  const [parked] = useState(() => {
+    const p = useBookStore.getState().parked
+    return p && p.id === id ? p.draft : null
+  })
+  useEffect(() => {
+    if (parked) useBookStore.setState({ parked: null })
+  }, [parked])
 
   const existing = id === 'new' ? undefined : contacts.find((c) => c.id === id)
   // ⚠️ A prefill BEATS a stash, and silently. Both want the same empty form,
@@ -87,16 +102,19 @@ export function ContactForm({ id }: { id: string }) {
   // adding someone" over the top of a contact they just chose would be the app
   // answering a question nobody asked. The stash is left alone rather than
   // dropped, so it is still there the next time a genuinely blank form opens.
-  const restorable = id === 'new' && !prefill && stashed !== null && !draftIsEmpty(stashed)
+  const restorable = id === 'new' && !prefill && !parked && stashed !== null && !draftIsEmpty(stashed)
 
   const [draft, setDraft] = useState<ContactDraft>(() =>
-    existing
+    parked
+      ? parked
+      : existing
       ? {
           id: existing.id,
           name: existing.name,
           email: existing.email,
           phone: existing.phone,
           company: existing.company,
+          address: existing.address,
           tagIds: existing.tagIds,
           birthdate: existing.birthdate,
           notes: existing.notes,
@@ -122,11 +140,18 @@ export function ContactForm({ id }: { id: string }) {
    */
   const [listMode] = useState(() => (id === 'new' && !prefill ? useBookStore.getState().listMode : false))
   const emailLists = useSettingsStore((s) => s.emailLists)
+  const park = useBookStore((s) => s.park)
+  const openTune = useSettingsStore((s) => s.openTune)
   const tags = useBookStore((s) => s.tags)
 
-  // Which of the optional fields arrived with something in them. Read from
-  // the draft's INITIAL value and never again — see the note above.
-  const [pinned] = useState<Extra[]>(() => EXTRAS.filter((k) => hasValue(k, draft, tags)))
+  // Which of the optional fields are out in the open: the ones that arrived
+  // with something in them, and the ones Customise ticked. Read once, from
+  // the draft's INITIAL value — see the note above. A ticked Lists still
+  // needs Email lists switched on, like its place under More.
+  const [pinned] = useState<Extra[]>(() => {
+    const shown = useSettingsStore.getState().shownFields
+    return EXTRAS.filter((k) => hasValue(k, draft, tags) || (shown.includes(k) && (k !== 'lists' || emailLists)))
+  })
   // Lists only offer themselves with App preferences ▸ Email lists on — but a
   // contact already ON a list shows it regardless, by the content rule above.
   const hidden = EXTRAS.filter((k) => !pinned.includes(k) && (k !== 'lists' || emailLists))
@@ -213,6 +238,25 @@ export function ContactForm({ id }: { id: string }) {
               placeholder="+44 7700 900123"
               autoComplete="off"
               spellCheck={false}
+            />
+          </div>
+        )
+      case 'address':
+        return (
+          <div key={k}>
+            <label className={label} htmlFor="cf-address">
+              Address
+            </label>
+            <textarea
+              id="cf-address"
+              className={textareaCls}
+              // One block, the lines as they go on an envelope — see
+              // Contact.address for why it is not split into parts.
+              rows={3}
+              value={draft.address ?? ''}
+              onChange={(e) => patch({ address: e.target.value })}
+              placeholder={'12 High Street\nLeeds\nLS1 1AA'}
+              autoComplete="off"
             />
           </div>
         )
@@ -404,6 +448,22 @@ export function ContactForm({ id }: { id: string }) {
           </div>
         )}
 
+        {/* Outside the More block, so it is still there once every field has
+            been brought out and there is no More left to put it in. */}
+        <div className="-mt-2 flex justify-end">
+          <button
+            type="button"
+            className={`${btnSubtle} flex items-center gap-1.5`}
+            onClick={() => {
+              park(id, draft)
+              openTune('fields')
+            }}
+          >
+            <SlidersGlyph />
+            Customise fields
+          </button>
+        </div>
+
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-800 pt-4">
           <div>
             {existing &&
@@ -457,28 +517,18 @@ export function ContactForm({ id }: { id: string }) {
   )
 }
 
-/**
- * The fields that fold away when empty, in the order they are listed on
- * the "More" button — which is also the order they appear in the form, reading
- * top to bottom THROUGH Notes (email and phone above it, birthday and tags
- * below). One list rather than two so the disclosure label cannot drift out of
- * step with the form.
- */
-const EXTRAS = ['email', 'company', 'phone', 'birthday', 'tags', 'lists'] as const
-type Extra = (typeof EXTRAS)[number]
+// The fields that fold away when empty — see lib/formFields, which the
+// Customise section in Tune this app shares.
+const EXTRAS = FORM_FIELDS
+type Extra = FormField
+const EXTRA_LABELS = FIELD_LABELS
 
-/** Of those, the ones that render ABOVE the Notes field when they are pinned. */
-const ABOVE_NOTES: readonly Extra[] = ['email', 'company', 'phone']
-
-const EXTRA_LABELS: Record<Extra, string> = {
-  email: 'Email',
-  company: 'Company',
-  phone: 'Phone',
-  birthday: 'Birthday',
-  tags: 'Tags',
-  // "Add to list" (owner's request, 2026-09-17). Lists used to ride along
-  // underneath the tag chips, where nobody looking for them found them.
-  lists: 'Lists',
+function SlidersGlyph() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+      <path d="M2 4h7M13 4h1M2 12h1M7 12h7M11 2.5v3M5 10.5v3" strokeLinecap="round" />
+    </svg>
+  )
 }
 
 /** Did this field arrive with something in it? Decides pinned vs. folded. */
@@ -491,6 +541,8 @@ function hasValue(k: Extra, draft: ContactDraft, tags: Tag[]): boolean {
       return (draft.company ?? '').trim() !== ''
     case 'phone':
       return draft.phone.trim() !== ''
+    case 'address':
+      return (draft.address ?? '').trim() !== ''
     case 'birthday':
       return Boolean(draft.birthdate)
     case 'tags':

@@ -86,6 +86,18 @@ interface BookState {
   /** Open the blank form with these values already in it. */
   startWith: (draft: ContactDraft) => void
   /**
+   * A form set aside by its Customise button while Tune this app is open.
+   *
+   * The form is a native `<dialog>` in the top layer and the SDK's preferences
+   * dialog is a portal, which renders UNDERNEATH it — so the form has to close
+   * for Tune this app to be seen. It is parked here, draft and all, and
+   * `reopenParked` brings it back with the new field choices applied. Read
+   * once by the form when it mounts, like `prefill`.
+   */
+  parked: { id: string; draft: ContactDraft } | null
+  park: (id: string, draft: ContactDraft) => void
+  reopenParked: () => void
+  /**
    * The Add new form should be the Email list form, and not a contact. Read
    * once when the form mounts, like `prefill`, and cleared by the next `edit`.
    * A string is the list to add to, already named (an open list's Add new).
@@ -138,6 +150,8 @@ export interface ContactDraft {
   phone: string
   /** Optional so the phone-contacts picker, which never fills it, need not. */
   company?: string
+  /** Optional for the same reason as `company`. */
+  address?: string
   tagIds: string[]
   birthdate?: string
   notes: string
@@ -150,6 +164,7 @@ export function draftIsEmpty(d: ContactDraft): boolean {
     !d.email.trim() &&
     !d.phone.trim() &&
     !d.company?.trim() &&
+    !d.address?.trim() &&
     !d.notes.trim() &&
     d.tagIds.length === 0 &&
     !d.birthdate
@@ -189,6 +204,7 @@ export const useBookStore = create<BookState>((set, get) => ({
   editing: null,
   stashed: null,
   prefill: null,
+  parked: null,
   listMode: false,
   notice: null,
 
@@ -253,6 +269,9 @@ export const useBookStore = create<BookState>((set, get) => ({
   // with the last one's details.
   edit: (id) => set({ editing: id, prefill: null, listMode: false }),
   startWith: (draft) => set({ prefill: draft, editing: 'new', listMode: false }),
+  park: (id, draft) => set({ parked: { id, draft }, editing: null }),
+  reopenParked: () =>
+    set((s) => (s.parked ? { editing: s.parked.id, prefill: null, listMode: false } : {})),
   newList: (listName) => set({ editing: 'new', prefill: null, listMode: listName ?? true }),
 
   /**
@@ -285,6 +304,8 @@ export const useBookStore = create<BookState>((set, get) => ({
       email: draft.email.trim(),
       phone: draft.phone.trim(),
       company: draft.company?.trim() || undefined,
+      // Trimmed at the ends only: the line breaks inside are the address.
+      address: draft.address?.trim() || undefined,
       tagIds: draft.tagIds,
       birthdate: draft.birthdate,
       // ⚠️ Carried from the existing record, never from the draft. The form has

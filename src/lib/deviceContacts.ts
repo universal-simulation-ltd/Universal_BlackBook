@@ -50,7 +50,7 @@ import type { ContactDraft } from '../stores/bookStore'
 export type PickedContact = Omit<ContactDraft, 'id'>
 
 /** Everything this app has any use for. Nothing else is requested. */
-const PROJECTION = { name: true, phones: true, emails: true, birthday: true } as const
+const PROJECTION = { name: true, phones: true, emails: true, birthday: true, postalAddresses: true } as const
 
 export type Availability = 'native' | 'web' | 'none'
 
@@ -167,14 +167,30 @@ export function toDraft(contact: ContactPayload): PickedContact {
   const emails = contact.emails ?? []
   const phone = (phones.find((p) => p.isPrimary) ?? phones[0])?.number ?? ''
   const email = (emails.find((e) => e.isPrimary) ?? emails[0])?.address ?? ''
+  const addresses = contact.postalAddresses ?? []
+  const address = toAddress(addresses.find((a) => a.isPrimary) ?? addresses[0])
   return {
     name,
     email: email.trim(),
     phone: phone.trim(),
+    ...(address && { address }),
     tagIds: [],
     notes: '',
     birthdate: toBirthdate(contact.birthday),
   }
+}
+
+/**
+ * The phone's address parts as the lines of an envelope. The primary address
+ * wins, else the first, as for phone and email. Empty parts are skipped, so a
+ * contact with only a city comes across as just the city.
+ */
+function toAddress(a: NonNullable<ContactPayload['postalAddresses']>[number] | undefined): string {
+  if (!a) return ''
+  return [a.street, a.neighborhood, a.city, a.region, a.postcode, a.country]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join('\n')
 }
 
 function joinName(contact: ContactPayload): string {
@@ -283,6 +299,7 @@ export function planBulkImport(picked: PickedContact[], existing: Contact[]): Bu
       name: p.name || p.email || p.phone,
       email: p.email,
       phone: p.phone,
+      ...(p.address && { address: p.address }),
       tagIds: [],
       birthdate: p.birthdate,
       notes: '',

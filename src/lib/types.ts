@@ -56,6 +56,13 @@ export interface Contact {
    * it, which read as no company.
    */
   company?: string
+  /**
+   * Postal address, as one block of lines exactly as typed (owner's request,
+   * 2026-09-29). One field rather than street / town / postcode: an address
+   * book's job is to hand the address back for an envelope, and every country
+   * lays one out differently. Optional, and absent on every earlier record.
+   */
+  address?: string
   /** Many-to-many, by id. A contact may carry no tags at all. */
   tagIds: string[]
   /**

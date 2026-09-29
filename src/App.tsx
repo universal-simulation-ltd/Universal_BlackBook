@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { UniversalAppsNavBar, UpdateNotice, useUniversal, useUser, type AboutAppConfig } from '@unisim/sdk'
+import { PreferencesDialog, UniversalAppsNavBar, UpdateNotice, useUniversal, useUser, type AboutAppConfig } from '@unisim/sdk'
 // <UsageTracker /> sends one "session.opened" row for a signed-in visitor, and
 // nothing else may ever be tracked here: no names, email addresses, category
 // names or counts. The vault goes to the server encrypted precisely so we cannot
@@ -15,6 +15,7 @@ import credits from './generated/credits.json'
 import { TagManager } from './components/TagManager'
 import { CloudPanel } from './components/CloudPanel'
 import { EmailListsPreference } from './components/EmailListsPreference'
+import { FormFieldsPreference } from './components/FormFieldsPreference'
 import { ContactForm } from './components/ContactForm'
 import { ContactList } from './components/ContactList'
 import { ContactView } from './components/ContactView'
@@ -54,6 +55,14 @@ type Panel = 'tags' | 'io' | 'cloud' | 'lock' | null
 // "About this app" — handed to <UniversalAppsNavBar about>, which draws it at
 // the foot of "Tune this app" (SDK 0.161.0+) and opens its own AboutAppDialog.
 // It used to be the last row of the Advanced menu (Header/AppMenu.tsx).
+/** BlackBook's own rows in Tune this app — in the ⚙ menu's copy and in ours (see `TuneThisApp`). */
+const PREFERENCE_ROWS = (
+  <>
+    <EmailListsPreference />
+    <FormFieldsPreference />
+  </>
+)
+
 const APP_ABOUT: AboutAppConfig = {
   repo:    'https://github.com/universal-simulation-ltd/Universal_BlackBook',
   subject: 'Your contacts',
@@ -151,7 +160,7 @@ export default function App() {
         // ⚙ menu ▸ App preferences (SDK 0.143). The SDK adds Language and
         // Colour scheme; BlackBook is dark-only, which the SDK reads off
         // `theme` and shows as "always dark".
-        appPreferences={<EmailListsPreference />}
+        appPreferences={PREFERENCE_ROWS}
         suiteSwitcherIconSrc={`${import.meta.env.BASE_URL}unisim-icon.png`}
       />
       {/* ⚠️ The footer's job, on a phone (owner's call, 2026-08-30). A full
@@ -380,6 +389,7 @@ export default function App() {
           been driven in the deployed app. */}
       {viewing && <ContactView key={`view-${viewing}`} id={viewing} />}
       {editing && <ContactForm key={`form-${editing}`} id={editing} />}
+      <TuneThisApp />
       {panel === 'tags' && <TagManager onClose={() => setPanel(null)} />}
       {panel === 'io' && <ImportExport onClose={() => setPanel(null)} />}
       {panel === 'cloud' && <CloudPanel onClose={() => setPanel(null)} />}
@@ -735,4 +745,36 @@ function useCloudSync(openPanel: () => void) {
   useEffect(() => {
     if (status === 'conflict') openPanel()
   }, [status, openPanel])
+}
+
+/**
+ * Tune this app, opened from inside the app — the contact form's "Customise
+ * fields" — rather than from the ⚙ menu. The SDK exports no way to open the
+ * menu's own copy, so this draws the same `PreferencesDialog` with the same
+ * props the menu passes it (`UserProfile`, SDK 0.165), `combined` included, so
+ * the two copies cannot be told apart.
+ *
+ * Closing it puts back the form Customise set aside, with the new choices.
+ */
+function TuneThisApp() {
+  const open = useSettingsStore((s) => s.tune !== null)
+  const closeTune = useSettingsStore((s) => s.closeTune)
+  const reopenParked = useBookStore((s) => s.reopenParked)
+  const { splitPreferences } = useUniversal()
+  return (
+    <PreferencesDialog
+      kind="app"
+      open={open}
+      onClose={() => {
+        closeTune()
+        reopenParked()
+      }}
+      theme="dark"
+      fixedColorScheme="dark"
+      combined={!splitPreferences}
+      about={APP_ABOUT}
+    >
+      {PREFERENCE_ROWS}
+    </PreferencesDialog>
+  )
 }

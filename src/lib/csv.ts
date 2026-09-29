@@ -55,6 +55,7 @@ export const COLUMNS = [
   'Hide birthday',
   'Hide from list',
   'Company',
+  'Address',
 ] as const
 
 const LEGACY_COLUMN_COUNT = 6
@@ -126,6 +127,7 @@ export function toCsv(contacts: Contact[], tags: Tag[]): string {
         c.hideBirthday ? HIDDEN_CELL : '',
         c.hideFromList ? HIDDEN_CELL : '',
         c.company ?? '',
+        c.address ?? '',
       ]
         .map(escapeCell)
         .join(','),
@@ -218,6 +220,7 @@ type Column =
   | 'hideBirthday'
   | 'hideFromList'
   | 'company'
+  | 'address'
 
 /**
  * What a header cell may be called.
@@ -310,6 +313,12 @@ const HEADER_ALIASES: Record<string, Column> = {
   'employer': 'company',
   // Google Contacts' own header, taken the way `Phone 1 - Value` is.
   'organization 1 - name': 'company',
+  'address': 'address',
+  'postal address': 'address',
+  'home address': 'address',
+  'street address': 'address',
+  // Google Contacts' formatted block, the way `Organization 1 - Name` is taken.
+  'address 1 - formatted': 'address',
 }
 
 /**
@@ -330,6 +339,7 @@ function headerIndex(header: string[]): Record<Column, number> {
     hideBirthday: -1,
     hideFromList: -1,
     company: -1,
+    address: -1,
   }
   header.forEach((h, i) => {
     const column = HEADER_ALIASES[h.trim().toLowerCase()]
@@ -393,6 +403,7 @@ function positionalMap(rows: string[][]): Record<Column, number> {
       // existed; `cell` reads a missing index as '', which is "not hidden".
       hideFromList: 7,
       company: 8,
+      address: 9,
     }
   }
   if (width < LEGACY_COLUMN_COUNT) {
@@ -406,12 +417,13 @@ function positionalMap(rows: string[][]): Record<Column, number> {
       hideBirthday: -1,
       hideFromList: -1,
       company: -1,
+      address: -1,
     }
   }
   const dates = (i: number) => rows.filter((r) => parseBirthdayInput((r[i] ?? '').trim())).length
   return dates(4) > dates(5)
-    ? { name: 0, email: 1, tags: 2, notes: 3, birthday: 4, phone: 5, hideBirthday: -1, hideFromList: -1, company: -1 }
-    : { name: 0, email: 1, tags: 2, notes: 4, birthday: 5, phone: -1, hideBirthday: -1, hideFromList: -1, company: -1 }
+    ? { name: 0, email: 1, tags: 2, notes: 3, birthday: 4, phone: 5, hideBirthday: -1, hideFromList: -1, company: -1, address: -1 }
+    : { name: 0, email: 1, tags: 2, notes: 4, birthday: 5, phone: -1, hideBirthday: -1, hideFromList: -1, company: -1, address: -1 }
 }
 
 /**
@@ -485,6 +497,9 @@ export function fromCsv(text: string, existing: Tag[]): ImportResult {
         .map(ensureTag),
       phone: cell(row, at.phone),
       company: cell(row, at.company) || undefined,
+      // Not `cell`, which is fine for one line: trimmed at the ends, the
+      // line breaks a quoted cell carries are kept.
+      address: (at.address >= 0 ? (row[at.address] ?? '') : '').trim() || undefined,
       birthdate,
       // ⚠️ Only alongside a birthday that actually parsed. A row flagged hidden
       // whose date was unreadable would otherwise land a flag on somebody with

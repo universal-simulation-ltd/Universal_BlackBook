@@ -178,6 +178,8 @@ export function matchesText(contact: Contact, text: string): boolean {
     fold(contact.name),
     fold(contact.email),
     fold(contact.company ?? ''),
+    // Postcodes are how people look an address up; "ls1" should find Leeds.
+    fold(contact.address ?? ''),
     fold(contact.phone),
     fold(contact.notes),
     fold(formatBirthday(contact.birthdate)),

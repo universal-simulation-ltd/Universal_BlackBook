@@ -154,3 +154,32 @@ describe('planBulkImport', () => {
     expect(contacts[0].name).toBe('s@x.com')
   })
 })
+
+describe('toDraft: postal address', () => {
+  const addr = (over: object) => ({
+    type: 'home',
+    street: null,
+    neighborhood: null,
+    city: null,
+    region: null,
+    postcode: null,
+    country: null,
+    ...over,
+  })
+
+  it('takes the primary address as the lines of an envelope, skipping empty parts', () => {
+    const d = toDraft(
+      payload({
+        postalAddresses: [
+          addr({ street: 'Work Rd', city: 'York' }),
+          addr({ isPrimary: true, street: '12 High Street', city: 'Leeds', postcode: 'LS1 1AA', country: 'UK' }),
+        ],
+      } as never),
+    )
+    expect(d.address).toBe('12 High Street\nLeeds\nLS1 1AA\nUK')
+  })
+
+  it('leaves the address out when the phone has none', () => {
+    expect(toDraft(payload({})).address).toBeUndefined()
+  })
+})

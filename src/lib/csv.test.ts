@@ -69,8 +69,9 @@ describe('toCsv', () => {
       'Hide birthday',
       'Hide from list',
       'Company',
+      'Address',
     ])
-    expect(rows[1]).toEqual(['Sam Okonkwo', 'sam@example.com', '', '', '', '', '', '', ''])
+    expect(rows[1]).toEqual(['Sam Okonkwo', 'sam@example.com', '', '', '', '', '', '', '', ''])
   })
 
   it('writes tag NAMES, not ids', () => {
@@ -433,5 +434,28 @@ describe('the Company column', () => {
   it('is read from a headerless file of the current width', () => {
     const { contacts } = fromCsv('Sam,,,,,,,,Acme Ltd\r\n', [])
     expect(contacts[0].company).toBe('Acme Ltd')
+  })
+})
+
+describe('the Address column', () => {
+  it('round-trips, line breaks and all', () => {
+    const address = '12 High Street\nLeeds\nLS1 1AA'
+    const { contacts } = fromCsv(toCsv([contact({ address }), contact({ name: 'Ada' })], []), [])
+    expect(contacts.map((c) => c.address)).toEqual([address, undefined])
+  })
+
+  it("reads Google Contacts' formatted address", () => {
+    const { contacts } = fromCsv('Name,Address 1 - Formatted\r\nSam,"1 Main St\nYork"\r\n', [])
+    expect(contacts[0].address).toBe('1 Main St\nYork')
+  })
+
+  it('is read from a headerless file of the current width', () => {
+    const { contacts } = fromCsv('Sam,,,,,,,,,1 Main St\r\n', [])
+    expect(contacts[0].address).toBe('1 Main St')
+  })
+
+  it('leaves a nine-column file (before Address) with no address', () => {
+    const { contacts } = fromCsv('Sam,,,,,,,,Acme Ltd\r\n', [])
+    expect(contacts[0].address).toBeUndefined()
   })
 })
