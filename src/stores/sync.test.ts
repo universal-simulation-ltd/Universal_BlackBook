@@ -34,6 +34,8 @@
 // break the only path worth testing. 6.2.5 does; there is a test for it below,
 // because it is a property of a dependency rather than of our code.
 
+/* eslint-disable react-hooks/rules-of-hooks -- `use(device)` below is this
+   harness's "on device X", not React's `use`; the rule only sees the name. */
 import 'fake-indexeddb/auto'
 import { IDBFactory } from 'fake-indexeddb'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -378,6 +380,114 @@ describe('the remembered key, across a reload', () => {
   })
 })
 
+/**
+ * Add somebody on a device the way the form does: stamped NOW, after whatever
+ * this device last synced. `contact()` stamps 1, which reads as ancient.
+ */
+async function addNow(device: Device, name: string) {
+  const book = use(device).book.getState()
+  await book.init()
+  const fresh = { ...contact(name), createdAt: Date.now() + 1, updatedAt: Date.now() + 1 }
+  await use(device).book.getState().importBook([...book.contacts, fresh], book.tags, 'replace', null)
+}
+
+describe('edits made while signed out (owner report, 2026-09-29)', () => {
+  let server: FakeServer
+
+  beforeEach(() => {
+    server = newServer()
+  })
+
+  // The report: add a contact signed out, sign in, the contact is gone. A
+  // sign-out BlackBook never saw leaves the remembered key on the disk, so the
+  // sign-in is a hydrate with that key, not an unlock with a passphrase.
+  it('a remembered device BEHIND the server asks, keeps the contact, and pushes nothing', async () => {
+    const { a, b } = await twoUnlockedDevices(server)
+    await seed(b, ['Ada', 'Grace'])
+    await use(b).sync.getState().push(b.client)
+    const onlineRev = server.row!.rev
+
+    // A, signed out: adds somebody. Then signs back in (a reload + hydrate).
+    await addNow(a, 'Linus')
+    const back = await reload(server, a)
+    await use(back).sync.getState().hydrate(back.client, USER)
+
+    expect(use(back).sync.getState().pending).not.toBeNull()
+    expect(names(back)).toEqual(['Ada', 'Linus'])
+    // Nothing goes up while the question is open, however the autosave fires.
+    await use(back).sync.getState().push(back.client)
+    expect(server.row!.rev).toBe(onlineRev)
+
+    await use(back).sync.getState().mergePending(back.client)
+    expect(names(back)).toEqual(['Ada', 'Grace', 'Linus'])
+    expect(server.row!.rev).toBe(onlineRev + 1)
+  })
+
+  it('a remembered device IN STEP with the server carries the new contact up, unasked', async () => {
+    const a = await boot(server)
+    await seed(a, ['Ada'])
+    await use(a).sync.getState().enable(a.client, USER, PASS, true)
+
+    await addNow(a, 'Linus')
+    const back = await reload(server, a)
+    await use(back).sync.getState().hydrate(back.client, USER)
+    expect(use(back).sync.getState().pending).toBeNull()
+    expect(names(back)).toEqual(['Ada', 'Linus'])
+
+    await use(back).sync.getState().push(back.client)
+    const c = await boot(server)
+    await use(c).sync.getState().unlock(c.client, USER, PASS, true)
+    expect(names(c)).toEqual(['Ada', 'Linus'])
+  })
+
+  it('behind the server with nothing new here still adopts without a question', async () => {
+    const { a, b } = await twoUnlockedDevices(server)
+    await seed(b, ['Ada', 'Grace'])
+    await use(b).sync.getState().push(b.client)
+
+    const back = await reload(server, a)
+    await use(back).sync.getState().hydrate(back.client, USER)
+    expect(use(back).sync.getState().pending).toBeNull()
+    expect(names(back)).toEqual(['Ada', 'Grace'])
+  })
+
+  it('an unlock left unanswered is asked again after a reload, and never pushed over the online copy', async () => {
+    const a = await boot(server)
+    await seed(a, ['Ada'])
+    await use(a).sync.getState().enable(a.client, USER, PASS, true)
+    const onlineRev = server.row!.rev
+
+    const b = await boot(server)
+    await seed(b, ['Barbara'])
+    await use(b).sync.getState().unlock(b.client, USER, PASS, true)
+    expect(use(b).sync.getState().pending).not.toBeNull()
+    await use(b).sync.getState().push(b.client)
+    expect(server.row!.rev).toBe(onlineRev)
+
+    // Closed the panel, reloaded.
+    const again = await reload(server, b)
+    await use(again).sync.getState().hydrate(again.client, USER)
+    expect(use(again).sync.getState().pending).not.toBeNull()
+    expect(names(again)).toEqual(['Barbara'])
+    expect(server.row!.rev).toBe(onlineRev)
+  })
+
+  it('"use the online copy only" counts as in sync, so the next reload does not ask', async () => {
+    const a = await boot(server)
+    await seed(a, ['Ada'])
+    await use(a).sync.getState().enable(a.client, USER, PASS, true)
+    const b = await boot(server)
+    await seed(b, ['Barbara'])
+    await use(b).sync.getState().unlock(b.client, USER, PASS, true)
+    await use(b).sync.getState().adoptPending()
+
+    const again = await reload(server, b)
+    await use(again).sync.getState().hydrate(again.client, USER)
+    expect(use(again).sync.getState().pending).toBeNull()
+    expect(names(again)).toEqual(['Ada'])
+  })
+})
+
 describe('changing the passphrase', () => {
   let server: FakeServer
   const NEW = 'a much better passphrase'
@@ -541,6 +651,27 @@ describe('turning it off', () => {
     expect(use(a).sync.getState().status).toBe('error')
     expect(use(a).sync.getState().rev).toBe(1)
     expect(names(a)).toEqual(['Ada', 'Grace'])
+  })
+
+  it('a save cut off by the network is counted for a retry, in plain words, and clears once one lands', async () => {
+    const { OFFLINE } = await import('./syncStore')
+    const a = await boot(server)
+    await seed(a, ['Ada'])
+    await use(a).sync.getState().enable(a.client, USER, PASS, true)
+    await seed(a, ['Ada', 'Grace'])
+
+    // What WebKit says when the app goes to the background mid-save.
+    server.failNext = 'TypeError: Load failed'
+    await use(a).sync.getState().push(a.client)
+    server.failNext = 'TypeError: Load failed'
+    await use(a).sync.getState().push(a.client)
+    expect(use(a).sync.getState().offline).toBe(2)
+    expect(use(a).sync.getState().message).toBe(OFFLINE)
+
+    await use(a).sync.getState().push(a.client)
+    expect(use(a).sync.getState().offline).toBe(0)
+    expect(use(a).sync.getState().status).toBe('saved')
+    expect(server.row!.rev).toBe(2)
   })
 })
 

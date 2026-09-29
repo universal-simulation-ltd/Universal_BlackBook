@@ -69,8 +69,27 @@ export async function fetchVault(supabase: SupabaseClient): Promise<VaultRow | n
     .from(TABLE)
     .select('user_id, ciphertext, kdf_salt, kdf_iterations, rev, updated_at')
     .maybeSingle()
-  if (error) throw new Error(error.message)
+  if (error) throw failure(error)
   return (data as VaultRow | null) ?? null
+}
+
+/**
+ * The request never reached the server: no network, or a fetch cut off (on an
+ * iPhone, typically by the app going to the background mid-save — WebKit
+ * calls that "TypeError: Load failed"). postgrest-js hands these back as an
+ * error with an EMPTY `code`; anything the server itself refused carries one.
+ * Worth retrying, and not worth showing anybody the raw message.
+ */
+export class VaultOfflineError extends Error {
+  constructor(cause: string) {
+    super('Could not reach the server')
+    this.name = 'VaultOfflineError'
+    this.cause = cause
+  }
+}
+
+function failure(error: { message: string; code?: string }): Error {
+  return error.code ? new Error(error.message) : new VaultOfflineError(error.message)
 }
 
 export class VaultConflictError extends Error {
@@ -98,7 +117,7 @@ export async function createVault(
     .insert({ ciphertext, kdf_salt: salt, kdf_iterations: iterations, rev: 1 })
   if (error) {
     if (error.code === '23505') throw new VaultConflictError()
-    throw new Error(error.message)
+    throw failure(error)
   }
   return 1
 }
@@ -137,7 +156,7 @@ export async function updateVault(
     })
     .eq('rev', expectedRev)
     .select('rev')
-  if (error) throw new Error(error.message)
+  if (error) throw failure(error)
   if (!data || data.length === 0) throw new VaultConflictError()
   return nextRev
 }
@@ -152,5 +171,5 @@ export async function deleteVault(supabase: SupabaseClient): Promise<void> {
   // PostgREST, which refuses an unfiltered DELETE. RLS already scopes the
   // statement to this user's single row.
   const { error } = await supabase.from(TABLE).delete().neq('rev', -1)
-  if (error) throw new Error(error.message)
+  if (error) throw failure(error)
 }

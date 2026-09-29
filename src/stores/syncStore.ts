@@ -7,6 +7,7 @@ import {
   payloadTags,
   updateVault,
   VaultConflictError,
+  VaultOfflineError,
   type VaultPayload,
   type VaultRow,
 } from '../lib/cloud'
@@ -29,7 +30,7 @@ import {
   VAULT_VERSION,
   vaultSizeError,
 } from '../lib/vault'
-import { mergeBooks } from '../lib/merge'
+import { mergeBooks, unsyncedWork } from '../lib/merge'
 import { useBookStore } from './bookStore'
 import { useTodoStore } from './todoStore'
 import { mergeTodos, toTodos } from '../lib/todos'
@@ -75,6 +76,12 @@ interface SyncStore {
    */
   dirty: boolean
   markDirty: () => void
+  /**
+   * Saves in a row that failed for want of a network (0 = the last one got
+   * through). App retries while it is above 0 — see `useCloudSync` — and a
+   * count rather than a flag so every failure schedules the next try.
+   */
+  offline: number
 
   hydrate: (supabase: SupabaseClient, userId: string | null) => Promise<void>
   enable: (supabase: SupabaseClient, userId: string, passphrase: string, remember: boolean) => Promise<void>
@@ -152,6 +159,9 @@ async function lockIfPassphraseChanged(row: VaultRow): Promise<boolean> {
   return true
 }
 
+/** Shown while a save is waiting for the network; App keeps retrying. */
+export const OFFLINE = 'Not saved online yet — no connection. It will try again by itself.'
+
 /** Shown on a device whose key stopped working because of `changePassphrase` elsewhere. */
 export const PASSPHRASE_CHANGED =
   'The passphrase for your online copy was changed on another device. Enter the new one to carry on syncing.'
@@ -169,6 +179,7 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
   pending: null,
   dirty: false,
   markDirty: () => set({ dirty: true }),
+  offline: 0,
 
   reset: () =>
     set({
@@ -238,11 +249,28 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
         })
         return
       }
-      // The device is up to date with the server → nothing to ask, just adopt.
-      // Behind it → the server has newer work, and adopting is right too: this
-      // device's own edits were pushed as they happened, so anything newer on
-      // the server came from a device that had them.
-      if (meta.rev !== row.rev) await adopt(payload)
+      // Up to date with the server, with edits made here since → the next
+      // push carries them up, because the online copy is what they were made
+      // on top of. Nothing to ask.
+      //
+      // Behind it → the server has newer work from another device. Adopting
+      // is right ONLY when this device has nothing the online copy lacks. ⚠️
+      // "Its own edits were pushed as they happened" is not true of edits
+      // made while signed out: a sign-out this app never saw (another suite
+      // app on the same site, an expired session) leaves the remembered key
+      // here, and adopting then silently deleted whoever was added in the
+      // meantime (owner's report, 2026-09-29). So those devices are asked the
+      // same merge question as an unlock.
+      //
+      // `since === 0` is an unlock whose question was never answered: the
+      // books are unrelated, so it is asked again, or adopted if this device
+      // has nothing of its own — never pushed over the online copy.
+      await Promise.all([useBookStore.getState().init(), useTodoStore.getState().init()])
+      const since = meta.syncedAt ?? meta.pushedAt
+      const behind = meta.rev !== row.rev || since === 0
+      const book = { contacts: useBookStore.getState().contacts, todos: useTodoStore.getState().todos }
+      const ask = behind && unsyncedWork(book, payload, since) > 0
+      if (behind && !ask) await adopt(payload)
       set({
         state: 'on',
         status: 'idle',
@@ -252,8 +280,11 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
         key: storedKey,
         remembered: true,
         lastPushedAt: meta.pushedAt,
+        pending: ask ? payload : null,
       })
-      await saveSyncMeta({ ...meta, rev: row.rev })
+      // An unanswered question leaves the meta where it was, so a reload
+      // before answering asks again rather than counting as in sync.
+      if (!ask) await saveSyncMeta({ ...meta, rev: row.rev, syncedAt: behind ? Date.now() : since })
     } catch (e) {
       set({ status: 'error', message: e instanceof Error ? e.message : 'Could not reach the server' })
     }
@@ -273,7 +304,8 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
         return
       }
       const rev = await createVault(supabase, ciphertext, salt, KDF_ITERATIONS)
-      const meta: SyncMeta = { userId, rev, salt, iterations: KDF_ITERATIONS, pushedAt: Date.now() }
+      const now = Date.now()
+      const meta: SyncMeta = { userId, rev, salt, iterations: KDF_ITERATIONS, pushedAt: now, syncedAt: now }
       await saveSyncMeta(meta)
       if (remember) await saveVaultKey(key)
       set({
@@ -316,19 +348,22 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
         set({ status: 'error', message: 'That passphrase does not open this book.' })
         return
       }
+      // To-dos count as local data too: a device holding only to-dos must be
+      // asked, not have them replaced by the online list.
+      await Promise.all([useBookStore.getState().init(), useTodoStore.getState().init()])
+      const local = useBookStore.getState().contacts.length + useTodoStore.getState().todos.length
+      const now = Date.now()
       const meta: SyncMeta = {
         userId,
         rev: row.rev,
         salt: row.kdf_salt,
         iterations: row.kdf_iterations,
-        pushedAt: Date.now(),
+        pushedAt: now,
+        // 0 until the merge question is answered — see SyncMeta.syncedAt.
+        syncedAt: local > 0 ? 0 : now,
       }
       await saveSyncMeta(meta)
       if (remember) await saveVaultKey(key)
-      // To-dos count as local data too: a device holding only to-dos must be
-      // asked, not have them replaced by the online list.
-      await useTodoStore.getState().init()
-      const local = useBookStore.getState().contacts.length + useTodoStore.getState().todos.length
       set({
         state: 'on',
         rev: row.rev,
@@ -353,6 +388,8 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
     const { pending } = get()
     if (!pending) return
     await adopt(pending)
+    const meta = await loadSyncMeta()
+    if (meta) await saveSyncMeta({ ...meta, rev: get().rev, syncedAt: Date.now() })
     set({ pending: null, status: 'saved' })
   },
 
@@ -374,8 +411,13 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
   },
 
   push: async (supabase, force = false) => {
-    const { key, rev, salt, iterations, state } = get()
-    if (state !== 'on' || !key || !salt) return
+    const { key, rev, salt, iterations, state, pending } = get()
+    // ⚠️ Never while the merge question is open. This device's book is not
+    // the answer yet, and the autosave fires 2.5 s after sync turns on: it
+    // used to write the local book over the online copy before anybody had
+    // chosen, so closing the panel unanswered lost everything online that
+    // this device did not have.
+    if (state !== 'on' || !key || !salt || pending) return
     set({ status: 'working', message: null })
     try {
       const ciphertext = await encryptJson(bookPayload(), key)
@@ -406,8 +448,9 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       }
       const next = await updateVault(supabase, ciphertext, salt, iterations, expected)
       const meta = await loadSyncMeta()
-      if (meta) await saveSyncMeta({ ...meta, rev: next, pushedAt: Date.now() })
-      set({ status: 'saved', rev: next, lastPushedAt: Date.now(), dirty: false })
+      const now = Date.now()
+      if (meta) await saveSyncMeta({ ...meta, rev: next, pushedAt: now, syncedAt: now })
+      set({ status: 'saved', rev: next, lastPushedAt: now, dirty: false, offline: 0 })
     } catch (e) {
       if (e instanceof VaultConflictError) {
         // A passphrase change moves the rev too. Offering "keep this device"
@@ -418,6 +461,10 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
           status: 'conflict',
           message: 'Another device saved a newer copy. Choose which one to keep.',
         })
+        return
+      }
+      if (e instanceof VaultOfflineError) {
+        set((s) => ({ status: 'error', message: OFFLINE, offline: s.offline + 1 }))
         return
       }
       set({ status: 'error', message: e instanceof Error ? e.message : 'Could not save online' })
@@ -442,7 +489,7 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       }
       await adopt(payload)
       const meta = await loadSyncMeta()
-      if (meta) await saveSyncMeta({ ...meta, rev: row.rev })
+      if (meta) await saveSyncMeta({ ...meta, rev: row.rev, syncedAt: Date.now() })
       set({ status: 'saved', rev: row.rev, message: null })
     } catch (e) {
       set({ status: 'error', message: e instanceof Error ? e.message : 'Could not reach the server' })
@@ -490,7 +537,7 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       const nextRev = await updateVault(supabase, ciphertext, salt, KDF_ITERATIONS, rev)
       const pushedAt = Date.now()
       const meta = await loadSyncMeta()
-      if (meta) await saveSyncMeta({ ...meta, rev: nextRev, salt, iterations: KDF_ITERATIONS, pushedAt })
+      if (meta) await saveSyncMeta({ ...meta, rev: nextRev, salt, iterations: KDF_ITERATIONS, pushedAt, syncedAt: pushedAt })
       // Replace the remembered key rather than leaving the old one on disk,
       // where the next opening would fail with it and ask for a passphrase.
       if (remembered) await saveVaultKey(key)

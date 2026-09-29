@@ -661,7 +661,14 @@ function useCloudSync(openPanel: () => void) {
       // because a sign-in that went via the hub comes back as a fresh page
       // load with the session already there.
       if (cancelled || !userId) return
-      const { state } = useSyncStore.getState()
+      const { state, pending } = useSyncStore.getState()
+      // A merge question is data at stake, not a courtesy: opened every time,
+      // whatever the once-per-account flag says. It comes from a remembered
+      // device that has contacts the online copy lacks (see `hydrate`).
+      if (pending) {
+        openPanel()
+        return
+      }
       if ((state === 'locked' || state === 'off') && readPrompted() !== userId) {
         writePrompted(userId)
         openPanel()
@@ -696,6 +703,31 @@ function useCloudSync(openPanel: () => void) {
     const t = setTimeout(() => void push(supabase), AUTOSAVE_DELAY)
     return () => clearTimeout(t)
   }, [contacts, tags, todos, loaded, state, push, supabase])
+
+  // A save that failed for want of a network is tried again, rather than
+  // sitting there until somebody opens the panel and taps Save now (owner's
+  // report, 2026-09-29: "TypeError: Load failed" on the iPhone, which is
+  // WebKit's word for a fetch cut off, typically by the app going to the
+  // background mid-save). Again after a growing wait, and at once when the
+  // connection comes back or the app is brought to the front.
+  const offline = useSyncStore((s) => s.offline)
+  useEffect(() => {
+    if (offline === 0 || state !== 'on') return
+    const retry = () => void push(supabase)
+    // 5 s, 10 s, 20 s, 40 s, then every minute. Each failure bumps `offline`
+    // and re-runs this effect, which is what schedules the next one.
+    const timer = setTimeout(retry, Math.min(5_000 * 2 ** (offline - 1), 60_000))
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') retry()
+    }
+    window.addEventListener('online', retry)
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('online', retry)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [offline, state, push, supabase])
 
   // A conflict is the one sync outcome the user MUST answer — it is the only
   // one where the app cannot proceed without destroying somebody's edits — so

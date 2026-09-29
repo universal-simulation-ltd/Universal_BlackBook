@@ -236,6 +236,16 @@ export interface SyncMeta {
   iterations: number
   /** Epoch ms of the last successful push. */
   pushedAt: number
+  /**
+   * Epoch ms this device's book last MATCHED the online copy: after a push, an
+   * adopt or a merge. Anything edited here since then is not online yet, and
+   * signing in asks before replacing it (`unsyncedWork`).
+   *
+   * 0 while an unlock's merge question is unanswered: the two books are
+   * unrelated until it is, so every local contact counts. Absent on meta
+   * written before 2026-09-29, where `pushedAt` stands in.
+   */
+  syncedAt?: number
 }
 
 export async function loadVaultKey(): Promise<CryptoKey | null> {

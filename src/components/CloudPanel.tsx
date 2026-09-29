@@ -3,7 +3,7 @@ import { SignInDialog, useUniversal, useUser } from '@unisim/sdk'
 import { mergeBooks } from '../lib/merge'
 import { payloadTags } from '../lib/cloud'
 import { useBookStore } from '../stores/bookStore'
-import { useSyncStore } from '../stores/syncStore'
+import { OFFLINE, useSyncStore } from '../stores/syncStore'
 import { Modal } from './Modal'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, checkboxCls, inputCls, label } from './ui'
 
@@ -224,14 +224,27 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
 
           {sync.state === 'on' && !sync.pending && sync.status !== 'conflict' && (
             <div className="space-y-3">
-              <div className="rounded-xl border border-emerald-900/60 bg-emerald-950/30 px-3 py-2.5">
-                <p className="text-sm font-medium text-emerald-300">Your book is backed up online</p>
-                <p className="mt-0.5 text-xs text-emerald-200/70">
-                  {sync.lastPushedAt
-                    ? `Last saved ${new Date(sync.lastPushedAt).toLocaleString('en-GB')}`
-                    : 'Encrypted on this device before it is sent.'}
-                </p>
-              </div>
+              {/* ⚠️ Green only when it is true. A save that did not get through
+                  used to leave "backed up online" showing in green directly
+                  above the red error that said otherwise (iPhone, 2026-09-29). */}
+              {sync.dirty || sync.offline > 0 ? (
+                <div className="rounded-xl border border-amber-900/60 bg-amber-950/30 px-3 py-2.5">
+                  <p className="text-sm font-medium text-amber-300">Changes not saved online yet</p>
+                  <p className="mt-0.5 text-xs text-amber-200/70">
+                    {sync.offline > 0 ? 'Waiting for a connection — it will try again by itself.' : 'Saving…'}
+                    {sync.lastPushedAt && ` Last saved ${new Date(sync.lastPushedAt).toLocaleString('en-GB')}.`}
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-emerald-900/60 bg-emerald-950/30 px-3 py-2.5">
+                  <p className="text-sm font-medium text-emerald-300">Your book is backed up online</p>
+                  <p className="mt-0.5 text-xs text-emerald-200/70">
+                    {sync.lastPushedAt
+                      ? `Last saved ${new Date(sync.lastPushedAt).toLocaleString('en-GB')}`
+                      : 'Encrypted on this device before it is sent.'}
+                  </p>
+                </div>
+              )}
               <div className="flex flex-wrap gap-2">
                 <button type="button" className={btnGhost} disabled={busy} onClick={() => void sync.push(supabase)}>
                   Save now
@@ -284,7 +297,8 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          {sync.message && (
+          {/* The offline message is the amber box above; red as well would say it twice. */}
+          {sync.message && !(sync.state === 'on' && sync.message === OFFLINE) && (
             <p
               className={`rounded-lg px-3 py-2 text-sm ${
                 sync.status === 'error' ? 'bg-rose-950/50 text-rose-300' : 'bg-slate-800 text-slate-300'

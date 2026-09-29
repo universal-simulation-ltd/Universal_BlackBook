@@ -19,6 +19,7 @@
 import { identityKeys } from './deviceContacts'
 import { fold } from './filter'
 import type { Contact, Tag } from './types'
+import type { Todo } from './todos'
 
 export interface MergedBook {
   contacts: Contact[]
@@ -78,4 +79,43 @@ export function mergeBooks(
   }
 
   return { contacts, tags, added, updated, remap }
+}
+
+/**
+ * How many of this device's contacts and to-dos the online copy does not have:
+ * added or edited here after `since` (when this device last matched the online
+ * copy), and either missing online or older there.
+ *
+ * Non-zero means taking the online copy as it is would LOSE them, so signing
+ * in has to ask rather than adopt. The case it exists for (owner's report,
+ * 2026-09-29): signed out without BlackBook seeing it (another suite app on
+ * the same site, or an expired session), so the remembered key stayed; a
+ * contact added while signed out; then signing back in, after another device
+ * had saved, silently replaced the book and the contact was gone.
+ *
+ * Deliberately blind to deletions. Something deleted here and still online
+ * comes back after a merge, which is recoverable. The reverse, a person
+ * deleted on another device counted here as "unsynced", would ask a question
+ * on every sign-in behind the server, so edits since `since` are all it looks at.
+ *
+ * `online.todos` absent means the blob says nothing about to-dos, and adopting
+ * keeps this device's list (see `adopt`), so none of them can be lost.
+ */
+export function unsyncedWork(
+  local: { contacts: Contact[]; todos: Todo[] },
+  online: { contacts?: Contact[]; todos?: Todo[] },
+  since: number,
+): number {
+  const count = <T extends { id: string; updatedAt: number }>(mine: T[], theirs: T[]) => {
+    const there = new Map(theirs.map((x) => [x.id, x.updatedAt]))
+    return mine.filter((x) => {
+      if (x.updatedAt <= since) return false
+      const at = there.get(x.id)
+      return at === undefined || at < x.updatedAt
+    }).length
+  }
+  return (
+    count(local.contacts, Array.isArray(online.contacts) ? online.contacts : []) +
+    (Array.isArray(online.todos) ? count(local.todos, online.todos) : 0)
+  )
 }
