@@ -6,8 +6,10 @@ import {
   describeView,
   fold,
   hiddenBirthdays,
+  addedWhen,
   hiddenFromList,
   isSearching,
+  lastAdded,
   matchesTags,
   matchesText,
   runQuery,
@@ -353,5 +355,55 @@ describe('hiding a tag — the second tap on its chip', () => {
     expect(describeView({ tagIds: ['work'], hiddenTagIds: ['lists'], sort: 'name' }, name)).toBe(
       'Name A–Z · Work · hiding Email lists',
     )
+  })
+})
+
+describe('lastAdded', () => {
+  it('picks the newest by createdAt, wherever it sits in the book', () => {
+    const book = [
+      contact({ id: 'a', createdAt: 10 }),
+      contact({ id: 'b', createdAt: 30 }),
+      contact({ id: 'c', createdAt: 20 }),
+    ]
+    expect(lastAdded(book)?.id).toBe('b')
+  })
+
+  it('goes by when they were added, not when they were last edited', () => {
+    const book = [contact({ id: 'new', createdAt: 30, updatedAt: 30 }), contact({ id: 'old', createdAt: 10, updatedAt: 99 })]
+    expect(lastAdded(book)?.id).toBe('new')
+  })
+
+  it('shows nobody for an import, where the newest moment is shared', () => {
+    const book = [contact({ id: 'a', createdAt: 10 }), contact({ id: 'b', createdAt: 50 }), contact({ id: 'c', createdAt: 50 })]
+    expect(lastAdded(book)).toBeNull()
+  })
+
+  it('shows a person added by hand after an import', () => {
+    const book = [contact({ id: 'a', createdAt: 50 }), contact({ id: 'b', createdAt: 50 }), contact({ id: 'me', createdAt: 60 })]
+    expect(lastAdded(book)?.id).toBe('me')
+  })
+
+  it('shows nobody when the newest is hidden or kept off Contacts', () => {
+    expect(lastAdded([contact({ id: 'a', createdAt: 1 }), contact({ id: 'h', createdAt: 2, hideFromList: true })])).toBeNull()
+    const lists = new Set(['news'])
+    const listOnly = contact({ id: 'l', createdAt: 2, listOnly: true, tagIds: ['news'] })
+    expect(lastAdded([contact({ id: 'a', createdAt: 1 }), listOnly], lists)).toBeNull()
+  })
+
+  it('is null for an empty book', () => {
+    expect(lastAdded([])).toBeNull()
+  })
+})
+
+describe('addedWhen', () => {
+  const now = new Date(2026, 8, 29, 9, 0)
+  it('says today and yesterday by calendar day, not by 24 hours', () => {
+    expect(addedWhen(new Date(2026, 8, 29, 0, 5).getTime(), now)).toBe('today')
+    expect(addedWhen(new Date(2026, 8, 28, 23, 59).getTime(), now)).toBe('yesterday')
+  })
+
+  it('gives a date after that, with the year only when it differs', () => {
+    expect(addedWhen(new Date(2026, 8, 12).getTime(), now)).toBe('12 Sept')
+    expect(addedWhen(new Date(2025, 8, 12).getTime(), now)).toBe('12 Sept 2025')
   })
 })

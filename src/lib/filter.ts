@@ -338,6 +338,51 @@ export function hiddenFromList(contacts: Contact[]): Contact[] {
 }
 
 /**
+ * The person added most recently, for the "Last added" card over the list
+ * (owner's request, 2026-09-29: "on mobile I add a contact and then want to see
+ * it with easy access in case I made a mistake").
+ *
+ * By `createdAt`, never `updatedAt`: fixing the typo is the point of the card,
+ * and an edit that swapped it for somebody else would move it mid-correction.
+ *
+ * `null` in three cases:
+ * - The newest person is kept off Contacts (list-only) or hidden from the list.
+ *   Both were put out of the way on purpose.
+ * - The newest moment is SHARED. An import stamps every row with one `now`,
+ *   and "last added" out of 200 is an arbitrary one of them.
+ * - The book is empty.
+ */
+export function lastAdded(contacts: Contact[], listIds: Set<string> = new Set()): Contact | null {
+  let newest: Contact | null = null
+  let tied = false
+  for (const c of contacts) {
+    if (!newest || c.createdAt > newest.createdAt) {
+      newest = c
+      tied = false
+    } else if (c.createdAt === newest.createdAt) {
+      tied = true
+    }
+  }
+  if (!newest || tied || newest.hideFromList || keptOffContacts(newest, listIds)) return null
+  return newest
+}
+
+/** When somebody was added, to follow "Last added": "today", "yesterday", "12 Sept", "12 Sept 2025". */
+export function addedWhen(createdAt: number, now: Date = new Date()): string {
+  const added = new Date(createdAt)
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+  const days = Math.round((startOfDay(now) - startOfDay(added)) / 86_400_000)
+  if (days <= 0) return 'today'
+  if (days === 1) return 'yesterday'
+  const sameYear = added.getFullYear() === now.getFullYear()
+  return added.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    ...(sameYear ? {} : { year: 'numeric' }),
+  })
+}
+
+/**
  * The people the birthdays view is leaving out ON PURPOSE — hidden, but with a
  * real birthday behind them. Sorted by name, like `hiddenFromList`: there is no
  * countdown ordering worth applying to a list whose whole point is that you are

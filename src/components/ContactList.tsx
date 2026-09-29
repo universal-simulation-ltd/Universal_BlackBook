@@ -8,7 +8,7 @@ import {
   todayParts,
   type NextBirthday,
 } from '../lib/birthday'
-import { hiddenBirthdays, hiddenFromList, isSearching, runQuery } from '../lib/filter'
+import { addedWhen, hiddenBirthdays, hiddenFromList, isSearching, lastAdded, runQuery } from '../lib/filter'
 import { copyText } from '../lib/clipboard'
 import { toCsv } from '../lib/csv'
 import { toRecipients } from '../lib/emailList'
@@ -138,6 +138,7 @@ export function ContactList() {
   const [bulk, setBulk] = useState<'delete' | 'tag' | null>(null)
   const tidiedId = useId()
   const hiddenBirthdaysId = useId()
+  const recentId = useId()
 
   // Read once per mount rather than per render, so the query's memo has a
   // stable input. A tab left open across midnight keeps yesterday's "today"
@@ -172,6 +173,12 @@ export function ContactList() {
     () => (birthdays || searching ? [] : hiddenFromList(contacts)),
     [birthdays, searching, contacts],
   )
+  // The "Last added" card over the list — for checking somebody you have just
+  // filed. Not in the birthdays view (soonest first is its whole order), not
+  // while searching (the results are the answer), and not when that person
+  // already heads the list, which "Recently added" does by design.
+  const recent = useMemo(() => lastAdded(contacts, listIds), [contacts, listIds])
+  const showRecent = recent !== null && !birthdays && !searching && visible[0]?.id !== recent.id
   // ⚠️ What an action acts on is the selection AS SEEN — the ticked people
   // still on screen. Tick five, then narrow the filter to a tag two of them
   // lack, and Delete must not take out two people you can no longer see.
@@ -220,6 +227,42 @@ export function ContactList() {
 
   return (
     <>
+      {showRecent && !selecting && (
+        <section aria-labelledby={recentId} className="mb-3">
+          <div className="mb-1.5 flex items-center justify-between gap-3 px-1">
+            <h2 id={recentId} className="text-xs font-medium text-slate-400">
+              Last added <span className="font-normal text-slate-500">{addedWhen(recent.createdAt)}</span>
+            </h2>
+            {/* Straight to the form: the card exists so a mistake is one tap
+                from fixed, and opening the person first would make it two. */}
+            <button
+              type="button"
+              className={btnSubtle}
+              aria-label={`Edit ${recent.name || 'this contact'}`}
+              onClick={() => edit(recent.id)}
+            >
+              Edit
+            </button>
+          </div>
+          {/* The orange ring says "this one is not part of the list": the same
+              person is in their usual place below, and two identical cards
+              read as a duplicate entry. */}
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="rounded-xl ring-1 ring-orange-500/40">
+              {/* No swipe row: this is a second copy of a card that is also in
+                  the list below, and a Delete on the copy is one more place to
+                  flick somebody away by accident. */}
+              <ContactRow
+                contact={recent}
+                byId={byId}
+                onOpen={() => openContact(recent.id)}
+                countdown={null}
+                age={currentAge(recent.birthdate, today)}
+              />
+            </div>
+          </div>
+        </section>
+      )}
       <div className="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <p className="text-xs text-slate-500 tabular-nums" aria-live="polite">
           {birthdays
