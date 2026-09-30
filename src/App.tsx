@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { PreferencesDialog, UniversalAppsNavBar, UpdateNotice, useUniversal, useUser, type AboutAppConfig } from '@unisim/sdk'
+import {
+  DefaultViewSelect,
+  PreferencesDialog,
+  UniversalAppsNavBar,
+  UpdateNotice,
+  useDefaultView,
+  useUniversal,
+  useUser,
+  type AboutAppConfig,
+} from '@unisim/sdk'
 // <UsageTracker /> sends one "session.opened" row for a signed-in visitor, and
 // nothing else may ever be tracked here: no names, email addresses, category
 // names or counts. The vault goes to the server encrypted precisely so we cannot
@@ -52,6 +61,11 @@ const AUTOSAVE_DELAY = 2500
 
 type Panel = 'tags' | 'io' | 'cloud' | 'lock' | null
 
+/** The landing screen's tabs. Lists and To-do each need their App preference on. */
+const TABS = ['contacts', 'lists', 'todos'] as const
+type Tab = (typeof TABS)[number]
+const TAB_NAMES: Record<Tab, string> = { contacts: 'Contacts', lists: 'Lists', todos: 'To-do' }
+
 // "About this app" — handed to <UniversalAppsNavBar about>, which draws it at
 // the foot of "Tune this app" (SDK 0.161.0+) and opens its own AboutAppDialog.
 // It used to be the last row of the Advanced menu (Header/AppMenu.tsx).
@@ -59,6 +73,7 @@ type Panel = 'tags' | 'io' | 'cloud' | 'lock' | null
 const PREFERENCE_ROWS = (
   <>
     <EmailListsPreference />
+    <OpensOnPreference />
     <FormFieldsPreference />
   </>
 )
@@ -83,20 +98,22 @@ export default function App() {
   const notice = useBookStore((s) => s.notice)
   const setNotice = useBookStore((s) => s.setNotice)
   const [panel, setPanel] = useState<Panel>(null)
+  const resetSettings = useSettingsStore((s) => s.reset)
   // Contacts | Lists | To-do, on the landing screen. Lists only exists with App
   // preferences ▸ Email lists on, To-do with ▸ To-do; turning either off drops
   // back to Contacts.
   const emailLists = useSettingsStore((s) => s.emailLists)
   const todosOn = useSettingsStore((s) => s.todos)
-  const [tab, setTab] = useState<'contacts' | 'lists' | 'todos'>('contacts')
+  // James, 2026-09-30: double-tap a tab to make it the one the app opens on
+  // (the SDK's useDefaultView, lifted from Jukebox's library tabs). Stored per
+  // device. A default of Lists or To-do whose switch has since gone off opens
+  // on Contacts, by the same `current` rule as turning the switch off.
+  const tabDefault = useDefaultView<Tab>('tab', 'contacts', { views: TABS })
+  const [tab, setTab] = useState<Tab>(tabDefault.defaultView)
   const onLists = emailLists && tab === 'lists'
   const onTodos = todosOn && tab === 'todos'
   const offContacts = onLists || onTodos
-  const tabs = [
-    ['contacts', 'Contacts'],
-    ...(emailLists ? [['lists', 'Lists'] as const] : []),
-    ...(todosOn ? [['todos', 'To-do'] as const] : []),
-  ] as const
+  const tabs = availableTabs(emailLists, todosOn)
   const current = offContacts ? tab : 'contacts'
   const initTodos = useTodoStore((s) => s.init)
   const { canPick, picking, pick } = useContactPicker()
@@ -161,6 +178,11 @@ export default function App() {
         // Colour scheme; BlackBook is dark-only, which the SDK reads off
         // `theme` and shows as "always dark".
         appPreferences={PREFERENCE_ROWS}
+        // Reset to defaults: the SDK clears the default tab and the language;
+        // this puts BlackBook's own switches back to off. The book, its tags
+        // and the saved sort-and-filter "Default" (a choice made in the list,
+        // kept in IndexedDB) are left alone.
+        onResetDefaults={resetSettings}
         suiteSwitcherIconSrc={`${import.meta.env.BASE_URL}unisim-icon.png`}
       />
       {/* ⚠️ The footer's job, on a phone (owner's call, 2026-08-30). A full
@@ -240,18 +262,27 @@ export default function App() {
               tabs.length === 3 ? 'grid-cols-3 sm:max-w-sm' : 'grid-cols-2 sm:max-w-xs'
             }`}
           >
-            {tabs.map(([t, name]) => (
+            {tabs.map((t) => (
               <button
                 key={t}
                 type="button"
                 role="tab"
                 aria-selected={t === current}
-                onClick={() => setTab(t)}
+                {...tabDefault.buttonProps(t, TAB_NAMES[t])}
+                onClick={() => {
+                  tabDefault.tap(t)
+                  setTab(t)
+                }}
+                // The default tab is orange: filled while you are on it, an
+                // orange ring while you are not (Jukebox's look, SDK README ▸
+                // Default views).
                 className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
-                  t === current ? 'bg-orange-500/15 text-orange-300' : 'text-slate-400 hover:text-slate-200'
+                  t === current
+                    ? 'bg-orange-500/15 text-orange-300 data-[default-view=true]:bg-gradient-to-br data-[default-view=true]:from-[#FE8C01] data-[default-view=true]:to-[#E05504] data-[default-view=true]:text-white'
+                    : 'text-slate-400 hover:text-slate-200 data-[default-view=true]:text-orange-400 data-[default-view=true]:ring-1 data-[default-view=true]:ring-inset data-[default-view=true]:ring-orange-400/70'
                 }`}
               >
-                {name}
+                {TAB_NAMES[t]}
               </button>
             ))}
           </div>
@@ -760,6 +791,7 @@ function TuneThisApp() {
   const open = useSettingsStore((s) => s.tune !== null)
   const closeTune = useSettingsStore((s) => s.closeTune)
   const reopenParked = useBookStore((s) => s.reopenParked)
+  const resetSettings = useSettingsStore((s) => s.reset)
   const { splitPreferences } = useUniversal()
   return (
     <PreferencesDialog
@@ -773,8 +805,34 @@ function TuneThisApp() {
       fixedColorScheme="dark"
       combined={!splitPreferences}
       about={APP_ABOUT}
+      onResetDefaults={resetSettings}
     >
       {PREFERENCE_ROWS}
     </PreferencesDialog>
+  )
+}
+
+/** The tabs the landing screen shows, given App preferences ▸ Email lists and ▸ To-do. */
+function availableTabs(emailLists: boolean, todos: boolean): Tab[] {
+  return TABS.filter((t) => t === 'contacts' || (t === 'lists' ? emailLists : todos))
+}
+
+/**
+ * Tune this app ▸ "Opens on": the double-tapped default tab as a row, for
+ * anybody who cannot double-tap. Only while there is more than one tab to open
+ * on — with Email lists and To-do both off there is only Contacts.
+ */
+function OpensOnPreference() {
+  const emailLists = useSettingsStore((s) => s.emailLists)
+  const todos = useSettingsStore((s) => s.todos)
+  const tabs = availableTabs(emailLists, todos)
+  if (tabs.length < 2) return null
+  return (
+    <DefaultViewSelect<Tab>
+      id="tab"
+      label="Opens on"
+      fallback="contacts"
+      views={tabs.map((t) => ({ value: t, label: TAB_NAMES[t] }))}
+    />
   )
 }
