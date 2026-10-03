@@ -8,14 +8,14 @@ import {
   todayParts,
   type NextBirthday,
 } from '../lib/birthday'
-import { addedWhen, hiddenBirthdays, hiddenFromList, isSearching, lastAdded, runQuery } from '../lib/filter'
+import { addedWhen, hiddenBirthdays, hiddenFromList, isSearching, lastAdded, runQuery, searchSeed } from '../lib/filter'
 import { copyText } from '../lib/clipboard'
 import { toCsv } from '../lib/csv'
 import { toRecipients } from '../lib/emailList'
 import { isList, keptOffContacts, listIdsOf } from '../lib/lists'
 import type { Side } from '../lib/swipe'
 import type { Contact, Tag } from '../lib/types'
-import { useBookStore } from '../stores/bookStore'
+import { blankDraft, useBookStore } from '../stores/bookStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { Modal } from './Modal'
 import { SwipeRow, type SwipeAction } from './SwipeRow'
@@ -221,6 +221,7 @@ export function ContactList() {
             ? 'Nobody in your book has a birthday recorded yet. Add one to a contact and they will show up here.'
             : `Nobody matches that. ${contacts.length} ${contacts.length === 1 ? 'person is' : 'people are'} in your book.`}
         </p>
+        {searching && !birthdays && <AddFromSearch text={query.text} className="mt-4" />}
       </div>
     )
   }
@@ -392,6 +393,8 @@ export function ContactList() {
         ))}
       </ul>
 
+      {searching && !selecting && <AddFromSearch text={query.text} className="mt-3" />}
+
       {/* The drawers are not selectable, so they step aside while selecting
           rather than sit there as cards a tap would unexpectedly open. */}
       {tidiedAway.length > 0 && !selecting && (
@@ -552,6 +555,35 @@ export function ContactList() {
         />
       )}
     </>
+  )
+}
+
+/**
+ * "Add Sam Okonkwo" — the last thing under the search results (owner's
+ * request, 2026-10-03), so that looking somebody up and finding they are not
+ * there is one tap from filing them, with what you typed already in the form.
+ *
+ * Shown under results as well as under none: searching "Sam" and finding Sam
+ * Okonkwo does not mean the Sam you were after is in the book. The text goes
+ * into whichever field it looks like (`searchSeed`), and through `startWith`
+ * rather than `edit('new')`, so it is a prefill — it beats a stashed half-typed
+ * contact, which is right, because it is what was typed two seconds ago.
+ */
+function AddFromSearch({ text, className = '' }: { text: string; className?: string }) {
+  const startWith = useBookStore((s) => s.startWith)
+  const seed = searchSeed(text)
+  if (!seed.value) return null
+  return (
+    <button
+      type="button"
+      onClick={() => startWith({ ...blankDraft(), [seed.field]: seed.value })}
+      className={`flex w-full items-center gap-2 rounded-xl border border-dashed border-slate-700 px-4 py-3 text-left text-sm text-slate-300 transition-colors hover:border-orange-500/60 hover:bg-orange-500/10 hover:text-orange-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${className}`}
+    >
+      <span aria-hidden className="text-lg leading-none text-orange-400">＋</span>
+      <span className="min-w-0 truncate">
+        Add <span className="font-semibold text-slate-100">“{seed.value}”</span>
+      </span>
+    </button>
   )
 }
 
