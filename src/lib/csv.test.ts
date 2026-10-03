@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fromCsv, parseCsv, toCsv } from './csv'
+import { fromCsv, guardCell, parseCsv, toCsv, unguard } from './csv'
 import type { Contact, Tag } from './types'
 
 const tag = (id: string, name: string): Tag => ({ id, name, colour: 'amber' })
@@ -92,6 +92,50 @@ describe('toCsv', () => {
     const nasty = 'He said "go", then\nleft'
     const csv = toCsv([contact({ notes: nasty })], [])
     expect(parseCsv(csv)[1][3]).toBe(nasty)
+  })
+})
+
+describe('spreadsheet formula injection', () => {
+  const evil = [
+    '=HYPERLINK("https://example.invalid","Click")',
+    '@SUM(1+1)',
+    "+cmd|' /C calc'!A0",
+    '-2+3+cmd|x',
+    '\t=1+1',
+  ]
+
+  it('neutralises formula-looking cells with a leading apostrophe', () => {
+    for (const v of evil) expect(guardCell(v)).toBe(`'${v}`)
+  })
+
+  it('leaves phone numbers, year-less birthdays and ordinary text alone', () => {
+    for (const v of ['+44 7700 900123', '-0.5', '--06-04', '1990-06-04', 'Sam', "O'Brien", '']) {
+      expect(guardCell(v)).toBe(v)
+    }
+  })
+
+  it('writes the guarded form into the file', () => {
+    const csv = toCsv([contact({ name: '=1+1', notes: '@x' })], [])
+    expect(csv).toContain("'=1+1")
+    expect(csv).toContain("'@x")
+  })
+
+  it('round-trips every guarded field through its own import unchanged', () => {
+    const people = [contact({ name: evil[0], notes: evil[2], company: evil[1], address: evil[3], phone: '+44 7700 900123' })]
+    const tags = [tag('t', '=Work')]
+    people[0].tagIds = ['t']
+    const back = fromCsv(toCsv(people, tags), tags)
+    expect(back.contacts[0].name).toBe(evil[0])
+    expect(back.contacts[0].notes).toBe(evil[2])
+    expect(back.contacts[0].company).toBe(evil[1])
+    expect(back.contacts[0].address).toBe(evil[3])
+    expect(back.contacts[0].phone).toBe('+44 7700 900123')
+    expect(back.contacts[0].tagIds).toEqual(['t'])
+  })
+
+  it('only strips an apostrophe the guard would have added', () => {
+    expect(unguard("'Tis the season")).toBe("'Tis the season")
+    expect(unguard("'=1")).toBe('=1')
   })
 })
 

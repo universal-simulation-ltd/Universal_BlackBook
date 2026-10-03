@@ -20,6 +20,7 @@ import {
   replaceAll,
   saveDefaultView as dbSaveDefaultView,
 } from '../lib/store'
+import { requestPersistentStorage } from '../lib/persist'
 
 /**
  * The whole app's state.
@@ -296,6 +297,7 @@ export const useBookStore = create<BookState>((set, get) => ({
   clearStash: () => set({ stashed: null }),
 
   saveContact: async (draft) => {
+    requestPersistentStorage()
     const now = Date.now()
     const existing = draft.id ? get().contacts.find((c) => c.id === draft.id) : undefined
     const contact: Contact = {
@@ -552,6 +554,7 @@ export const useBookStore = create<BookState>((set, get) => ({
   },
 
   importBook: async (contacts, tags, mode, notice) => {
+    requestPersistentStorage()
     if (mode === 'replace') {
       // `viewing: null` — the card on screen belongs to a book that has just
       // been thrown away, and the person on it may not be in the new one.

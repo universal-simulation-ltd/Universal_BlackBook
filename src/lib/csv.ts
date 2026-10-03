@@ -79,6 +79,39 @@ const TAG_SEPARATOR = '; '
 
 // ─────────────────────────────────────────────────────────────── write
 
+/**
+ * A cell a spreadsheet would run as a formula: one starting `=` or `@` (or a
+ * tab/CR, which Excel strips before looking), or `+`/`-` followed by anything
+ * with a letter or a bracket in it — `+cmd|' /C calc'!A0`, `-2+3+cmd|…`.
+ *
+ * ⚠️ `+`/`-` alone is NOT enough to guard, on purpose: `+44 7700 900123` is a
+ * phone number and `--06-04` is a year-less birthday, and both must leave
+ * exactly as stored. Neither has a letter or a bracket in it.
+ */
+const FORMULA_START = /^(?:[=@\t\r]|[+-](?=[\s\S]*[A-Za-z(]))/
+
+/**
+ * Neutralise a formula-looking cell with a leading apostrophe (the OWASP
+ * guard), which every spreadsheet reads as "this is text".
+ *
+ * Until 2026-10-04 this was deliberately NOT done, on the grounds that the
+ * file only ever went back to the person who exported it. That stopped being
+ * true when BlackBook started importing other people's data — the phone's own
+ * contacts, and Google/Outlook CSVs — whose names and notes nobody here
+ * typed. A contact card named `=HYPERLINK("https://…","Click")` would have
+ * been written out live. The round trip is kept by `unguard` on the way back
+ * in, so BlackBook's own import never sees the apostrophe.
+ */
+export function guardCell(value: string): string {
+  return FORMULA_START.test(value) ? `'${value}` : value
+}
+
+/** The inverse of `guardCell`, applied on import: strip exactly the
+ *  apostrophe `guardCell` would have added, and nothing else. */
+export function unguard(value: string): string {
+  return value.startsWith("'") && FORMULA_START.test(value.slice(1)) ? value.slice(1) : value
+}
+
 function escapeCell(value: string): string {
   // Quote only when required, so a plain file stays readable in a text editor.
   // A quote inside a quoted field is doubled — that is the escape, not a
@@ -90,12 +123,8 @@ function escapeCell(value: string): string {
 /**
  * Serialise the whole book.
  *
- * ⚠️ Deliberately NOT sanitised against spreadsheet formula injection (a cell
- * beginning `=`, `+`, `-` or `@`). The usual guard prefixes an apostrophe,
- * which corrupts the value on the way back in — and this file's primary job is
- * to be re-imported by the same person who exported it. The data is the user's
- * own, going back to the user. If BlackBook ever accepts a file from a third
- * party and re-exports it, revisit this.
+ * Every cell goes through `guardCell` (spreadsheet formula injection — see
+ * there for why that changed, and `unguard` for why it round-trips).
  *
  * CRLF and a UTF-8 BOM are both for Excel: without the BOM it reads the file
  * as the local ANSI codepage and every accented name arrives mojibaked.
@@ -129,7 +158,7 @@ export function toCsv(contacts: Contact[], tags: Tag[]): string {
         c.company ?? '',
         c.address ?? '',
       ]
-        .map(escapeCell)
+        .map((v) => escapeCell(guardCell(v)))
         .join(','),
     ),
   ]
@@ -466,7 +495,7 @@ export function fromCsv(text: string, existing: Tag[]): ImportResult {
     return tag.id
   }
 
-  const cell = (row: string[], i: number) => (i >= 0 ? (row[i] ?? '').trim() : '')
+  const cell = (row: string[], i: number) => (i >= 0 ? unguard((row[i] ?? '').trim()) : '')
 
   const contacts: Contact[] = []
   let skipped = 0
@@ -499,7 +528,7 @@ export function fromCsv(text: string, existing: Tag[]): ImportResult {
       company: cell(row, at.company) || undefined,
       // Not `cell`, which is fine for one line: trimmed at the ends, the
       // line breaks a quoted cell carries are kept.
-      address: (at.address >= 0 ? (row[at.address] ?? '') : '').trim() || undefined,
+      address: unguard((at.address >= 0 ? (row[at.address] ?? '') : '').trim()) || undefined,
       birthdate,
       // ⚠️ Only alongside a birthday that actually parsed. A row flagged hidden
       // whose date was unreadable would otherwise land a flag on somebody with
@@ -512,7 +541,7 @@ export function fromCsv(text: string, existing: Tag[]): ImportResult {
       // No birthday to depend on, so no such guard: hiding somebody from the
       // list is about the person, not about a date they may not have.
       hideFromList: HIDDEN_VALUES.has(cell(row, at.hideFromList).toLowerCase()) ? true : undefined,
-      notes: at.notes >= 0 ? (row[at.notes] ?? '') : '',
+      notes: at.notes >= 0 ? unguard(row[at.notes] ?? '') : '',
       createdAt: now,
       updatedAt: now,
     })
