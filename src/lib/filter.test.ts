@@ -14,6 +14,7 @@ import {
   matchesText,
   runQuery,
   sameView,
+  searchSeed,
   showsInBirthdays,
   UNTAGGED,
   viewOf,
@@ -414,5 +415,26 @@ describe('searching an address', () => {
     expect(matchesText(c, 'ls1')).toBe(true)
     expect(matchesText(c, 'high street leeds')).toBe(true)
     expect(matchesText(contact(), 'leeds')).toBe(false)
+  })
+})
+
+describe('searchSeed', () => {
+  it('files ordinary text as a name, tidied', () => {
+    expect(searchSeed('  Sam   Okonkwo ')).toEqual({ field: 'name', value: 'Sam Okonkwo' })
+  })
+
+  it('recognises an email address', () => {
+    expect(searchSeed('sam@example.com')).toEqual({ field: 'email', value: 'sam@example.com' })
+  })
+
+  it('recognises a phone number in its usual shapes', () => {
+    expect(searchSeed('07700 900123').field).toBe('phone')
+    expect(searchSeed('+44 (0)113 496-0000').field).toBe('phone')
+  })
+
+  it('leaves short numbers and mixed text as a name', () => {
+    expect(searchSeed('1234').field).toBe('name')
+    expect(searchSeed('Flat 2').field).toBe('name')
+    expect(searchSeed('sam @ work').field).toBe('name')
   })
 })

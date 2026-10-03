@@ -395,3 +395,20 @@ export function hiddenBirthdays(contacts: Contact[], today: Today): Contact[] {
     .filter((c) => c.hideBirthday && Boolean(nextBirthday(c.birthdate, today)))
     .sort(byName)
 }
+
+/**
+ * Which field of a new contact the search text should land in, for the
+ * "Add …" button under the results (owner's request, 2026-10-03).
+ *
+ * Somebody searching for `sam@example.com` or `07700 900123` and finding
+ * nobody wants that typed into the email or phone box, not filed as a name
+ * they then have to cut and paste. Deliberately conservative: an `@` with
+ * text either side is an email, nothing but phone punctuation with at least
+ * five digits is a phone, and everything else — the common case — is a name.
+ */
+export function searchSeed(text: string): { field: 'name' | 'email' | 'phone'; value: string } {
+  const value = text.trim().replace(/\s+/g, ' ')
+  if (/^[^\s@]+@[^\s@]+$/.test(value)) return { field: 'email', value }
+  if (/^\+?[\d\s().-]+$/.test(value) && digits(value).length >= 5) return { field: 'phone', value }
+  return { field: 'name', value }
+}
