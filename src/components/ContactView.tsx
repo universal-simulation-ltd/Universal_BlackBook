@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useRef, type ReactNode } from 'react'
+import { LinkifiedText } from '@unisim/sdk'
 import { countdownLabel, currentAge, formatBirthday, nextBirthday, todayParts } from '../lib/birthday'
 import { usePageScrollLock } from '../lib/scrollLock'
 import { isList } from '../lib/lists'
@@ -176,7 +177,7 @@ export function ContactView({ id }: { id: string }) {
 
           {contact.company?.trim() && (
             <Row name="Company">
-              <p className="text-base text-slate-200">{contact.company}</p>
+              <p className="break-words text-base text-slate-200"><Linked text={contact.company} /></p>
             </Row>
           )}
 
@@ -198,7 +199,7 @@ export function ContactView({ id }: { id: string }) {
           {contact.address?.trim() && (
             <Row name="Address">
               {/* `pre-line`: the line breaks are the address. */}
-              <p className="whitespace-pre-line text-base text-slate-200">{contact.address.trim()}</p>
+              <p className="whitespace-pre-line break-words text-base text-slate-200"><Linked text={contact.address.trim()} /></p>
             </Row>
           )}
 
@@ -251,7 +252,7 @@ export function ContactView({ id }: { id: string }) {
               // `whitespace-pre-wrap` and no clamp: this is the screen where the
               // note is read in full. The list card clamps to two lines; that is
               // what this view is the way out of.
-              <p className="whitespace-pre-wrap text-base leading-7 text-slate-200">{contact.notes}</p>
+              <p className="whitespace-pre-wrap break-words text-base leading-7 text-slate-200"><Linked text={contact.notes} /></p>
             ) : (
               <p className="text-sm text-slate-500">Nothing written down yet.</p>
             )}
@@ -281,5 +282,26 @@ function Row({ name, children }: { name: string; children: ReactNode }) {
       <span className={label}>{name}</span>
       {children}
     </div>
+  )
+}
+
+/**
+ * Typed text with its web links made tappable — notes, company, address.
+ *
+ * Through the suite's shared link check (@unisim/sdk's LinkifiedText, lifted
+ * from Universal QR's scanner): an ordinary link opens in a new tab; one that
+ * hides where it goes (`bank.com@evil.example`, letters from another alphabet,
+ * a bare IP address, a shortener, plain http) stops first and names the
+ * website it really opens. Only `http(s)://` and `www.` become links, so a
+ * `javascript:` pasted into a note from a CSV import stays text. The words
+ * read exactly as typed; the link takes the email row's orange.
+ */
+function Linked({ text }: { text: string }) {
+  return (
+    <LinkifiedText
+      text={text}
+      theme="dark"
+      linkClassName="break-all text-orange-300 underline underline-offset-4 hover:text-orange-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+    />
   )
 }
