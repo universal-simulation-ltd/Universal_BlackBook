@@ -17,6 +17,7 @@ import type { Side } from '../lib/swipe'
 import type { Contact, Tag } from '../lib/types'
 import { blankDraft, useBookStore } from '../stores/bookStore'
 import { useSettingsStore } from '../stores/settingsStore'
+import { useSyncStore } from '../stores/syncStore'
 import { Modal } from './Modal'
 import { SwipeRow, type SwipeAction } from './SwipeRow'
 import { ListChip } from './ListChip'
@@ -106,12 +107,18 @@ function showAction(contact: Contact, onAction: () => void): SwipeAction {
   }
 }
 
-export function ContactList() {
+/** `onImport` opens Import & export — offered from the empty book, where a
+ *  newcomer who already keeps their people in a spreadsheet or another app
+ *  would otherwise have to find it in the Actions menu. */
+export function ContactList({ onImport }: { onImport?: () => void } = {}) {
   const contacts = useBookStore((s) => s.contacts)
   const tags = useBookStore((s) => s.tags)
   const query = useBookStore((s) => s.query)
   const emailLists = useSettingsStore((s) => s.emailLists)
   const edit = useBookStore((s) => s.edit)
+  // Signed in, the book is (or is about to be) backed up online too, so
+  // "it stays on this device" is only said to somebody signed out.
+  const signedOut = useSyncStore((s) => s.state === 'signed-out')
   // Tapping a card OPENS the person, it does not edit them — see ContactView.
   const openContact = useBookStore((s) => s.view)
   const removeContact = useBookStore((s) => s.removeContact)
@@ -202,9 +209,24 @@ export function ContactList() {
           Add the people you actually want to stay in touch with, and file them however you like. Two
           tags are here to start you off — rename them, recolour them, or make your own.
         </p>
-        <button type="button" className={`${btnPrimary} mt-5`} onClick={() => edit('new')}>
-          Add your first contact
-        </button>
+        {/* Answered here, once, rather than as a standing "not backed up"
+            line (see SyncStatus in App): where a newcomer's book lives, and
+            that nothing has to be signed up for first. */}
+        {signedOut && (
+          <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
+            It stays on this device — no account needed.
+          </p>
+        )}
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+          <button type="button" className={btnPrimary} onClick={() => edit('new')}>
+            Add your first contact
+          </button>
+          {onImport && (
+            <button type="button" className={btnGhost} onClick={onImport}>
+              Import a spreadsheet
+            </button>
+          )}
+        </div>
       </div>
     )
   }

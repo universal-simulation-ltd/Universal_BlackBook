@@ -311,7 +311,7 @@ export default function App() {
             <FilterBar />
           </div>
 
-          {loaded && <ContactList />}
+          {loaded && <ContactList onImport={() => setPanel('io')} />}
 
           {/* The height of the docked filter bar, reserved at the end of the
               page. The dock is `position: fixed` below 40rem, so nothing else in
