@@ -261,10 +261,10 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
             <button
               type="button"
               className={btnSubtle}
-              aria-label={`Edit ${recent.name || 'this contact'}`}
+              aria-label={`Tune ${recent.name || 'this contact'}`}
               onClick={() => edit(recent.id)}
             >
-              Edit
+              Tune
             </button>
           </div>
           {/* The orange ring says "this one is not part of the list": the same

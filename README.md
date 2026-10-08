@@ -102,6 +102,15 @@ with them in it. Save one with no tags while a tag filter is on and the filter i
 dropped, so the person you just added is never saved out of sight. Editing
 somebody leaves the view alone.
 
+## Writing in a note without opening the form
+
+Open somebody and **tap the words of their note** to type straight into it. The
+cursor goes to the end, so adding today's entry under the last one is one tap.
+Links in the note keep working: tapping a link opens it and does not start
+typing, and just opening somebody never brings the keyboard up. The note saves
+as you type, so you can close the person straight away. **Tune** (beside Close)
+opens the full form for everything else.
+
 ## To-do
 
 ⚙ menu ▸ App preferences ▸ **To-do** adds a To-do tab beside Contacts: a name,
