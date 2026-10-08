@@ -95,6 +95,16 @@ Show. Delete asks first and names who is going. Only people still on screen are
 acted on — narrow the filter after ticking and the ones filtered out are left
 alone.
 
+**Everything at once:** Actions ▸ Advanced ▸ **Delete all data** clears this
+device completely: every contact, tag, list and to-do, the PIN, your settings
+and the remembered vault key. You type `DELETE` to confirm, and BlackBook
+reopens as a new book (with its two starting tags). It sits just below Import &
+export, so you can export first.
+
+> **Your online copy is never deleted.** The dialog says whether one exists. If
+> it does, only this device is cleared, and signing in with your vault
+> passphrase brings the book back. If it does not, nothing can.
+
 ## Adding somebody lands you on their tags
 
 Save a new contact tagged Family and Work and the list switches to Family-or-Work,
