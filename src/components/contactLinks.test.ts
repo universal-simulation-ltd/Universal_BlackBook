@@ -12,7 +12,8 @@ const view = readFileSync(fileURLToPath(new URL('./ContactView.tsx', import.meta
 
 describe('ContactView renders typed fields through <Linked>', () => {
   it.each([
-    ['notes', '<Linked text={contact.notes} />', /(^\s*|>)\{contact\.notes\}(\s*$|<)/m],
+    // `notes`, not `contact.notes`: the view shows its own draft, typed in place.
+    ['notes', '<Linked text={notes} />', /(^\s*|>)\{(contact\.)?notes\}(\s*$|<)/m],
     ['company', '<Linked text={contact.company} />', /(^\s*|>)\{contact\.company\}(\s*$|<)/m],
     ['address', '<Linked text={contact.address.trim()} />', /(^\s*|>)\{contact\.address\.trim\(\)\}(\s*$|<)/m],
   ])('%s', (_field, uses, raw) => {

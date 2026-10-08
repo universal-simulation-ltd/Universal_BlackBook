@@ -240,7 +240,7 @@ function TodoForm({ id }: { id: string }) {
   }
 
   return (
-    <Modal title={existing ? 'Edit to-do' : 'New to-do'} onClose={() => close(null)}>
+    <Modal title={existing ? 'Tune to-do' : 'New to-do'} onClose={() => close(null)}>
       <form onSubmit={submit} className="space-y-4">
         <div>
           <label htmlFor={titleId} className={label}>

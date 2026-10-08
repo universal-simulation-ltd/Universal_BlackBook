@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, type ReactNode } from 'react'
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { LinkifiedText } from '@unisim/sdk'
 import { countdownLabel, currentAge, formatBirthday, nextBirthday, todayParts } from '../lib/birthday'
 import { usePageScrollLock } from '../lib/scrollLock'
@@ -41,6 +41,7 @@ export function ContactView({ id }: { id: string }) {
   const close = useBookStore((s) => s.view)
   const edit = useBookStore((s) => s.edit)
   const addToContacts = useBookStore((s) => s.addToContacts)
+  const setNotes = useBookStore((s) => s.setNotes)
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
 
@@ -73,6 +74,43 @@ export function ContactView({ id }: { id: string }) {
     }
   }, [])
 
+  // The note is typed straight into this view (owner's request, 2026-10-08) —
+  // no trip to the form to fix a word. A local draft, saved half a second
+  // after typing stops, on blur, and before anything else can read the store:
+  // Tune (the form reads `contact.notes` when it mounts) and closing.
+  const [notes, setDraft] = useState(contact?.notes ?? '')
+  const [typing, setTyping] = useState(false)
+  const notesRef = useRef<HTMLTextAreaElement>(null)
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const draftRef = useRef(notes)
+  draftRef.current = notes
+  const flush = () => {
+    clearTimeout(timer.current)
+    timer.current = undefined
+    void setNotes(id, draftRef.current)
+  }
+  const flushRef = useRef(flush)
+  flushRef.current = flush
+  // Saved from the form on top of this, or by a sync: take the new text, but
+  // never while a keystroke of ours is still waiting to be saved.
+  const stored = contact?.notes ?? ''
+  useEffect(() => {
+    if (timer.current === undefined) setDraft(stored)
+  }, [stored])
+  // Unmounting (closed, or the contact deleted) must not drop the last word.
+  useEffect(() => () => {
+    if (timer.current !== undefined) flushRef.current()
+  }, [])
+  // Grows with its text, so the view keeps ONE scroll — the page's — rather
+  // than a box inside it. `field-sizing: content` would do this, but not on
+  // the iOS Safari this mostly runs on.
+  useLayoutEffect(() => {
+    const el = notesRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }, [notes, typing])
+
   const today = useMemo(() => todayParts(), [])
   const byId = useMemo(() => new Map(tags.map((t) => [t.id, t])), [tags])
 
@@ -94,7 +132,7 @@ export function ContactView({ id }: { id: string }) {
     !contact.address?.trim() &&
     !contact.birthdate &&
     chips.length === 0 &&
-    !contact.notes.trim()
+    !notes.trim()
 
   return (
     <dialog
@@ -126,12 +164,25 @@ export function ContactView({ id }: { id: string }) {
               thing this screen exists to offer that the list could not. Close is
               beside it because Escape and the back gesture are not discoverable
               and not available to every input. */}
-          <button type="button" className={`${btnPrimary} shrink-0`} onClick={() => edit(contact.id)}>
-            Edit
+          {/* "Tune", not "Edit" — the suite's word for changing things, as in
+              Tune this app (owner's call, 2026-10-08). Any typed note is
+              saved first, because the form reads it when it opens. */}
+          <button
+            type="button"
+            className={`${btnPrimary} shrink-0`}
+            onClick={() => {
+              flush()
+              edit(contact.id)
+            }}
+          >
+            Tune
           </button>
           <button
             type="button"
-            onClick={() => close(null)}
+            onClick={() => {
+              flush()
+              close(null)
+            }}
             aria-label="Close"
             className="shrink-0 rounded-md px-2 py-1 text-slate-400 hover:bg-slate-800 hover:text-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
           >
@@ -247,20 +298,81 @@ export function ContactView({ id }: { id: string }) {
             </Row>
           )}
 
-          <Row name="Notes">
-            {contact.notes.trim() ? (
-              // `whitespace-pre-wrap` and no clamp: this is the screen where the
-              // note is read in full. The list card clamps to two lines; that is
-              // what this view is the way out of.
-              <p className="whitespace-pre-wrap break-words text-base leading-7 text-slate-200"><Linked text={contact.notes} /></p>
+          <div>
+            {/* A real `<label>` here, unlike `Row`: this one has a control. */}
+            <label htmlFor={`${titleId}-notes`} className={label}>
+              Notes
+            </label>
+            {typing ? (
+              // Typed into directly (owner's request, 2026-10-08). Borderless,
+              // so a note still reads as a note and not as a form; no clamp
+              // and no inner scroll (see the height effect above).
+              <textarea
+                id={`${titleId}-notes`}
+                ref={notesRef}
+                rows={3}
+                autoFocus
+                // The caret goes to the END: the usual reason to tap a note is to
+                // add the next entry under the last one, as in the dated log
+                // that prompted this.
+                onFocus={(e) => {
+                  const end = e.currentTarget.value.length
+                  e.currentTarget.setSelectionRange(end, end)
+                }}
+                value={notes}
+                onChange={(e) => {
+                  const v = e.target.value
+                  setDraft(v)
+                  draftRef.current = v
+                  clearTimeout(timer.current)
+                  timer.current = setTimeout(() => flushRef.current(), 500)
+                }}
+                onBlur={() => {
+                  if (timer.current !== undefined) flush()
+                  setTyping(false)
+                }}
+                placeholder="Met at the Leeds conference. Two kids. Allergic to shellfish."
+                className="-mx-2 block w-[calc(100%+1rem)] resize-none overflow-hidden rounded-lg border-0 bg-slate-900 px-2 py-1 text-base leading-7 text-slate-100 placeholder:text-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
+              />
             ) : (
-              <p className="text-sm text-slate-500">Nothing written down yet.</p>
+              // ⚠️ Read with its links live until tapped — a textarea cannot
+              // hold a link, and the links in a note are half of why it is
+              // opened. A tap on the words (not on a link) starts typing; the
+              // keyboard only comes up then, never just for opening somebody.
+              // A div and not a button: a button may not hold links.
+              <div
+                id={`${titleId}-notes`}
+                role="textbox"
+                aria-multiline="true"
+                aria-readonly="false"
+                tabIndex={0}
+                onClick={(e) => {
+                  if ((e.target as HTMLElement).closest('a, button')) return
+                  setTyping(true)
+                }}
+                onKeyDown={(e) => {
+                  if (e.target !== e.currentTarget) return
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    setTyping(true)
+                  }
+                }}
+                className="-mx-2 cursor-text rounded-lg px-2 py-1 hover:bg-slate-900/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
+              >
+                {notes.trim() ? (
+                  <p className="whitespace-pre-wrap break-words text-base leading-7 text-slate-200">
+                    <Linked text={notes} />
+                  </p>
+                ) : (
+                  <p className="text-base leading-7 text-slate-500">Nothing written down yet — tap to start.</p>
+                )}
+              </div>
             )}
-          </Row>
+          </div>
 
           {bare && (
             <p className="text-sm text-slate-500">
-              A name and nothing else so far. Edit them to add an email, a number, a birthday or the
+              A name and nothing else so far. Tune them to add an email, a number, a birthday or the
               thing you want to remember.
             </p>
           )}

@@ -117,6 +117,12 @@ interface BookState {
   setBirthdayHidden: (id: string, hidden: boolean) => Promise<void>
   /** Show or hide this person in the main list. Search still finds them. */
   setListHidden: (id: string, hidden: boolean) => Promise<void>
+  /**
+   * Just the notes, typed straight into the full-screen view (owner's request,
+   * 2026-10-08). Not `saveContact`: that closes the form, clears the stash and
+   * can move the list's filter — none of which a note written in place should do.
+   */
+  setNotes: (id: string, notes: string) => Promise<void>
   removeContact: (id: string) => Promise<void>
   /** Select mode's bulk actions — see ContactList. */
   removeContacts: (ids: string[]) => Promise<void>
@@ -377,6 +383,14 @@ export const useBookStore = create<BookState>((set, get) => ({
     const existing = get().contacts.find((c) => c.id === id)
     if (!existing) return
     const next: Contact = { ...existing, hideFromList: hidden ? true : undefined, updatedAt: Date.now() }
+    set((s) => ({ contacts: s.contacts.map((c) => (c.id === id ? next : c)) }))
+    await putContact(next)
+  },
+
+  setNotes: async (id, notes) => {
+    const existing = get().contacts.find((c) => c.id === id)
+    if (!existing || existing.notes === notes) return
+    const next: Contact = { ...existing, notes, updatedAt: Date.now() }
     set((s) => ({ contacts: s.contacts.map((c) => (c.id === id ? next : c)) }))
     await putContact(next)
   },
