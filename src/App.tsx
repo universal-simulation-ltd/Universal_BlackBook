@@ -156,6 +156,7 @@ export default function App() {
           <AppMenu
             onTags={() => setPanel('tags')}
             onImportExport={() => setPanel('io')}
+            onBackup={openCloud}
             onDeleteAll={() => setPanel('wipe')}
           />
         }
@@ -674,14 +675,9 @@ function useCloudSync(openPanel: () => void) {
       // because a sign-in that went via the hub comes back as a fresh page
       // load with the session already there.
       if (cancelled || !userId) return
-      const { state, pending } = useSyncStore.getState()
-      // A merge question is data at stake, not a courtesy: opened every time,
-      // whatever the once-per-account flag says. It comes from a remembered
-      // device that has contacts the online copy lacks (see `hydrate`).
-      if (pending) {
-        openPanel()
-        return
-      }
+      // No merge question to open for any more: `hydrate` merges a device's
+      // own entries in by itself (owner's call, 2026-10-08).
+      const { state } = useSyncStore.getState()
       if ((state === 'locked' || state === 'off') && readPrompted() !== userId) {
         writePrompted(userId)
         openPanel()

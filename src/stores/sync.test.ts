@@ -168,24 +168,24 @@ describe('two devices, one account', () => {
     expect(b.book.getState().tags.map((t) => t.name)).toEqual(['Work'])
   })
 
-  it('a second device that ALREADY has contacts is asked, and adopting replaces', async () => {
+  it('a second device that ALREADY has contacts (a guest’s) gets both books, unasked, and they go online', async () => {
     const a = await boot(server)
     await seed(a, ['Ada'])
     await use(a).sync.getState().enable(a.client, USER, PASS, true)
+    const revAfterEnable = server.row!.rev
 
     const b = await boot(server)
     await seed(b, ['Bob'])
     await use(b).sync.getState().unlock(b.client, USER, PASS, true)
 
-    // ⚠️ The book is UNTOUCHED until the question is answered. "Use the online
-    // copy only" throws this device's contacts away, so unlocking must not
-    // pick an answer for them.
-    expect(use(b).sync.getState().pending).not.toBeNull()
-    expect(names(b)).toEqual(['Bob'])
-
-    await use(b).sync.getState().adoptPending()
-    expect(names(b)).toEqual(['Ada'])
+    // No question (owner's call, 2026-10-08): the passphrase is the last thing
+    // asked, and the guest's contacts are folded into the online copy.
     expect(use(b).sync.getState().pending).toBeNull()
+    expect(names(b)).toEqual(['Ada', 'Bob'])
+    expect(server.row!.rev).toBe(revAfterEnable + 1)
+
+    await use(a).sync.getState().pull(a.client)
+    expect(names(a)).toEqual(['Ada', 'Bob'])
   })
 
   it('merging keeps both books and pushes the union online', async () => {
@@ -401,7 +401,7 @@ describe('edits made while signed out (owner report, 2026-09-29)', () => {
   // The report: add a contact signed out, sign in, the contact is gone. A
   // sign-out BlackBook never saw leaves the remembered key on the disk, so the
   // sign-in is a hydrate with that key, not an unlock with a passphrase.
-  it('a remembered device BEHIND the server asks, keeps the contact, and pushes nothing', async () => {
+  it('a remembered device BEHIND the server merges the contact in by itself, and pushes it', async () => {
     const { a, b } = await twoUnlockedDevices(server)
     await seed(b, ['Ada', 'Grace'])
     await use(b).sync.getState().push(b.client)
@@ -412,13 +412,8 @@ describe('edits made while signed out (owner report, 2026-09-29)', () => {
     const back = await reload(server, a)
     await use(back).sync.getState().hydrate(back.client, USER)
 
-    expect(use(back).sync.getState().pending).not.toBeNull()
-    expect(names(back)).toEqual(['Ada', 'Linus'])
-    // Nothing goes up while the question is open, however the autosave fires.
-    await use(back).sync.getState().push(back.client)
-    expect(server.row!.rev).toBe(onlineRev)
-
-    await use(back).sync.getState().mergePending(back.client)
+    // Neither Linus (this device) nor Grace (the other one) is lost.
+    expect(use(back).sync.getState().pending).toBeNull()
     expect(names(back)).toEqual(['Ada', 'Grace', 'Linus'])
     expect(server.row!.rev).toBe(onlineRev + 1)
   })
@@ -451,40 +446,21 @@ describe('edits made while signed out (owner report, 2026-09-29)', () => {
     expect(names(back)).toEqual(['Ada', 'Grace'])
   })
 
-  it('an unlock left unanswered is asked again after a reload, and never pushed over the online copy', async () => {
+  it('after a merged unlock a reload is in step: no second merge, nothing pushed again', async () => {
     const a = await boot(server)
     await seed(a, ['Ada'])
     await use(a).sync.getState().enable(a.client, USER, PASS, true)
-    const onlineRev = server.row!.rev
 
     const b = await boot(server)
     await seed(b, ['Barbara'])
     await use(b).sync.getState().unlock(b.client, USER, PASS, true)
-    expect(use(b).sync.getState().pending).not.toBeNull()
-    await use(b).sync.getState().push(b.client)
-    expect(server.row!.rev).toBe(onlineRev)
-
-    // Closed the panel, reloaded.
-    const again = await reload(server, b)
-    await use(again).sync.getState().hydrate(again.client, USER)
-    expect(use(again).sync.getState().pending).not.toBeNull()
-    expect(names(again)).toEqual(['Barbara'])
-    expect(server.row!.rev).toBe(onlineRev)
-  })
-
-  it('"use the online copy only" counts as in sync, so the next reload does not ask', async () => {
-    const a = await boot(server)
-    await seed(a, ['Ada'])
-    await use(a).sync.getState().enable(a.client, USER, PASS, true)
-    const b = await boot(server)
-    await seed(b, ['Barbara'])
-    await use(b).sync.getState().unlock(b.client, USER, PASS, true)
-    await use(b).sync.getState().adoptPending()
+    const mergedRev = server.row!.rev
 
     const again = await reload(server, b)
     await use(again).sync.getState().hydrate(again.client, USER)
     expect(use(again).sync.getState().pending).toBeNull()
-    expect(names(again)).toEqual(['Ada'])
+    expect(names(again)).toEqual(['Ada', 'Barbara'])
+    expect(server.row!.rev).toBe(mergedRev)
   })
 })
 

@@ -136,6 +136,28 @@ async function adopt(payload: VaultPayload) {
 }
 
 /**
+ * Fold a decrypted payload and this device's book together, the online copy
+ * as the base (see lib/merge.ts). Nothing is pushed here — the caller does
+ * that once sync is on.
+ *
+ * Signing in merges WITHOUT ASKING (owner's call, 2026-10-08: "when logging
+ * in and entering the passphrase, I expect to just see any entries I created
+ * as a guest and the ones saved online without a dialog"). It used to be a
+ * Merge / "Use the online copy only" question; merge is the answer that loses
+ * nothing, and the other one is a menu away (Advanced ▸ Online backup ▸
+ * Fetch online copy).
+ */
+async function mergeIn(payload: VaultPayload) {
+  const { contacts, tags } = useBookStore.getState()
+  const merged = mergeBooks({ contacts: payload.contacts ?? [], tags: payloadTags(payload) }, { contacts, tags })
+  await useBookStore.getState().importBook(merged.contacts, merged.tags, 'replace', null)
+  await useTodoStore.getState().init()
+  await useTodoStore
+    .getState()
+    .replace(mergeTodos(toTodos(payload.todos), useTodoStore.getState().todos, merged.remap))
+}
+
+/**
  * If the server's salt is not the one this device's key was derived with, the
  * passphrase was changed on another device: lock this one and say so.
  * Returns true when it locked.
@@ -271,6 +293,9 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       const book = { contacts: useBookStore.getState().contacts, todos: useTodoStore.getState().todos }
       const ask = behind && unsyncedWork(book, payload, since) > 0
       if (behind && !ask) await adopt(payload)
+      // Work this device has that the online copy lacks is merged in, not
+      // asked about — see `mergeIn` — and pushed straight after the set below.
+      if (ask) await mergeIn(payload)
       set({
         state: 'on',
         status: 'idle',
@@ -280,11 +305,12 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
         key: storedKey,
         remembered: true,
         lastPushedAt: meta.pushedAt,
-        pending: ask ? payload : null,
+        pending: null,
       })
-      // An unanswered question leaves the meta where it was, so a reload
-      // before answering asks again rather than counting as in sync.
-      if (!ask) await saveSyncMeta({ ...meta, rev: row.rev, syncedAt: behind ? Date.now() : since })
+      // A merge is in sync once it has gone up: `push` writes the meta. Until
+      // then (offline) a reload merges again, which changes nothing.
+      if (ask) await get().push(supabase)
+      else await saveSyncMeta({ ...meta, rev: row.rev, syncedAt: behind ? Date.now() : since })
     } catch (e) {
       set({ status: 'error', message: e instanceof Error ? e.message : 'Could not reach the server' })
     }
@@ -359,7 +385,7 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
         salt: row.kdf_salt,
         iterations: row.kdf_iterations,
         pushedAt: now,
-        // 0 until the merge question is answered — see SyncMeta.syncedAt.
+        // 0 until the merge has gone up (`push` sets it) — see SyncMeta.syncedAt.
         syncedAt: local > 0 ? 0 : now,
       }
       await saveSyncMeta(meta)
@@ -371,14 +397,18 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
         iterations: row.kdf_iterations,
         key,
         remembered: remember,
-        // An empty device just takes the online copy — there is nothing to
-        // lose and nothing to ask about. A device that already has contacts is
-        // asked whether to merge them in.
-        pending: local > 0 ? payload : null,
+        // An empty device just takes the online copy. One that already has
+        // contacts (a guest's) has them merged in, unasked — see `mergeIn`.
+        pending: null,
         status: 'idle',
         message: null,
       })
       if (local === 0) await adopt(payload)
+      else {
+        await mergeIn(payload)
+        // Straight up: the online copy lacks the guest's contacts until it goes.
+        await get().push(supabase)
+      }
     } catch (e) {
       set({ status: 'error', message: e instanceof Error ? e.message : 'Could not reach the server' })
     }
@@ -396,13 +426,7 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
   mergePending: async (supabase) => {
     const { pending } = get()
     if (!pending) return
-    const { contacts, tags } = useBookStore.getState()
-    const merged = mergeBooks({ contacts: pending.contacts ?? [], tags: payloadTags(pending) }, { contacts, tags })
-    await useBookStore.getState().importBook(merged.contacts, merged.tags, 'replace', null)
-    await useTodoStore.getState().init()
-    await useTodoStore
-      .getState()
-      .replace(mergeTodos(toTodos(pending.todos), useTodoStore.getState().todos, merged.remap))
+    await mergeIn(pending)
     set({ pending: null })
     // Straight up, rather than on the autosave timer: the online copy is
     // missing this device's contacts until it goes, and a second device

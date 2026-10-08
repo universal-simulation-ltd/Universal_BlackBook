@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { SignInDialog, useUniversal, useUser } from '@unisim/sdk'
 import { mergeBooks } from '../lib/merge'
 import { payloadTags } from '../lib/cloud'
@@ -37,6 +37,19 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
   const [changing, setChanging] = useState(false)
 
   const busy = sync.status === 'working'
+
+  // Done once the book is open (owner's call, 2026-10-08): entering the
+  // passphrase — or choosing one — closes the panel, and the list behind it
+  // already holds the online copy with any guest entries merged in. Only when
+  // THIS panel saw the backup locked or off: opened from Advanced on a book
+  // that is already on, it stays open for Save now and the rest.
+  const wasClosed = useRef(sync.state === 'locked' || sync.state === 'off')
+  if (sync.state === 'locked' || sync.state === 'off') wasClosed.current = true
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
+  useEffect(() => {
+    if (wasClosed.current && sync.state === 'on' && !sync.pending && sync.status !== 'error') onCloseRef.current()
+  }, [sync.state, sync.pending, sync.status])
 
   // What "Merge" would add, so the question can say so before it is answered.
   const { pending } = sync

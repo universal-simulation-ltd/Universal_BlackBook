@@ -12,18 +12,20 @@ import { KNOWLEDGE_BASE } from '../../knowledge'
 // with them went the one part of this dropdown that could drift out of step
 // with the panel around it.
 //
-// ⚠️ No "Universal ID" / backup row (owner's call, 2026-09-17). Signing in with
-// the navbar IS turning the backup on: App's useCloudSync opens the backup
-// panel by itself after sign-in and on a two-device conflict, so a menu door
-// to the same place read as a second feature.
+// Online backup IS a row here now (owner's call, 2026-10-08, reversing
+// 2026-09-17's "no backup row"): signing in asks for the passphrase and then
+// gets out of the way, so Save now, Fetch online copy, Forget this device,
+// Change passphrase and Turn off need a door that is not the sign-in itself.
 
 export default function AppMenu({
   onTags,
   onImportExport,
+  onBackup,
   onDeleteAll,
 }: {
   onTags: () => void
   onImportExport: () => void
+  onBackup: () => void
   onDeleteAll: () => void
 }) {
   return (
@@ -54,6 +56,12 @@ export default function AppMenu({
           icon={<span aria-hidden>📄</span>}
           label="Import & export"
           onSelect={onImportExport}
+        />
+        <AdvancedMenuItem
+          theme="dark"
+          icon={<span aria-hidden>☁️</span>}
+          label="Online backup"
+          onSelect={onBackup}
         />
         {/* Delete all data (owner's request, 2026-10-08 — a guest wanting
             everything gone). Last, after Import & export, so "export first"
