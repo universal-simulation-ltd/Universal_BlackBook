@@ -21,6 +21,7 @@ import { ContactList } from './components/ContactList'
 import { ContactView } from './components/ContactView'
 import { FilterBar } from './components/FilterBar'
 import { ImportExport } from './components/ImportExport'
+import { DeleteAllData } from './components/DeleteAllData'
 import { ListsView } from './components/ListsView'
 import { TodoView } from './components/TodoView'
 import { LockPanel, LockScreen } from './components/Lock'
@@ -50,7 +51,7 @@ const REPO_URL = 'https://github.com/universal-simulation-ltd/Universal_BlackBoo
 /** How long to wait after the last edit before pushing to the vault. */
 const AUTOSAVE_DELAY = 2500
 
-type Panel = 'tags' | 'io' | 'cloud' | 'lock' | null
+type Panel = 'tags' | 'io' | 'cloud' | 'lock' | 'wipe' | null
 
 // "About this app" — handed to <UniversalAppsNavBar about>, which draws it at
 // the foot of "Tune this app" (SDK 0.161.0+) and opens its own AboutAppDialog.
@@ -155,6 +156,7 @@ export default function App() {
           <AppMenu
             onTags={() => setPanel('tags')}
             onImportExport={() => setPanel('io')}
+            onDeleteAll={() => setPanel('wipe')}
           />
         }
         // ⚙ menu ▸ App preferences (SDK 0.143). The SDK adds Language and
@@ -394,6 +396,7 @@ export default function App() {
       {panel === 'io' && <ImportExport onClose={() => setPanel(null)} />}
       {panel === 'cloud' && <CloudPanel onClose={() => setPanel(null)} />}
       {panel === 'lock' && <LockPanel onClose={() => setPanel(null)} />}
+      {panel === 'wipe' && <DeleteAllData onClose={() => setPanel(null)} />}
     </div>
   )
 }

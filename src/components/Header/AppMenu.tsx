@@ -20,9 +20,11 @@ import { KNOWLEDGE_BASE } from '../../knowledge'
 export default function AppMenu({
   onTags,
   onImportExport,
+  onDeleteAll,
 }: {
   onTags: () => void
   onImportExport: () => void
+  onDeleteAll: () => void
 }) {
   return (
     <>
@@ -52,6 +54,15 @@ export default function AppMenu({
           icon={<span aria-hidden>📄</span>}
           label="Import & export"
           onSelect={onImportExport}
+        />
+        {/* Delete all data (owner's request, 2026-10-08 — a guest wanting
+            everything gone). Last, after Import & export, so "export first"
+            is the row above it. See DeleteAllData. */}
+        <AdvancedMenuItem
+          theme="dark"
+          icon={<span aria-hidden>🗑️</span>}
+          label="Delete all data"
+          onSelect={onDeleteAll}
         />
       </AdvancedMenu>
     </>
