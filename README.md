@@ -204,7 +204,11 @@ the CSV importer below, which works in every browser.
 Universal ID and BlackBook keeps a copy on UNI·SIM's servers, so your book
 survives a lost laptop and opens on your phone. Signing in is the only step:
 BlackBook then asks for your passphrase and downloads your book. If this device
-already has contacts, it asks whether to merge them in.
+already has contacts or to-dos (say, ones you made as a guest), they are merged
+into the online copy and saved straight away — there is no question to answer.
+Everything else about the backup (Save now, Fetch online copy, Forget this
+device, Change passphrase, Turn off) is under Actions ▸ Advanced ▸ **Online
+backup**.
 
 > **We cannot read it.** The book is encrypted in your browser with AES-GCM-256,
 > under a key derived from a passphrase you choose (PBKDF2-SHA-256, 600,000
@@ -224,13 +228,16 @@ The merge on sign-in adds this device's contacts that the online copy does not
 have. The same person is matched by id, or by name plus email or phone, and is
 never added twice. After that, the online copy is a whole-book snapshot: if two
 signed-in devices have both changed, BlackBook stops and asks which one to keep
-rather than silently picking.
+rather than silently picking. To take the online copy as it stands instead of
+merging, use **Fetch online copy** in the Online backup panel. Because the merge
+only ever adds, someone deleted on another device can come back from a device
+that still has them.
 
-**Changing the passphrase** — Online backup → Change passphrase. It asks for
+**Changing the passphrase** — Advanced ▸ Online backup ▸ Change passphrase. It asks for
 the current one (even on a device that remembers the key), then re-encrypts the
 book under a new salt in a single write. Your other devices stop syncing and
-ask for the new passphrase; nothing on them is lost, and unlocking offers to
-merge their contacts back in. A device still holding the old key can never
+ask for the new passphrase; nothing on them is lost, and unlocking merges
+their contacts back in. A device still holding the old key can never
 write it back over the change. Knowing the current passphrase is required, so
 this is not a recovery route.
 

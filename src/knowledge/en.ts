@@ -178,9 +178,9 @@ The backup has a size limit of about 2 MB of encrypted data, which is many thous
 
 1. Sign in with your Universal ID.
 2. Enter your backup passphrase.
-3. If this device already has contacts of its own, BlackBook asks whether to merge them in or to use the online copy only.
+3. If this device already has contacts or to-dos of its own, such as ones you added before signing in, BlackBook merges them into the online copy and saves it straight away. There is nothing to choose.
 
-When merging, the online copy is the starting point and this device's contacts are added to it. Someone who is already there, matched by the same card or by the same name with the same email or phone number, is not added twice. Tags with the same name become one tag.
+When merging, the online copy is the starting point and this device's contacts are added to it. Someone who is already there, matched by the same card or by the same name with the same email or phone number, is not added twice. Tags with the same name become one tag. Merging only ever adds, so someone you deleted on another device can come back from a device that still has them. To take the online copy exactly as it is instead, open Actions, then Advanced, then Online backup, and choose Fetch online copy.
 
 ## Saving
 
@@ -192,7 +192,7 @@ The online copy is saved as a whole book. If two devices have both changed the b
 
 ## After a passphrase change
 
-When you change the passphrase on one device, your other devices stop saving and ask for the new passphrase. Nothing on them is lost, and when you unlock them they offer to merge their contacts back in. A device still holding the old key cannot write over the change.`,
+When you change the passphrase on one device, your other devices stop saving and ask for the new passphrase. Nothing on them is lost, and when you unlock them their contacts are merged back in. A device still holding the old key cannot write over the change.`,
   },
 ]
 
