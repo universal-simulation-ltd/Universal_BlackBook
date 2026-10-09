@@ -180,12 +180,12 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
     () => (birthdays || searching ? [] : hiddenFromList(contacts)),
     [birthdays, searching, contacts],
   )
-  // The "Last added" card over the list — for checking somebody you have just
+  // The "Last added" cards over the list — for checking somebody you have just
   // filed. Not in the birthdays view (soonest first is its whole order), not
-  // while searching (the results are the answer), and not when that person
+  // while searching (the results are the answer), and not when the newest
   // already heads the list, which "Recently added" does by design.
   const recent = useMemo(() => lastAdded(contacts, listIds), [contacts, listIds])
-  const showRecent = recent !== null && !birthdays && !searching && visible[0]?.id !== recent.id
+  const showRecent = recent.length > 0 && !birthdays && !searching && visible[0]?.id !== recent[0].id
   // ⚠️ What an action acts on is the selection AS SEEN — the ticked people
   // still on screen. Tick five, then narrow the filter to a tag two of them
   // lack, and Delete must not take out two people you can no longer see.
@@ -252,37 +252,47 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
     <>
       {showRecent && !selecting && (
         <section aria-labelledby={recentId} className="mb-3">
-          <div className="mb-1.5 flex items-center justify-between gap-3 px-1">
-            <h2 id={recentId} className="text-xs font-medium text-slate-400">
-              Last added <span className="font-normal text-slate-500">{addedWhen(recent.createdAt)}</span>
-            </h2>
-            {/* Straight to the form: the card exists so a mistake is one tap
-                from fixed, and opening the person first would make it two. */}
-            <button
-              type="button"
-              className={btnSubtle}
-              aria-label={`Tune ${recent.name || 'this contact'}`}
-              onClick={() => edit(recent.id)}
-            >
-              Tune
-            </button>
-          </div>
-          {/* The orange ring says "this one is not part of the list": the same
-              person is in their usual place below, and two identical cards
-              read as a duplicate entry. */}
+          <h2 id={recentId} className="mb-1.5 px-1 text-xs font-medium text-slate-400">
+            Last added
+          </h2>
+          {/* As many as fill one row of the list's own grid — one on a phone,
+              two at sm, three at xl — so a wide screen is not one card and
+              two empty columns. The extras are hidden by breakpoint rather
+              than measured, so the row never reflows after first paint. */}
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-            <div className="rounded-xl ring-1 ring-orange-500/40">
-              {/* No swipe row: this is a second copy of a card that is also in
-                  the list below, and a Delete on the copy is one more place to
-                  flick somebody away by accident. */}
-              <ContactRow
-                contact={recent}
-                byId={byId}
-                onOpen={() => openContact(recent.id)}
-                countdown={null}
-                age={currentAge(recent.birthdate, today)}
-              />
-            </div>
+            {recent.map((c, i) => (
+              <div key={c.id} className={i === 1 ? 'hidden sm:block' : i === 2 ? 'hidden xl:block' : undefined}>
+                <div className="mb-1 flex items-center justify-between gap-3 px-1">
+                  <span className="text-xs text-slate-500">{addedWhen(c.createdAt)}</span>
+                  {/* Straight to the form: the card exists so a mistake is one
+                      tap from fixed, and opening the person first would make
+                      it two. */}
+                  <button
+                    type="button"
+                    className={btnSubtle}
+                    aria-label={`Tune ${c.name || 'this contact'}`}
+                    onClick={() => edit(c.id)}
+                  >
+                    Tune
+                  </button>
+                </div>
+                {/* The orange ring says "this one is not part of the list": the
+                    same person is in their usual place below, and two
+                    identical cards read as a duplicate entry. */}
+                <div className="rounded-xl ring-1 ring-orange-500/40">
+                  {/* No swipe row: this is a second copy of a card that is also
+                      in the list below, and a Delete on the copy is one more
+                      place to flick somebody away by accident. */}
+                  <ContactRow
+                    contact={c}
+                    byId={byId}
+                    onOpen={() => openContact(c.id)}
+                    countdown={null}
+                    age={currentAge(c.birthdate, today)}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
         </section>
       )}

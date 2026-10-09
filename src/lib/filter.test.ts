@@ -360,39 +360,61 @@ describe('hiding a tag — the second tap on its chip', () => {
 })
 
 describe('lastAdded', () => {
-  it('picks the newest by createdAt, wherever it sits in the book', () => {
+  const ids = (cs: { id: string }[]) => cs.map((c) => c.id)
+
+  it('lists the newest by createdAt first, wherever they sit in the book', () => {
     const book = [
       contact({ id: 'a', createdAt: 10 }),
       contact({ id: 'b', createdAt: 30 }),
       contact({ id: 'c', createdAt: 20 }),
     ]
-    expect(lastAdded(book)?.id).toBe('b')
+    expect(ids(lastAdded(book))).toEqual(['b', 'c', 'a'])
+  })
+
+  it('stops at max — three unless told otherwise', () => {
+    const book = [1, 2, 3, 4, 5].map((n) => contact({ id: `p${n}`, createdAt: n }))
+    expect(ids(lastAdded(book))).toEqual(['p5', 'p4', 'p3'])
+    expect(ids(lastAdded(book, new Set(), 1))).toEqual(['p5'])
   })
 
   it('goes by when they were added, not when they were last edited', () => {
     const book = [contact({ id: 'new', createdAt: 30, updatedAt: 30 }), contact({ id: 'old', createdAt: 10, updatedAt: 99 })]
-    expect(lastAdded(book)?.id).toBe('new')
+    expect(ids(lastAdded(book))[0]).toBe('new')
   })
 
   it('shows nobody for an import, where the newest moment is shared', () => {
     const book = [contact({ id: 'a', createdAt: 10 }), contact({ id: 'b', createdAt: 50 }), contact({ id: 'c', createdAt: 50 })]
-    expect(lastAdded(book)).toBeNull()
+    expect(lastAdded(book)).toEqual([])
   })
 
-  it('shows a person added by hand after an import', () => {
-    const book = [contact({ id: 'a', createdAt: 50 }), contact({ id: 'b', createdAt: 50 }), contact({ id: 'me', createdAt: 60 })]
-    expect(lastAdded(book)?.id).toBe('me')
+  it('shows people added by hand after an import, and stops at the import', () => {
+    const book = [
+      contact({ id: 'x', createdAt: 10 }),
+      contact({ id: 'a', createdAt: 50 }),
+      contact({ id: 'b', createdAt: 50 }),
+      contact({ id: 'me', createdAt: 60 }),
+    ]
+    expect(ids(lastAdded(book))).toEqual(['me'])
   })
 
   it('shows nobody when the newest is hidden or kept off Contacts', () => {
-    expect(lastAdded([contact({ id: 'a', createdAt: 1 }), contact({ id: 'h', createdAt: 2, hideFromList: true })])).toBeNull()
+    expect(lastAdded([contact({ id: 'a', createdAt: 1 }), contact({ id: 'h', createdAt: 2, hideFromList: true })])).toEqual([])
     const lists = new Set(['news'])
     const listOnly = contact({ id: 'l', createdAt: 2, listOnly: true, tagIds: ['news'] })
-    expect(lastAdded([contact({ id: 'a', createdAt: 1 }), listOnly], lists)).toBeNull()
+    expect(lastAdded([contact({ id: 'a', createdAt: 1 }), listOnly], lists)).toEqual([])
   })
 
-  it('is null for an empty book', () => {
-    expect(lastAdded([])).toBeNull()
+  it('ends the run at a hidden person rather than skipping past them', () => {
+    const book = [
+      contact({ id: 'old', createdAt: 1 }),
+      contact({ id: 'h', createdAt: 2, hideFromList: true }),
+      contact({ id: 'new', createdAt: 3 }),
+    ]
+    expect(ids(lastAdded(book))).toEqual(['new'])
+  })
+
+  it('is empty for an empty book', () => {
+    expect(lastAdded([])).toEqual([])
   })
 })
 

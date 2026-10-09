@@ -340,33 +340,33 @@ export function hiddenFromList(contacts: Contact[]): Contact[] {
 }
 
 /**
- * The person added most recently, for the "Last added" card over the list
- * (owner's request, 2026-09-29: "on mobile I add a contact and then want to see
- * it with easy access in case I made a mistake").
+ * The people added most recently, newest first, for the "Last added" cards
+ * over the list (owner's request, 2026-09-29: "on mobile I add a contact and
+ * then want to see it with easy access in case I made a mistake"; widened to
+ * several on 2026-10-09 so a wide screen fills its row instead of showing one
+ * card and two empty columns). The screen decides how many it SHOWS — this is
+ * at most `max`.
  *
  * By `createdAt`, never `updatedAt`: fixing the typo is the point of the card,
  * and an edit that swapped it for somebody else would move it mid-correction.
  *
- * `null` in three cases:
- * - The newest person is kept off Contacts (list-only) or hidden from the list.
- *   Both were put out of the way on purpose.
- * - The newest moment is SHARED. An import stamps every row with one `now`,
- *   and "last added" out of 200 is an arbitrary one of them.
- * - The book is empty.
+ * It is the unbroken run of newest adds, and it ends at the first person who:
+ * - is kept off Contacts (list-only) or hidden from the list — put out of the
+ *   way on purpose, so not paraded over it;
+ * - shares their added moment with anybody. An import stamps every row with
+ *   one `now`, and "last added" out of 200 is an arbitrary one of them.
+ * So if the NEWEST is either of those, the run is empty — as is an empty book.
  */
-export function lastAdded(contacts: Contact[], listIds: Set<string> = new Set()): Contact | null {
-  let newest: Contact | null = null
-  let tied = false
-  for (const c of contacts) {
-    if (!newest || c.createdAt > newest.createdAt) {
-      newest = c
-      tied = false
-    } else if (c.createdAt === newest.createdAt) {
-      tied = true
-    }
+export function lastAdded(contacts: Contact[], listIds: Set<string> = new Set(), max = 3): Contact[] {
+  const count = new Map<number, number>()
+  for (const c of contacts) count.set(c.createdAt, (count.get(c.createdAt) ?? 0) + 1)
+  const run: Contact[] = []
+  for (const c of [...contacts].sort((a, b) => b.createdAt - a.createdAt)) {
+    if (run.length >= max) break
+    if (count.get(c.createdAt)! > 1 || c.hideFromList || keptOffContacts(c, listIds)) break
+    run.push(c)
   }
-  if (!newest || tied || newest.hideFromList || keptOffContacts(newest, listIds)) return null
-  return newest
+  return run
 }
 
 /** When somebody was added, to follow "Last added": "today", "yesterday", "12 Sept", "12 Sept 2025". */
