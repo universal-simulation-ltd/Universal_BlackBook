@@ -77,7 +77,7 @@ export function ContactView({ id }: { id: string }) {
   // The note is typed straight into this view (owner's request, 2026-10-08) —
   // no trip to the form to fix a word. A local draft, saved half a second
   // after typing stops, on blur, and before anything else can read the store:
-  // Tune (the form reads `contact.notes` when it mounts) and closing.
+  // Fine-tune (the form reads `contact.notes` when it mounts) and closing.
   const [notes, setDraft] = useState(contact?.notes ?? '')
   const [typing, setTyping] = useState(false)
   const notesRef = useRef<HTMLTextAreaElement>(null)
@@ -164,8 +164,8 @@ export function ContactView({ id }: { id: string }) {
               thing this screen exists to offer that the list could not. Close is
               beside it because Escape and the back gesture are not discoverable
               and not available to every input. */}
-          {/* "Tune", not "Edit" — the suite's word for changing things, as in
-              Tune this app (owner's call, 2026-10-08). Any typed note is
+          {/* "Fine-tune", not "Edit" — the suite's word for adjusting one entry;
+              Tune this app stays for the app-wide dialog (owner, 2026-10-09). Any typed note is
               saved first, because the form reads it when it opens. */}
           <button
             type="button"
@@ -175,7 +175,7 @@ export function ContactView({ id }: { id: string }) {
               edit(contact.id)
             }}
           >
-            Tune
+            Fine-tune
           </button>
           <button
             type="button"
@@ -372,7 +372,7 @@ export function ContactView({ id }: { id: string }) {
 
           {bare && (
             <p className="text-sm text-slate-500">
-              A name and nothing else so far. Tune them to add an email, a number, a birthday or the
+              A name and nothing else so far. Fine-tune them to add an email, a number, a birthday or the
               thing you want to remember.
             </p>
           )}

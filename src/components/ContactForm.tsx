@@ -324,7 +324,7 @@ export function ContactForm({ id }: { id: string }) {
   }
 
   return (
-    <Modal title={existing ? 'Tune contact' : 'Add new'} onClose={dismiss}>
+    <Modal title={existing ? 'Fine-tune contact' : 'Add new'} onClose={dismiss}>
       <form onSubmit={submit} className="space-y-4">
         {offering && (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-orange-900/60 bg-orange-950/30 px-3 py-2.5">

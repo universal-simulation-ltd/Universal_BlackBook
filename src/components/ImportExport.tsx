@@ -102,21 +102,31 @@ export function ImportExport({ onClose }: { onClose: () => void }) {
     }
   }
 
+  // An empty book opens on Import (owner, 2026-10-09): there is nothing to
+  // export yet, so the one useful thing goes first and Export drops to the
+  // foot. Read ONCE, at open — an import that fills the book must not swap
+  // the sections round under the pointer.
+  const [importFirst] = useState(() => contacts.length === 0)
+
+  const exportSection = (
+    <section className={importFirst ? 'space-y-2 border-t border-slate-800 pt-4' : 'space-y-2'}>
+      <h3 className="text-sm font-semibold text-slate-100">Export</h3>
+      <p className="text-sm text-slate-400">
+        A plain CSV — Name, Email, Tags, Notes, Birthday, Phone. Opens in any spreadsheet, and
+        BlackBook reads it straight back in.
+      </p>
+      <button type="button" className={btnPrimary} onClick={download} disabled={contacts.length === 0}>
+        Download {contacts.length} {contacts.length === 1 ? 'contact' : 'contacts'}
+      </button>
+    </section>
+  )
+
   return (
     <Modal title="Import & export" onClose={onClose}>
       <div className="space-y-5">
-        <section className="space-y-2">
-          <h3 className="text-sm font-semibold text-slate-100">Export</h3>
-          <p className="text-sm text-slate-400">
-            A plain CSV — Name, Email, Tags, Notes, Birthday, Phone. Opens in any spreadsheet, and
-            BlackBook reads it straight back in.
-          </p>
-          <button type="button" className={btnPrimary} onClick={download} disabled={contacts.length === 0}>
-            Download {contacts.length} {contacts.length === 1 ? 'contact' : 'contacts'}
-          </button>
-        </section>
+        {!importFirst && exportSection}
 
-        <section className="space-y-2 border-t border-slate-800 pt-4">
+        <section className={importFirst ? 'space-y-2' : 'space-y-2 border-t border-slate-800 pt-4'}>
           <h3 className="text-sm font-semibold text-slate-100">Import</h3>
           <p className="text-sm text-slate-400">
             Any CSV with a Name or Email column. Tags in the file are matched to yours by name and created
@@ -183,6 +193,7 @@ export function ImportExport({ onClose }: { onClose: () => void }) {
             </button>
           </section>
         )}
+        {importFirst && exportSection}
       </div>
     </Modal>
   )
