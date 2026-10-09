@@ -21,7 +21,7 @@ import { useSyncStore } from '../stores/syncStore'
 import { Modal } from './Modal'
 import { SwipeRow, type SwipeAction } from './SwipeRow'
 import { ListChip } from './ListChip'
-import { TagChip } from './TagChip'
+import { TagDot } from './TagChip'
 import { TagPicker } from './TagPicker'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle } from './ui'
 
@@ -935,9 +935,18 @@ export function ContactRow({
         } ${dimmed ? 'opacity-60' : ''}`}
       >
         <div className="min-w-0">
-          <p className={`truncate font-semibold text-slate-100 ${onToggleHidden || pressed !== undefined ? 'pr-8' : ''}`}>
-            {contact.name || 'Unnamed'}
-          </p>
+          {/* The tags ride on the name as lights, not as a row of chips —
+              see TagDot. The name truncates first; the lights stay whole. */}
+          <div className={`flex min-w-0 items-center gap-1 ${onToggleHidden || pressed !== undefined ? 'pr-8' : ''}`}>
+            <p className="min-w-0 truncate font-semibold text-slate-100">{contact.name || 'Unnamed'}</p>
+            {tagChips.length > 0 && (
+              <span className="-my-0.5 flex shrink-0 items-center">
+                {tagChips.map((t) => (
+                  <TagDot key={t.id} name={t.name} colour={t.colour} />
+                ))}
+              </span>
+            )}
+          </div>
           {contact.company && <p className="truncate text-sm text-slate-300">{contact.company}</p>}
           {contact.email && <p className="truncate text-sm text-slate-400">{contact.email}</p>}
           {/* Plain text, not a `tel:` link. The whole card is already a button
@@ -977,11 +986,10 @@ export function ContactRow({
           <p className="text-xs text-slate-500">{formatBirthday(contact.birthdate)}</p>
         )}
 
-        {chips.length > 0 && (
+        {/* Lists keep their chip: a list is a different kind of thing from a
+            tag (see ListChip) and has no colour of its own to be a light. */}
+        {listChips.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
-            {tagChips.map((t) => (
-              <TagChip key={t.id} name={t.name} colour={t.colour} />
-            ))}
             {listChips.map((t) => (
               <ListChip key={t.id} name={t.name} />
             ))}

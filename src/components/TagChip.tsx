@@ -94,3 +94,37 @@ export function TagChip({
     </ChipToggle>
   )
 }
+
+/**
+ * A tag as just its LIGHT, inline with a contact card's name, that opens out
+ * into the chip on hover (owner's request, 2026-10-09: "don't show category
+ * chips, just the lights inline with the title and if hovering expand it to
+ * the chip to see what it is"). The card is for scanning; the full chips are
+ * one tap away on the contact's own screen.
+ *
+ * Not focusable and not a button: the whole card is already a button, and a
+ * control inside it is invalid HTML. The name is always in the DOM — squeezed
+ * to zero width, not removed — so a screen reader still hears every tag, and
+ * `title` answers on a long press where there is no hover.
+ */
+export function TagDot({ name, colour }: { name: string; colour: string }) {
+  const s = swatch(colour)
+  const style = { '--tag-bg': s.bg, '--tag-border': s.border } as CSSProperties
+  return (
+    <span
+      title={name}
+      style={style}
+      className="group/dot inline-flex min-w-0 items-center rounded-full border border-transparent px-1 py-0.5 transition-[background-color,border-color] duration-150 hover:border-[var(--tag-border)] hover:bg-[var(--tag-bg)]"
+    >
+      <svg viewBox="0 0 10 10" className="h-2.5 w-2.5 shrink-0" aria-hidden>
+        <circle cx="5" cy="5" r="4" fill={s.dot} />
+      </svg>
+      <span
+        style={{ color: s.text }}
+        className="max-w-0 overflow-hidden whitespace-nowrap text-xs font-medium opacity-0 transition-[max-width,opacity,margin] duration-150 group-hover/dot:ml-1 group-hover/dot:max-w-40 group-hover/dot:opacity-100"
+      >
+        {name}
+      </span>
+    </span>
+  )
+}
