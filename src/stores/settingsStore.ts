@@ -59,6 +59,12 @@ interface SettingsState extends Settings {
   tune: { focus: 'fields' | null } | null
   openTune: (focus?: 'fields') => void
   closeTune: () => void
+  /**
+   * Tune this app ▸ Reset to defaults (SDK 0.170): every switch back to off
+   * and the contact form back to Name and Notes. Nothing in the book changes —
+   * a To-do list with the tab turned off is kept, as it always is.
+   */
+  reset: () => void
 }
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
@@ -81,4 +87,12 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   tune: null,
   openTune: (focus) => set({ tune: { focus: focus ?? null } }),
   closeTune: () => set({ tune: null }),
+  reset: () => {
+    set({ ...DEFAULTS })
+    try {
+      localStorage.removeItem(KEY)
+    } catch {
+      // Unreadable storage already means the defaults.
+    }
+  },
 }))
