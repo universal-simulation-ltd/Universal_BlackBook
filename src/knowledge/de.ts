@@ -52,7 +52,7 @@ Da das Adressbuch auf Ihrem Gerät womöglich die einzige Kopie ist, lohnt sich 
 1. Exportieren Sie ab und zu eine CSV-Datei und bewahren Sie sie sicher auf, oder
 2. melden Sie sich mit Ihrer Universal ID an und schalten Sie die verschlüsselte Online-Sicherung ein.
 
-## Einstellungen
+## Diese App anpassen
 
 Einstellungen dazu, wie die App auf diesem Gerät aussieht und sich verhält, etwa welche Tabs angezeigt werden, bleiben nur auf diesem Gerät und gehören nicht zur Sicherung.`,
   },
@@ -98,7 +98,7 @@ Schlagwörter sind Ihre eigenen Bezeichnungen, etwa Familie, Arbeit oder Buchclu
 
 ## E-Mail-Listen
 
-Wenn Sie E-Mail-Listen in den Einstellungen der App einschalten, können Sie Gruppen von Personen führen, denen Sie gemeinsam schreiben. Eine Liste ist eine Art Schlagwort. Wenn Sie eine Liste kopieren, erhalten Sie eine Zeile mit Namen und Adressen, die Sie direkt in das An-Feld von Gmail, Outlook oder Apple Mail einfügen können. Personen ohne E-Mail-Adresse werden ausgelassen, und eine doppelte Adresse erscheint nur einmal.
+Wenn Sie E-Mail-Listen unter **Diese App anpassen** einschalten, können Sie Gruppen von Personen führen, denen Sie gemeinsam schreiben. Eine Liste ist eine Art Schlagwort. Wenn Sie eine Liste kopieren, erhalten Sie eine Zeile mit Namen und Adressen, die Sie direkt in das An-Feld von Gmail, Outlook oder Apple Mail einfügen können. Personen ohne E-Mail-Adresse werden ausgelassen, und eine doppelte Adresse erscheint nur einmal.
 
 ## Jemanden aus der Liste ausblenden
 

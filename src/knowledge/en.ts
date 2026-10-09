@@ -52,7 +52,7 @@ Because the book on your device may be the only copy, it is worth keeping anothe
 1. Export a CSV file from time to time and keep it somewhere safe, or
 2. Sign in with your Universal ID and turn on the encrypted online backup.
 
-## Preferences
+## Tune this app
 
 Choices about how the app looks and behaves on this device, such as which tabs are shown, are kept on this device only and are not part of the backup.`,
   },
@@ -98,7 +98,7 @@ Tags are your own labels, such as Family, Work or Book club. A new book starts w
 
 ## Email lists
 
-If you turn on email lists in the app's preferences, you can keep groups of people you email together. A list is a kind of tag. Copying a list gives you a line of names and addresses ready to paste into the To field of Gmail, Outlook or Apple Mail. People without an email address are left out, and an address that appears twice is included once.
+If you turn on email lists in **Tune this app**, you can keep groups of people you email together. A list is a kind of tag. Copying a list gives you a line of names and addresses ready to paste into the To field of Gmail, Outlook or Apple Mail. People without an email address are left out, and an address that appears twice is included once.
 
 ## Hiding someone from the list
 

@@ -52,7 +52,7 @@ Como la libreta de su dispositivo puede ser la única copia, conviene tener otra
 1. Exporte de vez en cuando un archivo CSV y guárdelo en un lugar seguro, o
 2. Inicie sesión con su Universal ID y active la copia de seguridad en línea cifrada.
 
-## Preferencias
+## Ajustar esta app
 
 Las opciones sobre el aspecto y el funcionamiento de la aplicación en este dispositivo, como las pestañas que se muestran, se quedan solo en este dispositivo y no forman parte de la copia de seguridad.`,
   },
@@ -98,7 +98,7 @@ Las etiquetas son sus propios rótulos, como Familia, Trabajo o Club de lectura.
 
 ## Listas de correo
 
-Si activa las listas de correo en las preferencias de la aplicación, puede guardar grupos de personas a las que escribe a la vez. Una lista es un tipo de etiqueta. Al copiar una lista obtiene una línea de nombres y direcciones lista para pegar en el campo Para de Gmail, Outlook o Apple Mail. Las personas sin correo quedan fuera, y una dirección repetida se incluye una sola vez.
+Si activa las listas de correo en **Ajustar esta app**, puede guardar grupos de personas a las que escribe a la vez. Una lista es un tipo de etiqueta. Al copiar una lista obtiene una línea de nombres y direcciones lista para pegar en el campo Para de Gmail, Outlook o Apple Mail. Las personas sin correo quedan fuera, y una dirección repetida se incluye una sola vez.
 
 ## Ocultar a alguien de la lista
 

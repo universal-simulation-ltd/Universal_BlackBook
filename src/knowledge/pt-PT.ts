@@ -52,7 +52,7 @@ Como a agenda no seu dispositivo pode ser a única cópia, vale a pena ter outra
 1. Exporte de vez em quando um ficheiro CSV e guarde-o num local seguro, ou
 2. Inicie sessão com o seu Universal ID e ative a cópia de segurança online encriptada.
 
-## Preferências
+## Ajustar esta aplicação
 
 As escolhas sobre o aspeto e o comportamento da aplicação neste dispositivo, como os separadores apresentados, ficam apenas neste dispositivo e não fazem parte da cópia de segurança.`,
   },
@@ -98,7 +98,7 @@ As etiquetas são rótulos seus, como Família, Trabalho ou Clube de leitura. Um
 
 ## Listas de email
 
-Se ativar as listas de email nas preferências da aplicação, pode manter grupos de pessoas a quem escreve em conjunto. Uma lista é um tipo de etiqueta. Copiar uma lista dá-lhe uma linha de nomes e endereços pronta a colar no campo Para do Gmail, do Outlook ou do Apple Mail. As pessoas sem email ficam de fora, e um endereço repetido entra apenas uma vez.
+Se ativar as listas de email em **Ajustar esta aplicação**, pode manter grupos de pessoas a quem escreve em conjunto. Uma lista é um tipo de etiqueta. Copiar uma lista dá-lhe uma linha de nomes e endereços pronta a colar no campo Para do Gmail, do Outlook ou do Apple Mail. As pessoas sem email ficam de fora, e um endereço repetido entra apenas uma vez.
 
 ## Ocultar alguém da lista
 

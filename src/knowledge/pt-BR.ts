@@ -52,7 +52,7 @@ Como a agenda do seu aparelho pode ser a única cópia, vale a pena ter outra:
 1. Exporte um arquivo CSV de vez em quando e guarde em um lugar seguro, ou
 2. Faça login com seu Universal ID e ative o backup on-line criptografado.
 
-## Preferências
+## Ajustar este app
 
 As escolhas sobre a aparência e o comportamento do aplicativo neste aparelho, como quais abas aparecem, ficam só neste aparelho e não fazem parte do backup.`,
   },
@@ -98,7 +98,7 @@ Etiquetas são rótulos seus, como Família, Trabalho ou Clube do livro. Uma age
 
 ## Listas de e-mail
 
-Se você ativar as listas de e-mail nas preferências do aplicativo, pode manter grupos de pessoas para quem escreve juntas. Uma lista é um tipo de etiqueta. Copiar uma lista gera uma linha de nomes e endereços pronta para colar no campo Para do Gmail, do Outlook ou do Apple Mail. Pessoas sem e-mail ficam de fora, e um endereço repetido entra uma vez só.
+Se você ativar as listas de e-mail em **Ajustar este app**, pode manter grupos de pessoas para quem escreve juntas. Uma lista é um tipo de etiqueta. Copiar uma lista gera uma linha de nomes e endereços pronta para colar no campo Para do Gmail, do Outlook ou do Apple Mail. Pessoas sem e-mail ficam de fora, e um endereço repetido entra uma vez só.
 
 ## Ocultar alguém da lista
 

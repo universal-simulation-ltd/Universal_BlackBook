@@ -52,7 +52,7 @@ Cihazınızdaki rehber tek kopya olabileceği için bir kopya daha tutmakta fayd
 1. Zaman zaman bir CSV dosyası dışa aktarıp güvenli bir yerde saklayın veya
 2. Universal ID ile oturum açıp şifreli çevrimiçi yedeklemeyi açın.
 
-## Tercihler
+## Bu uygulamayı ayarla
 
 Uygulamanın bu cihazdaki görünümü ve davranışıyla ilgili seçimler, örneğin hangi sekmelerin gösterileceği, yalnızca bu cihazda kalır ve yedeğin parçası değildir.`,
   },
@@ -98,7 +98,7 @@ Etiketler Aile, İş veya Kitap kulübü gibi size ait adlardır. Yeni bir rehbe
 
 ## E-posta listeleri
 
-Uygulama tercihlerinde e-posta listelerini açarsanız, birlikte e-posta gönderdiğiniz kişilerden gruplar oluşturabilirsiniz. Liste bir tür etikettir. Bir listeyi kopyaladığınızda Gmail, Outlook veya Apple Mail’in Kime alanına yapıştırmaya hazır bir ad ve adres satırı elde edersiniz. E-posta adresi olmayan kişiler dışarıda kalır, iki kez geçen bir adres yalnızca bir kez eklenir.
+**Bu uygulamayı ayarla** bölümünde e-posta listelerini açarsanız, birlikte e-posta gönderdiğiniz kişilerden gruplar oluşturabilirsiniz. Liste bir tür etikettir. Bir listeyi kopyaladığınızda Gmail, Outlook veya Apple Mail’in Kime alanına yapıştırmaya hazır bir ad ve adres satırı elde edersiniz. E-posta adresi olmayan kişiler dışarıda kalır, iki kez geçen bir adres yalnızca bir kez eklenir.
 
 ## Birini listeden gizlemek
 

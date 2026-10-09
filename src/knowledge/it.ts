@@ -52,7 +52,7 @@ Poiché la rubrica sul tuo dispositivo potrebbe essere l’unica copia, conviene
 1. Esporta ogni tanto un file CSV e conservalo in un posto sicuro, oppure
 2. Accedi con il tuo Universal ID e attiva il backup online crittografato.
 
-## Preferenze
+## Regola questa app
 
 Le scelte sull’aspetto e sul comportamento dell’app su questo dispositivo, come le schede mostrate, restano solo su questo dispositivo e non fanno parte del backup.`,
   },
@@ -98,7 +98,7 @@ Le etichette sono le tue categorie personali, come Famiglia, Lavoro o Club del l
 
 ## Liste email
 
-Se attivi le liste email nelle preferenze dell’app, puoi tenere gruppi di persone a cui scrivi insieme. Una lista è un tipo di etichetta. Copiando una lista ottieni una riga di nomi e indirizzi pronta da incollare nel campo A di Gmail, Outlook o Apple Mail. Chi non ha un indirizzo email viene escluso, e un indirizzo ripetuto viene incluso una sola volta.
+Se attivi le liste email in **Regola questa app**, puoi tenere gruppi di persone a cui scrivi insieme. Una lista è un tipo di etichetta. Copiando una lista ottieni una riga di nomi e indirizzi pronta da incollare nel campo A di Gmail, Outlook o Apple Mail. Chi non ha un indirizzo email viene escluso, e un indirizzo ripetuto viene incluso una sola volta.
 
 ## Nascondere qualcuno dall’elenco
 

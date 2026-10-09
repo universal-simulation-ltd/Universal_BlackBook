@@ -52,7 +52,7 @@ Comme le carnet de votre appareil est peut-être la seule copie, il vaut la pein
 1. Exportez de temps en temps un fichier CSV et rangez-le en lieu sûr, ou
 2. Connectez-vous avec votre Universal ID et activez la sauvegarde en ligne chiffrée.
 
-## Préférences
+## Régler cette application
 
 Les choix sur l’apparence et le comportement de l’application sur cet appareil, comme les onglets affichés, restent sur cet appareil et ne font pas partie de la sauvegarde.`,
   },
@@ -98,7 +98,7 @@ Les étiquettes sont vos propres libellés, comme Famille, Travail ou Club de le
 
 ## Listes d’e-mails
 
-Si vous activez les listes d’e-mails dans les préférences de l’application, vous pouvez garder des groupes de personnes à qui vous écrivez ensemble. Une liste est un type d’étiquette. Copier une liste vous donne une ligne de noms et d’adresses prête à coller dans le champ À de Gmail, Outlook ou Apple Mail. Les personnes sans adresse e-mail sont laissées de côté, et une adresse présente deux fois n’est incluse qu’une fois.
+Si vous activez les listes d’e-mails dans **Régler cette application**, vous pouvez garder des groupes de personnes à qui vous écrivez ensemble. Une liste est un type d’étiquette. Copier une liste vous donne une ligne de noms et d’adresses prête à coller dans le champ À de Gmail, Outlook ou Apple Mail. Les personnes sans adresse e-mail sont laissées de côté, et une adresse présente deux fois n’est incluse qu’une fois.
 
 ## Masquer quelqu’un de la liste
 
