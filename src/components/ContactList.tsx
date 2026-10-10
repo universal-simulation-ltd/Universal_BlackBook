@@ -266,14 +266,18 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                   <span className="text-xs text-slate-500">{addedWhen(c.createdAt)}</span>
                   {/* Straight to the form: the card exists so a mistake is one
                       tap from fixed, and opening the person first would make
-                      it two. */}
+                      it two. An emoji, not the word: on the date line above
+                      the card the text read as a stray label (James,
+                      2026-10-10). ✏️ is the suite's Fine-tune glyph, as on
+                      Universal PDF's QR pill and in Universal QR. */}
                   <button
                     type="button"
                     className={btnSubtle}
                     aria-label={`Fine-tune ${c.name || 'this contact'}`}
+                    title="Fine-tune"
                     onClick={() => edit(c.id)}
                   >
-                    Fine-tune
+                    <span aria-hidden="true">✏️</span>
                   </button>
                 </div>
                 {/* The orange ring says "this one is not part of the list": the
