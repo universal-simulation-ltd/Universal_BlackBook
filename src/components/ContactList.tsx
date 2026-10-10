@@ -262,23 +262,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {recent.map((c, i) => (
               <div key={c.id} className={i === 1 ? 'hidden sm:block' : i === 2 ? 'hidden xl:block' : undefined}>
-                <div className="mb-1 flex items-center justify-between gap-3 px-1">
-                  <span className="text-xs text-slate-500">{addedWhen(c.createdAt)}</span>
-                  {/* Straight to the form: the card exists so a mistake is one
-                      tap from fixed, and opening the person first would make
-                      it two. The sliders icon, not the word: on the date line
-                      above the card the text read as a stray label (James,
-                      2026-10-10). */}
-                  <button
-                    type="button"
-                    className={btnSubtle}
-                    aria-label={`Fine-tune ${c.name || 'this contact'}`}
-                    title="Fine-tune"
-                    onClick={() => edit(c.id)}
-                  >
-                    <TuneGlyph />
-                  </button>
-                </div>
+                <p className="mb-1 px-1 text-xs text-slate-500">{addedWhen(c.createdAt)}</p>
                 {/* The orange ring says "this one is not part of the list": the
                     same person is in their usual place below, and two
                     identical cards read as a duplicate entry. */}
@@ -292,6 +276,10 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                     onOpen={() => openContact(c.id)}
                     countdown={null}
                     age={currentAge(c.birthdate, today)}
+                    // Straight to the form: the card exists so a mistake is
+                    // one tap from fixed, and opening the person first would
+                    // make it two.
+                    onFineTune={() => edit(c.id)}
                   />
                 </div>
               </div>
@@ -873,6 +861,7 @@ export function ContactRow({
   hideLabel,
   dimmed,
   pressed,
+  onFineTune,
 }: {
   contact: Contact
   byId: Map<string, Tag>
@@ -894,6 +883,12 @@ export function ContactRow({
   dimmed?: boolean
   /** Select mode: is this card ticked? Sets `aria-pressed` on the card. */
   pressed?: boolean
+  /**
+   * Straight to the form, from the sliders icon in the card's corner — the
+   * "Last added" cards only. It takes the corner the hide control uses, so a
+   * card gets one or the other, never both.
+   */
+  onFineTune?: () => void
 }) {
   // A dangling id renders as nothing rather than as an "undefined" chip. They
   // shouldn't exist — removeTag strips them — but an imported or hand-edited
@@ -940,7 +935,7 @@ export function ContactRow({
         <div className="min-w-0">
           {/* The tags ride on the name as lights, not as a row of chips —
               see TagDot. The name truncates first; the lights stay whole. */}
-          <div className={`flex min-w-0 items-center gap-1 ${onToggleHidden || pressed !== undefined ? 'pr-8' : ''}`}>
+          <div className={`flex min-w-0 items-center gap-1 ${onToggleHidden || onFineTune || pressed !== undefined ? 'pr-8' : ''}`}>
             <p className="min-w-0 truncate font-semibold text-slate-100">{contact.name || 'Unnamed'}</p>
             {tagChips.length > 0 && (
               <span className="-my-0.5 flex shrink-0 items-center">
@@ -1037,6 +1032,21 @@ export function ContactRow({
               <path d="M3.3 2.2a.75.75 0 1 0-1.1 1l2.2 2.2A10.6 10.6 0 0 0 1.8 9.6a1 1 0 0 0 0 .8C3.1 13.6 6.2 16 10 16c1.4 0 2.8-.35 4-.98l2.7 2.7a.75.75 0 0 0 1.1-1.06l-14.5-14.5Zm5.1 7.2 2.2 2.2a2 2 0 0 1-2.2-2.2Zm3.4 4.5c-.6.25-1.2.4-1.8.4-3 0-5.5-1.8-6.7-4.5.5-1 1.2-1.9 2-2.6l1.9 1.9a3.5 3.5 0 0 0 4.6 4.6l.7.7-.7-.5ZM10 5.5c3 0 5.5 1.8 6.7 4.5-.4.9-1 1.7-1.7 2.4l1.1 1.1a10.6 10.6 0 0 0 2.1-3.1 1 1 0 0 0 0-.8C16.9 6.4 13.8 4 10 4c-.9 0-1.8.13-2.6.4l1.2 1.2c.45-.07.92-.1 1.4-.1Z" />
             </svg>
           )}
+        </button>
+      )}
+
+      {/* Inside the card like the hide control (James, 2026-10-10): it was a
+          "Fine-tune" word on the date line above, which read as a stray label.
+          The sliders icon is the suite's Tune glyph. */}
+      {onFineTune && (
+        <button
+          type="button"
+          onClick={onFineTune}
+          aria-label={`Fine-tune ${contact.name || 'this contact'}`}
+          title="Fine-tune"
+          className="absolute right-1 top-1 inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+        >
+          <TuneGlyph />
         </button>
       )}
     </div>
