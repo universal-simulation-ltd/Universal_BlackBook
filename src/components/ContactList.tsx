@@ -23,7 +23,7 @@ import { SwipeRow, type SwipeAction } from './SwipeRow'
 import { ListChip } from './ListChip'
 import { TagDot } from './TagChip'
 import { TagPicker } from './TagPicker'
-import { btnDanger, btnGhost, btnPrimary, btnSubtle } from './ui'
+import { btnDanger, btnGhost, btnPrimary, btnSubtle, TuneGlyph } from './ui'
 
 // The glyphs the swipe actions carry. SVG and not emoji: 🗑 is one of the
 // codepoints with no glyph in iOS's system font (see Modal's CloseGlyph), and
@@ -266,10 +266,9 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                   <span className="text-xs text-slate-500">{addedWhen(c.createdAt)}</span>
                   {/* Straight to the form: the card exists so a mistake is one
                       tap from fixed, and opening the person first would make
-                      it two. An emoji, not the word: on the date line above
-                      the card the text read as a stray label (James,
-                      2026-10-10). ✏️ is the suite's Fine-tune glyph, as on
-                      Universal PDF's QR pill and in Universal QR. */}
+                      it two. The sliders icon, not the word: on the date line
+                      above the card the text read as a stray label (James,
+                      2026-10-10). */}
                   <button
                     type="button"
                     className={btnSubtle}
@@ -277,7 +276,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                     title="Fine-tune"
                     onClick={() => edit(c.id)}
                   >
-                    <span aria-hidden="true">✏️</span>
+                    <TuneGlyph />
                   </button>
                 </div>
                 {/* The orange ring says "this one is not part of the list": the

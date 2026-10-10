@@ -51,3 +51,18 @@ export const label = 'mb-1.5 block text-xs font-semibold uppercase tracking-wide
 
 export const checkboxCls =
   'h-4 w-4 shrink-0 rounded border-slate-600 bg-slate-950 accent-orange-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400'
+
+/**
+ * The suite's Tune glyph: the same two sliders the SDK draws on its Tune this
+ * app button, so a Fine-tune button that shows the icon instead of the word
+ * reads as the same family of control (James, 2026-10-10).
+ */
+export function TuneGlyph({ className = 'h-4 w-4' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
+      <path d="M4 7h10M18 7h2M4 17h2M10 17h10" />
+      <circle cx="16" cy="7" r="2.2" />
+      <circle cx="8" cy="17" r="2.2" />
+    </svg>
+  )
+}
