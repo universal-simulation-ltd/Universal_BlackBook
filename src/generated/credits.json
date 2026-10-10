@@ -1,7 +1,7 @@
 {
   "app": "universal-blackbook",
   "appVersion": "0.1.0",
-  "generated": "2026-09-28",
+  "generated": "2026-10-10",
   "noticesCount": 18,
   "ships": [
     {
@@ -81,7 +81,9 @@
       "licence": "MIT",
       "repo": "https://github.com/eslint/eslint",
       "homepage": "https://eslint.org",
-      "authors": [],
+      "authors": [
+        "OpenJS Foundation"
+      ],
       "source": "node_modules"
     },
     {
@@ -112,13 +114,16 @@
       "licence": "MIT",
       "repo": "https://github.com/facebook/react",
       "homepage": "https://react.dev/",
-      "authors": [],
+      "authors": [
+        "Meta Platforms, Inc."
+      ],
       "source": "node_modules"
     },
     {
       "name": "eslint-plugin-react-refresh",
       "version": "0.4.26",
       "licence": "MIT",
+      "repo": "https://github.com/ArnaudBarre/eslint-plugin-react-refresh",
       "authors": [
         "Arnaud Barré"
       ],
@@ -217,12 +222,13 @@
     },
     {
       "name": "wrangler",
+      "title": "Wrangler",
       "version": "4.125.0",
       "licence": "MIT OR Apache-2.0",
       "repo": "https://github.com/cloudflare/workers-sdk",
       "homepage": "https://github.com/cloudflare/workers-sdk#readme",
       "authors": [
-        "wrangler@cloudflare.com"
+        "Cloudflare, Inc."
       ],
       "source": "node_modules"
     }
