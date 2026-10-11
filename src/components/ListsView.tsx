@@ -224,7 +224,7 @@ function ListPage({ list, onBack }: { list: Tag; onBack: () => void }) {
                 countdown={null}
                 age={currentAge(c.birthdate, today)}
                 onFineTune={() => edit(c.id)}
-                onPin={() => void setPinned(c.id, !c.pinned)}
+                onPin={() => void setPinned(c.id, c.pinnedAt === undefined)}
               />
             </li>
           ))}

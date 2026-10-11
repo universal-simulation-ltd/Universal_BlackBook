@@ -370,14 +370,12 @@ export function lastAdded(contacts: Contact[], listIds: Set<string> = new Set(),
 }
 
 /**
- * The pinned person, for the front of the "Last added" cards. One at a time —
- * but two devices can each pin somebody before a sync merges them, so the most
- * recently touched one wins rather than both showing.
+ * Everybody pinned, most recently pinned first — the front of the "Last added"
+ * cards, and the whole list behind "See all pinned". Hidden and list-only
+ * people included: a pin is a deliberate ask to see somebody.
  */
-export function pinnedContact(contacts: Contact[]): Contact | undefined {
-  let best: Contact | undefined
-  for (const c of contacts) if (c.pinned && (!best || c.updatedAt > best.updatedAt)) best = c
-  return best
+export function pinnedContacts(contacts: Contact[]): Contact[] {
+  return contacts.filter((c) => c.pinnedAt !== undefined).sort((a, b) => b.pinnedAt! - a.pinnedAt!)
 }
 
 /** When somebody was added, to follow "Last added": "today", "yesterday", "12 Sept", "12 Sept 2025". */

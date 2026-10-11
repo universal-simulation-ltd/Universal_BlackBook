@@ -8,7 +8,7 @@ import {
   todayParts,
   type NextBirthday,
 } from '../lib/birthday'
-import { addedWhen, hiddenBirthdays, hiddenFromList, isSearching, lastAdded, pinnedContact, runQuery, searchSeed } from '../lib/filter'
+import { addedWhen, hiddenBirthdays, hiddenFromList, isSearching, lastAdded, pinnedContacts, runQuery, searchSeed } from '../lib/filter'
 import { copyText } from '../lib/clipboard'
 import { toCsv } from '../lib/csv'
 import { toRecipients } from '../lib/emailList'
@@ -146,6 +146,13 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
   const tidiedId = useId()
   const hiddenBirthdaysId = useId()
   const recentId = useId()
+  /**
+   * "See all pinned": the list shows only the pinned, most recently pinned
+   * first. Held as the query it was opened on rather than a flag, so touching
+   * the search or the filters closes it without an effect to reset it — and it
+   * is never remembered, like the search box.
+   */
+  const [pinsFor, setPinsFor] = useState<typeof query | null>(null)
 
   // Read once per mount rather than per render, so the query's memo has a
   // stable input. A tab left open across midnight keeps yesterday's "today"
@@ -154,7 +161,11 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
   const today = useMemo(() => todayParts(), [])
   const byId = useMemo(() => new Map(tags.map((t) => [t.id, t])), [tags])
   const listIds = useMemo(() => listIdsOf(tags), [tags])
-  const visible = useMemo(() => runQuery(contacts, query, today, listIds), [contacts, query, today, listIds])
+  const queried = useMemo(() => runQuery(contacts, query, today, listIds), [contacts, query, today, listIds])
+  const pins = useMemo(() => pinnedContacts(contacts), [contacts])
+  // Unpinning the last one closes the view by itself.
+  const showingPins = pinsFor === query && pins.length > 0
+  const visible = showingPins ? pins : queried
   // What "x of N" counts: the people Contacts shows with no filter on. A
   // list-only person is not one of them, so they must not make a full list
   // read as "1 of 2".
@@ -178,26 +189,31 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
   // two of them stacked would be asking the reader to hold two different
   // meanings of "hidden" at once.
   const tidiedAway = useMemo(
-    () => (birthdays || searching ? [] : hiddenFromList(contacts)),
-    [birthdays, searching, contacts],
+    () => (birthdays || searching || showingPins ? [] : hiddenFromList(contacts)),
+    [birthdays, searching, showingPins, contacts],
   )
   // The "Last added" cards over the list — for checking somebody you have just
   // filed. Not in the birthdays view (soonest first is its whole order), not
   // while searching (the results are the answer), and not when the newest
   // already heads the list, which "Recently added" does by design.
   //
-  // A pinned person goes first and takes one of the slots (James, 2026-10-11),
-  // so the row is still one row: pinned + two at xl, pinned + one at sm, and
-  // on a phone just the pin. They are left out of the run rather than ending
-  // it — being pinned is not a reason to stop showing who was added after.
-  const pinned = useMemo(() => pinnedContact(contacts), [contacts])
-  const recent = useMemo(
-    () => lastAdded(pinned ? contacts.filter((c) => c.id !== pinned.id) : contacts, listIds, pinned ? 2 : 3),
-    [contacts, listIds, pinned],
-  )
-  const recentShown = visible[0]?.id === recent[0]?.id ? [] : recent
-  const topCards = pinned ? [pinned, ...recentShown] : recentShown
-  const showRecent = topCards.length > 0 && !birthdays && !searching
+  // The pinned go first, most recently pinned first, and take slots from the
+  // recent adds (James, 2026-10-11), so it is still one row: three cards at
+  // xl, two at sm, one on a phone. More pins than fit → "See all pinned".
+  // The pinned are left out of the run rather than ending it — being pinned
+  // is not a reason to stop showing who was added after them.
+  const SLOTS = 3
+  const recent = useMemo(() => {
+    const room = Math.max(0, SLOTS - pins.length)
+    return lastAdded(pins.length ? contacts.filter((c) => c.pinnedAt === undefined) : contacts, listIds, room)
+  }, [contacts, listIds, pins])
+  const recentShown = queried[0]?.id === recent[0]?.id ? [] : recent
+  const topCards = [...pins.slice(0, SLOTS), ...recentShown]
+  const showRecent = topCards.length > 0 && !birthdays && !searching && !showingPins
+  // "See all" only where pins are cut off: past one on a phone, two at sm,
+  // three at xl. Breakpoint classes, like the cards themselves.
+  const seeAllAt =
+    pins.length > SLOTS ? '' : pins.length === 3 ? 'xl:hidden' : pins.length === 2 ? 'sm:hidden' : 'hidden'
   // ⚠️ What an action acts on is the selection AS SEEN — the ticked people
   // still on screen. Tick five, then narrow the filter to a tag two of them
   // lack, and Delete must not take out two people you can no longer see.
@@ -264,17 +280,26 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
     <>
       {showRecent && !selecting && (
         <section aria-labelledby={recentId} className="mb-3">
-          {/* With a pin, the heading is only on screen where recent cards sit
-              beside it: the pinned card's own "Pinned" label says the rest,
-              and a phone showing "Pinned" over "Pinned" reads as a glitch. */}
-          <h2
-            id={recentId}
-            className={`mb-1.5 px-1 text-xs font-medium text-slate-400 ${
-              !pinned ? '' : recentShown.length === 0 ? 'sr-only' : 'sr-only sm:not-sr-only'
-            }`}
-          >
-            {pinned ? (recentShown.length === 0 ? 'Pinned' : 'Pinned · Last added') : 'Last added'}
-          </h2>
+          <div className="mb-1.5 flex items-center justify-between gap-3 px-1">
+            {/* With pins, every card carries its own "Pinned" or date label,
+                and a heading of "Pinned" over a card labelled "Pinned" reads
+                as a glitch — so it is for screen readers only. */}
+            <h2 id={recentId} className={`text-xs font-medium text-slate-400 ${pins.length ? 'sr-only' : ''}`}>
+              {pins.length ? 'Pinned and last added' : 'Last added'}
+            </h2>
+            {pins.length > 1 && (
+              <button
+                type="button"
+                className={`${seeAllAt} rounded text-xs font-medium text-orange-400 hover:text-orange-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400`}
+                onClick={() => {
+                  setPinsFor(query)
+                  setOpenRow(null)
+                }}
+              >
+                See all {pins.length} pinned
+              </button>
+            )}
+          </div>
           {/* As many as fill one row of the list's own grid — one on a phone,
               two at sm, three at xl — so a wide screen is not one card and
               two empty columns. The extras are hidden by breakpoint rather
@@ -282,7 +307,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {topCards.map((c, i) => (
               <div key={c.id} className={i === 1 ? 'hidden sm:block' : i === 2 ? 'hidden xl:block' : undefined}>
-                <p className="mb-1 px-1 text-xs text-slate-500">{c.id === pinned?.id ? 'Pinned' : addedWhen(c.createdAt)}</p>
+                <p className="mb-1 px-1 text-xs text-slate-500">{c.pinnedAt !== undefined ? 'Pinned' : addedWhen(c.createdAt)}</p>
                 {/* The orange ring says "this one is not part of the list": the
                     same person is in their usual place below, and two
                     identical cards read as a duplicate entry. */}
@@ -300,7 +325,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                     // one tap from fixed, and opening the person first would
                     // make it two.
                     onFineTune={() => edit(c.id)}
-                    onPin={() => void setPinned(c.id, !c.pinned)}
+                    onPin={() => void setPinned(c.id, c.pinnedAt === undefined)}
                   />
                 </div>
               </div>
@@ -310,7 +335,9 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
       )}
       <div className="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <p className="text-xs text-slate-500 tabular-nums" aria-live="polite">
-          {birthdays
+          {showingPins
+            ? `${visible.length} pinned, latest pin first`
+            : birthdays
             ? visible.length === 0
               ? 'Every birthday you have is hidden'
               : `${visible.length} ${visible.length === 1 ? 'birthday' : 'birthdays'}, soonest first`
@@ -323,6 +350,11 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
               : `${visible.length} of ${inContacts}`}
         </p>
         <div className="flex items-center gap-1">
+          {showingPins && !selecting && (
+            <button type="button" className={btnSubtle} onClick={() => setPinsFor(null)}>
+              Show everyone
+            </button>
+          )}
           {emailLists && visible.length > 0 && !selecting && (
             <ListExport contacts={visible} tags={tags} tagIds={query.tagIds} />
           )}
@@ -431,7 +463,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                 }
                 dimmed={Boolean(c.hideFromList)}
                 onFineTune={() => edit(c.id)}
-                onPin={() => void setPinned(c.id, !c.pinned)}
+                onPin={() => void setPinned(c.id, c.pinnedAt === undefined)}
               />
             </SwipeRow>
             )}
@@ -489,7 +521,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                         hideLabel={{ on: 'list', hidden: true }}
                         dimmed
                         onFineTune={() => edit(c.id)}
-                        onPin={() => void setPinned(c.id, !c.pinned)}
+                        onPin={() => void setPinned(c.id, c.pinnedAt === undefined)}
                       />
                     </SwipeRow>
                   </li>
@@ -555,7 +587,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                         hideLabel={{ on: 'birthdays list', hidden: true }}
                         dimmed
                         onFineTune={() => edit(c.id)}
-                        onPin={() => void setPinned(c.id, !c.pinned)}
+                        onPin={() => void setPinned(c.id, c.pinnedAt === undefined)}
                       />
                     </SwipeRow>
                   </li>
@@ -919,7 +951,7 @@ export function ContactRow({
   onFineTune?: () => void
   /**
    * Pin or unpin, from the pin icon left of the others. The icon is filled
-   * orange on whoever is pinned, so the state shows on every card.
+   * orange on everyone pinned, so the state shows on every card.
    */
   onPin?: () => void
 }) {
@@ -932,6 +964,7 @@ export function ContactRow({
   const tagChips = chips.filter((t) => !isList(t))
   const listChips = chips.filter(isList)
   const isToday = countdown?.inDays === 0
+  const isPinned = contact.pinnedAt !== undefined
   // The corner icons, right to left: Fine-tune keeps the corner, hide sits left
   // of it, pin left of that. Each takes the next free slot, so no card has a gap.
   const slots = ['right-1', 'right-10', 'right-[4.75rem]']
@@ -1097,14 +1130,14 @@ export function ContactRow({
         <button
           type="button"
           onClick={onPin}
-          aria-pressed={Boolean(contact.pinned)}
-          aria-label={contact.pinned ? `Unpin ${contact.name || 'this contact'}` : `Pin ${contact.name || 'this contact'} to the top`}
-          title={contact.pinned ? 'Unpin' : 'Pin to the top'}
+          aria-pressed={isPinned}
+          aria-label={isPinned ? `Unpin ${contact.name || 'this contact'}` : `Pin ${contact.name || 'this contact'} to the top`}
+          title={isPinned ? 'Unpin' : 'Pin to the top'}
           className={`absolute ${pinAt} top-1 inline-flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
-            contact.pinned ? 'text-orange-400 hover:text-orange-300' : 'text-slate-500 hover:text-slate-200'
+            isPinned ? 'text-orange-400 hover:text-orange-300' : 'text-slate-500 hover:text-slate-200'
           }`}
         >
-          {contact.pinned ? (
+          {isPinned ? (
             <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden>
               <path d="M7 2.75A.75.75 0 0 1 7.75 2h4.5a.75.75 0 0 1 0 1.5H12v4.1l2.55 2.55a.75.75 0 0 1-.53 1.28h-3.27v5.82a.75.75 0 0 1-1.5 0v-5.82H5.98a.75.75 0 0 1-.53-1.28L8 7.6V3.5h-.25A.75.75 0 0 1 7 2.75Z" />
             </svg>

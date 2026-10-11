@@ -105,13 +105,15 @@ export interface Contact {
    */
   hideFromList?: boolean
   /**
-   * Pinned to the front of the "Last added" cards over the list (James,
-   * 2026-10-11). One person at a time for now — pinning somebody unpins
-   * whoever was there (`setPinned`).
+   * When this person was pinned to the front of the "Last added" cards over
+   * the list (James, 2026-10-11). Any number can be pinned; the most recently
+   * pinned goes first, so re-pinning somebody is how you move them forward.
    *
-   * Absent means not pinned, so nothing written before this moves.
+   * Absent means not pinned, so nothing written before this moves. The first
+   * build stored `pinned: true` (one pin at a time); `toContact` reads that as
+   * pinned at its `updatedAt`.
    */
-  pinned?: boolean
+  pinnedAt?: number
   /**
    * Added by an Email list and never as a contact (owner's request,
    * 2026-09-17: "if the user is only in a list then don't show them in the

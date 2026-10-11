@@ -11,7 +11,7 @@ import {
   isSearching,
   lastAdded,
   matchesTags,
-  pinnedContact,
+  pinnedContacts,
   matchesText,
   runQuery,
   sameView,
@@ -360,18 +360,18 @@ describe('hiding a tag — the second tap on its chip', () => {
   })
 })
 
-describe('pinnedContact', () => {
+describe('pinnedContacts', () => {
   it('is nobody in a book with no pin', () => {
-    expect(pinnedContact([contact({ id: 'a' })])).toBeUndefined()
+    expect(pinnedContacts([contact({ id: 'a' })])).toEqual([])
   })
 
-  it('is the most recently touched when a sync has left two pinned', () => {
+  it('lists the pinned, most recently pinned first, whenever they were edited', () => {
     const book = [
-      contact({ id: 'a', pinned: true, updatedAt: 5 }),
-      contact({ id: 'b', pinned: true, updatedAt: 9 }),
+      contact({ id: 'a', pinnedAt: 5, updatedAt: 50 }),
+      contact({ id: 'b', pinnedAt: 9, updatedAt: 9 }),
       contact({ id: 'c', updatedAt: 20 }),
     ]
-    expect(pinnedContact(book)?.id).toBe('b')
+    expect(pinnedContacts(book).map((c) => c.id)).toEqual(['b', 'a'])
   })
 })
 
@@ -391,6 +391,8 @@ describe('lastAdded', () => {
     const book = [1, 2, 3, 4, 5].map((n) => contact({ id: `p${n}`, createdAt: n }))
     expect(ids(lastAdded(book))).toEqual(['p5', 'p4', 'p3'])
     expect(ids(lastAdded(book, new Set(), 1))).toEqual(['p5'])
+    // Pins can fill the whole row.
+    expect(lastAdded(book, new Set(), 0)).toEqual([])
   })
 
   it('goes by when they were added, not when they were last edited', () => {
