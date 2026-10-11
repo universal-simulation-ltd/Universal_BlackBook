@@ -66,3 +66,16 @@ export function TuneGlyph({ className = 'h-4 w-4' }: { className?: string }) {
     </svg>
   )
 }
+
+/** A pushpin: filled when pinned, outlined when not. Fine-tune ▸ Pin. */
+export function PinGlyph({ filled, className = 'h-4 w-4' }: { filled: boolean; className?: string }) {
+  return filled ? (
+    <svg viewBox="0 0 20 20" className={className} fill="currentColor" aria-hidden>
+      <path d="M7 2.75A.75.75 0 0 1 7.75 2h4.5a.75.75 0 0 1 0 1.5H12v4.1l2.55 2.55a.75.75 0 0 1-.53 1.28h-3.27v5.82a.75.75 0 0 1-1.5 0v-5.82H5.98a.75.75 0 0 1-.53-1.28L8 7.6V3.5h-.25A.75.75 0 0 1 7 2.75Z" />
+    </svg>
+  ) : (
+    <svg viewBox="0 0 20 20" className={className} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M7.75 2.75h4.5M8.75 2.75v5.1L6 10.6h8l-2.75-2.75v-5.1M10 10.6v6.65" />
+    </svg>
+  )
+}

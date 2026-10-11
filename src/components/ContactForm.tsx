@@ -9,7 +9,7 @@ import { EmailListForm } from './EmailListForm'
 import { TagPicker } from './TagPicker'
 import { Modal } from './Modal'
 import { ExpandGlyph, NotesFullscreen } from './NotesFullscreen'
-import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label, textareaCls } from './ui'
+import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label, PinGlyph, textareaCls } from './ui'
 
 /**
  * Add or edit one person. Six fields, in the order they matter — but on a blank
@@ -76,6 +76,7 @@ export function ContactForm({ id }: { id: string }) {
   const contacts = useBookStore((s) => s.contacts)
   const saveContact = useBookStore((s) => s.saveContact)
   const removeContact = useBookStore((s) => s.removeContact)
+  const setPinned = useBookStore((s) => s.setPinned)
   const close = useBookStore((s) => s.edit)
   const stashDraft = useBookStore((s) => s.stashDraft)
   const clearStash = useBookStore((s) => s.clearStash)
@@ -478,9 +479,25 @@ export function ContactForm({ id }: { id: string }) {
                   </button>
                 </div>
               ) : (
-                <button type="button" className={btnDanger} onClick={() => setConfirmDelete(true)}>
-                  Delete
-                </button>
+                <div className="flex items-center gap-2">
+                  {/* Pinning lives here rather than on the card (James,
+                      2026-10-11: a cleaner card). It takes effect on the tap,
+                      like hiding somebody, not on Save — the form's draft has
+                      no pin, and `saveContact` carries the stored one over. */}
+                  <button
+                    type="button"
+                    aria-pressed={existing.pinnedAt !== undefined}
+                    className={`${btnSubtle} flex items-center gap-1.5 ${existing.pinnedAt !== undefined ? '!text-orange-400 hover:!text-orange-300' : ''}`}
+                    onClick={() => void setPinned(existing.id, existing.pinnedAt === undefined)}
+                    title={existing.pinnedAt !== undefined ? 'Unpin' : 'Pin to the top of your list'}
+                  >
+                    <PinGlyph filled={existing.pinnedAt !== undefined} />
+                    {existing.pinnedAt !== undefined ? 'Pinned' : 'Pin'}
+                  </button>
+                  <button type="button" className={btnDanger} onClick={() => setConfirmDelete(true)}>
+                    Delete
+                  </button>
+                </div>
               ))}
           </div>
           {!confirmDelete && (

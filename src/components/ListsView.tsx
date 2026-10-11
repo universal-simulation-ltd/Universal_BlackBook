@@ -113,7 +113,6 @@ function ListPage({ list, onBack }: { list: Tag; onBack: () => void }) {
   const newList = useBookStore((s) => s.newList)
   const openContact = useBookStore((s) => s.view)
   const edit = useBookStore((s) => s.edit)
-  const setPinned = useBookStore((s) => s.setPinned)
   const renameTag = useBookStore((s) => s.renameTag)
   const removeTag = useBookStore((s) => s.removeTag)
   const removeContact = useBookStore((s) => s.removeContact)
@@ -224,7 +223,6 @@ function ListPage({ list, onBack }: { list: Tag; onBack: () => void }) {
                 countdown={null}
                 age={currentAge(c.birthdate, today)}
                 onFineTune={() => edit(c.id)}
-                onPin={() => void setPinned(c.id, c.pinnedAt === undefined)}
               />
             </li>
           ))}

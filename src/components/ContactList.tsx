@@ -180,7 +180,6 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
   )
   const setBirthdayHidden = useBookStore((s) => s.setBirthdayHidden)
   const setListHidden = useBookStore((s) => s.setListHidden)
-  const setPinned = useBookStore((s) => s.setPinned)
   const setListHiddenMany = useBookStore((s) => s.setListHiddenMany)
   const removeContacts = useBookStore((s) => s.removeContacts)
   const addTagsTo = useBookStore((s) => s.addTagsTo)
@@ -325,7 +324,6 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                     // one tap from fixed, and opening the person first would
                     // make it two.
                     onFineTune={() => edit(c.id)}
-                    onPin={() => void setPinned(c.id, c.pinnedAt === undefined)}
                   />
                 </div>
               </div>
@@ -463,7 +461,6 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                 }
                 dimmed={Boolean(c.hideFromList)}
                 onFineTune={() => edit(c.id)}
-                onPin={() => void setPinned(c.id, c.pinnedAt === undefined)}
               />
             </SwipeRow>
             )}
@@ -521,7 +518,6 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                         hideLabel={{ on: 'list', hidden: true }}
                         dimmed
                         onFineTune={() => edit(c.id)}
-                        onPin={() => void setPinned(c.id, c.pinnedAt === undefined)}
                       />
                     </SwipeRow>
                   </li>
@@ -587,7 +583,6 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                         hideLabel={{ on: 'birthdays list', hidden: true }}
                         dimmed
                         onFineTune={() => edit(c.id)}
-                        onPin={() => void setPinned(c.id, c.pinnedAt === undefined)}
                       />
                     </SwipeRow>
                   </li>
@@ -921,7 +916,6 @@ export function ContactRow({
   dimmed,
   pressed,
   onFineTune,
-  onPin,
 }: {
   contact: Contact
   byId: Map<string, Tag>
@@ -949,11 +943,6 @@ export function ContactRow({
    * corner, and the hide control sits to its left when a card has both.
    */
   onFineTune?: () => void
-  /**
-   * Pin or unpin, from the pin icon left of the others. The icon is filled
-   * orange on everyone pinned, so the state shows on every card.
-   */
-  onPin?: () => void
 }) {
   // A dangling id renders as nothing rather than as an "undefined" chip. They
   // shouldn't exist — removeTag strips them — but an imported or hand-edited
@@ -964,15 +953,12 @@ export function ContactRow({
   const tagChips = chips.filter((t) => !isList(t))
   const listChips = chips.filter(isList)
   const isToday = countdown?.inDays === 0
-  const isPinned = contact.pinnedAt !== undefined
-  // The corner icons, right to left: Fine-tune keeps the corner, hide sits left
-  // of it, pin left of that. Each takes the next free slot, so no card has a gap.
-  const slots = ['right-1', 'right-10', 'right-[4.75rem]']
-  let used = 0
-  const tuneAt = onFineTune ? slots[used++] : ''
-  const hideAt = onToggleHidden ? slots[used++] : ''
-  const pinAt = onPin ? slots[used++] : ''
-  const namePad = used === 3 ? 'pr-[7rem]' : used === 2 ? 'pr-[4.5rem]' : used === 1 || pressed !== undefined ? 'pr-8' : ''
+  // The corner icons, right to left: Fine-tune keeps the corner and hide sits
+  // left of it. Pinning is inside Fine-tune (James, 2026-10-11: a cleaner card).
+  const tuneAt = onFineTune ? 'right-1' : ''
+  const hideAt = onFineTune ? 'right-10' : 'right-1'
+  const icons = (onFineTune ? 1 : 0) + (onToggleHidden ? 1 : 0)
+  const namePad = icons === 2 ? 'pr-[4.5rem]' : icons === 1 || pressed !== undefined ? 'pr-8' : ''
 
   return (
     // No <li> of its own: the list wraps every row in SwipeRow, which is
@@ -1123,29 +1109,6 @@ export function ContactRow({
           className={`absolute ${tuneAt} top-1 inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400`}
         >
           <TuneGlyph />
-        </button>
-      )}
-
-      {onPin && (
-        <button
-          type="button"
-          onClick={onPin}
-          aria-pressed={isPinned}
-          aria-label={isPinned ? `Unpin ${contact.name || 'this contact'}` : `Pin ${contact.name || 'this contact'} to the top`}
-          title={isPinned ? 'Unpin' : 'Pin to the top'}
-          className={`absolute ${pinAt} top-1 inline-flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
-            isPinned ? 'text-orange-400 hover:text-orange-300' : 'text-slate-500 hover:text-slate-200'
-          }`}
-        >
-          {isPinned ? (
-            <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden>
-              <path d="M7 2.75A.75.75 0 0 1 7.75 2h4.5a.75.75 0 0 1 0 1.5H12v4.1l2.55 2.55a.75.75 0 0 1-.53 1.28h-3.27v5.82a.75.75 0 0 1-1.5 0v-5.82H5.98a.75.75 0 0 1-.53-1.28L8 7.6V3.5h-.25A.75.75 0 0 1 7 2.75Z" />
-            </svg>
-          ) : (
-            <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <path d="M7.75 2.75h4.5M8.75 2.75v5.1L6 10.6h8l-2.75-2.75v-5.1M10 10.6v6.65" />
-            </svg>
-          )}
         </button>
       )}
     </div>
