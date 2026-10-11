@@ -36,7 +36,8 @@ import { TodoView } from './components/TodoView'
 import { LockPanel, LockScreen } from './components/Lock'
 import { btnGhost, btnPrimary } from './components/ui'
 import { contactsAvailability, ContactsPermissionError, pickOneContact } from './lib/deviceContacts'
-import { forgetVault } from './lib/store'
+import { allOnline } from './lib/merge'
+import { forgetVault, loadSyncMeta } from './lib/store'
 import { useBookStore } from './stores/bookStore'
 import { useLockStore } from './stores/lockStore'
 import { useSettingsStore } from './stores/settingsStore'
@@ -98,6 +99,11 @@ export default function App() {
   const edit = useBookStore((s) => s.edit)
   const notice = useBookStore((s) => s.notice)
   const setNotice = useBookStore((s) => s.setNotice)
+  useEffect(() => {
+    if (takeSignedOutNote()) {
+      setNotice('Signed out, so your book has been removed from this device. Sign in again to bring it back from your online backup.')
+    }
+  }, [setNotice])
   const [panel, setPanel] = useState<Panel>(null)
   const resetSettings = useSettingsStore((s) => s.reset)
   // Contacts | Lists | To-do, on the landing screen. Lists only exists with App
@@ -673,9 +679,66 @@ function writePrompted(userId: string | null) {
  *     important one — without it the empty initial state counts as a change
  *     and uploads an empty book over a full one on the first render.
  */
+/** Survives the reload that finishes a wipe, so the notice can say what happened. */
+const SIGNED_OUT_NOTE = 'blackbook:signed-out-wipe'
+
+/**
+ * Signing out takes the book off this device (James, 2026-10-11: "when
+ * signing out, remove all data stored locally"), the same wipe as Delete all
+ * data — but ONLY when every entry is already in the online copy, so signing
+ * back in (and the passphrase) brings all of it back.
+ *
+ * ⚠️ **Otherwise the book stays, and says why.** Online backup is opt-in, so a
+ * signed-in book with backup off — or with edits the last save did not reach
+ * — has no other copy, and the sign-out happens in the SDK's menu, after which
+ * nothing can be saved. Wiping then would be deleting somebody's only copy for
+ * pressing Sign out.
+ *
+ * `seen`: this page watched the sign-out happen. Unseen (found at load), a
+ * book that is not all online is left exactly as before: `hydrate` folds it
+ * back in on the next sign-in, which depends on the bookkeeping staying.
+ */
+async function leaveDevice(seen: boolean, unsaved: boolean): Promise<void> {
+  const meta = await loadSyncMeta()
+  if (!seen && !meta) return
+  await Promise.all([useBookStore.getState().init(), useTodoStore.getState().init()])
+  const book = { contacts: useBookStore.getState().contacts, todos: useTodoStore.getState().todos }
+  if (!unsaved && allOnline(meta, book)) {
+    try {
+      sessionStorage.setItem(SIGNED_OUT_NOTE, '1')
+    } catch {
+      // No session storage: the wipe still happens, just without the notice.
+    }
+    // Wipes and reloads — see `resetDevice` for why the reload is part of it.
+    await useLockStore.getState().resetDevice()
+    return
+  }
+  if (!seen) return
+  // As before this change: a shared machine must not keep the key.
+  await forgetVault()
+  if (book.contacts.length > 0 || book.todos.length > 0) {
+    useBookStore
+      .getState()
+      .setNotice(
+        "You're signed out, but this book isn't all in your online backup, so it's still on this device. Sign in and turn on Online backup to keep it safe, or remove it with Actions ▸ Advanced ▸ Delete all data.",
+      )
+  }
+}
+
+/** After a sign-out wipe's reload: say where the book went, once. */
+function takeSignedOutNote(): boolean {
+  try {
+    if (sessionStorage.getItem(SIGNED_OUT_NOTE) === null) return false
+    sessionStorage.removeItem(SIGNED_OUT_NOTE)
+    return true
+  } catch {
+    return false
+  }
+}
+
 function useCloudSync(openPanel: () => void) {
   const { supabase } = useUniversal()
-  const { user } = useUser()
+  const { user, loading } = useUser()
   // ⚠️ THE ID, NEVER THE `user` OBJECT. The SDK's `useUser` builds a fresh
   // `{ id, email }` literal on every render, so `user` in a dependency array is
   // a NEW value every render and the effect below re-runs every time. That
@@ -695,9 +758,15 @@ function useCloudSync(openPanel: () => void) {
   const status = useSyncStore((s) => s.status)
 
   const wasSignedIn = useRef(false)
+  // Never reset: tells the load-time check below that a sign-out has already
+  // been handled in this page's life.
+  const everSignedIn = useRef(false)
 
   useEffect(() => {
     let cancelled = false
+    // Read BEFORE `hydrate`, which resets the status on the way out.
+    const sync = useSyncStore.getState()
+    const unsaved = sync.dirty || sync.pending !== null || sync.status === 'working' || sync.status === 'error' || sync.status === 'conflict'
     void hydrate(supabase, userId).then(() => {
       // Signing in IS turning the backup on: open the panel so the passphrase
       // and the merge question come straight away. Once per account per
@@ -716,15 +785,27 @@ function useCloudSync(openPanel: () => void) {
     })
     if (userId) {
       wasSignedIn.current = true
+      everSignedIn.current = true
     } else if (wasSignedIn.current) {
       wasSignedIn.current = false
       writePrompted(null)
-      void forgetVault()
+      void leaveDevice(true, unsaved)
     }
     return () => {
       cancelled = true
     }
   }, [supabase, userId, hydrate, openPanel])
+
+  // A sign-out this page never saw — made in another suite app on the same
+  // site, or a session that expired while the app was shut. The book was left
+  // behind with its sync bookkeeping, which is how it is recognised here.
+  // ⚠️ Only once the SDK has finished loading the session: before that `user`
+  // is null for a signed-in person too, and this would wipe their device on
+  // every launch.
+  useEffect(() => {
+    if (loading || userId || everSignedIn.current) return
+    void leaveDevice(false, false)
+  }, [loading, userId])
 
   // Only a CHANGE of book marks it unsynced — not this effect re-running
   // because sync turned on or the page loaded, which would show "Syncing…"

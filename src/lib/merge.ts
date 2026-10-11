@@ -119,3 +119,24 @@ export function unsyncedWork(
     (Array.isArray(online.todos) ? count(local.todos, online.todos) : 0)
   )
 }
+
+/**
+ * Is everything in this book already in the online copy? The test for taking
+ * the book off the device at sign-out (James, 2026-10-11) — a wipe is only
+ * safe when signing back in brings every entry back.
+ *
+ * False with no vault, or one nothing has reached yet (`rev` 0), and false if
+ * any contact or to-do was added or edited after this device last matched the
+ * online copy. Blind to deletions and tags, like `unsyncedWork`: the caller
+ * adds the in-memory "edited since the last save" flag, which catches those
+ * while the app is open, and a deletion that comes back is recoverable.
+ */
+export function allOnline(
+  meta: { rev: number; pushedAt: number; syncedAt?: number } | null,
+  local: { contacts: Contact[]; todos: Todo[] },
+): boolean {
+  if (!meta || meta.rev <= 0) return false
+  const since = meta.syncedAt ?? meta.pushedAt
+  if (!since) return false
+  return local.contacts.every((c) => c.updatedAt <= since) && local.todos.every((t) => t.updatedAt <= since)
+}
