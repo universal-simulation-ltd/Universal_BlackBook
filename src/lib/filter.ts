@@ -369,6 +369,17 @@ export function lastAdded(contacts: Contact[], listIds: Set<string> = new Set(),
   return run
 }
 
+/**
+ * The pinned person, for the front of the "Last added" cards. One at a time —
+ * but two devices can each pin somebody before a sync merges them, so the most
+ * recently touched one wins rather than both showing.
+ */
+export function pinnedContact(contacts: Contact[]): Contact | undefined {
+  let best: Contact | undefined
+  for (const c of contacts) if (c.pinned && (!best || c.updatedAt > best.updatedAt)) best = c
+  return best
+}
+
 /** When somebody was added, to follow "Last added": "today", "yesterday", "12 Sept", "12 Sept 2025". */
 export function addedWhen(createdAt: number, now: Date = new Date()): string {
   const added = new Date(createdAt)

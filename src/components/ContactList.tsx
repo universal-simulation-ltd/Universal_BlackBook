@@ -8,7 +8,7 @@ import {
   todayParts,
   type NextBirthday,
 } from '../lib/birthday'
-import { addedWhen, hiddenBirthdays, hiddenFromList, isSearching, lastAdded, runQuery, searchSeed } from '../lib/filter'
+import { addedWhen, hiddenBirthdays, hiddenFromList, isSearching, lastAdded, pinnedContact, runQuery, searchSeed } from '../lib/filter'
 import { copyText } from '../lib/clipboard'
 import { toCsv } from '../lib/csv'
 import { toRecipients } from '../lib/emailList'
@@ -169,6 +169,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
   )
   const setBirthdayHidden = useBookStore((s) => s.setBirthdayHidden)
   const setListHidden = useBookStore((s) => s.setListHidden)
+  const setPinned = useBookStore((s) => s.setPinned)
   const setListHiddenMany = useBookStore((s) => s.setListHiddenMany)
   const removeContacts = useBookStore((s) => s.removeContacts)
   const addTagsTo = useBookStore((s) => s.addTagsTo)
@@ -184,8 +185,19 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
   // filed. Not in the birthdays view (soonest first is its whole order), not
   // while searching (the results are the answer), and not when the newest
   // already heads the list, which "Recently added" does by design.
-  const recent = useMemo(() => lastAdded(contacts, listIds), [contacts, listIds])
-  const showRecent = recent.length > 0 && !birthdays && !searching && visible[0]?.id !== recent[0].id
+  //
+  // A pinned person goes first and takes one of the slots (James, 2026-10-11),
+  // so the row is still one row: pinned + two at xl, pinned + one at sm, and
+  // on a phone just the pin. They are left out of the run rather than ending
+  // it — being pinned is not a reason to stop showing who was added after.
+  const pinned = useMemo(() => pinnedContact(contacts), [contacts])
+  const recent = useMemo(
+    () => lastAdded(pinned ? contacts.filter((c) => c.id !== pinned.id) : contacts, listIds, pinned ? 2 : 3),
+    [contacts, listIds, pinned],
+  )
+  const recentShown = visible[0]?.id === recent[0]?.id ? [] : recent
+  const topCards = pinned ? [pinned, ...recentShown] : recentShown
+  const showRecent = topCards.length > 0 && !birthdays && !searching
   // ⚠️ What an action acts on is the selection AS SEEN — the ticked people
   // still on screen. Tick five, then narrow the filter to a tag two of them
   // lack, and Delete must not take out two people you can no longer see.
@@ -252,17 +264,25 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
     <>
       {showRecent && !selecting && (
         <section aria-labelledby={recentId} className="mb-3">
-          <h2 id={recentId} className="mb-1.5 px-1 text-xs font-medium text-slate-400">
-            Last added
+          {/* With a pin, the heading is only on screen where recent cards sit
+              beside it: the pinned card's own "Pinned" label says the rest,
+              and a phone showing "Pinned" over "Pinned" reads as a glitch. */}
+          <h2
+            id={recentId}
+            className={`mb-1.5 px-1 text-xs font-medium text-slate-400 ${
+              !pinned ? '' : recentShown.length === 0 ? 'sr-only' : 'sr-only sm:not-sr-only'
+            }`}
+          >
+            {pinned ? (recentShown.length === 0 ? 'Pinned' : 'Pinned · Last added') : 'Last added'}
           </h2>
           {/* As many as fill one row of the list's own grid — one on a phone,
               two at sm, three at xl — so a wide screen is not one card and
               two empty columns. The extras are hidden by breakpoint rather
               than measured, so the row never reflows after first paint. */}
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-            {recent.map((c, i) => (
+            {topCards.map((c, i) => (
               <div key={c.id} className={i === 1 ? 'hidden sm:block' : i === 2 ? 'hidden xl:block' : undefined}>
-                <p className="mb-1 px-1 text-xs text-slate-500">{addedWhen(c.createdAt)}</p>
+                <p className="mb-1 px-1 text-xs text-slate-500">{c.id === pinned?.id ? 'Pinned' : addedWhen(c.createdAt)}</p>
                 {/* The orange ring says "this one is not part of the list": the
                     same person is in their usual place below, and two
                     identical cards read as a duplicate entry. */}
@@ -280,6 +300,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                     // one tap from fixed, and opening the person first would
                     // make it two.
                     onFineTune={() => edit(c.id)}
+                    onPin={() => void setPinned(c.id, !c.pinned)}
                   />
                 </div>
               </div>
@@ -409,6 +430,8 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                     : { on: 'list', hidden: Boolean(c.hideFromList) }
                 }
                 dimmed={Boolean(c.hideFromList)}
+                onFineTune={() => edit(c.id)}
+                onPin={() => void setPinned(c.id, !c.pinned)}
               />
             </SwipeRow>
             )}
@@ -465,6 +488,8 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                         onToggleHidden={() => void setListHidden(c.id, false)}
                         hideLabel={{ on: 'list', hidden: true }}
                         dimmed
+                        onFineTune={() => edit(c.id)}
+                        onPin={() => void setPinned(c.id, !c.pinned)}
                       />
                     </SwipeRow>
                   </li>
@@ -529,6 +554,8 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                         onToggleHidden={() => void setBirthdayHidden(c.id, false)}
                         hideLabel={{ on: 'birthdays list', hidden: true }}
                         dimmed
+                        onFineTune={() => edit(c.id)}
+                        onPin={() => void setPinned(c.id, !c.pinned)}
                       />
                     </SwipeRow>
                   </li>
@@ -862,6 +889,7 @@ export function ContactRow({
   dimmed,
   pressed,
   onFineTune,
+  onPin,
 }: {
   contact: Contact
   byId: Map<string, Tag>
@@ -884,11 +912,16 @@ export function ContactRow({
   /** Select mode: is this card ticked? Sets `aria-pressed` on the card. */
   pressed?: boolean
   /**
-   * Straight to the form, from the sliders icon in the card's corner — the
-   * "Last added" cards only. It takes the corner the hide control uses, so a
-   * card gets one or the other, never both.
+   * Straight to the form, from the sliders icon in the card's corner — on every
+   * card (James, 2026-10-11; it was the "Last added" cards only). It owns the
+   * corner, and the hide control sits to its left when a card has both.
    */
   onFineTune?: () => void
+  /**
+   * Pin or unpin, from the pin icon left of the others. The icon is filled
+   * orange on whoever is pinned, so the state shows on every card.
+   */
+  onPin?: () => void
 }) {
   // A dangling id renders as nothing rather than as an "undefined" chip. They
   // shouldn't exist — removeTag strips them — but an imported or hand-edited
@@ -899,6 +932,14 @@ export function ContactRow({
   const tagChips = chips.filter((t) => !isList(t))
   const listChips = chips.filter(isList)
   const isToday = countdown?.inDays === 0
+  // The corner icons, right to left: Fine-tune keeps the corner, hide sits left
+  // of it, pin left of that. Each takes the next free slot, so no card has a gap.
+  const slots = ['right-1', 'right-10', 'right-[4.75rem]']
+  let used = 0
+  const tuneAt = onFineTune ? slots[used++] : ''
+  const hideAt = onToggleHidden ? slots[used++] : ''
+  const pinAt = onPin ? slots[used++] : ''
+  const namePad = used === 3 ? 'pr-[7rem]' : used === 2 ? 'pr-[4.5rem]' : used === 1 || pressed !== undefined ? 'pr-8' : ''
 
   return (
     // No <li> of its own: the list wraps every row in SwipeRow, which is
@@ -935,7 +976,9 @@ export function ContactRow({
         <div className="min-w-0">
           {/* The tags ride on the name as lights, not as a row of chips —
               see TagDot. The name truncates first; the lights stay whole. */}
-          <div className={`flex min-w-0 items-center gap-1 ${onToggleHidden || onFineTune || pressed !== undefined ? 'pr-8' : ''}`}>
+          <div
+            className={`flex min-w-0 items-center gap-1 ${namePad}`}
+          >
             <p className="min-w-0 truncate font-semibold text-slate-100">{contact.name || 'Unnamed'}</p>
             {tagChips.length > 0 && (
               <span className="-my-0.5 flex shrink-0 items-center">
@@ -1019,7 +1062,7 @@ export function ContactRow({
               ? `Show in the ${hideLabel.on} again`
               : `Hide from the ${hideLabel?.on ?? 'list'}`
           }
-          className={`absolute right-1 top-1 inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+          className={`absolute ${hideAt} top-1 inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
             dimmed ? 'opacity-60' : ''
           }`}
         >
@@ -1044,9 +1087,32 @@ export function ContactRow({
           onClick={onFineTune}
           aria-label={`Fine-tune ${contact.name || 'this contact'}`}
           title="Fine-tune"
-          className="absolute right-1 top-1 inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+          className={`absolute ${tuneAt} top-1 inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400`}
         >
           <TuneGlyph />
+        </button>
+      )}
+
+      {onPin && (
+        <button
+          type="button"
+          onClick={onPin}
+          aria-pressed={Boolean(contact.pinned)}
+          aria-label={contact.pinned ? `Unpin ${contact.name || 'this contact'}` : `Pin ${contact.name || 'this contact'} to the top`}
+          title={contact.pinned ? 'Unpin' : 'Pin to the top'}
+          className={`absolute ${pinAt} top-1 inline-flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+            contact.pinned ? 'text-orange-400 hover:text-orange-300' : 'text-slate-500 hover:text-slate-200'
+          }`}
+        >
+          {contact.pinned ? (
+            <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden>
+              <path d="M7 2.75A.75.75 0 0 1 7.75 2h4.5a.75.75 0 0 1 0 1.5H12v4.1l2.55 2.55a.75.75 0 0 1-.53 1.28h-3.27v5.82a.75.75 0 0 1-1.5 0v-5.82H5.98a.75.75 0 0 1-.53-1.28L8 7.6V3.5h-.25A.75.75 0 0 1 7 2.75Z" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M7.75 2.75h4.5M8.75 2.75v5.1L6 10.6h8l-2.75-2.75v-5.1M10 10.6v6.65" />
+            </svg>
+          )}
         </button>
       )}
     </div>

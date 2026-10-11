@@ -119,6 +119,7 @@ function toContact(raw: unknown): Contact | null {
     // Same rule, same reason: a corrupt value must leave the person VISIBLE.
     hideFromList: r.hideFromList === true ? true : undefined,
     listOnly: r.listOnly === true ? true : undefined,
+    pinned: r.pinned === true ? true : undefined,
     notes: typeof r.notes === 'string' ? r.notes : '',
     createdAt: typeof r.createdAt === 'number' ? r.createdAt : Date.now(),
     updatedAt: typeof r.updatedAt === 'number' ? r.updatedAt : Date.now(),

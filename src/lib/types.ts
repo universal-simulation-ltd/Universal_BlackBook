@@ -105,6 +105,14 @@ export interface Contact {
    */
   hideFromList?: boolean
   /**
+   * Pinned to the front of the "Last added" cards over the list (James,
+   * 2026-10-11). One person at a time for now — pinning somebody unpins
+   * whoever was there (`setPinned`).
+   *
+   * Absent means not pinned, so nothing written before this moves.
+   */
+  pinned?: boolean
+  /**
    * Added by an Email list and never as a contact (owner's request,
    * 2026-09-17: "if the user is only in a list then don't show them in the
    * contact tab"). Such a person is left out of Contacts — search included —

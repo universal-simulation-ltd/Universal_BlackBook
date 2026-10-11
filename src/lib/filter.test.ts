@@ -11,6 +11,7 @@ import {
   isSearching,
   lastAdded,
   matchesTags,
+  pinnedContact,
   matchesText,
   runQuery,
   sameView,
@@ -356,6 +357,21 @@ describe('hiding a tag — the second tap on its chip', () => {
     expect(describeView({ tagIds: ['work'], hiddenTagIds: ['lists'], sort: 'name' }, name)).toBe(
       'Name A–Z · Work · hiding Email lists',
     )
+  })
+})
+
+describe('pinnedContact', () => {
+  it('is nobody in a book with no pin', () => {
+    expect(pinnedContact([contact({ id: 'a' })])).toBeUndefined()
+  })
+
+  it('is the most recently touched when a sync has left two pinned', () => {
+    const book = [
+      contact({ id: 'a', pinned: true, updatedAt: 5 }),
+      contact({ id: 'b', pinned: true, updatedAt: 9 }),
+      contact({ id: 'c', updatedAt: 20 }),
+    ]
+    expect(pinnedContact(book)?.id).toBe('b')
   })
 })
 

@@ -117,6 +117,8 @@ interface BookState {
   setBirthdayHidden: (id: string, hidden: boolean) => Promise<void>
   /** Show or hide this person in the main list. Search still finds them. */
   setListHidden: (id: string, hidden: boolean) => Promise<void>
+  /** Pin this person to the front of "Last added", unpinning anybody else. */
+  setPinned: (id: string, pinned: boolean) => Promise<void>
   /**
    * Just the notes, typed straight into the full-screen view (owner's request,
    * 2026-10-08). Not `saveContact`: that closes the form, clears the stash and
@@ -323,6 +325,7 @@ export const useBookStore = create<BookState>((set, get) => ({
       hideBirthday: existing?.hideBirthday,
       hideFromList: existing?.hideFromList,
       listOnly: existing?.listOnly,
+      pinned: existing?.pinned,
       notes: draft.notes,
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
@@ -385,6 +388,23 @@ export const useBookStore = create<BookState>((set, get) => ({
     const next: Contact = { ...existing, hideFromList: hidden ? true : undefined, updatedAt: Date.now() }
     set((s) => ({ contacts: s.contacts.map((c) => (c.id === id ? next : c)) }))
     await putContact(next)
+  },
+
+  // One `set` for the pin and the unpin, so there is never a render with two
+  // people pinned — or with nobody, when moving the pin from one to another.
+  setPinned: async (id, pinned) => {
+    const now = Date.now()
+    const changed: Contact[] = []
+    set((s) => ({
+      contacts: s.contacts.map((c) => {
+        const want = c.id === id ? pinned : pinned ? false : Boolean(c.pinned)
+        if (Boolean(c.pinned) === want) return c
+        const next: Contact = { ...c, pinned: want ? true : undefined, updatedAt: now }
+        changed.push(next)
+        return next
+      }),
+    }))
+    await Promise.all(changed.map(putContact))
   },
 
   setNotes: async (id, notes) => {
