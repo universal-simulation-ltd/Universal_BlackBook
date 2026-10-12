@@ -14,7 +14,7 @@
 #     no 'unsafe-eval', no WebAssembly.
 #   • style-src 'unsafe-inline': React style attributes, everywhere.
 #   • connect-src: Supabase (sign-in, the encrypted online copy, the usage
-#     event, and the user count on the website), the suite changelog, Google
+#     event, and the anonymous daily open count on the website), the suite changelog, Google
 #     sign-in.
 #   • worker-src 'self' blob:: the PWA service worker, and supabase-js's
 #     realtime heartbeat worker, which it builds from a blob: URL.

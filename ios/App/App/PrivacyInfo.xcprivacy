@@ -28,8 +28,9 @@
   encrypted online copy above, so Contacts is not declared as collected.
 
   The SDK's anonymous daily open count is switched OFF in this app
-  (src/main.tsx, openCount: false on the phone), so no usage data or device
-  identifier is sent and none is declared.
+  (src/main.tsx, openCount: false on the phone), and the suite user count and
+  its install id were retired in @unisim/sdk 0.187.0, so no usage data or
+  device identifier is sent and none is declared.
 
   All of it goes to our own servers. Nothing is used for tracking, and there
   are no third-party analytics or advertising SDKs.
