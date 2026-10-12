@@ -1,5 +1,36 @@
+# Served by Workers static assets (wrangler.jsonc). The portal Worker proxies
+# opensource.unisim.co.uk/blackbook/* here with the prefix intact and passes
+# these headers through, so `/*` covers every path, prefixed or not.
+#
 # Force HTTPS: instruct browsers to only ever connect over TLS (mirrors the
 # marketing site). The HTTP→HTTPS redirect itself is the Cloudflare zone
 # "Always Use HTTPS" setting.
+#
+# Content-Security-Policy (2026-10-12), enforced, copied from Universal PDF's
+# approach and cut down to what BlackBook really reaches for:
+#   • script-src: its own bundle (index.html has no inline script; the JSON-LD
+#     block is data, not script), and Google's sign-in script, which the SDK
+#     loads from accounts.google.com/gsi/client on demand. No 'unsafe-inline',
+#     no 'unsafe-eval', no WebAssembly.
+#   • style-src 'unsafe-inline': React style attributes, everywhere.
+#   • connect-src: Supabase (sign-in, the encrypted online copy, the usage
+#     event, and the user count on the website), the suite changelog, Google
+#     sign-in.
+#   • worker-src 'self' blob:: the PWA service worker, and supabase-js's
+#     realtime heartbeat worker, which it builds from a blob: URL.
+#   • frame-src: Google sign-in only.
+#   • img-src https:: account avatars and the suite's app icons.
+#   • No Cloudflare Web Analytics. Cloudflare's zone-level automatic setup can
+#     inject its beacon (static.cloudflareinsights.com) into the live HTML;
+#     this policy refuses it on purpose.
+# The dev server serves the same policy Report-Only (vite.config.ts, cspDev()).
+#
+# Hardening. Nothing in the suite frames this app, so refusing to be framed
+# elsewhere costs nothing and closes off click-jacking the account and
+# online-copy actions.
 /*
   Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: SAMEORIGIN
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' data: blob: https://rygfxgalojojppxmhddo.supabase.co wss://rygfxgalojojppxmhddo.supabase.co https://changelog.unisim.co.uk https://accounts.google.com/gsi/; worker-src 'self' blob:; frame-src 'self' https://accounts.google.com/gsi/; media-src 'self' blob: data:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'
