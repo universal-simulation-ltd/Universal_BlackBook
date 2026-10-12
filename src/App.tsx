@@ -442,13 +442,12 @@ export default function App() {
 /**
  * The padlock beside the page title: the whole of the PIN lock's front door.
  *
- * ⚠️ It states, it does not command. "🔓 Unlocked" is what the app IS right
- * now, which is the thing worth knowing at a glance — a link reading "Lock
- * this app" would say nothing about whether it already is. What happens when
- * it is tapped follows from the state it is showing: unlocked offers to set a
- * PIN, locked asks for the one that is set before taking it off. `title` and
- * the accessible name carry the action, since the visible label carries the
- * state.
+ * With a PIN set it states: "🔒 Locked" is what the app IS, which is the
+ * thing worth knowing at a glance, and tapping it asks for the PIN before
+ * taking the lock off. With NO PIN it offers: "🔓 Lock with PIN" (owner's
+ * call, 2026-10-12). It used to read "🔓 Unlocked" there, which described a
+ * lock nobody had set up as if it had been opened. `title` and the accessible
+ * name carry the action either way.
  *
  * It sits in the body rather than in the ⚙ menu (owner's call) because a lock
  * nobody knows is available is a lock nobody turns on — and because "is this
@@ -468,10 +467,8 @@ function LockLink({ onClick }: { onClick: () => void }) {
       className="inline-flex items-center gap-1 rounded text-sm text-slate-400 underline-offset-4 hover:text-orange-400 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
     >
       <span aria-hidden>{locked ? '\u{1F512}' : '\u{1F513}'}</span>
-      <span>{locked ? 'Locked' : 'Unlocked'}</span>
-      <span className="sr-only">
-        {locked ? '— tap to turn the PIN lock off' : '— tap to lock this app with a 4-digit PIN'}
-      </span>
+      <span>{locked ? 'Locked' : 'Lock with PIN'}</span>
+      {locked && <span className="sr-only">— tap to turn the PIN lock off</span>}
     </button>
   )
 }

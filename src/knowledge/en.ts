@@ -94,7 +94,7 @@ BlackBook only reads your phone's contacts when you ask it to, and never writes 
     group: 'How it works',
     body: `## Tags
 
-Tags are your own labels, such as Family, Work or Book club. A new book starts with none, because how you file people is up to you. You can make as many as you like, give each one a colour, and put a person under as many tags as fit. The filter shows everyone with any of the tags you choose.
+Tags are your own labels, such as Family, Work or Book club. A new book starts with two, Important People and Important Notes. They are ordinary tags: rename, recolour or delete them, and they are never put back. How you file people is up to you. You can make as many as you like, give each one a colour, and put a person under as many tags as fit. The filter shows everyone with any of the tags you choose.
 
 ## Email lists
 
