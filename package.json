@@ -18,9 +18,10 @@
     "build:mobile": "npm run build:desktop",
     "check:mobile-bundle": "node scripts/verify-mobile-bundle.mjs",
     "check:ios-launch": "node scripts/verify-ios-launch.mjs",
-    "cap:sync": "npm run build:mobile && npx cap sync && npm run check:mobile-bundle && npm run check:ios-launch",
+    "cap:sync": "node scripts/contacts-read-only.mjs --strict && npm run build:mobile && npx cap sync && npm run check:mobile-bundle && npm run check:ios-launch",
     "cap:open:ios": "npx cap open ios",
-    "deploy": "npm run build && wrangler deploy"
+    "deploy": "npm run build && wrangler deploy",
+    "postinstall": "node scripts/contacts-read-only.mjs"
   },
   "dependencies": {
     "@capacitor-community/contacts": "^8.0.0",

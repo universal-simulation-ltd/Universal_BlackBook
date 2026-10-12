@@ -1,5 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import { Capacitor } from '@capacitor/core'
 import { UniversalProvider } from '@unisim/sdk'
 import App from './App'
 import './index.css'
@@ -28,6 +29,12 @@ import './index.css'
 // web build is untouched and still rides the shared SSO cookie.
 const isDesktop = import.meta.env.MODE === 'desktop'
 
+// The suite user count (the SDK's presence beat) sends a random install id
+// every 45 s while the app is open. The website keeps it; the phone app does
+// not send it at all. Both checks, so a phone build made the wrong way still
+// stays quiet.
+const isPhoneApp = isDesktop || Capacitor.isNativePlatform()
+
 const universalConfig = {
   supabaseUrl: import.meta.env.VITE_PLATFORM_SUPABASE_URL || 'https://rygfxgalojojppxmhddo.supabase.co',
   supabaseAnonKey:
@@ -35,6 +42,7 @@ const universalConfig = {
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ5Z2Z4Z2Fsb2pvanBweG1oZGRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3NTY4MjUsImV4cCI6MjA5NDMzMjgyNX0.hLy_vt9vY_rdPKF3nL32yAuMCD604E3CH5VM7D7CaNE',
   product: 'blackbook' as const,
   cookieDomain: !isDesktop && import.meta.env.PROD ? '.unisim.co.uk' : undefined,
+  presence: !isPhoneApp,
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

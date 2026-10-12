@@ -1,0 +1,31 @@
+{
+  "_about": "Play Data safety answers. Build the importable CSV with: node Docs_UNI_SIM/store-kit/data-safety.mjs Universal_Apps/Universal_BlackBook/store-assets/data-safety.json Universal_Apps/Universal_BlackBook/store-assets/out/play/data-safety.csv. Checked against the code 2026-10-12: the address book lives on the device and works with no account; sign-in (@unisim/sdk) is optional (password, emailed code, or Apple/Google/Microsoft) and gives the email and account id; while signed in, one 'session.opened' event per launch is stored against the account (App interactions, optional, Analytics). The optional online copy is encrypted on the device (AES-GCM-256, key from a passphrase only the user knows) and only ciphertext is stored, so its contents are end-to-end encrypted, unreadable by UNI·SIM, and not declared. Phone contacts are read on the device only when the user asks (READ_CONTACTS, never write) and leave it only inside that encrypted copy, so Contacts is not declared. The suite user count (presence) is off in the phone app, so no device id is sent. Mirrors ios/App/App/PrivacyInfo.xcprivacy and PRIVACY.md.",
+  "accountCreation": [
+    "PSL_ACM_USER_ID_PASSWORD",
+    "PSL_ACM_USER_ID_OTHER_AUTH",
+    "PSL_ACM_OAUTH"
+  ],
+  "deletionUrl": "https://www.unisim.co.uk/privacy#retention",
+  "types": {
+    "PSL_EMAIL": {
+      "required": false,
+      "purposes": [
+        "PSL_APP_FUNCTIONALITY",
+        "PSL_ACCOUNT_MANAGEMENT"
+      ]
+    },
+    "PSL_USER_ACCOUNT": {
+      "required": false,
+      "purposes": [
+        "PSL_APP_FUNCTIONALITY",
+        "PSL_ACCOUNT_MANAGEMENT"
+      ]
+    },
+    "PSL_USER_INTERACTION": {
+      "required": false,
+      "purposes": [
+        "PSL_ANALYTICS"
+      ]
+    }
+  }
+}

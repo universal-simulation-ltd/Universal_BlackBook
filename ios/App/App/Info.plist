@@ -31,9 +31,11 @@
 	     @capacitor-community/contacts asks for permission before opening the
 	     PICKER too (ContactsPlugin.pickContact → requestContactsPermission),
 	     so "From my contacts" crashes without this line just as surely as
-	     "Import my phone contacts" does. This app only ever READS. -->
+	     "Import my phone contacts" does. This app only ever READS, and only
+	     the name, numbers, emails, birthday and postal address. Keep the
+	     wording in step with PRIVACY.md and PrivacyInfo.xcprivacy. -->
 	<key>NSContactsUsageDescription</key>
-	<string>BlackBook can fill in a new contact from your phone's address book, so you only have to type the private note. It never changes your contacts.</string>
+	<string>BlackBook reads your contacts only when you ask: to fill in someone you pick, or to import your phone's contacts into your book. They are read on this phone and never changed. Nothing is uploaded, except inside your end-to-end encrypted online copy if you turn it on.</string>
 	<!-- ⚠️ THE APP DOES NOT LAUNCH WITHOUT THIS once it is built against the
 	     iOS 27 SDK. iOS terminates an app built against that SDK that still
 	     uses the old app-delegate window life cycle, before any of our code

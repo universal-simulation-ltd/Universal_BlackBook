@@ -17,8 +17,11 @@
 //
 // ── The three platforms ──────────────────────────────────────────────────────
 //
-//   native (iOS)   @capacitor-community/contacts → CNContactPickerViewController
-//                  for one person, or the whole store for a bulk import.
+//   native         @capacitor-community/contacts → on iOS the system picker
+//                  (CNContactPickerViewController) for one person, or the
+//                  whole store for a bulk import; the same two calls on
+//                  Android, with READ_CONTACTS only (see
+//                  scripts/contacts-read-only.mjs for why that needs a patch).
 //   Chrome/Android The web Contact Picker API, which is a different thing with
 //                  a similar shape — see `pickViaWeb`.
 //   everywhere else  Not available. The UI hides the button and points at CSV,
