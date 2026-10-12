@@ -95,11 +95,11 @@ page that pretended otherwise would look like a lie.
   saying the app was opened, so your account's activity page is accurate. It
   holds nothing about your book. See `<UsageTracker />` in
   [`src/App.tsx`](src/App.tsx).
-- **"This app is in use" (website only).** While the website is open and on
-  screen, it tells our server every 45 seconds that the app is in use on this
-  device, so the menu can say how many people use it. That message holds the
-  app's name and a random ID made on this device, and your account if you are
-  signed in: nothing about your book. See `presence.ts` in `@unisim/sdk`.
+- **"The app was opened today" (website only).** Once a day, the website
+  adds one to an anonymous count of how often the app is opened. That message
+  holds only the app's name and the kind of device (web, phone or computer):
+  no ID, no account, nothing about your book. See `presence.ts` in
+  `@unisim/sdk`.
   **The iPhone, iPad and Android apps don't send this** (see
   [`src/main.tsx`](src/main.tsx)): the App Store and Google Play already count
   how many people have the app.

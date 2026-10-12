@@ -27,9 +27,9 @@
   read becomes part of the local book and leaves the phone only inside the
   encrypted online copy above, so Contacts is not declared as collected.
 
-  The suite user count (the SDK's presence beat, with its random install id)
-  is switched OFF in this app (src/main.tsx, presence: false on the phone), so
-  no device identifier is sent and none is declared.
+  The SDK's anonymous daily open count is switched OFF in this app
+  (src/main.tsx, openCount: false on the phone), so no usage data or device
+  identifier is sent and none is declared.
 
   All of it goes to our own servers. Nothing is used for tracking, and there
   are no third-party analytics or advertising SDKs.

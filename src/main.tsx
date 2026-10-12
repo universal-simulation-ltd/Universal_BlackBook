@@ -29,10 +29,10 @@ import './index.css'
 // web build is untouched and still rides the shared SSO cookie.
 const isDesktop = import.meta.env.MODE === 'desktop'
 
-// The suite user count (the SDK's presence beat) sends a random install id
-// every 45 s while the app is open. The website keeps it; the phone app does
-// not send it at all. Both checks, so a phone build made the wrong way still
-// stays quiet.
+// The SDK's anonymous daily open count (0.187.0: once a day, only the product
+// and the kind of device, no identifier). The website keeps it; the phone app
+// does not send it at all. Both checks, so a phone build made the wrong way
+// still stays quiet.
 const isPhoneApp = isDesktop || Capacitor.isNativePlatform()
 
 const universalConfig = {
@@ -42,7 +42,7 @@ const universalConfig = {
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ5Z2Z4Z2Fsb2pvanBweG1oZGRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3NTY4MjUsImV4cCI6MjA5NDMzMjgyNX0.hLy_vt9vY_rdPKF3nL32yAuMCD604E3CH5VM7D7CaNE',
   product: 'blackbook' as const,
   cookieDomain: !isDesktop && import.meta.env.PROD ? '.unisim.co.uk' : undefined,
-  presence: !isPhoneApp,
+  openCount: !isPhoneApp,
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
