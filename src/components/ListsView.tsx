@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useRevealOnOpen } from '@unisim/sdk'
 import { currentAge, todayParts } from '../lib/birthday'
 import { fold } from '../lib/filter'
 import { isList, membersOf } from '../lib/lists'
@@ -118,6 +119,7 @@ function ListPage({ list, onBack }: { list: Tag; onBack: () => void }) {
   const removeContact = useBookStore((s) => s.removeContact)
   const [renaming, setRenaming] = useState(false)
   const [confirming, setConfirming] = useState(false)
+  const revealConfirmRef = useRevealOnOpen()
 
   const today = useMemo(() => todayParts(), [])
   const byId = useMemo(() => new Map(tags.map((t) => [t.id, t])), [tags])
@@ -186,7 +188,7 @@ function ListPage({ list, onBack }: { list: Tag; onBack: () => void }) {
       </div>
 
       {confirming && (
-        <div className="space-y-2 rounded-xl border border-rose-900/60 bg-rose-950/20 px-3 py-3">
+        <div ref={revealConfirmRef} className="space-y-2 rounded-xl border border-rose-900/60 bg-rose-950/20 px-3 py-3">
           <p className="text-sm text-slate-300">
             Delete <span className="font-semibold text-slate-100">{list.name}</span>?
             {onlyHere.length > 0 &&

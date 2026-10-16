@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { SignInDialog, useUniversal, useUser } from '@unisim/sdk'
+import { SignInDialog, useRevealOnOpen, useUniversal, useUser } from '@unisim/sdk'
 import { mergeBooks } from '../lib/merge'
 import { payloadTags } from '../lib/cloud'
 import { useBookStore } from '../stores/bookStore'
@@ -35,6 +35,7 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
   const [acknowledged, setAcknowledged] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [changing, setChanging] = useState(false)
+  const revealConfirmRef = useRevealOnOpen()
 
   const busy = sync.status === 'working'
 
@@ -287,7 +288,7 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
               )}
               <div className="border-t border-slate-800 pt-3">
                 {confirmDelete ? (
-                  <div className="space-y-2">
+                  <div ref={revealConfirmRef} className="space-y-2">
                     <p className="text-sm text-rose-300">
                       Delete the online copy? Your book stays on this device — only the encrypted copy on
                       our servers is removed.
@@ -346,9 +347,11 @@ function ChangePassphraseForm({
   const [next, setNext] = useState('')
   const [confirm, setConfirm] = useState('')
   const [acknowledged, setAcknowledged] = useState(false)
+  const revealRef = useRevealOnOpen<HTMLFormElement>()
 
   return (
     <form
+      ref={revealRef}
       className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-3"
       onSubmit={(e) => {
         e.preventDefault()
