@@ -72,79 +72,23 @@ body {
   }
 }
 
-/* The filter dock — the search box and its ⚙️ panel.
+/* The first-run "Pull down to search" hint's bob (components/SearchDrawer.tsx),
+   Jukebox's jb-tip-bob. Used through `motion-safe:`, so reduced motion keeps
+   it still. */
+@keyframes bb-tip-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(3px); }
+}
 
-   Below 40rem it is PINNED TO THE BOTTOM of the screen. A phone is held at the
-   bottom and an address book is opened to search, so the one control that
-   matters belongs under the thumb rather than at the top of a page you have
-   scrolled away from. Above 40rem the rule does not apply at all and the bar
-   sits in the normal flow under the page title, where a pointer expects it.
-
-   Written as a media query here rather than as `fixed sm:static` utilities on
-   the element because of the padding: the dock spans the full viewport width,
-   so it has to carry the safe-area insets ITSELF — `.gutter` is for content
-   containers, and Tailwind's `sm:px-0` cannot reliably beat a class defined in
-   this file (equal specificity, and source order puts this one last).
-
-   The bottom inset is ADDED to the padding, not substituted for it: on a phone
-   with a home indicator the last 34pt is the swipe-up gesture area, and a
-   search field sitting in it is a field you cannot tap without leaving. */
-@media (max-width: 39.999rem) {
-  .filterdock {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 40;
-    border-top: 1px solid #1e293b; /* slate-800 */
-    /* ⚠️ FULLY OPAQUE. This was `rgb(2 6 23 / 0.95)` with a blur behind it, and
-       0.95 is not "near enough" over a list of cards: a slate-900 card crossing
-       a slate-950 dock at 5% is a visible shape moving under the search box —
-       the contact list scrolling THROUGH the one piece of chrome that is meant
-       to be standing still. There is nothing behind this bar worth seeing, so
-       nothing behind it is shown. */
-    background: #020617; /* slate-950 */
-    padding-top: 0.75rem;
-    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
-    padding-left: max(1rem, env(safe-area-inset-left));
-    padding-right: max(1rem, env(safe-area-inset-right));
-  }
-
-  /* ⚠️ The skirt: the dock's own background, continued BELOW it to the foot of
-     the screen. It is normally zero-tall and invisible, because the dock sits
-     on `bottom: 0`.
-
-     It is not decoration. The dock is translated upwards whenever the visual
-     viewport is shorter than the layout viewport (App.tsx,
-     `useKeyboardAwareDock`) — the iOS keyboard, and also Safari's own bottom
-     toolbar as it collapses and expands. The dock moves; the page behind it
-     does not; and the strip it has just vacated is a window onto the contact
-     list, scrolling. That strip is the "small gap below the search bar" —
-     lined up under the bar, the full width of the screen, with cards sliding
-     past inside it.
-
-     `100vh` is simply "more than enough": the element cannot be seen below the
-     screen, and any smaller number is a guess at how far the dock will ever be
-     pushed up. `pointer-events: none` so it never eats a tap meant for a card
-     in the rare case it is over one. */
-  .filterdock::after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    height: 100vh;
-    background: #020617; /* slate-950 — the dock's own ground */
-    pointer-events: none;
-  }
-
-  /* The dock is out of the flow, so the page has to reserve its height or the
-     last contact card sits underneath it and cannot be read or tapped. The
-     constant matches the row: a 44px control plus the 0.75rem padding either
-     side, and the row cannot wrap (the search field is `flex-1 min-w-0`), so
-     the height is fixed no matter how narrow the screen. */
-  .filterdock-spacer {
-    height: calc(44px + 1.5rem + env(safe-area-inset-bottom));
+/* On a phone a pull down from the top of the page is the search drawer's
+   (components/PullDrawer.tsx), so it must not also be the browser's
+   pull-to-refresh, which Chrome on Android starts on the same gesture and which
+   reloads the page under the finger. `contain`, not `none`: the rubber-band
+   bounce at the ends of the page stays. Same media query as SearchDrawer's
+   PHONE. */
+@media (max-width: 39.999rem) and (hover: none) and (pointer: coarse) {
+  html {
+    overscroll-behavior-y: contain;
   }
 }
 

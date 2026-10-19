@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState, type Ref } from 'react'
 import {
   cycleTag,
   DEFAULT_VIEW,
@@ -30,14 +30,12 @@ const SORTS: SortKey[] = ['name', 'name-desc', 'recent']
  * a ~40% wide sliver. Sorting and filtering are things you do occasionally;
  * searching is what you open an address book to do.
  *
- * ⚠️ **`flex-col-reverse` below 40rem is load-bearing, not a flourish.** On a
- * phone this bar is DOCKED TO THE BOTTOM of the screen (`.filterdock` in
- * index.css), so a panel rendered after the row in the DOM would open off the
- * bottom edge. Reversing the visual order puts it above the row — growing up
- * from the dock, the way a bottom sheet does — while the DOM order stays
- * row-then-panel, which is the order a screen reader and the tab sequence
- * want. Above 40rem the bar is back in the page flow at the top and the panel
- * opens downwards, which is what a dropdown anchored under a button should do.
+ * On a phone the whole bar is folded away above the list until pulled down
+ * (`SearchDrawer`, 2026-10-19), which hands it `input` (so a second pull can
+ * focus the box) and `onClose` (the ✕ in the box: clear it and fold it away).
+ * It used to be docked to the bottom of the screen, with this panel opening
+ * upwards out of it; it is in the page flow everywhere now, and the panel
+ * opens downwards under its button.
  *
  * ⚠️ **"Opens on" is the panel's last section** (owner's request, 2026-09-11):
  * a Default button that puts the list back to the view the app starts in, and
@@ -51,7 +49,15 @@ const SORTS: SortKey[] = ['name', 'name-desc', 'recent']
  * that removes half the list without saying so is a nasty surprise. As a
  * switch you can see is on, it is a different view — which is what it is.
  */
-export function FilterBar() {
+export function FilterBar({
+  input,
+  onClose,
+}: {
+  /** The search field, for a caller that focuses it (the phone's second pull). */
+  input?: Ref<HTMLInputElement>
+  /** Given on a phone: the ✕ in the box, and Escape — clear it and fold the bar away. */
+  onClose?: () => void
+} = {}) {
   const allTags = useBookStore((s) => s.tags)
   // Tags only. Lists are not tags and are not filtered by here (2026-09-18) —
   // they have the Lists tab, and runQuery ignores a list id left in a query.
@@ -84,9 +90,8 @@ export function FilterBar() {
   const active = query.tagIds.length + query.hiddenTagIds.length + (birthdays ? 1 : 0) + (!birthdays && query.sort !== 'name' ? 1 : 0)
   const dirty = active > 0 || query.text.trim() !== ''
 
-  // Escape and click-away, both only while the panel is open. On a phone the
-  // dock overlays the list, so tapping a contact behind it has to shut the
-  // panel rather than land on whatever is underneath.
+  // Escape and click-away, both only while the panel is open, so tapping a
+  // contact while it is open shuts it rather than landing on somebody.
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => {
@@ -120,7 +125,7 @@ export function FilterBar() {
   }
 
   return (
-    <div ref={rootRef} className="flex flex-col-reverse gap-2 sm:flex-col sm:gap-3">
+    <div ref={rootRef} className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
         <div className="relative min-w-0 flex-1">
           <input
@@ -128,13 +133,35 @@ export function FilterBar() {
             // target — `inputCls`'s own `py-2` leaves it 6px shorter, which is
             // visible as a step in a two-control row and is under the iOS
             // minimum on the control people use most.
-            className={`${inputCls} h-11 pl-9`}
+            ref={input}
+            className={`${inputCls} h-11 pl-9 ${onClose ? 'pr-10 [&::-webkit-search-cancel-button]:hidden' : ''}`}
             type="search"
             value={query.text}
             onChange={(e) => setQuery({ text: e.target.value })}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape' && onClose && !open) onClose()
+            }}
             placeholder="Search names, emails, phones, notes…"
             aria-label="Search contacts"
+            enterKeyHint="search"
           />
+          {onClose && (
+            <button
+              type="button"
+              // ⚠️ preventDefault on mousedown keeps the focus in the field
+              // until this click lands (Jukebox's ClearButton): a blur first
+              // can move the layout out from under the finger.
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={onClose}
+              aria-label="Clear the search and fold it away"
+              title="Clear and fold away"
+              className="absolute right-1 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md text-slate-500 hover:text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+            >
+              <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
+                <path d="m4 4 8 8M12 4l-8 8" strokeLinecap="round" />
+              </svg>
+            </button>
+          )}
           <svg
             aria-hidden
             viewBox="0 0 20 20"
@@ -174,8 +201,7 @@ export function FilterBar() {
         <div
           id={panelId}
           // A cap and its own scroll: on a phone the tag list can be longer
-          // than the screen, and a dock that grows past the top of the viewport
-          // takes the search box off the bottom of it with nothing to scroll.
+          // than the screen, and the search box should stay in view above it.
           className="max-h-[55vh] space-y-4 overflow-y-auto rounded-xl border border-slate-800 bg-slate-900 p-3 shadow-lg shadow-black/40"
         >
           <section>

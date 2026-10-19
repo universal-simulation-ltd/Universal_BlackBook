@@ -28,10 +28,10 @@ import { FormFieldsPreference } from './components/FormFieldsPreference'
 import { ContactForm } from './components/ContactForm'
 import { ContactList } from './components/ContactList'
 import { ContactView } from './components/ContactView'
-import { FilterBar } from './components/FilterBar'
 import { ImportExport } from './components/ImportExport'
 import { DeleteAllData } from './components/DeleteAllData'
 import { ListsView } from './components/ListsView'
+import { OPEN_SEARCH, SearchDrawer, SHUT_SEARCH } from './components/SearchDrawer'
 import { TodoView } from './components/TodoView'
 import { LockPanel, LockScreen } from './components/Lock'
 import { btnGhost, btnPrimary } from './components/ui'
@@ -124,7 +124,6 @@ export default function App() {
   const current = offContacts ? tab : 'contacts'
   const initTodos = useTodoStore((s) => s.init)
   const { canPick, picking, pick } = useContactPicker()
-  const dock = useKeyboardAwareDock()
   const lockStatus = useLockStore((s) => s.status)
   const initLock = useLockStore((s) => s.init)
 
@@ -194,12 +193,12 @@ export default function App() {
         onResetDefaults={resetSettings}
         suiteSwitcherIconSrc={`${import.meta.env.BASE_URL}unisim-icon.png`}
       />
-      {/* ⚠️ The footer's job, on a phone (owner's call, 2026-08-30). A full
-          footer bar below a bottom-DOCKED search bar is two stacked strips of
-          chrome at the bottom of the screen, and the one that matters is the
-          dock — so below 40rem the footer is gone entirely and its two links
-          become one small line up here instead. The pair is exclusive:
-          `sm:hidden` here, `hidden sm:block` on the footer. */}
+      {/* The footer's job, on a phone (owner's call, 2026-08-30): below 40rem
+          the footer is gone entirely and its two links become one small line
+          up here instead. (It was made for a search bar docked to the bottom
+          of the screen, which is now pulled down from the top; the small line
+          stayed.) The pair is exclusive: `sm:hidden` here, `hidden sm:block`
+          on the footer. */}
       <div className={`${CONTAINER} pt-2 sm:hidden`}>
         <p className="flex items-center justify-center gap-1.5 text-[11px] leading-none text-slate-600">
           <span>
@@ -279,7 +278,13 @@ export default function App() {
                 aria-selected={t === current}
                 {...tabDefault.buttonProps(t, TAB_NAMES[t])}
                 onClick={() => {
-                  tabDefault.tap(t)
+                  const double = tabDefault.tap(t)
+                  // Contacts tapped while already on it: open the search, keyboard
+                  // up (Jukebox's tab tap). Dispatched here, inside the tap, which
+                  // iOS needs to raise the keyboard. The second tap of a double
+                  // tap is making the tab the default, so it shuts it again. Only
+                  // a phone listens (SearchDrawer); elsewhere the box is on show.
+                  if (t === 'contacts' && t === current) window.dispatchEvent(new Event(double ? SHUT_SEARCH : OPEN_SEARCH))
                   setTab(t)
                 }}
                 // The default tab is orange: filled while you are on it, an
@@ -300,9 +305,8 @@ export default function App() {
         {onLists && loaded && <ListsView />}
         {onTodos && <TodoView />}
 
-        {/* ⚠️ Hidden with a class, not unmounted, while Lists is showing: the
-            dock's keyboard hook attaches to its element once, at mount, and a
-            remounted dock would be a new element it never hears about. */}
+        {/* Hidden with a class, not unmounted, while Lists or To-do is showing,
+            so the search, the Filters and the list are as they were left. */}
         <div className={offContacts ? 'hidden' : undefined}>
           <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
             <div>
@@ -342,25 +346,13 @@ export default function App() {
             </p>
           )}
 
-          {/* ⚠️ On a phone this is FIXED to the bottom of the screen (.filterdock
-              in index.css) and therefore OUT OF THE FLOW, so the spacer below the
-              list is not decoration — without it the last contact card sits under
-              the dock where it cannot be read or tapped. The two belong together;
-              do not move one without the other. */}
-          <div ref={dock} className="filterdock mb-4">
-            <FilterBar />
-          </div>
+          {/* On a phone, folded away until pulled down from the top (and pulled
+              again for the keyboard); everywhere else, the bar as it always was.
+              ⚠️ The list must stay its NEXT sibling: the drawer measures it to
+              hold the list still on screen as it folds itself away. */}
+          <SearchDrawer onContacts={!offContacts} />
 
           {loaded && <ContactList onImport={() => setPanel('io')} />}
-
-          {/* The height of the docked filter bar, reserved at the end of the
-              page. The dock is `position: fixed` below 40rem, so nothing else in
-              the document knows it is there — without this the last contact card
-              sits underneath it and cannot be read or tapped. ⚠️ It lives HERE
-              and not in the footer, because the footer does not exist at the
-              width the dock does. Zero height above 40rem, where there is no
-              dock. */}
-          <div className="filterdock-spacer" aria-hidden />
         </div>
       </main>
 
@@ -529,62 +521,6 @@ function SyncStatus({ onOpen }: { onOpen: () => void }) {
       {body}
     </span>
   )
-}
-
-/**
- * Keeps the docked filter bar above the on-screen keyboard.
- *
- * ⚠️ **Without this, focusing the search box can hide it.** `position: fixed;
- * bottom: 0` pins to the LAYOUT viewport, and iOS does not shrink the layout
- * viewport when the keyboard opens — it shrinks the VISUAL one. So the dock
- * stays where it was, behind the keyboard, and the field you are typing into
- * is the thing that disappears. Safari usually papers over this for a page it
- * scrolls itself; a Capacitor WKWebView with no `@capacitor/keyboard` plugin
- * does not, and this app is a phone app first.
- *
- * The overlap is the gap between the two viewports' bottom edges, and the dock
- * is translated up by exactly that much. `visualViewport` is the only API that
- * reports it; there is no CSS for it.
- *
- * Guarded on the media query, because ABOVE 40rem the element is static and in
- * the flow — translating it there would shove a perfectly placed bar upwards
- * the moment somebody pinch-zoomed, which also changes the visual viewport.
- *
- * ⚠️ Written from the spec and NOT yet seen with a real keyboard open — the
- * simulator screenshots that verified the dock's resting position could not
- * type into it. First thing to check on a device.
- */
-function useKeyboardAwareDock() {
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const vv = window.visualViewport
-    const el = ref.current
-    if (!vv || !el) return
-    // Must match `.filterdock`'s own breakpoint in index.css. Two places, one
-    // number — the alternative is reading the computed `position`, which is
-    // 'static' mid-transition often enough to flap.
-    const docked = window.matchMedia('(max-width: 39.999rem)')
-
-    const apply = () => {
-      const overlap = docked.matches
-        ? Math.max(0, document.documentElement.clientHeight - (vv.height + vv.offsetTop))
-        : 0
-      el.style.transform = overlap > 0 ? `translateY(-${overlap}px)` : ''
-    }
-
-    apply()
-    vv.addEventListener('resize', apply)
-    vv.addEventListener('scroll', apply)
-    docked.addEventListener('change', apply)
-    return () => {
-      vv.removeEventListener('resize', apply)
-      vv.removeEventListener('scroll', apply)
-      docked.removeEventListener('change', apply)
-    }
-  }, [])
-
-  return ref
 }
 
 /**

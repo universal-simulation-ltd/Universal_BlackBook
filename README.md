@@ -26,9 +26,13 @@ Five fields, and nothing you didn't ask for:
 Search across names, emails, phone numbers, notes and birthdays (typing `june`
 finds everyone born in June). Everything else — the birthdays view, the order,
 and the tag filter — sits behind one **⚙️ Filters** button beside the search
-box, so the search field is the whole row. On a phone that row is **docked to
-the bottom of the screen**, under your thumb, and the panel opens upwards from
-it.
+box, so the search field is the whole row. On a phone that row is **folded
+away above the list**: pull down from the top of the page to bring it out, and
+pull down again to start typing, keyboard up. Scroll it out of sight and it
+folds away again (unless you've typed a search). Tapping the Contacts tab while
+you're on it opens it too, and keyboard and screen-reader users get a "Search
+contacts" button in its place. While it's folded, a filtered or reordered list
+says so under the title.
 
 ## Birthdays
 

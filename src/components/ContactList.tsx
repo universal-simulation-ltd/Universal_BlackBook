@@ -712,8 +712,7 @@ function ConfirmDelete({
  * The strip that replaces nothing and sits over the list while selecting.
  *
  * `sticky top-0`, so the actions stay in reach while you scroll down ticking
- * people. On a phone the search dock is fixed to the BOTTOM, so the top of the
- * screen is the one edge free for it.
+ * people.
  */
 function SelectBar({
   count,
