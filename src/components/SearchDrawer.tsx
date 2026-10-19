@@ -1,46 +1,31 @@
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { flushSync } from 'react-dom'
+import { useCallback, useMemo, useRef, useState } from 'react'
+import {
+  PullDrawer,
+  TOUCH_PHONE_QUERY,
+  insideScrolledChild,
+  modalIsOpen,
+  openThenFocus,
+  useMediaQuery,
+  usePullHint,
+  useSearchRequests,
+} from '@unisim/sdk'
 import { DEFAULT_VIEW, describeView, sameView, viewOf } from '../lib/filter'
 import { useBookStore } from '../stores/bookStore'
 import { FilterBar } from './FilterBar'
-import { PullDrawer } from './PullDrawer'
-
-/** Sent by the tab bar (App's tabs) when Contacts is tapped while already on it. */
-export const OPEN_SEARCH = 'blackbook:open-search'
-/** …and by the second tap of a double tap, which makes the tab the default instead. */
-export const SHUT_SEARCH = 'blackbook:shut-search'
-
-/**
- * A phone: narrow AND touch. Only there is the search folded away, because the
- * way in is a pull with a finger — a narrow desktop window, where nothing can
- * pull, keeps the bar on screen as it is at every width above this one.
- * The width is `sm`, the breakpoint the rest of the layout switches at.
- */
-const PHONE = '(max-width: 39.999rem) and (hover: none) and (pointer: coarse)'
-
-function subscribePhone(onChange: () => void) {
-  const mq = window.matchMedia(PHONE)
-  mq.addEventListener('change', onChange)
-  return () => mq.removeEventListener('change', onChange)
-}
-const isPhone = () => window.matchMedia(PHONE).matches
 
 /** Gone for good the first time the drawer opens, by any way in. */
 const LEARNT_KEY = 'blackbook.pullSearchLearnt'
-function readLearnt(): boolean {
-  try {
-    return localStorage.getItem(LEARNT_KEY) === '1'
-  } catch {
-    return false
-  }
-}
-function writeLearnt(): void {
-  try {
-    localStorage.setItem(LEARNT_KEY, '1')
-  } catch {
-    // Blocked storage: the hint just comes back next time.
-  }
-}
+
+/**
+ * A touch that is never a pull, whatever it does next — BlackBook's two cases
+ * on top of the SDK's own (a sideways swiper). Unlike Jukebox's pages the
+ * contact list has modal dialogs over it and a scrolling Filters panel inside
+ * the drawer: a touch made while a dialog is open would peek a drawer behind
+ * the dialog and focus a box nobody can see, and one that starts inside
+ * something already scrolled down is that thing scrolling back up, not a
+ * request for the keyboard.
+ */
+const notAPull = (e: TouchEvent) => modalIsOpen() || insideScrolledChild(e.target)
 
 /**
  * The contact list's search box and ⚙️ Filters.
@@ -50,7 +35,11 @@ function writeLearnt(): void {
  * open keyboard. As we do in jukebox"), and a second pull while it is open
  * puts the cursor in the box with the keyboard up. They fold away again once
  * scrolled out of sight, unless a search is typed in. The gesture itself is
- * `PullDrawer`, ported from Universal Jukebox.
+ * the SDK's `PullDrawer` (@unisim/sdk ≥ 0.197), the one Universal Jukebox uses,
+ * so it is one gesture across the suite. A phone here is narrow AND touch
+ * (`TOUCH_PHONE_QUERY`): only there is the search folded away, because the way
+ * in is a pull with a finger — a narrow desktop window, where nothing can pull,
+ * keeps the bar on screen as it is at every width above it.
  *
  * ⚠️ Until then this bar was docked to the BOTTOM of a phone's screen, under
  * the thumb (owner's call, 2026-08-30). The suite rule now is the Jukebox
@@ -72,7 +61,7 @@ function writeLearnt(): void {
  * looks like a book that lost the rest.
  */
 export function SearchDrawer({ onContacts }: { onContacts: boolean }) {
-  const phone = useSyncExternalStore(subscribePhone, isPhone, () => false)
+  const phone = useMediaQuery(TOUCH_PHONE_QUERY)
   if (!phone) {
     return (
       <div className="mb-4">
@@ -90,15 +79,10 @@ function PhoneSearch({ onContacts }: { onContacts: boolean }) {
   const allTags = useBookStore((s) => s.tags)
   const tagNames = useMemo(() => new Map(allTags.map((t) => [t.id, t.name])), [allTags])
   const [pulled, setPulled] = useState(false)
-  const [learnt, setLearnt] = useState(readLearnt)
+  const { learnt, learn } = usePullHint(LEARNT_KEY)
   const searching = query.text.trim() !== ''
   const shown = pulled || searching
   const input = useRef<HTMLInputElement>(null)
-
-  const learn = useCallback(() => {
-    if (!readLearnt()) writeLearnt()
-    setLearnt(true)
-  }, [])
 
   const openDrawer = useCallback(() => {
     setPulled(true)
@@ -106,16 +90,15 @@ function PhoneSearch({ onContacts }: { onContacts: boolean }) {
   }, [learn])
   const closeDrawer = useCallback(() => setPulled(false), [])
   // A second pull while open: straight into the box, keyboard up. Called from
-  // inside the touch's release (PullDrawer), which is what iOS needs.
+  // inside the touch's release (the SDK's PullDrawer), which is what iOS needs.
   const typeIntoSearch = useCallback(() => input.current?.focus({ preventScroll: true }), [])
 
-  // Open AND focus in the same tap. `flushSync` first, so the drawer has lost
-  // `inert` before focus() is called — focusing an inert field does nothing,
-  // and waiting for the next render would be outside the tap.
+  // Open AND focus in the same tap. `openThenFocus` renders it open first, so
+  // the drawer has lost `inert` before focus() is called — focusing an inert
+  // field does nothing, and waiting for the next render would be outside the tap.
   const openAndFocus = useCallback(() => {
-    flushSync(() => setPulled(true))
+    openThenFocus(() => setPulled(true), input, {})
     learn()
-    input.current?.focus()
   }, [learn])
 
   // The ✕ and Escape: empty the box and fold it away.
@@ -125,23 +108,19 @@ function PhoneSearch({ onContacts }: { onContacts: boolean }) {
     input.current?.blur()
   }, [setQuery])
 
-  const searchingNow = useRef(searching)
-  searchingNow.current = searching
-  useEffect(() => {
-    if (!onContacts) return
-    const open = () => openAndFocus()
-    const shut = () => {
-      if (searchingNow.current) return
-      input.current?.blur()
-      setPulled(false)
-    }
-    window.addEventListener(OPEN_SEARCH, open)
-    window.addEventListener(SHUT_SEARCH, shut)
-    return () => {
-      window.removeEventListener(OPEN_SEARCH, open)
-      window.removeEventListener(SHUT_SEARCH, shut)
-    }
-  }, [onContacts, openAndFocus])
+  // The tab bar's `requestSearch` (App's tabs): Contacts tapped while on it
+  // opens the box, keyboard up; the second tap of a double tap shuts it again.
+  useSearchRequests(
+    {
+      onOpen: openAndFocus,
+      onShut: () => {
+        if (searching) return
+        input.current?.blur()
+        setPulled(false)
+      },
+    },
+    onContacts,
+  )
 
   const view = viewOf(query)
   const filtered = !sameView(view, DEFAULT_VIEW)
@@ -173,11 +152,17 @@ function PhoneSearch({ onContacts }: { onContacts: boolean }) {
         </button>
       )}
 
+      {/* No pull-to-refresh while it can be pulled (containOverscroll): Chrome on
+          Android starts it on the same gesture and reloads the page under the
+          finger. */}
       <PullDrawer
         shown={shown}
         onOpen={openDrawer}
         onScrolledAway={searching ? undefined : closeDrawer}
         onPullAgain={typeIntoSearch}
+        ignoreTouch={notAPull}
+        containOverscroll
+        innerClassName="pb-4"
       >
         <FilterBar input={input} onClose={clearAndClose} />
       </PullDrawer>

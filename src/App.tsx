@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   DefaultViewSelect,
   PreferencesDialog,
+  requestSearch,
   UniversalAppsNavBar,
   UpdateNotice,
   useDefaultView,
@@ -31,7 +32,7 @@ import { ContactView } from './components/ContactView'
 import { ImportExport } from './components/ImportExport'
 import { DeleteAllData } from './components/DeleteAllData'
 import { ListsView } from './components/ListsView'
-import { OPEN_SEARCH, SearchDrawer, SHUT_SEARCH } from './components/SearchDrawer'
+import { SearchDrawer } from './components/SearchDrawer'
 import { TodoView } from './components/TodoView'
 import { LockPanel, LockScreen } from './components/Lock'
 import { btnGhost, btnPrimary } from './components/ui'
@@ -280,11 +281,11 @@ export default function App() {
                 onClick={() => {
                   const double = tabDefault.tap(t)
                   // Contacts tapped while already on it: open the search, keyboard
-                  // up (Jukebox's tab tap). Dispatched here, inside the tap, which
-                  // iOS needs to raise the keyboard. The second tap of a double
-                  // tap is making the tab the default, so it shuts it again. Only
-                  // a phone listens (SearchDrawer); elsewhere the box is on show.
-                  if (t === 'contacts' && t === current) window.dispatchEvent(new Event(double ? SHUT_SEARCH : OPEN_SEARCH))
+                  // up (Jukebox's tab tap). Sent here, inside the tap, which iOS
+                  // needs to raise the keyboard. The second tap of a double tap
+                  // is making the tab the default, so it shuts it again. Only a
+                  // phone listens (SearchDrawer); elsewhere the box is on show.
+                  if (t === 'contacts' && t === current) requestSearch(!double)
                   setTab(t)
                 }}
                 // The default tab is orange: filled while you are on it, an

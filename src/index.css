@@ -80,18 +80,6 @@ body {
   50% { transform: translateY(3px); }
 }
 
-/* On a phone a pull down from the top of the page is the search drawer's
-   (components/PullDrawer.tsx), so it must not also be the browser's
-   pull-to-refresh, which Chrome on Android starts on the same gesture and which
-   reloads the page under the finger. `contain`, not `none`: the rubber-band
-   bounce at the ends of the page stays. Same media query as SearchDrawer's
-   PHONE. */
-@media (max-width: 39.999rem) and (hover: none) and (pointer: coarse) {
-  html {
-    overscroll-behavior-y: contain;
-  }
-}
-
 /* The buttons hidden behind a contact card (components/SwipeRow.tsx).
    TOUCH ONLY, and hidden everywhere else rather than merely covered up.
 
