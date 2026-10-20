@@ -79,7 +79,7 @@ describe('toDraft', () => {
   it('never brings across notes or tags', () => {
     // The phone's note field is the phone's copy of a thought. This app is for
     // a private one, and seeding the field people came here to write would be
-    // both presumptuous and a privacy leak into the encrypted vault.
+    // both presumptuous and a privacy leak into every backup file.
     const d = toDraft(payload({ note: 'sent a card last year' }))
     expect(d.notes).toBe('')
     expect(d.tagIds).toEqual([])

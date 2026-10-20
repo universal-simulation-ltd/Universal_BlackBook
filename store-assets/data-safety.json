@@ -1,31 +1,8 @@
 {
-  "_about": "Play Data safety answers. Build the importable CSV with: node Docs_UNI_SIM/store-kit/data-safety.mjs Universal_Apps/Universal_BlackBook/store-assets/data-safety.json Universal_Apps/Universal_BlackBook/store-assets/out/play/data-safety.csv. Checked against the code 2026-10-12: the address book lives on the device and works with no account; sign-in (@unisim/sdk) is optional (password, emailed code, or Apple/Google/Microsoft) and gives the email and account id; while signed in, one 'session.opened' event per launch is stored against the account (App interactions, optional, Analytics). The optional online copy is encrypted on the device (AES-GCM-256, key from a passphrase only the user knows) and only ciphertext is stored, so its contents are end-to-end encrypted, unreadable by UNI·SIM, and not declared. Phone contacts are read on the device only when the user asks (READ_CONTACTS, never write) and leave it only inside that encrypted copy, so Contacts is not declared. The suite user count (install id) was retired in @unisim/sdk 0.187.0, and the anonymous daily open count that replaced it is off in the phone app (src/main.tsx `openCount: !isPhoneApp`), so no device id or usage data is sent. Mirrors ios/App/App/PrivacyInfo.xcprivacy and PRIVACY.md.",
+  "_about": "Play Data safety answers. Build the importable CSV with: node Docs_UNI_SIM/store-kit/data-safety.mjs Universal_Apps/Universal_BlackBook/store-assets/data-safety.json Universal_Apps/Universal_BlackBook/store-assets/out/play/data-safety.csv. Checked against the code 2026-10-20: BlackBook has no accounts at all (noAccounts in src/main.tsx, every build), so no email, no user id and no signed-in usage events, and with noAccounts the SDK's anonymous daily open count is off too (the suite install id was retired in @unisim/sdk 0.187.0), so no Device or other IDs and no App interactions. The address book lives on the device. The encrypted online vault was removed with sign-in on 2026-10-20; a backup file the user saves themselves (optionally password-encrypted, AES-256-GCM / PBKDF2) replaced it, and it goes wherever the user sends it through the share sheet, never to us. Phone contacts are read on the device only when the user asks (READ_CONTACTS, never write) and leave it only inside a backup or CSV file the user saves, so Contacts is not declared. So: no data collected. Re-import this at the next Play release, and set App access to no special access. Mirrors ios/App/App/PrivacyInfo.xcprivacy and PRIVACY.md.",
   "accountCreation": [
-    "PSL_ACM_USER_ID_PASSWORD",
-    "PSL_ACM_USER_ID_OTHER_AUTH",
-    "PSL_ACM_OAUTH"
+    "PSL_ACM_NONE"
   ],
   "deletionUrl": "https://www.unisim.co.uk/privacy#retention",
-  "types": {
-    "PSL_EMAIL": {
-      "required": false,
-      "purposes": [
-        "PSL_APP_FUNCTIONALITY",
-        "PSL_ACCOUNT_MANAGEMENT"
-      ]
-    },
-    "PSL_USER_ACCOUNT": {
-      "required": false,
-      "purposes": [
-        "PSL_APP_FUNCTIONALITY",
-        "PSL_ACCOUNT_MANAGEMENT"
-      ]
-    },
-    "PSL_USER_INTERACTION": {
-      "required": false,
-      "purposes": [
-        "PSL_ANALYTICS"
-      ]
-    }
-  }
+  "types": {}
 }

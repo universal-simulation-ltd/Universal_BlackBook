@@ -124,7 +124,7 @@ describe('the PIN lock', () => {
 // stranger holding the phone could use.
 describe('forgetting the PIN', () => {
   async function seed() {
-    const { putContact, putTag, saveSyncMeta, saveVaultKey } = await import('../lib/store')
+    const { putContact, putTag } = await import('../lib/store')
     await putContact({
       id: 'c1',
       name: 'Sam Okonkwo',
@@ -136,12 +136,6 @@ describe('forgetting the PIN', () => {
       updatedAt: 1,
     })
     await putTag({ id: 't1', name: 'Work', colour: 'orange' })
-    await saveSyncMeta({ userId: 'u1', rev: 3, salt: 'c2FsdA==', iterations: 600_000, pushedAt: 1 })
-    const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, [
-      'encrypt',
-      'decrypt',
-    ])
-    await saveVaultKey(key)
   }
 
   it('erases the book, the tags and the lock', async () => {
@@ -158,21 +152,6 @@ describe('forgetting the PIN', () => {
     expect(store.getState().record).toBeNull()
   }, 30_000)
 
-  it('takes the remembered vault key with it', async () => {
-    // ⚠️ The one that matters most. Leaving the key behind would mean the
-    // device pulls the whole book back down from the vault on its own, with no
-    // passphrase asked for — a reset that hands the book to whoever ran it.
-    const store = await reopen()
-    await seed()
-    await store.getState().setPin('4821')
-
-    await store.getState().resetDevice()
-
-    const { loadVaultKey, loadSyncMeta } = await import('../lib/store')
-    expect(await loadVaultKey()).toBeNull()
-    expect(await loadSyncMeta()).toBeNull()
-  }, 30_000)
-
   it('stays off after the app is opened again', async () => {
     const store = await reopen()
     await seed()
@@ -182,21 +161,4 @@ describe('forgetting the PIN', () => {
     const again = await reopen()
     expect(again.getState().status).toBe('off')
   }, 30_000)
-
-  it('reports an online copy only once a push has actually landed', async () => {
-    const store = await reopen()
-    // Bookkeeping exists from the moment a vault is set up, so rev 0 means the
-    // server has nothing — promising a restore here would be a lie.
-    const { saveSyncMeta } = await import('../lib/store')
-    await saveSyncMeta({ userId: 'u1', rev: 0, salt: 'c2FsdA==', iterations: 600_000, pushedAt: 0 })
-    expect(await store.getState().hasOnlineCopy()).toBe(false)
-
-    await saveSyncMeta({ userId: 'u1', rev: 1, salt: 'c2FsdA==', iterations: 600_000, pushedAt: 1 })
-    expect(await store.getState().hasOnlineCopy()).toBe(true)
-  })
-
-  it('says no online copy on a device that never synced', async () => {
-    const store = await reopen()
-    expect(await store.getState().hasOnlineCopy()).toBe(false)
-  })
 })

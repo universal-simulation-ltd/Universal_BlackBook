@@ -1,6 +1,5 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { Capacitor } from '@capacitor/core'
 import { UniversalProvider } from '@unisim/sdk'
 import App from './App'
 import './index.css'
@@ -14,26 +13,22 @@ import './index.css'
 // Never `as unknown as ProductCode` — if the type fights you, the enum is
 // missing a value and the fix is a migration, not a cast.
 //
-// BlackBook needs the signed-in session for a second reason the other apps do
-// not: the encrypted-vault feature reads and writes `public.blackbook_vaults`
-// through this same client, and RLS there is `auth.uid()`.
+// No sign-in (James, 2026-10-20: no logins in first iterations unless they
+// improve the experience; Docs_UNI_SIM/login-free-plan.md). BlackBook's sign-in
+// only carried the encrypted online vault (`blackbook_vaults`), which a backup
+// file in Backup, import & export now replaces, so `noAccounts: true` drops the
+// account rows and keeps the app signed out of the suite session in every
+// build; with it the SDK's anonymous open count is off too (SDK 0.187), as in
+// Video, Charts, Beam and the rest.
 //
-// ⚠️ Which is exactly why `cookieDomain` has to come off in the native build.
-// Vite `--mode desktop` is the Capacitor (iOS) bundle; it loads from
-// `capacitor://localhost`, where a cookie scoped to `.unisim.co.uk` is a
-// cross-domain cookie the WebView simply refuses to store. The SDK's session
-// storage IS that cookie whenever cookieDomain is set, so sign-in would appear
-// to succeed and then evaporate on the next read — no session, no `auth.uid()`,
-// and the vault unreachable, with no error anywhere saying why. Left undefined,
-// supabase-js falls back to localStorage, which the container has. The hosted
-// web build is untouched and still rides the shared SSO cookie.
-const isDesktop = import.meta.env.MODE === 'desktop'
+// The vault table still holds 2 orphaned rows on prod (one James's, one an
+// anonymous session's that could never have reached a second device); this
+// app no longer reads or writes them.
 
-// The SDK's anonymous daily open count (0.187.0: once a day, only the product
-// and the kind of device, no identifier). The website keeps it; the phone app
-// does not send it at all. Both checks, so a phone build made the wrong way
-// still stays quiet.
-const isPhoneApp = isDesktop || Capacitor.isNativePlatform()
+// `--mode desktop` is the Capacitor (phone) bundle. It loads from
+// `capacitor://localhost`, where a cookie scoped to `.unisim.co.uk` cannot be
+// stored, so the cookie domain stays off there.
+const isDesktop = import.meta.env.MODE === 'desktop'
 
 const universalConfig = {
   supabaseUrl: import.meta.env.VITE_PLATFORM_SUPABASE_URL || 'https://rygfxgalojojppxmhddo.supabase.co',
@@ -42,7 +37,7 @@ const universalConfig = {
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ5Z2Z4Z2Fsb2pvanBweG1oZGRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3NTY4MjUsImV4cCI6MjA5NDMzMjgyNX0.hLy_vt9vY_rdPKF3nL32yAuMCD604E3CH5VM7D7CaNE',
   product: 'blackbook' as const,
   cookieDomain: !isDesktop && import.meta.env.PROD ? '.unisim.co.uk' : undefined,
-  openCount: !isPhoneApp,
+  noAccounts: true,
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

@@ -8,16 +8,18 @@ import {
 } from '../lib/deviceContacts'
 import { saveBlob } from '@unisim/media/save'
 import { useBookStore } from '../stores/bookStore'
+import { BackupSection } from './BackupSection'
 import { Modal } from './Modal'
 import { btnGhost, btnPrimary, label } from './ui'
 
 /**
- * CSV in and out.
+ * Backup file, then CSV in and out.
  *
- * This is the app's backup story for anyone who does not want an account, and
- * its way out to any other address book — so it is a first-class screen rather
- * than a menu item, and the export button says how many contacts are in the
- * file before you click it.
+ * The backup file (BackupSection) is the app's whole backup story since
+ * sign-in and the online vault went (2026-10-20): the complete book, to-dos
+ * included. The CSV is the way out to any other address book and in from one,
+ * so it stays a first-class screen, and the export button says how many
+ * contacts are in the file before you click it.
  */
 export function ImportExport({ onClose }: { onClose: () => void }) {
   const contacts = useBookStore((s) => s.contacts)
@@ -110,10 +112,11 @@ export function ImportExport({ onClose }: { onClose: () => void }) {
 
   const exportSection = (
     <section className={importFirst ? 'space-y-2 border-t border-slate-800 pt-4' : 'space-y-2'}>
-      <h3 className="text-sm font-semibold text-slate-100">Export</h3>
+      <h3 className="text-sm font-semibold text-slate-100">Export a CSV</h3>
       <p className="text-sm text-slate-400">
         A plain CSV — Name, Email, Tags, Notes, Birthday, Phone. Opens in any spreadsheet, and
-        BlackBook reads it straight back in.
+        BlackBook reads it straight back in. It leaves out your to-dos; the backup file above has
+        everything.
       </p>
       <button type="button" className={btnPrimary} onClick={download} disabled={contacts.length === 0}>
         Download {contacts.length} {contacts.length === 1 ? 'contact' : 'contacts'}
@@ -122,12 +125,16 @@ export function ImportExport({ onClose }: { onClose: () => void }) {
   )
 
   return (
-    <Modal title="Import & export" onClose={onClose}>
+    <Modal title="Backup, import & export" onClose={onClose}>
       <div className="space-y-5">
+        <BackupSection onDone={onClose} />
+
+        <div className="border-t border-slate-800" />
+
         {!importFirst && exportSection}
 
         <section className={importFirst ? 'space-y-2' : 'space-y-2 border-t border-slate-800 pt-4'}>
-          <h3 className="text-sm font-semibold text-slate-100">Import</h3>
+          <h3 className="text-sm font-semibold text-slate-100">Import a CSV</h3>
           <p className="text-sm text-slate-400">
             Any CSV with a Name or Email column. Tags in the file are matched to yours by name and created
             if they're new — a Categories, Groups or Labels column counts as tags, including one from an

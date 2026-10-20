@@ -11,6 +11,7 @@ import {
   deleteTag as dbDeleteTag,
   deleteContact as dbDeleteContact,
   loadDefaultView,
+  forgetOldSync,
   loadSeeded,
   loadTags,
   loadContacts,
@@ -40,7 +41,8 @@ interface BookState {
   /**
    * The filters and order the app opened on, and will open on again.
    *
-   * Device-local (lib/store.ts, the 'view' key) and never part of the vault.
+   * Device-local (lib/store.ts, the 'view' key). A backup file carries it;
+   * only "Replace everything" brings it back.
    * Held in state as well as on disk so the filter panel can say what it is and
    * tell whether what is on screen differs from it.
    */
@@ -52,7 +54,7 @@ interface BookState {
   /**
    * A half-typed NEW contact whose form was closed without saving.
    *
-   * In memory only — never written to disk and never pushed to the vault. It
+   * In memory only — never written to disk and never in a backup file. It
    * survives closing the dialog and nothing else: a reload is a fresh start.
    * See `stashDraft` for why it exists and why it is only for new contacts.
    */
@@ -144,6 +146,12 @@ interface BookState {
   removeTag: (id: string) => Promise<void>
   importBook: (contacts: Contact[], tags: Tag[], mode: 'merge' | 'replace', notice: string | null) => Promise<void>
   /**
+   * A backup file opened (lib/backup.ts): this whole book, already merged or
+   * not by the caller, becomes the one on this device. `view`, when given
+   * ("Replace everything"), becomes the view the app opens on.
+   */
+  restoreBook: (book: { contacts: Contact[]; tags: Tag[]; view?: View | null }, notice: string | null) => Promise<void>
+  /**
    * Save an Email list: the list's name becomes (or finds) a tag, new people
    * are added with it, and people already in the book gain it. See
    * lib/emailListImport.ts.
@@ -228,7 +236,7 @@ export const useBookStore = create<BookState>((set, get) => ({
 
     // The starting tags, once per device and only into a book with nothing in
     // it at all. A book that already holds contacts or tags is somebody's, and
-    // dropping two tags into it — on an upgrade, or after a vault was adopted
+    // dropping two tags into it — on an upgrade, or after a backup was opened
     // — would be the app adding to their data uninvited.
     let tags = loadedTags
     if (!seeded) {
@@ -252,6 +260,9 @@ export const useBookStore = create<BookState>((set, get) => ({
       : DEFAULT_VIEW
 
     set({ contacts, tags, defaultView, query: { ...EMPTY_QUERY, ...defaultView }, loaded: true })
+    // What the online vault (removed 2026-10-20) left behind: its remembered
+    // key and bookkeeping. Never the book. Failing to delete them is harmless.
+    void forgetOldSync().catch(() => {})
   },
 
   setQuery: (patch) => set((s) => ({ query: { ...s.query, ...patch } })),
@@ -420,8 +431,7 @@ export const useBookStore = create<BookState>((set, get) => ({
   },
 
   // The bulk actions behind the list's Select mode. ONE `set` each, so the
-  // list re-renders — and the vault's autosave timer restarts — once for the
-  // whole batch rather than once per person.
+  // list re-renders once for the whole batch rather than once per person.
   removeContacts: async (ids) => {
     const gone = new Set(ids)
     set((s) => ({
@@ -591,6 +601,19 @@ export const useBookStore = create<BookState>((set, get) => ({
     const merged = [...get().contacts, ...contacts]
     set({ contacts: merged, tags, notice })
     await replaceAll(merged, tags)
+  },
+
+  restoreBook: async ({ contacts, tags, view }, notice) => {
+    requestPersistentStorage()
+    const known = new Set(tags.map((t) => t.id))
+    const keep = (ids: string[]) => ids.filter((id) => id === UNTAGGED || known.has(id))
+    const base = view ?? get().defaultView
+    const defaultView: View = { sort: base.sort, tagIds: keep(base.tagIds), hiddenTagIds: keep(base.hiddenTagIds) }
+    // `viewing`/`editing` null: the card on screen may be somebody the file
+    // replaced or changed.
+    set({ contacts, tags, notice, defaultView, query: { ...EMPTY_QUERY, ...defaultView }, viewing: null, editing: null })
+    await replaceAll(contacts, tags)
+    if (view) await dbSaveDefaultView(defaultView)
   },
 
   saveEmailList: async (listName, rows, listTagIds) => {

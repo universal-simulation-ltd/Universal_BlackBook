@@ -6,7 +6,7 @@ own tags, and never a birthday missed.
 **→ [opensource.unisim.co.uk/blackbook](https://opensource.unisim.co.uk/blackbook)**
 
 Part of the [Universal Apps](https://opensource.unisim.co.uk) suite by UNI·SIM.
-Free, open source (AGPL-3.0), and no account required.
+Free, open source (AGPL-3.0), with no account and nothing to sign in to.
 
 ---
 
@@ -58,8 +58,8 @@ use the ◎ button in the corner of it anywhere. It hides the reminder, not the 
 and a "N hidden from this list" drawer at the bottom of the birthdays view puts
 them back. Deleting the date would have been the other way to stop the yearly
 reminder, and it is the one thing you cannot undo. It survives an export — the
-CSV carries a `Hide birthday` column — so a backup restores the list you had
-rather than one with everybody put back.
+CSV carries a `Hide birthday` column, and the backup file carries every field —
+so restoring gives back the list you had rather than one with everybody put back.
 
 ## Hiding somebody from the list
 
@@ -101,13 +101,9 @@ alone.
 
 **Everything at once:** Actions ▸ Advanced ▸ **Delete all data** clears this
 device completely: every contact, tag, list and to-do, the PIN, your settings
-and the remembered vault key. You type `DELETE` to confirm, and BlackBook
-reopens as a new book (with its two starting tags). It sits just below Import &
-export, so you can export first.
-
-> **Your online copy is never deleted.** The dialog says whether one exists. If
-> it does, only this device is cleared, and signing in with your vault
-> passphrase brings the book back. If it does not, nothing can.
+You type `DELETE` to confirm, and BlackBook reopens as a new book (with its two
+starting tags). It sits just below Backup, import & export, so you can save a
+backup first: only a backup file can bring the book back afterwards.
 
 ## Adding somebody lands you on their tags
 
@@ -131,7 +127,7 @@ opens the full form for everything else.
 details, a deadline and your tags — the same tags your contacts use. Open ones
 sort by deadline (overdue first, in red), then a "done" drawer. Adding a tagged
 to-do filters the tab to its tags, as contacts do. To-dos live on this device and
-go into the encrypted online backup with the rest of the book. Turning the switch
+go into the backup file with the rest of the book (the CSV leaves them out). Turning the switch
 off hides the tab and keeps the list.
 
 ## Locking the app
@@ -147,7 +143,8 @@ starts making you wait, doubling each time.
 > 10,000 candidates is not a key — and it would put the only copy behind a
 > number you can forget. The PIN itself is never stored; what is stored is a
 > PBKDF2-SHA-256 digest of it with a per-device salt, which is what makes
-> guessing it cost ~300ms a go. The lock is per device and is never uploaded.
+> guessing it cost ~300ms a go. The lock is per device and is never put in a
+> backup file.
 
 **If you forget it: "Forgotten your PIN?" on the lock screen erases this
 device's book and starts it over, unlocked.** Nobody can tell you your PIN and
@@ -156,27 +153,48 @@ nobody can turn the lock off for you.
 > ⚠️ **The reset takes the book with it, and that is what makes it safe to
 > offer.** A reset that only cleared the PIN would be a bypass — anybody holding
 > the phone could use it, and the lock would protect nobody. So the door opens
-> and the room behind it is emptied: the contacts, the tags, the PIN, and the
-> remembered vault key all go, which means getting the book back afterwards
-> costs a Universal ID sign-in **and** your vault passphrase. A stranger can
-> destroy your book this way; they can never read it.
+> and the room behind it is emptied: the contacts, the tags, the to-dos and the
+> PIN all go. A stranger can destroy your book this way; they can never read it.
 >
-> **So turn the online copy on before you set a PIN.** With a vault, forgetting
-> your PIN is an inconvenience — sign in, enter the passphrase, and the book
-> comes back. Without one, the reset screen says so in as many words, and it is
-> the truth: there is nothing to restore from.
+> **So save a backup file before you set a PIN.** With one, forgetting your PIN
+> is an inconvenience — reset, open the backup, and the book comes back. Without
+> one there is nothing to restore from, and the reset screen says so.
 
 ## Where your book lives
 
 In your browser (IndexedDB), on the device you typed it into. There is no
-account, no server and no telemetry about its contents.
+account, no sign-in, no server copy and no telemetry about its contents.
 
-Two ways to get it out or move it elsewhere:
+Ways to get it out or move it elsewhere, all under Actions ▸ Advanced ▸
+**Backup, import & export**:
+
+**A backup file** — **Save a backup** writes everything (every contact with
+every field, tags and lists, to-dos, your Tune this app choices and the view
+the list opens on) into one `blackbook-backup-YYYY-MM-DD.json`: a download in a
+browser, the share sheet on a phone. **Open a backup** (or drop the file on the
+window) asks **Add to what's here** or **Replace everything** (which confirms).
+Adding matches people and to-dos by id and keeps the copy edited last; the same
+person under a different id (name plus email or phone) is never added twice,
+and tags of the same name become one, so opening the same backup twice adds
+nothing. This is how a book moves to a new phone or a second device.
+
+> **Optional password.** Tick **Protect with a password** (off by default) and
+> the file is encrypted on the device with AES-256-GCM under a PBKDF2-SHA-256
+> key (600,000 iterations): the people in a BlackBook never signed up for
+> anything, so a file that might pass through email or a cloud drive deserves
+> it. The password is never stored or sent. ⚠️ There is no recovery: forget it
+> and nobody can open the file.
+>
+> The file is the suite's transfer file (`packTransfer` / `readTransfer` in
+> `@unisim/sdk`, product `blackbook`, kind `backup`, schema 1), and every field
+> in it is checked before use (`parseBackup` in `src/lib/backup.ts`: types,
+> lengths, array caps, ids, dates, swatch colours), because anyone can edit one.
 
 **CSV** — a plain `Name, Email, Tags, Notes, Birthday, Phone, Hide birthday,
 Hide from list, Company, Address` file.
-Opens in any spreadsheet and imports straight back. This is the backup story if
-you never want an account.
+Opens in any spreadsheet and imports straight back. It is the way out to (and
+in from) other address books; it leaves out the to-dos, so the backup file is
+the complete copy.
 
 The importer reads the column names Google Contacts and Outlook use — a
 `Categories`, `Groups` or `Labels` column all count as tags, and `Mobile`,
@@ -192,7 +210,7 @@ so.
 **Your phone's own contacts** *(the iPhone app)* — **From my contacts** opens
 the system picker, and the person you choose arrives in the Add form with their
 name, email, number, postal address and birthday already filled in, ready for the part that is
-actually yours. **Advanced ▸ Import & export ▸ Import my phone contacts** does the whole
+actually yours. **Advanced ▸ Backup, import & export ▸ Import my phone contacts** does the whole
 address book at once, skipping anybody already in your book so you can run it
 again whenever you add someone to your phone.
 
@@ -204,46 +222,13 @@ On Chrome for Android the same button uses the browser's contact picker (a name,
 an email and a number; the web API has no birthday). Everywhere else the door is
 the CSV importer below, which works in every browser.
 
-**An encrypted online copy** *(optional, off by default)* — sign in with your
-Universal ID and BlackBook keeps a copy on UNI·SIM's servers, so your book
-survives a lost laptop and opens on your phone. Signing in is the only step:
-BlackBook then asks for your passphrase and downloads your book. If this device
-already has contacts or to-dos (say, ones you made as a guest), they are merged
-into the online copy and saved straight away — there is no question to answer.
-Everything else about the backup (Save now, Fetch online copy, Forget this
-device, Change passphrase, Turn off) is under Actions ▸ Advanced ▸ **Online
-backup**.
-
-> **We cannot read it.** The book is encrypted in your browser with AES-GCM-256,
-> under a key derived from a passphrase you choose (PBKDF2-SHA-256, 600,000
-> iterations). The passphrase never leaves your device and is **not** your
-> account password. The server stores bytes it holds no key for.
->
-> That matters more here than in most apps: the names, email addresses and
-> private notes in a BlackBook belong to people who never signed up for
-> anything, and holding those in plaintext is not a risk we get to accept on
-> their behalf.
->
-> ⚠️ **There is no recovery.** Lose the passphrase and the online copy is gone —
-> we hold no key, no escrow and no reset. Your local book is untouched, which is
-> why this is a backup and never the primary copy.
-
-The merge on sign-in adds this device's contacts that the online copy does not
-have. The same person is matched by id, or by name plus email or phone, and is
-never added twice. After that, the online copy is a whole-book snapshot: if two
-signed-in devices have both changed, BlackBook stops and asks which one to keep
-rather than silently picking. To take the online copy as it stands instead of
-merging, use **Fetch online copy** in the Online backup panel. Because the merge
-only ever adds, someone deleted on another device can come back from a device
-that still has them.
-
-**Changing the passphrase** — Advanced ▸ Online backup ▸ Change passphrase. It asks for
-the current one (even on a device that remembers the key), then re-encrypts the
-book under a new salt in a single write. Your other devices stop syncing and
-ask for the new passphrase; nothing on them is lost, and unlocking merges
-their contacts back in. A device still holding the old key can never
-write it back over the change. Knowing the current passphrase is required, so
-this is not a recovery route.
+Until 2026-10-20 there was also an optional, end-to-end encrypted online copy
+behind a Universal ID sign-in (`blackbook_vaults`). It was removed with sign-in
+(James: no logins in the first iterations unless they really improve the
+experience; a file instead). The app no longer reads or writes that table; two
+orphaned rows remain on the platform (one James's own, one an anonymous
+session's that could never have reached a second device). A device that had the
+vault on keeps its book, and drops the old remembered key on its next launch.
 
 ## Dark only
 
@@ -266,15 +251,11 @@ suite registry — see `Docs_UNI_SIM/dev-preview.md`.
 | | |
 |---|---|
 | `npm run dev` | Vite dev server |
-| `npm test` | Vitest — the CSV parser, the search/sort, the birthday maths, the phone-contact mapping, the vault crypto, the swipe geometry and the PIN lock (that it re-locks on every fresh opening, and that the reset takes the book and the remembered vault key with it) |
-| `BLACKBOOK_LIVE=1 npm test -- cloud.live` | The two-device vault round trip, against the REAL server. Not part of `npm test`: it signs in anonymously to production, exercises RLS, the primary-key conflict and the compare-and-set, then deletes what it made. |
+| `npm test` | Vitest — the CSV parser, the search/sort, the birthday maths, the phone-contact mapping, the backup file (round trip, password, hostile data, merge), the swipe geometry and the PIN lock (that it re-locks on every fresh opening, and that the reset takes the book with it) |
+| `npm run test:backup` | Builds, then drives the built app in Chromium: saves a backup with and without a password, clears the device, opens it (wrong password refused), checks contacts and to-dos are back, that adding the same backup duplicates nothing, that a hostile file is tamed, that there is no sign-in UI and no console error. Playwright is borrowed from `../Universal_Beam/node_modules/playwright` (or set `PLAYWRIGHT`). |
 | `npm run lint` | ESLint |
 | `npm run build` | Typecheck + production build |
 | `npm run deploy` | Build and `wrangler deploy` |
-
-⚠️ **`npm run dev` talks to the LIVE platform Supabase.** The book is local
-either way, but signing in and setting a passphrase in dev writes a real
-vault against your real Universal ID.
 
 ## Deployment
 

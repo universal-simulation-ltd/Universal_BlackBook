@@ -35,13 +35,13 @@ Os programas de folha de cálculo por vezes mudam o formato do que abrem, transf
     title: 'Onde a sua agenda é guardada',
     summary: 'Neste dispositivo, sem precisar de conta, e o que isso significa para si.',
     group: 'O essencial',
-    body: `O BlackBook guarda a sua agenda no dispositivo que está a usar. Num navegador, fica no armazenamento que esse navegador reserva a este site; na aplicação para telemóvel, fica no armazenamento da própria aplicação. Nada sobre os seus contactos é enviado para lado nenhum, a menos que ative a cópia de segurança online.
+    body: `O BlackBook guarda a sua agenda no dispositivo que está a usar. Num navegador, fica no armazenamento que esse navegador reserva a este site; na aplicação para telemóvel, fica no armazenamento da própria aplicação. Nada sobre os seus contactos é alguma vez enviado para lado nenhum.
 
-Não precisa de conta para usar o BlackBook. Tudo funciona sem iniciar sessão.
+Não há conta nem sessão para iniciar.
 
 ## O que isto significa na prática
 
-- **Cada dispositivo tem a sua própria agenda.** Os contactos adicionados no portátil não aparecem sozinhos no telemóvel. É a cópia de segurança online que os liga.
+- **Cada dispositivo tem a sua própria agenda.** Os contactos adicionados no portátil não aparecem sozinhos no telemóvel. É com um ficheiro de cópia de segurança que os passa de um para o outro.
 - **Limpar o navegador pode apagar a agenda.** Eliminar os dados ou o histórico deste site, usar uma janela privada ou desinstalar a aplicação remove a agenda ali guardada.
 - **Os contactos do dispositivo são à parte.** O BlackBook não acrescenta nada, não altera nem sincroniza com a agenda integrada do seu telemóvel.
 
@@ -49,12 +49,12 @@ Não precisa de conta para usar o BlackBook. Tudo funciona sem iniciar sessão.
 
 Como a agenda no seu dispositivo pode ser a única cópia, vale a pena ter outra:
 
-1. Exporte de vez em quando um ficheiro CSV e guarde-o num local seguro, ou
-2. Inicie sessão com o seu Universal ID e ative a cópia de segurança online encriptada.
+1. Guarde de vez em quando um ficheiro de cópia de segurança (Avançado, depois Cópia de segurança, importação e exportação) e mantenha-o num local seguro. Contém tudo, incluindo as tarefas, e pode ter uma palavra-passe.
+2. Ou exporte um ficheiro CSV, que qualquer folha de cálculo ou agenda consegue ler, mas que deixa de fora as suas tarefas.
 
 ## Ajustar esta aplicação
 
-As escolhas sobre o aspeto e o comportamento da aplicação neste dispositivo, como os separadores apresentados, ficam apenas neste dispositivo e não fazem parte da cópia de segurança.`,
+As escolhas sobre o aspeto e o comportamento da aplicação neste dispositivo, como os separadores apresentados, ficam guardadas neste dispositivo. Um ficheiro de cópia de segurança também as leva, mas só Substituir tudo as repõe.`,
   },
   {
     id: 'importing-and-exporting',
@@ -63,7 +63,7 @@ As escolhas sobre o aspeto e o comportamento da aplicação neste dispositivo, c
     group: 'Como funciona',
     body: `## Exportar
 
-A exportação guarda toda a sua agenda num ficheiro CSV com a data de hoje no nome. Tem uma coluna para o nome, o email, as etiquetas, as notas, o aniversário, o telefone, a empresa e para indicar se o aniversário ou o cartão de uma pessoa está oculto, pelo que uma cópia de segurança repõe a agenda tal como a deixou. O ficheiro abre em qualquer programa de folha de cálculo.
+A exportação guarda toda a sua agenda num ficheiro CSV com a data de hoje no nome. Tem uma coluna para o nome, o email, as etiquetas, as notas, o aniversário, o telefone, a empresa e para indicar se o aniversário ou o cartão de uma pessoa está oculto, pelo que voltar a importá-lo repõe os seus contactos tal como os deixou. O ficheiro abre em qualquer programa de folha de cálculo. Deixa de fora as suas tarefas: para uma cópia completa, guarde antes um ficheiro de cópia de segurança (consulte O seu ficheiro de cópia de segurança).
 
 ## Importar um ficheiro CSV
 
@@ -124,7 +124,7 @@ Eliminar pede sempre confirmação e diz quem vai ser eliminado. No telemóvel, 
 - Impede qualquer pessoa de abrir a aplicação neste dispositivo sem o PIN.
 - Após cinco tentativas erradas seguidas, o teclado obriga-o a esperar antes de tentar de novo, e a espera duplica de cada vez.
 - O PIN em si nunca é guardado. O BlackBook guarda apenas uma impressão baralhada dele, propositadamente lenta de verificar, o que torna dispendioso tentar adivinhá-lo.
-- O bloqueio pertence apenas a este dispositivo e nunca é enviado para a internet.
+- O bloqueio pertence apenas a este dispositivo e nunca é incluído num ficheiro de cópia de segurança.
 
 ## O que não faz
 
@@ -134,65 +134,65 @@ O PIN bloqueia a aplicação, não os dados. A sua agenda continua no armazename
 
 Ninguém lhe pode dizer o seu PIN nem retirar o bloqueio por si. A única forma de ultrapassar um PIN esquecido é o botão "Forgotten your PIN?" no ecrã de bloqueio, que **apaga a agenda deste dispositivo** e recomeça do zero, sem bloqueio. É isso que torna seguro oferecê-lo: um estranho poderia esvaziar a aplicação, mas nunca lê-la.
 
-Se usar a cópia de segurança online encriptada, esquecer o PIN é apenas um incómodo: inicie sessão de novo, introduza a frase de acesso da cópia de segurança e a sua agenda volta. Sem cópia de segurança não há nada a partir do qual repor, por isso ative-a, ou exporte um ficheiro CSV, antes de definir um PIN.`,
+Se tiver um ficheiro de cópia de segurança, esquecer o PIN é apenas um incómodo: depois da reposição, abra a cópia de segurança e a sua agenda volta. Sem ele não há nada a partir do qual repor, por isso guarde uma cópia de segurança antes de definir um PIN.`,
   },
   {
-    id: 'encrypted-online-backup',
-    title: 'A cópia de segurança online encriptada',
-    summary: 'Como a sua agenda é encriptada antes de sair do dispositivo e porque mais ninguém a consegue ler.',
+    id: 'backup-file',
+    title: 'O seu ficheiro de cópia de segurança',
+    summary: 'Um ficheiro com tudo o que está na sua agenda, uma palavra-passe opcional e como voltar a abri-lo.',
     group: 'Privacidade e segurança',
-    body: `A cópia de segurança online é opcional e fica desligada até iniciar sessão com o seu Universal ID. Depois de ativada, o BlackBook guarda uma cópia da sua agenda nos servidores da UNI·SIM, para que sobreviva à perda de um dispositivo e possa ser aberta noutro.
+    body: `Um ficheiro de cópia de segurança é uma cópia completa da sua agenda num único ficheiro. Para guardar um, abra Ações, depois Avançado, depois Cópia de segurança, importação e exportação, e escolha Guardar uma cópia de segurança. No telemóvel abre-se o menu de partilha, para que possa guardar o ficheiro em Ficheiros, num serviço de armazenamento na nuvem ou num email para si próprio; num navegador, o ficheiro é transferido.
 
-## Encriptada antes de sair
+## O que contém
 
-A sua agenda é encriptada no seu dispositivo antes de qualquer envio. O servidor recebe e guarda apenas dados baralhados para os quais não tem chave, por isso a UNI·SIM não consegue ler os seus contactos, notas, etiquetas ou tarefas.
+- Todos os contactos, com todos os campos: nome, email, telefone, empresa, morada, aniversário, notas, etiquetas, fixações e quem está oculto.
+- As suas etiquetas e listas de email.
+- A sua lista de tarefas.
+- As suas escolhas em Ajustar esta aplicação e a vista com que a lista abre.
 
-- A encriptação é **AES-GCM com uma chave de 256 bits**, uma norma amplamente utilizada.
-- A chave é obtida a partir de uma **frase de acesso escolhida por si**, com PBKDF2 e SHA-256 em 600 000 iterações, o que torna cada tentativa de a adivinhar lenta e dispendiosa.
-- A sua frase de acesso nunca sai do seu dispositivo. **Não** é a palavra-passe do seu Universal ID, e alterar essa palavra-passe não a afeta.
+O seu PIN não está incluído. O PIN pertence ao dispositivo.
 
-Isto importa porque as pessoas da sua agenda não se registaram em nada. Os nomes, os endereços e as suas notas privadas sobre elas merecem o mesmo cuidado que os seus próprios dados.
+## Protegê-lo com uma palavra-passe
 
-## Não há recuperação
+A sua agenda diz respeito a outras pessoas, que nunca se registaram em nada, por isso pode trancar o ficheiro com uma palavra-passe. Assinale Proteger com palavra-passe antes de guardar.
 
-A UNI·SIM não guarda nenhuma cópia da sua chave e não tem forma de repor a sua frase de acesso. Se a esquecer, ninguém consegue abrir a cópia online. A agenda no seu dispositivo não é afetada, e é por isso que a cópia online é uma cópia de segurança e não a cópia principal.
+- O ficheiro é encriptado com **AES-GCM e uma chave de 256 bits**, uma norma amplamente utilizada.
+- A chave é obtida a partir da sua palavra-passe com PBKDF2, SHA-256 e 600 000 iterações, o que torna cada tentativa de a adivinhar lenta e dispendiosa.
+- A palavra-passe nunca é guardada nem enviada para lado nenhum. Ninguém, incluindo a UNI·SIM, consegue abrir o ficheiro sem ela, e não há forma de a repor.
 
-## Memorizar um dispositivo
+Sem palavra-passe, o ficheiro é texto simples, como uma exportação CSV: qualquer pessoa que o obtenha consegue lê-lo.
 
-Pode pedir a um dispositivo que memorize a chave, para não ter de introduzir a frase de acesso sempre. A chave é guardada de forma que a aplicação a pode usar, mas não extrair. Terminar sessão, ou escolher esquecer este dispositivo, remove-a.
+## Abrir uma cópia de segurança
 
-## Alterar ou eliminar
+Escolha Abrir uma cópia de segurança e selecione o ficheiro, ou arraste-o para a janela num navegador. Se tiver palavra-passe, ser-lhe-á pedida. Depois escolha:
 
-Alterar a frase de acesso exige a atual, mesmo num dispositivo que a memoriza, e volta a encriptar a cópia de segurança num único passo. Desligar a cópia de segurança elimina por completo a cópia online e deixa a agenda do seu dispositivo como está. Eliminar o seu Universal ID elimina também a cópia online.
+- **Acrescentar ao que já existe.** Tudo o que já está neste dispositivo mantém-se. As pessoas e tarefas do ficheiro são acrescentadas e, se uma estiver em ambos, fica a cópia editada mais recentemente. Quem já cá estiver com o mesmo nome e o mesmo email ou número de telefone não é acrescentado duas vezes, e as etiquetas com o mesmo nome passam a ser uma só.
+- **Substituir tudo.** A agenda deste dispositivo é trocada pela do ficheiro, depois de confirmar.
 
-A cópia de segurança tem um limite de cerca de 2 MB de dados encriptados, o que equivale a muitos milhares de contactos. Notas muito longas são normalmente a razão quando uma agenda atinge esse limite.`,
+O BlackBook verifica cada campo de um ficheiro antes de o usar, por isso um ficheiro danificado ou editado não consegue avariar a aplicação.`,
   },
   {
     id: 'using-two-devices',
     title: 'Usar o BlackBook em mais do que um dispositivo',
-    summary: 'Fundir ao iniciar sessão, guardar automaticamente e o que acontece quando dois dispositivos não coincidem.',
+    summary: 'Passar a sua agenda de um dispositivo para outro com um ficheiro de cópia de segurança.',
     group: 'Privacidade e segurança',
-    body: `Com a cópia de segurança online ativa, pode abrir a mesma agenda no telemóvel, no tablet e no computador. Cada dispositivo guarda a sua própria cópia, e a cópia online mantém-nas em dia.
+    body: `O BlackBook não tem conta nem cópia online, por isso cada dispositivo guarda a sua própria agenda e nada as liga sem que saiba. Para levar a sua agenda para outro dispositivo, use um ficheiro de cópia de segurança.
 
-## Iniciar sessão num dispositivo novo
+## Passar a sua agenda
 
-1. Inicie sessão com o seu Universal ID.
-2. Introduza a frase de acesso da cópia de segurança.
-3. Se este dispositivo já tiver contactos próprios, o BlackBook pergunta se os quer fundir ou usar apenas a cópia online.
+1. No dispositivo que tem a sua agenda, guarde um ficheiro de cópia de segurança. Uma palavra-passe é boa ideia se o ficheiro for passar por email ou por um serviço de armazenamento na nuvem.
+2. Faça chegar o ficheiro ao outro dispositivo, por exemplo por AirDrop, por um serviço de armazenamento na nuvem ou por email.
+3. No outro dispositivo, abra o BlackBook, escolha Abrir uma cópia de segurança e selecione o ficheiro.
 
-Ao fundir, a cópia online é o ponto de partida e os contactos deste dispositivo são-lhe acrescentados. Quem já lá estiver, reconhecido como o mesmo cartão ou pelo mesmo nome com o mesmo email ou telefone, não é acrescentado duas vezes. As etiquetas com o mesmo nome passam a ser uma só.
+Se o outro dispositivo for novo, escolha Substituir tudo. Se já tiver pessoas próprias, escolha Acrescentar ao que já existe e as duas agendas são fundidas.
 
-## Guardar
+## Manter dois dispositivos em dia
 
-Enquanto a cópia de segurança estiver ativa, cada alteração é encriptada e guardada online poucos segundos depois. A indicação de sincronização junto ao título mostra que está a ser guardada uma alteração. Quando abre o BlackBook noutro dispositivo, este transfere a cópia mais recente.
+Não há sincronização automática. Se acrescentar pessoas nos dois dispositivos, guarde uma cópia de segurança num deles e abra-a no outro com Acrescentar ao que já existe: ninguém é acrescentado duas vezes, e prevalece a cópia editada mais recentemente. Fundir apenas acrescenta, por isso alguém que tenha eliminado num dispositivo pode voltar a partir de uma cópia de segurança que ainda o tenha.
 
-## Quando dois dispositivos não coincidem
+## Porque não há início de sessão
 
-A cópia online é guardada como uma agenda inteira. Se dois dispositivos alteraram a agenda desde a última gravação, o BlackBook não escolhe em silêncio. Para e pergunta qual manter: a cópia online mais recente ou a versão deste dispositivo. A que não escolher é substituída, por isso, em caso de dúvida, exporte primeiro um ficheiro CSV.
-
-## Depois de alterar a frase de acesso
-
-Quando altera a frase de acesso num dispositivo, os outros deixam de guardar e pedem a nova. Nada se perde neles, e ao desbloqueá-los oferecem-se para voltar a fundir os seus contactos. Um dispositivo que ainda tenha a chave antiga não consegue sobrepor-se à alteração.`,
+Uma agenda contém nomes e números de outras pessoas, e as suas notas sobre elas. Mantê-la apenas nos seus próprios dispositivos, e levá-la num ficheiro que controla, significa que não existe nenhuma cópia dela no servidor de ninguém.`,
   },
 ]
 

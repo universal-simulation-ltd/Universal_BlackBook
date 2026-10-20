@@ -2,7 +2,7 @@
 // starting tags, and the view it opens on.
 //
 // ⚠️ A "fresh opening of the app" is modelled as a fresh MODULE GRAPH — the
-// same trick `lock.test.ts` and `sync.test.ts` use — so `vi.resetModules()`
+// same trick `lock.test.ts` uses — so `vi.resetModules()`
 // plus a dynamic import gives a brand new `useBookStore`, with a brand new
 // empty in-memory state, over the SAME fake IndexedDB. That is exactly what a
 // reload, a relaunch or a cold start of the iOS app is, and both features here
@@ -174,7 +174,7 @@ describe('the view the app opens on', () => {
   })
 
   it('ignores a saved tag that has vanished some other way', async () => {
-    // Belt and braces for the same failure: a vault adopted from another
+    // Belt and braces for the same failure: a backup file opened from another
     // device replaces the whole tag list without going through removeTag.
     const first = await reopen()
     first.getState().setQuery({ tagIds: ['ghost'], hiddenTagIds: [], sort: 'recent' })

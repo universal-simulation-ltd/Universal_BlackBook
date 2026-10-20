@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "license": "AGPL-3.0-or-later",
-  "description": "Universal BlackBook — a private address book. Custom categories, how often you want to be in touch, and notes. No account needed; the optional online copy is end-to-end encrypted.",
+  "description": "Universal BlackBook — a private address book. Custom categories, how often you want to be in touch, and notes. No account, nothing sent anywhere; a backup file (optionally password-protected) moves your book between devices.",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -14,6 +14,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:backup": "vite build && node scripts/backup-file.e2e.mjs",
     "build:desktop": "tsc -b && vite build --mode desktop",
     "build:mobile": "npm run build:desktop",
     "check:mobile-bundle": "node scripts/verify-mobile-bundle.mjs",
@@ -31,7 +32,7 @@
     "@capacitor/ios": "^8.5.2",
     "@capacitor/share": "^8.0.2",
     "@unisim/media": "^0.7.0",
-    "@unisim/sdk": "^0.197.0",
+    "@unisim/sdk": "^0.199.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "zustand": "^5.0.2"

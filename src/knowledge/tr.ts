@@ -35,13 +35,13 @@ Tablo programları bazen açtıkları içeriğin biçimini değiştirir ve bir d
     title: 'Rehberiniz nerede saklanır',
     summary: 'Bu cihazda, hesap gerekmeden; bunun sizin için anlamı.',
     group: 'Temel bilgiler',
-    body: `BlackBook adres defterinizi kullandığınız cihazda saklar. Bir tarayıcıda, o tarayıcının bu site için ayırdığı depolama alanında durur; telefon uygulamasında ise uygulamanın kendi depolama alanında durur. Çevrimiçi yedeklemeyi açmadığınız sürece kişilerinizle ilgili hiçbir şey hiçbir yere gönderilmez.
+    body: `BlackBook adres defterinizi kullandığınız cihazda saklar. Bir tarayıcıda, o tarayıcının bu site için ayırdığı depolama alanında durur; telefon uygulamasında ise uygulamanın kendi depolama alanında durur. Kişilerinizle ilgili hiçbir şey hiçbir zaman hiçbir yere gönderilmez.
 
-BlackBook’u kullanmak için hesaba ihtiyacınız yoktur. Oturum açmadan her şey çalışır.
+Hesap yoktur ve oturum açılacak hiçbir şey yoktur.
 
 ## Pratikte bunun anlamı
 
-- **Her cihazın kendi rehberi vardır.** Dizüstü bilgisayarda eklediğiniz kişiler telefonunuzda kendiliğinden görünmez. Onları birleştiren çevrimiçi yedeklemedir.
+- **Her cihazın kendi rehberi vardır.** Dizüstü bilgisayarda eklediğiniz kişiler telefonunuzda kendiliğinden görünmez. Onları diğer cihaza bir yedek dosyasıyla taşırsınız.
 - **Tarayıcıyı temizlemek rehberi silebilir.** Bu sitenin verilerini veya geçmişini silmek, gizli pencere kullanmak ya da uygulamayı kaldırmak orada saklanan rehberi siler.
 - **Cihazınızın kendi kişileri ayrıdır.** BlackBook, telefonunuzdaki yerleşik adres defterine bir şey eklemez, onu değiştirmez ve onunla eşitlenmez.
 
@@ -49,12 +49,12 @@ BlackBook’u kullanmak için hesaba ihtiyacınız yoktur. Oturum açmadan her �
 
 Cihazınızdaki rehber tek kopya olabileceği için bir kopya daha tutmakta fayda vardır:
 
-1. Zaman zaman bir CSV dosyası dışa aktarıp güvenli bir yerde saklayın veya
-2. Universal ID ile oturum açıp şifreli çevrimiçi yedeklemeyi açın.
+1. Zaman zaman bir yedek dosyası kaydedin ("Gelişmiş", ardından "Yedek, içe ve dışa aktarma") ve güvenli bir yerde saklayın. Dosya, yapılacaklarınız dahil her şeyi içerir ve parolalı olabilir.
+2. Ya da her tablo programının ve adres defterinin okuyabildiği, ancak yapılacaklarınızı dışarıda bırakan bir CSV dosyası dışa aktarın.
 
 ## Bu uygulamayı ayarla
 
-Uygulamanın bu cihazdaki görünümü ve davranışıyla ilgili seçimler, örneğin hangi sekmelerin gösterileceği, yalnızca bu cihazda kalır ve yedeğin parçası değildir.`,
+Uygulamanın bu cihazdaki görünümü ve davranışıyla ilgili seçimler, örneğin hangi sekmelerin gösterileceği, bu cihazda kalır. Bir yedek dosyası bunları da taşır, ancak onları yalnızca "Her şeyi değiştir" geri getirir.`,
   },
   {
     id: 'importing-and-exporting',
@@ -63,7 +63,7 @@ Uygulamanın bu cihazdaki görünümü ve davranışıyla ilgili seçimler, örn
     group: 'Nasıl çalışır',
     body: `## Dışa aktarma
 
-Dışa aktarma, rehberinizin tamamını adında bugünün tarihi olan bir CSV dosyasına kaydeder. Dosyada ad, e-posta, etiketler, notlar, doğum günü, telefon, şirket ve bir kişinin doğum gününün ya da kartının gizlenip gizlenmediği için birer sütun vardır; böylece bir yedek, rehberi bıraktığınız gibi geri getirir. Dosya her tablo programında açılır.
+Dışa aktarma, rehberinizin tamamını adında bugünün tarihi olan bir CSV dosyasına kaydeder. Dosyada ad, e-posta, etiketler, notlar, doğum günü, telefon, şirket ve bir kişinin doğum gününün ya da kartının gizlenip gizlenmediği için birer sütun vardır; böylece dosyayı yeniden içe aktardığınızda kişileriniz bıraktığınız gibi geri gelir. Dosya her tablo programında açılır. Yapılacaklarınız dosyada yer almaz: eksiksiz bir kopya için bunun yerine bir yedek dosyası kaydedin (bkz. "Yedek dosyanız").
 
 ## CSV dosyası içe aktarma
 
@@ -124,7 +124,7 @@ Silme her zaman önce onay ister ve kimin silineceğini adıyla belirtir. Telefo
 - Bu cihazda uygulamayı PIN olmadan kimsenin açmasına izin vermez.
 - Art arda beş yanlış denemeden sonra tuş takımı yeniden denemeden önce sizi bekletir ve bekleme süresi her seferinde iki katına çıkar.
 - PIN’inizin kendisi asla saklanmaz. BlackBook yalnızca onun karıştırılmış bir parmak izini tutar; bu iz bilerek yavaş doğrulanır ve bu da tahmin etmeyi pahalı hâle getirir.
-- Kilit yalnızca bu cihaza aittir ve asla internete yüklenmez.
+- Kilit yalnızca bu cihaza aittir ve asla bir yedek dosyasına konmaz.
 
 ## Neyi yapmaz
 
@@ -134,65 +134,65 @@ PIN verileri değil, uygulamayı kilitler. Rehberiniz cihazın depolama alanınd
 
 Kimse size PIN’inizi söyleyemez veya kilidi sizin yerinize kaldıramaz. Unutulan bir PIN’i aşmanın tek yolu kilit ekranındaki "Forgotten your PIN?" düğmesidir; bu düğme **bu cihazdaki rehberi siler** ve kilitsiz olarak baştan başlar. Bunu sunmayı güvenli kılan da budur: bir yabancı uygulamayı boşaltabilir ama asla okuyamaz.
 
-Şifreli çevrimiçi yedeklemeyi kullanıyorsanız, unutulan bir PIN yalnızca küçük bir zahmettir: yeniden oturum açın, yedek parola ifadenizi girin ve rehberiniz geri gelir. Yedek yoksa geri yüklenecek bir şey de yoktur; bu nedenle PIN belirlemeden önce yedeklemeyi açın veya bir CSV dosyası dışa aktarın.`,
+Bir yedek dosyanız varsa, unutulan bir PIN yalnızca küçük bir zahmettir: sıfırlamadan sonra yedeği açın ve rehberiniz geri gelir. Yedek yoksa geri yüklenecek bir şey de yoktur; bu nedenle PIN belirlemeden önce bir yedek kaydedin.`,
   },
   {
-    id: 'encrypted-online-backup',
-    title: 'Şifreli çevrimiçi yedekleme',
-    summary: 'Rehberinizin cihazdan çıkmadan önce nasıl şifrelendiği ve neden başka kimsenin okuyamadığı.',
+    id: 'backup-file',
+    title: 'Yedek dosyanız',
+    summary: 'Rehberinizdeki her şeyi içeren tek bir dosya, isteğe bağlı bir parola ve dosyayı yeniden nasıl açacağınız.',
     group: 'Gizlilik ve güvenlik',
-    body: `Çevrimiçi yedekleme isteğe bağlıdır ve Universal ID ile oturum açana kadar kapalıdır. Açıldığında BlackBook, rehberinizin bir kopyasını UNI·SIM sunucularında tutar; böylece rehber bir cihazın kaybolmasından etkilenmez ve başka bir cihazda açılabilir.
+    body: `Yedek dosyası, rehberinizin tek bir dosyadaki eksiksiz kopyasıdır. Kaydetmek için "Eylemler", ardından "Gelişmiş", ardından "Yedek, içe ve dışa aktarma" bölümünü açın ve "Yedek kaydet" seçeneğini seçin. Telefonda paylaşım menüsü açılır; dosyayı Dosyalar’da, bir bulut sürücüde ya da kendinize gönderdiğiniz bir e-postada saklayabilirsiniz. Tarayıcıda ise dosya indirilir.
 
-## Çıkmadan önce şifrelenir
+## İçinde neler var
 
-Rehberiniz, herhangi bir şey gönderilmeden önce cihazınızda şifrelenir. Sunucu yalnızca anahtarına sahip olmadığı karışık veriyi alır ve saklar; bu nedenle UNI·SIM kişilerinizi, notlarınızı, etiketlerinizi veya yapılacaklarınızı okuyamaz.
+- Her alanıyla birlikte her kişi: ad, e-posta, telefon, şirket, adres, doğum günü, notlar, etiketler, sabitlenenler ve gizlenenler.
+- Etiketleriniz ve e-posta listeleriniz.
+- Yapılacaklar listeniz.
+- "Bu uygulamayı ayarla" bölümündeki seçimleriniz ve listenin açıldığı görünüm.
 
-- Şifreleme, yaygın olarak kullanılan bir standart olan **256 bit anahtarlı AES-GCM**’dir.
-- Anahtar, **sizin seçtiğiniz bir parola ifadesinden** PBKDF2 ve SHA-256 ile 600.000 turda türetilir; bu da parola ifadesini tahmin etmeye yönelik her denemeyi yavaş ve maliyetli kılar.
-- Parola ifadeniz cihazınızdan hiç çıkmaz. Universal ID parolanız **değildir** ve o parolayı değiştirmek onu etkilemez.
+PIN’iniz dosyada yer almaz. PIN cihaza aittir.
 
-Bu önemlidir, çünkü rehberinizdeki kişiler hiçbir şeye kaydolmamıştır. Onların adları, adresleri ve onlar hakkındaki özel notlarınız, kendi verileriniz kadar özeni hak eder.
+## Parolayla korumak
 
-## Kurtarma yoktur
+Rehberiniz, hiçbir şeye kaydolmamış başka insanlarla ilgilidir; bu yüzden dosyayı bir parolayla kilitleyebilirsiniz. Kaydetmeden önce "Parolayla koru" kutusunu işaretleyin.
 
-UNI·SIM anahtarınızın hiçbir kopyasını tutmaz ve parola ifadenizi sıfırlamanın bir yolu yoktur. Unutursanız çevrimiçi kopyayı kimse açamaz. Cihazınızdaki rehber etkilenmez; çevrimiçi kopyanın ana kopya değil, bir yedek olmasının nedeni budur.
+- Dosya, yaygın olarak kullanılan bir standart olan **256 bit anahtarlı AES-GCM** ile şifrelenir.
+- Anahtar, parolanızdan PBKDF2, SHA-256 ve 600.000 turla türetilir; bu da her tahmin denemesini yavaş ve maliyetli kılar.
+- Parola hiçbir zaman saklanmaz veya bir yere gönderilmez. UNI·SIM dahil hiç kimse dosyayı parola olmadan açamaz ve parolayı sıfırlamanın bir yolu yoktur.
 
-## Cihazı hatırlatmak
+Parola olmadan dosya, bir CSV dışa aktarımı gibi düz metindir: onu ele geçiren herkes okuyabilir.
 
-Parola ifadesini her seferinde girmemek için bir cihazdan anahtarı hatırlamasını isteyebilirsiniz. Anahtar, uygulamanın kullanabileceği ama dışarı çıkaramayacağı bir biçimde saklanır. Oturumu kapatmak veya bu cihazı unutmayı seçmek anahtarı kaldırır.
+## Bir yedeği açmak
 
-## Değiştirmek veya silmek
+"Yedek aç" seçeneğini seçip dosyayı belirleyin ya da tarayıcıda dosyayı pencereye bırakın. Dosyanın parolası varsa parola sorulur. Ardından şunlardan birini seçin:
 
-Parola ifadesini değiştirmek, onu hatırlayan bir cihazda bile mevcut ifadeyi gerektirir ve yedeği tek adımda yeniden şifreler. Yedeklemeyi kapatmak çevrimiçi kopyayı tamamen siler ve cihazınızdaki rehberi olduğu gibi bırakır. Universal ID’nizi silmek çevrimiçi kopyayı da siler.
+- **Mevcutlara ekle.** Bu cihazda zaten olan her şey kalır. Dosyadaki kişiler ve yapılacaklar eklenir; bir öğe ikisinde de varsa en son düzenlenen kopya tutulur. Burada aynı adla ve aynı e-posta ya da telefon numarasıyla zaten bulunan biri iki kez eklenmez; aynı adlı etiketler tek etikete dönüşür.
+- **Her şeyi değiştir.** Siz onayladıktan sonra bu cihazdaki rehberin yerini dosyadaki rehber alır.
 
-Yedeğin yaklaşık 2 MB şifreli veri sınırı vardır; bu, binlerce kişiye karşılık gelir. Bir rehber bu sınıra ulaştığında neden genellikle çok uzun notlardır.`,
+BlackBook bir dosyayı kullanmadan önce içindeki her alanı kontrol eder; bu sayede bozuk veya düzenlenmiş bir dosya uygulamayı bozamaz.`,
   },
   {
     id: 'using-two-devices',
     title: 'BlackBook’u birden fazla cihazda kullanmak',
-    summary: 'Oturum açarken birleştirme, otomatik kaydetme ve iki cihaz anlaşamadığında ne olduğu.',
+    summary: 'Rehberinizi bir yedek dosyasıyla cihazlar arasında taşımak.',
     group: 'Gizlilik ve güvenlik',
-    body: `Çevrimiçi yedekleme açıkken aynı rehberi telefonunuzda, tabletinizde ve bilgisayarınızda açabilirsiniz. Her cihaz kendi kopyasını tutar, çevrimiçi yedek ise hepsini güncel tutar.
+    body: `BlackBook’ta hesap ve çevrimiçi kopya yoktur; bu yüzden her cihaz kendi rehberini tutar ve hiçbir şey onları sizden habersiz birleştirmez. Rehberinizi başka bir cihaza götürmek için bir yedek dosyası kullanın.
 
-## Yeni bir cihazda oturum açmak
+## Rehberinizi taşımak
 
-1. Universal ID ile oturum açın.
-2. Yedek parola ifadenizi girin.
-3. Bu cihazda zaten kendi kişileri varsa, BlackBook bunları birleştirmek mi yoksa yalnızca çevrimiçi kopyayı kullanmak mı istediğinizi sorar.
+1. Rehberinizin bulunduğu cihazda bir yedek dosyası kaydedin. Dosya e-postadan veya bir bulut sürücüden geçecekse parola koymak iyi bir fikirdir.
+2. Dosyayı diğer cihaza aktarın; örneğin AirDrop, bir bulut sürücü veya e-postayla.
+3. Diğer cihazda BlackBook’u açın, "Yedek aç" seçeneğini seçin ve dosyayı belirleyin.
 
-Birleştirirken çevrimiçi kopya temel alınır ve bu cihazın kişileri ona eklenir. Zaten orada olan biri, aynı kart olarak ya da aynı ad ve aynı e-posta veya telefon numarasıyla tanınır ve iki kez eklenmez. Aynı adlı etiketler tek etikete dönüşür.
+Diğer cihaz yeniyse "Her şeyi değiştir" seçeneğini seçin. Cihazda zaten kendi kişileri varsa "Mevcutlara ekle" seçeneğini seçin; iki rehber birleştirilir.
 
-## Kaydetme
+## İki cihazı güncel tutmak
 
-Yedekleme açıkken her değişiklik, yapıldıktan birkaç saniye sonra şifrelenip çevrimiçi kaydedilir. Başlığın yanındaki eşitleme göstergesi bir kaydın yolda olduğunu gösterir. BlackBook’u başka bir cihazda açtığınızda daha yeni kopyayı indirir.
+Otomatik eşitleme yoktur. İki cihaza da kişi eklerseniz, birinde bir yedek kaydedip diğerinde "Mevcutlara ekle" ile açın: kimse iki kez eklenmez ve en son düzenlenen kopya kazanır. Birleştirme yalnızca ekleme yapar; bu yüzden bir cihazda sildiğiniz biri, onu hâlâ içeren bir yedekten geri gelebilir.
 
-## İki cihaz anlaşamadığında
+## Neden oturum açma yok
 
-Çevrimiçi kopya bütün bir rehber olarak kaydedilir. İki cihaz da son kayıttan bu yana rehberi değiştirdiyse, BlackBook sessizce birini seçmez. Durur ve hangisini tutmak istediğinizi sorar: daha yeni çevrimiçi kopyayı mı, yoksa bu cihazdaki sürümü mü. Seçmediğiniz sürümün yerine diğeri yazılır; emin değilseniz önce bir CSV dosyası dışa aktarın.
-
-## Parola ifadesini değiştirdikten sonra
-
-Bir cihazda parola ifadesini değiştirdiğinizde diğer cihazlarınız kaydetmeyi bırakır ve yeni ifadeyi ister. Onlarda hiçbir şey kaybolmaz ve kilitlerini açtığınızda kişilerini yeniden birleştirmeyi önerirler. Hâlâ eski anahtarı tutan bir cihaz bu değişikliğin üzerine yazamaz.`,
+Bir adres defteri başka insanların adlarını, numaralarını ve onlar hakkındaki notlarınızı içerir. Onu yalnızca kendi cihazlarınızda tutmak ve denetimi sizde olan bir dosyayla taşımak, hiç kimsenin sunucusunda bir kopyasının bulunmaması demektir.`,
   },
 ]
 

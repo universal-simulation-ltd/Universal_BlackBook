@@ -14,7 +14,7 @@ export interface TodoDraft {
 
 /**
  * The To-do tab's list — see lib/todos.ts. Its own store rather than more of
- * bookStore, which is about people; the vault carries both (syncStore).
+ * bookStore, which is about people; a backup file carries both (lib/backup.ts).
  *
  * Every change rewrites the whole list to disk: it is one record (lib/store.ts
  * 'todos'), which is what kept this feature from needing a DB_VERSION bump.
@@ -35,7 +35,7 @@ interface TodoState {
   clearDone: () => Promise<void>
   /** A tag was deleted: nothing may go on pointing at it. */
   dropTag: (tagId: string) => Promise<void>
-  /** The vault's copy (or a merge of it) becomes this device's. */
+  /** A backup file's list (or a merge of it) becomes this device's. */
   replace: (todos: Todo[]) => Promise<void>
 }
 
@@ -54,7 +54,7 @@ export const useTodoStore = create<TodoState>((set, get) => {
     init: async () => {
       if (get().loaded) return
       const todos = await loadTodos()
-      // A vault adopted while that read was in flight (`replace`) is newer
+      // A backup opened while that read was in flight (`replace`) is newer
       // than what it read. Checked again AFTER the await for that reason.
       if (get().loaded) return
       set({ todos, loaded: true })

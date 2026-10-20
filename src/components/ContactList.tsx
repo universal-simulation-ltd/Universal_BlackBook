@@ -17,7 +17,6 @@ import type { Side } from '../lib/swipe'
 import type { Contact, Tag } from '../lib/types'
 import { blankDraft, useBookStore } from '../stores/bookStore'
 import { useSettingsStore } from '../stores/settingsStore'
-import { useSyncStore } from '../stores/syncStore'
 import { Modal } from './Modal'
 import { SwipeRow, type SwipeAction } from './SwipeRow'
 import { ListChip } from './ListChip'
@@ -116,9 +115,6 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
   const query = useBookStore((s) => s.query)
   const emailLists = useSettingsStore((s) => s.emailLists)
   const edit = useBookStore((s) => s.edit)
-  // Signed in, the book is (or is about to be) backed up online too, so
-  // "it stays on this device" is only said to somebody signed out.
-  const signedOut = useSyncStore((s) => s.state === 'signed-out')
   // Tapping a card OPENS the person, it does not edit them — see ContactView.
   const openContact = useBookStore((s) => s.view)
   const removeContact = useBookStore((s) => s.removeContact)
@@ -236,14 +232,11 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
           Add the people you actually want to stay in touch with, and file them however you like. Two
           tags are here to start you off — rename them, recolour them, or make your own.
         </p>
-        {/* Answered here, once, rather than as a standing "not backed up"
-            line (see SyncStatus in App): where a newcomer's book lives, and
-            that nothing has to be signed up for first. */}
-        {signedOut && (
-          <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
-            It stays on this device — no account needed.
-          </p>
-        )}
+        {/* Answered here, once: where a newcomer's book lives, and that
+            nothing has to be signed up for first. */}
+        <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
+          It stays on this device — no account needed.
+        </p>
         <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
           <button type="button" className={btnPrimary} onClick={() => edit('new')}>
             Add your first contact
@@ -1120,7 +1113,7 @@ export function ContactRow({
  * how it leaves the app: pasted into a To: line, or opened in a spreadsheet.
  *
  * ⚠️ The VISIBLE list, not the book. What the filters show is what goes out;
- * Advanced ▸ Import & export is still the whole-book export.
+ * Advanced ▸ Backup, import & export is still the whole-book export.
  */
 export function ListExport({ contacts, tags, tagIds }: { contacts: Contact[]; tags: Tag[]; tagIds: string[] }) {
   const recipients = useMemo(() => toRecipients(contacts), [contacts])

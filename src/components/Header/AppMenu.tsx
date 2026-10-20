@@ -12,20 +12,17 @@ import { KNOWLEDGE_BASE } from '../../knowledge'
 // with them went the one part of this dropdown that could drift out of step
 // with the panel around it.
 //
-// Online backup IS a row here now (owner's call, 2026-10-08, reversing
-// 2026-09-17's "no backup row"): signing in asks for the passphrase and then
-// gets out of the way, so Save now, Fetch online copy, Forget this device,
-// Change passphrase and Turn off need a door that is not the sign-in itself.
+// The Online backup row went with sign-in on 2026-10-20 (James: no logins in
+// the first iterations; a backup file instead — Docs_UNI_SIM/login-free-plan.md).
+// Saving and opening a backup file is in Backup, import & export.
 
 export default function AppMenu({
   onTags,
   onImportExport,
-  onBackup,
   onDeleteAll,
 }: {
   onTags: () => void
   onImportExport: () => void
-  onBackup: () => void
   onDeleteAll: () => void
 }) {
   return (
@@ -49,23 +46,17 @@ export default function AppMenu({
           onSelect={onTags}
         />
         {/* Import & export lives here (owner's call, 2026-09-17): moving a whole
-            book in or out is occasional, and signing in now does the everyday
-            job of getting a book onto another device. */}
+            book in or out is occasional. Since 2026-10-20 it is also where the
+            backup file is saved and opened, so the row says so. */}
         <AdvancedMenuItem
           theme="dark"
           icon={<span aria-hidden>📄</span>}
-          label="Import & export"
+          label="Backup, import & export"
           onSelect={onImportExport}
         />
-        <AdvancedMenuItem
-          theme="dark"
-          icon={<span aria-hidden>☁️</span>}
-          label="Online backup"
-          onSelect={onBackup}
-        />
         {/* Delete all data (owner's request, 2026-10-08 — a guest wanting
-            everything gone). Last, after Import & export, so "export first"
-            is the row above it. See DeleteAllData. */}
+            everything gone). Last, after Backup, import & export, so "save
+            a backup first" is the row above it. See DeleteAllData. */}
         <AdvancedMenuItem
           theme="dark"
           icon={<span aria-hidden>🗑️</span>}

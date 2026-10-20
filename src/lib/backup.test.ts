@@ -1,0 +1,148 @@
+import { describe, expect, it } from 'vitest'
+import { mergeBackup, openBackup, packBackup, parseBackup, type BackupSource } from './backup'
+import type { Contact, Tag } from './types'
+import type { Todo } from './todos'
+
+const T0 = Date.UTC(2026, 0, 1)
+
+const contact = (id: string, name: string, patch: Partial<Contact> = {}): Contact => ({
+  id,
+  name,
+  email: `${name.toLowerCase()}@example.com`,
+  phone: '',
+  tagIds: [],
+  notes: '',
+  createdAt: T0,
+  updatedAt: T0,
+  ...patch,
+})
+const todo = (id: string, title: string, patch: Partial<Todo> = {}): Todo => ({
+  id,
+  title,
+  details: '',
+  tagIds: [],
+  createdAt: T0,
+  updatedAt: T0,
+  ...patch,
+})
+const tag = (id: string, name: string, patch: Partial<Tag> = {}): Tag => ({ id, name, colour: 'amber', ...patch })
+
+const source = (): BackupSource => ({
+  contacts: [
+    contact('c1', 'Ada', {
+      phone: '+44 7700 900123',
+      company: 'Analytical Engines',
+      address: '1 Lovelace Row\nLondon',
+      birthdate: '--12-10',
+      hideBirthday: true,
+      pinnedAt: T0 + 5,
+      tagIds: ['t1'],
+      notes: 'Likes <b>tea</b>',
+    }),
+    contact('c2', 'Bob', { listOnly: true, tagIds: ['l1'] }),
+  ],
+  tags: [tag('t1', 'Work'), tag('l1', 'Book club', { kind: 'list', tagIds: ['t1'] })],
+  todos: [todo('d1', 'Ring Ada', { due: '2026-02-03', tagIds: ['t1'] }), todo('d2', 'Done one', { doneAt: T0 + 9 })],
+  settings: { emailLists: true, todos: true, shownFields: ['phone', 'email'] },
+  view: { tagIds: ['t1'], hiddenTagIds: [], sort: 'recent' },
+})
+
+describe('backup file', () => {
+  it('round-trips every field, to-dos, lists, settings and the view', async () => {
+    const packed = await packBackup(source())
+    expect(packed.fileName).toMatch(/^blackbook-backup-\d{4}-\d{2}-\d{2}\.json$/)
+    const opened = await openBackup(packed.text)
+    expect(opened.ok).toBe(true)
+    if (!opened.ok) return
+    expect(opened.data.contacts).toEqual(source().contacts)
+    expect(opened.data.todos).toEqual(source().todos)
+    expect(opened.data.tags).toEqual(source().tags)
+    expect(opened.data.settings).toEqual({ emailLists: true, todos: true, shownFields: ['email', 'phone'] })
+    expect(opened.data.view).toEqual(source().view)
+  })
+
+  it('with a password: refuses none and a wrong one, opens with the right one', async () => {
+    const packed = await packBackup(source(), { password: 'correct horse' })
+    expect(packed.text).not.toContain('Ada')
+    expect(await openBackup(packed.text)).toEqual({ ok: false, reason: 'needs-password' })
+    expect(await openBackup(packed.text, 'wrong')).toEqual({ ok: false, reason: 'wrong-password' })
+    const opened = await openBackup(packed.text, 'correct horse')
+    expect(opened.ok && opened.data.contacts.length).toBe(2)
+  }, 20_000)
+
+  it('refuses files that are not BlackBook backups', async () => {
+    expect(await openBackup('not json')).toEqual({ ok: false, reason: 'not-a-transfer-file' })
+    expect(await openBackup('{"format":"unisim-transfer","version":1,"product":"pdf","kind":"backup","schema":1,"data":{}}')).toMatchObject({
+      ok: false,
+      reason: 'wrong-product',
+    })
+    expect(await openBackup('{"format":"unisim-transfer","version":1,"product":"blackbook","kind":"backup","schema":1,"data":{"contacts":"no"}}')).toEqual({
+      ok: false,
+      reason: 'damaged',
+    })
+  })
+})
+
+describe('parseBackup (untrusted data)', () => {
+  it('drops junk records, bad ids, unknown tags, over-long fields and bad dates', () => {
+    const data = parseBackup({
+      contacts: [
+        { id: 'ok', name: 'Real', email: 'x'.repeat(400), birthdate: '2026-02-31', tagIds: ['t1', 'ghost', 42], createdAt: 'yesterday' },
+        { id: '../../etc', name: 'Bad id' },
+        { id: 'empty' },
+        { id: 'ok', name: 'Duplicate id' },
+        'string',
+        null,
+      ],
+      tags: [{ id: 't1', name: 'Work', colour: 'javascript:alert(1)' }, { id: 't2', name: '' }],
+      todos: [{ id: 'd1', title: 'x', due: '2026-13-01', doneAt: Infinity }, { id: 'd2', title: '' }],
+      settings: { emailLists: 'yes', todos: true, shownFields: ['phone', '__proto__'] },
+      view: { sort: 'evil' },
+    })!
+    expect(data.contacts).toHaveLength(1)
+    expect(data.contacts[0]).toMatchObject({ id: 'ok', name: 'Real', email: '', tagIds: ['t1'], createdAt: Date.UTC(2000, 0, 1) })
+    expect(data.contacts[0].birthdate).toBeUndefined()
+    expect(data.tags).toEqual([{ id: 't1', name: 'Work', colour: expect.not.stringContaining('javascript') }])
+    expect(data.todos).toHaveLength(1)
+    expect(data.todos[0].due).toBeUndefined()
+    expect(data.todos[0].doneAt).toBeUndefined()
+    expect(data.settings).toEqual({ emailLists: false, todos: true, shownFields: ['phone'] })
+    expect(data.view).toBeNull()
+  })
+
+  it('refuses a book far bigger than any real one', () => {
+    expect(parseBackup({ contacts: new Array(20_001).fill({}) })).toBeNull()
+    expect(parseBackup([])).toBeNull()
+  })
+})
+
+describe('mergeBackup (Add to what is here)', () => {
+  it('opening the same backup twice adds nothing', () => {
+    const src = source()
+    const file = parseBackup(JSON.parse(JSON.stringify({ ...src })))!
+    const once = mergeBackup({ contacts: [], tags: [], todos: [] }, file)
+    const twice = mergeBackup(once, file)
+    expect(twice.contacts).toHaveLength(2)
+    expect(twice.todos).toHaveLength(2)
+    expect(twice.tags).toHaveLength(2)
+    expect(twice.added).toBe(0)
+  })
+
+  it('keeps the newer edit by id, and the same person or to-do under a new id once', () => {
+    const here = {
+      contacts: [contact('c1', 'Ada', { notes: 'old' }), contact('x9', 'Bob')],
+      tags: [tag('mine', 'Work')],
+      todos: [todo('d1', 'Ring Ada', { due: '2026-02-03' }), todo('other-id', 'Done one')],
+    }
+    const file = parseBackup({
+      ...source(),
+      contacts: [contact('c1', 'Ada', { notes: 'new', updatedAt: T0 + 1, tagIds: ['t1'] }), contact('c2', 'Bob')],
+    })!
+    const m = mergeBackup(here, file)
+    expect(m.contacts.find((c) => c.id === 'c1')).toMatchObject({ notes: 'new', tagIds: ['mine'] })
+    expect(m.contacts.filter((c) => c.name === 'Bob')).toHaveLength(1)
+    expect(m.todos.map((t) => t.title).sort()).toEqual(['Done one', 'Ring Ada'])
+    expect(m.tags.filter((t) => t.name === 'Work')).toHaveLength(1)
+    expect(m.tags.find((t) => t.kind === 'list')?.tagIds).toEqual(['mine'])
+  })
+})
