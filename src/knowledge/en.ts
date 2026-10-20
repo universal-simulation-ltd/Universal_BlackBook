@@ -35,13 +35,13 @@ Spreadsheet programs sometimes "helpfully" reformat what they open, turning a bi
     title: 'Where your book is kept',
     summary: 'On this device, with no account needed — and what that means for you.',
     group: 'The basics',
-    body: `BlackBook keeps your address book on the device you are using. In a web browser it lives in that browser's own storage for this site; in the phone app it lives in the app's own storage. Nothing about your contacts is ever sent anywhere.
+    body: `BlackBook keeps your address book on the device you are using. In a web browser it lives in that browser's own storage for this site; in the phone app it lives in the app's own storage. Nothing about your contacts is sent anywhere unless you turn on the online backup.
 
-There is no account and nothing to sign in to.
+You do not need an account to use BlackBook. Everything works signed out.
 
 ## What that means in practice
 
-- **Each device has its own book.** Contacts added on your laptop do not appear on your phone by themselves. A backup file is how you move them across.
+- **Each device has its own book.** Contacts added on your laptop do not appear on your phone by themselves. The online backup is what joins them up. A backup file is how you move them across.
 - **Clearing the browser can clear the book.** Deleting site data or browsing history for this site, using a private window, or uninstalling the app removes the book stored there.
 - **Your device's own contacts are separate.** BlackBook does not add to, change or sync with the address book built into your phone.
 
@@ -49,8 +49,9 @@ There is no account and nothing to sign in to.
 
 Because the book on your device may be the only copy, it is worth keeping another:
 
-1. Save a backup file from time to time (Advanced, then Backup, import & export) and keep it somewhere safe. It holds everything, to-dos included, and can have a password.
-2. Or export a CSV file, which any spreadsheet or address book can read but which leaves out your to-dos.
+1. Sign in with your Universal ID and turn on the encrypted online backup.
+2. Save a backup file from time to time (Advanced, then Backup, import & export) and keep it somewhere safe. It holds everything, to-dos included, and can have a password.
+3. Or export a CSV file, which any spreadsheet or address book can read but which leaves out your to-dos.
 
 ## Tune this app
 
@@ -124,7 +125,7 @@ Deleting always asks first and names who is going. On a phone, swiping a card le
 - It stops anyone opening the app on this device without the PIN.
 - After five wrong tries in a row, the keypad makes you wait before trying again, and the wait doubles each time.
 - Your PIN itself is never stored. BlackBook keeps only a scrambled fingerprint of it that is deliberately slow to check, which makes guessing expensive.
-- The lock belongs to this device only and is never put in a backup file.
+- The lock belongs to this device only and is never uploaded.
 
 ## What it does not do
 
@@ -134,7 +135,38 @@ The PIN locks the app, not the data. Your book stays in the device's storage exa
 
 Nobody can tell you your PIN or turn the lock off for you. The only way past a forgotten PIN is "Forgotten your PIN?" on the lock screen, which **erases the book on this device** and starts again, unlocked. That is what makes it safe to offer: a stranger could empty the app, but could never read it.
 
-If you have a backup file, a forgotten PIN is only an inconvenience: after the reset, open the backup and your book comes back. Without one there is nothing to restore from, so save a backup before setting a PIN.`,
+If you use the encrypted online backup, a forgotten PIN is only an inconvenience: sign in again, enter your backup passphrase, and your book comes back. If you have a backup file, a forgotten PIN is only an inconvenience: after the reset, open the backup and your book comes back. Without one there is nothing to restore from, so save a backup before setting a PIN.`,
+  },
+  {
+    id: 'encrypted-online-backup',
+    title: 'The encrypted online backup',
+    summary: 'How your book is encrypted before it leaves the device, and why nobody else can read it.',
+    group: 'Privacy and security',
+    body: `The online backup is optional and off until you sign in with your Universal ID. Once it is on, BlackBook keeps a copy of your book on UNI·SIM's servers so it survives a lost device and can be opened on another one.
+
+## Encrypted before it leaves
+
+Your book is encrypted on your device before anything is sent. The server receives and stores only scrambled data that it has no key for, so UNI·SIM cannot read your contacts, notes, tags or to-dos.
+
+- The encryption is **AES-GCM with a 256-bit key**, a widely used standard.
+- The key is made from a **passphrase you choose**, using PBKDF2 with SHA-256 and 600,000 rounds, which makes each guess at the passphrase slow and costly.
+- Your passphrase never leaves your device. It is **not** your Universal ID password, and changing your password does not affect it.
+
+This matters because the people in your book never signed up for anything. Their names, addresses and your private notes about them deserve the same care as your own.
+
+## There is no recovery
+
+UNI·SIM holds no copy of your key and has no way to reset your passphrase. If you forget it, the online copy cannot be opened by anyone. The book on your device is not affected, which is why the online copy is a backup rather than the main copy.
+
+## Remembering a device
+
+You can ask a device to remember the key so you are not asked for the passphrase every time. The key is stored in a form that the app can use but cannot copy out. Signing out, or choosing Forget this device, removes it.
+
+## Changing or deleting it
+
+Changing your passphrase needs the current one, even on a device that remembers it, and re-encrypts the backup in one step. Turning the backup off deletes the online copy completely and leaves the book on your device as it is. Deleting your Universal ID deletes the online copy with it.
+
+The backup has a size limit of about 2 MB of encrypted data, which is many thousands of contacts. Very long notes are the usual reason a book reaches it.`,
   },
   {
     id: 'backup-file',
@@ -174,25 +206,37 @@ BlackBook checks every field in a file before using it, so a damaged or edited f
   {
     id: 'using-two-devices',
     title: 'Using BlackBook on more than one device',
-    summary: 'Moving your book between devices with a backup file.',
+    summary: 'Merging when you sign in, automatic saving, and what happens when two devices disagree.',
     group: 'Privacy and security',
-    body: `BlackBook has no account and no online copy, so each device keeps its own book and nothing joins them up behind your back. To take your book to another device, use a backup file.
+    body: `With the online backup on, you can open the same book on your phone, tablet and computer. Each device keeps its own copy and the online backup keeps them in step.
 
-## Moving your book
+## Signing in on a new device
+
+1. Sign in with your Universal ID.
+2. Enter your backup passphrase.
+3. If this device already has contacts or to-dos of its own, such as ones you added before signing in, BlackBook merges them into the online copy and saves it straight away. There is nothing to choose.
+
+When merging, the online copy is the starting point and this device's contacts are added to it. Someone who is already there, matched by the same card or by the same name with the same email or phone number, is not added twice. Tags with the same name become one tag. Merging only ever adds, so someone you deleted on another device can come back from a device that still has them. To take the online copy exactly as it is instead, open Actions, then Advanced, then Online backup, and choose Fetch online copy.
+
+## Saving
+
+While the backup is on, each change is encrypted and saved online a few seconds after you make it. The word "Syncing" beside the title shows a save is on its way. When you open BlackBook on another device, it fetches the newer copy.
+
+## When two devices disagree
+
+The online copy is saved as a whole book. If two devices have both changed the book since they last saved, BlackBook does not quietly pick one. It stops and asks which to keep: the newer online copy, or this device's version. The one you do not choose is replaced, so export a CSV file first if you are unsure.
+
+## After a passphrase change
+
+When you change the passphrase on one device, your other devices stop saving and ask for the new passphrase. Nothing on them is lost, and when you unlock them their contacts are merged back in. A device still holding the old key cannot write over the change.
+
+## Moving your book without an account
 
 1. On the device that has your book, save a backup file. A password is a good idea if the file will pass through email or a cloud drive.
 2. Get the file onto the other device, for example with AirDrop, a cloud drive or email.
 3. On the other device, open BlackBook, choose Open a backup and pick the file.
 
-If the other device is new, choose Replace everything. If it already has people of its own, choose Add to what's here and the two books are merged.
-
-## Keeping two devices in step
-
-There is no automatic syncing. If you add people on both devices, save a backup on one and open it on the other with Add to what's here: nobody is added twice, and the copy edited last wins. Merging only ever adds, so someone you deleted on one device can come back from a backup that still has them.
-
-## Why there is no sign-in
-
-An address book holds other people's names and numbers, and your notes about them. Keeping it only on your own devices, and moving it in a file you control, means there is no copy of it on anyone's server.`,
+If the other device is new, choose Replace everything. If it already has people of its own, choose Add to what's here and the two books are merged.`,
   },
 ]
 

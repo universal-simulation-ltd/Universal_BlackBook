@@ -110,10 +110,10 @@ export function LockScreen() {
  * gains nothing they could not already do by deleting the app; the owner gets
  * a working app back instead of a phone they have to reinstall.
  *
- * ⚠️ **It never promises the book back.** The only other copy there can be is
- * a backup file the person saved themselves (Import & export), which this
- * device cannot see, so the warning says the book goes and names the file as
- * the way back only if they made one.
+ * ⚠️ **Which warning is shown depends on whether a push has actually landed**,
+ * not on whether sync is set up — see `hasOnlineCopy`. Telling somebody their
+ * book will come back when it will not is worse than telling them nothing, so
+ * "could not tell" is shown as the unrecoverable case.
  *
  * The confirmation is a typed word, not a second button. A two-tap destructive
  * action on the screen a thief is already looking at is one fumble away from
@@ -127,7 +127,20 @@ function Forgotten() {
   const panelId = useId()
   const [typed, setTyped] = useState('')
   const [busy, setBusy] = useState(false)
+  const [online, setOnline] = useState<boolean | null | 'checking'>('checking')
+  const hasOnlineCopy = useLockStore((s) => s.hasOnlineCopy)
   const resetDevice = useLockStore((s) => s.resetDevice)
+
+  // Asked only once the panel is opened: it is a disk read, and until somebody
+  // says they have forgotten the PIN there is no reason to have gone looking.
+  useEffect(() => {
+    if (!open) return
+    let live = true
+    void hasOnlineCopy().then((v) => live && setOnline(v))
+    return () => {
+      live = false
+    }
+  }, [open, hasOnlineCopy])
 
   const confirm = async () => {
     if (busy || typed !== RESET_WORD) return
@@ -159,13 +172,31 @@ function Forgotten() {
             everything BlackBook is holding on this device.
           </p>
 
-          <div className="mt-3 rounded-xl border border-rose-900/60 bg-rose-950/30 px-3 py-2.5 text-xs leading-relaxed text-rose-200">
-            <p className="font-semibold">Everything in this book will be gone.</p>
-            <p className="mt-1">
-              If you saved a backup file, Advanced ▸ Backup, import &amp; export ▸ Open a backup brings it
-              back afterwards. If not, this cannot be undone.
-            </p>
-          </div>
+          {online === 'checking' ? (
+            <p className="mt-3 text-xs text-slate-500">Checking for an online copy…</p>
+          ) : online === true ? (
+            <div className="mt-3 rounded-xl border border-slate-700 bg-slate-800/50 px-3 py-2.5 text-xs leading-relaxed text-slate-300">
+              <p className="font-semibold text-slate-100">Your book is saved online.</p>
+              <p className="mt-1">
+                After this, sign in to your Universal ID and enter your vault passphrase to bring it
+                back. ⚠️ That passphrase is not your PIN and not your account password — if you do
+                not have it either, the online copy cannot be opened by anyone, including us.
+              </p>
+            </div>
+          ) : (
+            <div className="mt-3 rounded-xl border border-rose-900/60 bg-rose-950/30 px-3 py-2.5 text-xs leading-relaxed text-rose-200">
+              <p className="font-semibold">
+                {online === null
+                  ? 'This device could not check for an online copy.'
+                  : 'This device has no online copy.'}
+              </p>
+              <p className="mt-1">
+                Everything in this book will be gone. If you saved a backup file, Advanced ▸ Backup,
+                import &amp; export ▸ Open a backup brings it back afterwards. If not, this cannot be
+                undone.
+              </p>
+            </div>
+          )}
 
           <label className={`${label} mt-4`} htmlFor="lock-reset-confirm">
             Type {RESET_WORD} to erase this device&rsquo;s book
@@ -290,16 +321,16 @@ function TurnOn({ onDone }: { onDone: () => void }) {
       <div className="rounded-xl border border-orange-900/60 bg-orange-950/30 px-3 py-2.5 text-xs leading-relaxed text-orange-200">
         <p className="font-semibold">Nobody can reset this PIN for you.</p>
         <p className="mt-1">
-          If you forget it, the only way back in is to erase this device's book and start over. Save
-          a backup file (Advanced ▸ Backup, import &amp; export) and that becomes an inconvenience instead of a
-          loss.
+          If you forget it, the only way back in is to erase this device's book and start over. Sync
+          your book with your Universal ID, or save a backup file (Advanced ▸ Backup, import &amp;
+          export), and that becomes an inconvenience instead of a loss.
         </p>
       </div>
 
       <p className="text-xs leading-relaxed text-slate-500">
         It locks the app, not the data. Your book stays in this browser's storage exactly as it is —
-        the PIN keeps out somebody who picks up your phone, and it is not encryption. A backup file
-        has its own optional password and is unaffected.
+        the PIN keeps out somebody who picks up your phone, and it is not encryption. The online copy
+        has its own passphrase, a backup file its own optional password, and neither is affected.
       </p>
 
       <div className="flex justify-end gap-2 border-t border-slate-800 pt-4">

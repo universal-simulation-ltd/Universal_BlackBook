@@ -6,7 +6,8 @@ import { FORM_FIELDS, isFormField, type FormField } from '../lib/formFields'
  * (owner's request, 2026-09-17).
  *
  * Device-local, in localStorage: a preference about how THIS device shows the
- * app, not a fact about the address book, so a backup file carries it, but only "Replace everything" restores it — the
+ * app, not a fact about the address book, so it stays out of the vault (a backup
+ * file carries it, but only "Replace everything" restores it) — the
  * same call as the saved "Opens on" view. Unreadable storage (private window,
  * blocked site data) just means the defaults.
  *

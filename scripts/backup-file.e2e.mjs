@@ -1,5 +1,6 @@
 // End-to-end check of the backup file (Advanced ▸ Backup, import & export),
-// which replaced sign-in and the online vault on 2026-10-20.
+// the way to move or keep a copy of a book without an account, beside the
+// optional Universal ID sign-in and its encrypted online vault.
 //
 //   npm run test:backup      (builds, then runs this)
 //
@@ -9,8 +10,9 @@
 // one accepted), replaces everything and checks contacts AND to-dos are back
 // (after a reload too); opens the plain backup with "Add to what's here" and
 // checks nothing is duplicated; tries a hostile file, a file from another app
-// and a file that is not a backup at all; checks there is no sign-in UI
-// anywhere; and that the console stayed clean.
+// and a file that is not a backup at all; checks a signed-out visitor is
+// offered sign-in and the Online backup row; that nothing touched the vault;
+// and that the console stayed clean.
 //
 // Playwright is not a dependency of this repo. Point PLAYWRIGHT at any
 // installed copy (default: a sibling Universal App's node_modules).
@@ -102,6 +104,15 @@ const tmp = mkdtempSync(join(tmpdir(), 'blackbook-backup-'))
 try {
   // Service workers off: the PWA's worker would otherwise serve a cached build.
   const context = await browser.newContext({ acceptDownloads: true, serviceWorkers: 'block' })
+  // Keep a test run out of the SDK's anonymous daily open count (presence.ts:
+  // an install marked as ours is never counted).
+  await context.addInitScript(() => {
+    try {
+      localStorage.setItem('unisim:own-device', '1')
+    } catch {
+      /* ignore */
+    }
+  })
   const page = await context.newPage()
   const consoleErrors = []
   page.on('console', (m) => m.type() === 'error' && consoleErrors.push(m.text()))
@@ -153,16 +164,22 @@ try {
   await heading()
   check(await page.getByText('Ada Lovelace').first().isVisible(), 'seeded book shows its contacts')
 
-  // ── 2. No sign-in anywhere ─────────────────────────────────────────────────
+  // ── 2. Signed out: sign-in and Online backup are offered ───────────────────
   await page.getByRole('button', { name: 'Actions · Profile' }).click()
   await page.getByRole('button', { name: 'Advanced' }).click()
   const menuText = await page.locator('body').innerText()
-  check(!/Sign in|Log in|Universal ID|Online backup|Syncing|passphrase|Create account/i.test(menuText), 'no sign-in or online-backup UI in the page or menu')
-  check((await page.locator('input[type=email]').count()) === 0, 'no email input')
-  await page.getByText('Backup, import & export', { exact: true }).click()
-  await page.getByRole('heading', { name: 'Backup file' }).waitFor()
-  const panelText = await page.getByRole('dialog').innerText()
-  check(!/Sign in|Universal ID|Online backup|passphrase/i.test(panelText), 'no sign-in UI in Backup, import & export')
+  check(/Sign in|Log in/i.test(menuText), 'the menu offers sign-in to a signed-out visitor')
+  const onlineRow = page.getByText('Online backup', { exact: true })
+  check(await onlineRow.isVisible(), 'Advanced ▸ Online backup row is there')
+  check(await page.getByText('Backup, import & export', { exact: true }).isVisible(), 'Advanced ▸ Backup, import & export row is there')
+  await onlineRow.click()
+  await page.getByRole('heading', { name: 'Online backup' }).waitFor()
+  check(
+    await page.getByRole('dialog').getByRole('button', { name: 'Sign in with Universal ID' }).isVisible(),
+    'Online backup panel offers Sign in with Universal ID',
+  )
+  await closePanel()
+  await openPanel()
 
   // ── 3. Save a backup, no password ──────────────────────────────────────────
   const [plainDl] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Save a backup' }).click()])
@@ -285,7 +302,7 @@ try {
   check((await page.locator('img[src=x]').count()) === 0, 'the HTML in a name is shown as text, never rendered')
 
   // ── 10. Nothing went to a server; the console stayed clean ─────────────────
-  check(!requests.some((u) => /supabase|blackbook_vaults/.test(u)), `no request to the platform (${requests.length} off-site requests)`)
+  check(!requests.some((u) => /blackbook_vaults/.test(u)), `signed out, nothing touched the vault (${requests.length} off-site requests)`)
   check(consoleErrors.length === 0, `no console errors${consoleErrors.length ? ': ' + consoleErrors.join(' | ') : ''}`)
 } catch (e) {
   console.error(e)

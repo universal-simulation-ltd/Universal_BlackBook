@@ -35,13 +35,13 @@ Les tableurs reformatent parfois ce qu’ils ouvrent, en transformant une date d
     title: 'Où votre carnet est conservé',
     summary: 'Sur cet appareil, sans compte nécessaire — et ce que cela implique pour vous.',
     group: 'Les bases',
-    body: `BlackBook conserve votre carnet d’adresses sur l’appareil que vous utilisez. Dans un navigateur, il se trouve dans l’espace de stockage que ce navigateur réserve à ce site ; dans l’application pour téléphone, il se trouve dans le stockage propre à l’application. Rien de vos contacts n’est jamais envoyé nulle part.
+    body: `BlackBook conserve votre carnet d’adresses sur l’appareil que vous utilisez. Dans un navigateur, il se trouve dans l’espace de stockage que ce navigateur réserve à ce site ; dans l’application pour téléphone, il se trouve dans le stockage propre à l’application. Rien de vos contacts n’est envoyé nulle part, sauf si vous activez la sauvegarde en ligne.
 
-Il n’y a aucun compte et rien à quoi se connecter.
+Vous n’avez pas besoin de compte pour utiliser BlackBook. Tout fonctionne sans être connecté.
 
 ## Ce que cela signifie concrètement
 
-- **Chaque appareil a son propre carnet.** Les contacts ajoutés sur votre ordinateur n’apparaissent pas d’eux-mêmes sur votre téléphone. C’est avec un fichier de sauvegarde que vous les y transférez.
+- **Chaque appareil a son propre carnet.** Les contacts ajoutés sur votre ordinateur n’apparaissent pas d’eux-mêmes sur votre téléphone. C’est la sauvegarde en ligne qui les relie. C’est avec un fichier de sauvegarde que vous les y transférez.
 - **Vider le navigateur peut vider le carnet.** Supprimer les données ou l’historique de ce site, utiliser une fenêtre de navigation privée ou désinstaller l’application efface le carnet qui y était conservé.
 - **Les contacts de votre appareil sont à part.** BlackBook n’ajoute rien au carnet d’adresses intégré à votre téléphone, ne le modifie pas et ne se synchronise pas avec lui.
 
@@ -49,8 +49,9 @@ Il n’y a aucun compte et rien à quoi se connecter.
 
 Comme le carnet de votre appareil est peut-être la seule copie, il vaut la peine d’en garder une autre :
 
-1. Enregistrez de temps en temps un fichier de sauvegarde (Avancé, puis Sauvegarde, import et export) et rangez-le en lieu sûr. Il contient tout, tâches comprises, et peut être protégé par un mot de passe.
-2. Ou exportez un fichier CSV, que n’importe quel tableur ou carnet d’adresses peut lire, mais qui laisse de côté vos tâches.
+1. Connectez-vous avec votre Universal ID et activez la sauvegarde en ligne chiffrée.
+2. Enregistrez de temps en temps un fichier de sauvegarde (Avancé, puis Sauvegarde, import et export) et rangez-le en lieu sûr. Il contient tout, tâches comprises, et peut être protégé par un mot de passe.
+3. Ou exportez un fichier CSV, que n’importe quel tableur ou carnet d’adresses peut lire, mais qui laisse de côté vos tâches.
 
 ## Régler cette application
 
@@ -124,7 +125,7 @@ La suppression demande toujours confirmation et nomme les personnes concernées.
 - Il empêche quiconque d’ouvrir l’application sur cet appareil sans le code.
 - Après cinq essais erronés d’affilée, le clavier vous fait attendre avant de réessayer, et l’attente double à chaque fois.
 - Votre code lui-même n’est jamais enregistré. BlackBook ne garde qu’une empreinte brouillée, volontairement lente à vérifier, ce qui rend les tentatives coûteuses.
-- Le verrou ne concerne que cet appareil et n’est jamais inclus dans un fichier de sauvegarde.
+- Le verrou ne concerne que cet appareil et n’est jamais envoyé en ligne.
 
 ## Ce qu’il ne fait pas
 
@@ -134,7 +135,38 @@ Le code verrouille l’application, pas les données. Votre carnet reste dans le
 
 Personne ne peut vous donner votre code ni retirer le verrou à votre place. Le seul moyen de passer un code oublié est le bouton « Forgotten your PIN? » sur l’écran de verrouillage, qui **efface le carnet de cet appareil** et repart de zéro, sans verrou. C’est ce qui rend cette option sûre : un inconnu pourrait vider l’application, mais jamais la lire.
 
-Si vous avez un fichier de sauvegarde, un code oublié n’est qu’un désagrément : après la réinitialisation, ouvrez la sauvegarde et votre carnet revient. Sans sauvegarde, il n’y a rien à restaurer : enregistrez-en une avant de définir un code.`,
+Si vous utilisez la sauvegarde en ligne chiffrée, un code oublié n’est qu’un désagrément : reconnectez-vous, saisissez votre phrase secrète de sauvegarde, et votre carnet revient. Si vous avez un fichier de sauvegarde, un code oublié n’est qu’un désagrément : après la réinitialisation, ouvrez la sauvegarde et votre carnet revient. Sans sauvegarde, il n’y a rien à restaurer : enregistrez-en une avant de définir un code.`,
+  },
+  {
+    id: 'encrypted-online-backup',
+    title: 'La sauvegarde en ligne chiffrée',
+    summary: 'Comment votre carnet est chiffré avant de quitter l’appareil, et pourquoi personne d’autre ne peut le lire.',
+    group: 'Confidentialité et sécurité',
+    body: `La sauvegarde en ligne est facultative et reste désactivée tant que vous ne vous connectez pas avec votre Universal ID. Une fois activée, BlackBook garde une copie de votre carnet sur les serveurs d’UNI·SIM, afin qu’il survive à la perte d’un appareil et puisse être ouvert sur un autre.
+
+## Chiffré avant de partir
+
+Votre carnet est chiffré sur votre appareil avant tout envoi. Le serveur ne reçoit et ne conserve que des données brouillées pour lesquelles il n’a aucune clé : UNI·SIM ne peut donc lire ni vos contacts, ni vos notes, ni vos étiquettes, ni vos tâches.
+
+- Le chiffrement est **AES-GCM avec une clé de 256 bits**, une norme très répandue.
+- La clé est dérivée d’une **phrase secrète que vous choisissez**, avec PBKDF2 et SHA-256 sur 600 000 tours, ce qui rend chaque tentative de deviner la phrase lente et coûteuse.
+- Votre phrase secrète ne quitte jamais votre appareil. Ce n’est **pas** le mot de passe de votre Universal ID, et changer ce mot de passe ne la modifie pas.
+
+C’est important, car les personnes de votre carnet ne se sont inscrites à rien. Leurs noms, leurs adresses et vos notes privées à leur sujet méritent le même soin que vos propres données.
+
+## Aucune récupération possible
+
+UNI·SIM ne détient aucune copie de votre clé et n’a aucun moyen de réinitialiser votre phrase secrète. Si vous l’oubliez, personne ne peut ouvrir la copie en ligne. Le carnet de votre appareil n’est pas touché : c’est pourquoi la copie en ligne est une sauvegarde et non la copie principale.
+
+## Mémoriser un appareil
+
+Vous pouvez demander à un appareil de mémoriser la clé pour ne pas avoir à saisir la phrase secrète à chaque fois. La clé est conservée sous une forme que l’application peut utiliser mais ne peut pas extraire. Se déconnecter, ou choisir d’oublier cet appareil, la supprime.
+
+## La modifier ou la supprimer
+
+Changer de phrase secrète exige la phrase actuelle, même sur un appareil qui la mémorise, et chiffre à nouveau la sauvegarde en une seule étape. Désactiver la sauvegarde supprime entièrement la copie en ligne et laisse le carnet de votre appareil tel quel. Supprimer votre Universal ID supprime aussi la copie en ligne.
+
+La sauvegarde est limitée à environ 2 Mo de données chiffrées, soit plusieurs milliers de contacts. Ce sont généralement des notes très longues qui font atteindre cette limite.`,
   },
   {
     id: 'backup-file',
@@ -174,25 +206,37 @@ BlackBook vérifie chaque champ d’un fichier avant de l’utiliser : un fichie
   {
     id: 'using-two-devices',
     title: 'Utiliser BlackBook sur plusieurs appareils',
-    summary: 'Transférer votre carnet d’un appareil à l’autre avec un fichier de sauvegarde.',
+    summary: 'La fusion à la connexion, l’enregistrement automatique, et ce qui se passe quand deux appareils divergent.',
     group: 'Confidentialité et sécurité',
-    body: `BlackBook n’a ni compte ni copie en ligne : chaque appareil garde donc son propre carnet, et rien ne les relie à votre insu. Pour emporter votre carnet sur un autre appareil, utilisez un fichier de sauvegarde.
+    body: `Avec la sauvegarde en ligne activée, vous pouvez ouvrir le même carnet sur votre téléphone, votre tablette et votre ordinateur. Chaque appareil garde sa propre copie, et la sauvegarde en ligne les maintient à jour.
 
-## Transférer votre carnet
+## Se connecter sur un nouvel appareil
+
+1. Connectez-vous avec votre Universal ID.
+2. Saisissez votre phrase secrète de sauvegarde.
+3. Si cet appareil a déjà ses propres contacts, BlackBook vous demande s’il faut les fusionner ou utiliser uniquement la copie en ligne.
+
+Lors d’une fusion, la copie en ligne sert de base et les contacts de cet appareil y sont ajoutés. Une personne déjà présente, reconnue comme la même fiche ou par le même nom avec le même e-mail ou numéro, n’est pas ajoutée deux fois. Les étiquettes portant le même nom ne forment plus qu’une.
+
+## Enregistrement
+
+Tant que la sauvegarde est active, chaque modification est chiffrée et enregistrée en ligne quelques secondes après. L’indication de synchronisation à côté du titre montre qu’un enregistrement est en cours. Quand vous ouvrez BlackBook sur un autre appareil, il récupère la copie la plus récente.
+
+## Quand deux appareils divergent
+
+La copie en ligne est enregistrée comme un carnet entier. Si deux appareils ont tous deux modifié le carnet depuis leur dernier enregistrement, BlackBook ne choisit pas en silence. Il s’arrête et vous demande laquelle garder : la copie en ligne plus récente, ou la version de cet appareil. Celle que vous ne choisissez pas est remplacée : exportez d’abord un fichier CSV en cas de doute.
+
+## Après un changement de phrase secrète
+
+Quand vous changez la phrase secrète sur un appareil, vos autres appareils cessent d’enregistrer et demandent la nouvelle phrase. Rien n’y est perdu, et lorsque vous les déverrouillez, ils proposent de fusionner à nouveau leurs contacts. Un appareil qui a encore l’ancienne clé ne peut pas écraser le changement.
+
+## Transférer votre carnet sans compte
 
 1. Sur l’appareil qui contient votre carnet, enregistrez un fichier de sauvegarde. Un mot de passe est une bonne idée si le fichier doit passer par un e-mail ou un stockage en ligne.
 2. Faites parvenir le fichier sur l’autre appareil, par exemple avec AirDrop, un stockage en ligne ou un e-mail.
 3. Sur l’autre appareil, ouvrez BlackBook, choisissez Ouvrir une sauvegarde et sélectionnez le fichier.
 
-Si l’autre appareil est neuf, choisissez Tout remplacer. S’il contient déjà ses propres contacts, choisissez Ajouter à l’existant et les deux carnets sont fusionnés.
-
-## Garder deux appareils à jour
-
-Il n’y a pas de synchronisation automatique. Si vous ajoutez des personnes sur les deux appareils, enregistrez une sauvegarde sur l’un et ouvrez-la sur l’autre avec Ajouter à l’existant : personne n’est ajouté deux fois, et la copie modifiée en dernier l’emporte. La fusion ne fait qu’ajouter : une personne supprimée sur un appareil peut donc revenir depuis une sauvegarde qui la contient encore.
-
-## Pourquoi il n’y a pas de connexion
-
-Un carnet d’adresses contient les noms et les numéros d’autres personnes, ainsi que vos notes à leur sujet. Le garder uniquement sur vos propres appareils, et le transférer dans un fichier que vous contrôlez, signifie qu’il n’en existe aucune copie sur le serveur de qui que ce soit.`,
+Si l’autre appareil est neuf, choisissez Tout remplacer. S’il contient déjà ses propres contacts, choisissez Ajouter à l’existant et les deux carnets sont fusionnés.`,
   },
 ]
 

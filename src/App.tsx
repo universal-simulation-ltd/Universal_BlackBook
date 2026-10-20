@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   DefaultViewSelect,
   PreferencesDialog,
@@ -7,10 +7,14 @@ import {
   UpdateNotice,
   useDefaultView,
   useUniversal,
+  useUser,
   type AboutAppConfig,
 } from '@unisim/sdk'
-// No <UsageTracker />: there is no sign-in (main.tsx, `noAccounts`), so there
-// is no signed-in visitor to count, and nothing about a book is ever sent.
+// <UsageTracker /> sends one "session.opened" row for a signed-in visitor, and
+// nothing else may ever be tracked here: no names, email addresses, category
+// names or counts. The vault goes to the server encrypted precisely so we cannot
+// see this data, and a usage event that leaked a contact count would undo that.
+import { UsageTracker } from '@unisim/sdk'
 import ProductLogo from './components/Header/ProductLogo'
 import AppMenu from './components/Header/AppMenu'
 // Generated — `npm run credits` after any dependency change. Never edit it by
@@ -19,6 +23,7 @@ import AppMenu from './components/Header/AppMenu'
 // package we removed is worse than no list at all.
 import credits from './generated/credits.json'
 import { TagManager } from './components/TagManager'
+import { CloudPanel } from './components/CloudPanel'
 import { EmailListsPreference } from './components/EmailListsPreference'
 import { FormFieldsPreference } from './components/FormFieldsPreference'
 import { ContactForm } from './components/ContactForm'
@@ -32,9 +37,12 @@ import { TodoView } from './components/TodoView'
 import { LockPanel, LockScreen } from './components/Lock'
 import { btnGhost, btnPrimary } from './components/ui'
 import { contactsAvailability, ContactsPermissionError, pickOneContact } from './lib/deviceContacts'
+import { allOnline } from './lib/merge'
+import { forgetVault, loadSyncMeta } from './lib/store'
 import { useBookStore } from './stores/bookStore'
 import { useLockStore } from './stores/lockStore'
 import { useSettingsStore } from './stores/settingsStore'
+import { useSyncStore } from './stores/syncStore'
 import { useTodoStore } from './stores/todoStore'
 
 // The single page container. The navbar (via the SDK's `contentClassName`), the
@@ -51,7 +59,10 @@ const CONTAINER = 'gutter mx-auto w-full max-w-7xl'
 
 const REPO_URL = 'https://github.com/universal-simulation-ltd/Universal_BlackBook'
 
-type Panel = 'tags' | 'io' | 'lock' | 'wipe' | null
+/** How long to wait after the last edit before pushing to the vault. */
+const AUTOSAVE_DELAY = 2500
+
+type Panel = 'tags' | 'io' | 'cloud' | 'lock' | 'wipe' | null
 
 /** The landing screen's tabs. Lists and To-do each need their App preference on. */
 const TABS = ['contacts', 'lists', 'todos'] as const
@@ -74,6 +85,7 @@ const APP_ABOUT: AboutAppConfig = {
   repo:    'https://github.com/universal-simulation-ltd/Universal_BlackBook',
   subject: 'Your contacts',
   plural:  true,
+  except:  'the end-to-end encrypted backup you choose to store',
   headline: 'Other address books keep your contacts on their servers.',
   version: __APP_VERSION__,
   credits,
@@ -88,6 +100,11 @@ export default function App() {
   const edit = useBookStore((s) => s.edit)
   const notice = useBookStore((s) => s.notice)
   const setNotice = useBookStore((s) => s.setNotice)
+  useEffect(() => {
+    if (takeSignedOutNote()) {
+      setNotice('Signed out, so your book has been removed from this device. Sign in again to bring it back from your online backup.')
+    }
+  }, [setNotice])
   const [panel, setPanel] = useState<Panel>(null)
   const resetSettings = useSettingsStore((s) => s.reset)
   // Contacts | Lists | To-do, on the landing screen. Lists only exists with App
@@ -119,11 +136,19 @@ export default function App() {
     void initLock()
   }, [initLock])
 
-  // ⚠️ Whether or not the To-do tab is on: a backup file carries the list
-  // either way, and one saved before it was read would leave the to-dos out.
+  // ⚠️ Whether or not the To-do tab is on. The vault carries the list either
+  // way, and a push made before it was read would say nothing about to-dos
+  // rather than the truth (see VaultPayload.todos).
   useEffect(() => {
     void initTodos()
   }, [initTodos])
+
+
+  // Stable, not an inline arrow: `openPanel` is a dependency of an effect in
+  // there, and a fresh closure per render re-runs it per render — the same
+  // shape of bug as the `user` object below, one step short of a loop.
+  const openCloud = useCallback(() => setPanel('cloud'), [])
+  useCloudSync(openCloud)
 
   // ⚠️ Every hook above runs whatever the lock says — they have to, and none of
   // them puts anything on screen. What the gate below decides is only what is
@@ -154,6 +179,7 @@ export default function App() {
           <AppMenu
             onTags={() => setPanel('tags')}
             onImportExport={() => setPanel('io')}
+            onBackup={openCloud}
             onDeleteAll={() => setPanel('wipe')}
           />
         }
@@ -215,6 +241,7 @@ export default function App() {
       <div className={`${CONTAINER} pt-4 empty:hidden`}>
         <UpdateNotice />
       </div>
+      <UsageTracker />
 
       <main className={`${CONTAINER} flex-1 py-6 sm:py-8`}>
         {notice && (
@@ -287,6 +314,7 @@ export default function App() {
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <h1 className="text-xl font-semibold text-slate-100 sm:text-2xl">Your BlackBook</h1>
                 <LockLink onClick={() => setPanel('lock')} />
+              <SyncStatus onOpen={openCloud} />
               </div>
               <p className="text-sm text-slate-500">
                 The people worth staying in touch with — tagged your way, and never a birthday missed.
@@ -397,6 +425,7 @@ export default function App() {
       <TuneThisApp />
       {panel === 'tags' && <TagManager onClose={() => setPanel(null)} />}
       {panel === 'io' && <ImportExport onClose={() => setPanel(null)} />}
+      {panel === 'cloud' && <CloudPanel onClose={() => setPanel(null)} />}
       {panel === 'lock' && <LockPanel onClose={() => setPanel(null)} />}
       {panel === 'wipe' && <DeleteAllData onClose={() => setPanel(null)} />}
     </div>
@@ -434,6 +463,64 @@ function LockLink({ onClick }: { onClick: () => void }) {
       <span>{locked ? 'Locked' : 'Lock with PIN'}</span>
       {locked && <span className="sr-only">— tap to turn the PIN lock off</span>}
     </button>
+  )
+}
+
+/**
+ * "Syncing…" / "Synced" beside the page title (owner's request, 2026-09-17:
+ * show that what was just added is backed up).
+ *
+ * Only while signed in — signed out the book is local-first by design, and a
+ * permanent "not backed up" would nag people who chose that. Signed in without
+ * a backup yet, or with one waiting for its passphrase, it says so and opens
+ * the backup panel; the same for a failed or conflicting save.
+ */
+function SyncStatus({ onOpen }: { onOpen: () => void }) {
+  const state = useSyncStore((s) => s.state)
+  const status = useSyncStore((s) => s.status)
+  const dirty = useSyncStore((s) => s.dirty)
+  const lastPushedAt = useSyncStore((s) => s.lastPushedAt)
+  if (state === 'signed-out') return null
+
+  const problem = status === 'error' || status === 'conflict'
+  const view =
+    state === 'off'
+      ? { text: 'Not backed up', tone: 'text-slate-400', icon: '☁︎' }
+      : state === 'locked'
+        ? { text: 'Backup locked', tone: 'text-slate-400', icon: '☁︎' }
+        : problem
+          ? { text: 'Not synced', tone: 'text-rose-300', icon: '!' }
+          : dirty || status === 'working'
+            ? { text: 'Syncing…', tone: 'text-slate-400', icon: '↻' }
+            : { text: 'Synced', tone: 'text-emerald-300', icon: '✓' }
+  const clickable = state !== 'on' || problem
+
+  const body = (
+    <>
+      <span aria-hidden className={view.text === 'Syncing…' ? 'inline-block animate-spin' : undefined}>
+        {view.icon}
+      </span>
+      <span>{view.text}</span>
+    </>
+  )
+  const cls = `inline-flex items-center gap-1 text-sm ${view.tone}`
+  return clickable ? (
+    <button
+      type="button"
+      onClick={onOpen}
+      className={`${cls} rounded underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400`}
+    >
+      {body}
+    </button>
+  ) : (
+    <span
+      className={cls}
+      role="status"
+      aria-live="polite"
+      title={lastPushedAt ? `Backed up ${new Date(lastPushedAt).toLocaleString('en-GB')}` : undefined}
+    >
+      {body}
+    </span>
   )
 }
 
@@ -481,6 +568,228 @@ function useContactPicker() {
   }, [startWith, setNotice])
 
   return { canPick: where !== 'none', picking, pick: () => void pick() }
+}
+
+/**
+ * The account the backup panel last opened itself for, on this device.
+ *
+ * localStorage and not IndexedDB: it is a courtesy, not data. If it cannot be
+ * read (a private window, blocked storage) the worst case is being shown the
+ * panel again after signing in.
+ */
+const PROMPTED_KEY = 'blackbook.backupPrompted'
+
+function readPrompted(): string | null {
+  try {
+    return localStorage.getItem(PROMPTED_KEY)
+  } catch {
+    return null
+  }
+}
+
+function writePrompted(userId: string | null) {
+  try {
+    if (userId) localStorage.setItem(PROMPTED_KEY, userId)
+    else localStorage.removeItem(PROMPTED_KEY)
+  } catch {
+    // See readPrompted.
+  }
+}
+
+/**
+ * Keeps the encrypted vault in step with the local book.
+ *
+ * Three jobs, all of them effects because they hang off session state the SDK
+ * owns rather than off anything the user did:
+ *
+ *  1. **Follow the session.** Signing in checks for a vault and opens the
+ *     backup panel if it needs a passphrase; signing out drops the in-memory
+ *     key AND the remembered one, so a shared machine does not leave a key
+ *     behind for whoever signs in next.
+ *  2. **Debounced push.** Every edit restarts a timer; the vault is written
+ *     once the typing stops. Pushing per keystroke would re-encrypt and
+ *     re-upload the whole book on every letter of a note.
+ *  3. **Never push what we have not loaded.** The guard on `loaded` is the
+ *     important one — without it the empty initial state counts as a change
+ *     and uploads an empty book over a full one on the first render.
+ */
+/** Survives the reload that finishes a wipe, so the notice can say what happened. */
+const SIGNED_OUT_NOTE = 'blackbook:signed-out-wipe'
+
+/**
+ * Signing out takes the book off this device (James, 2026-10-11: "when
+ * signing out, remove all data stored locally"), the same wipe as Delete all
+ * data — but ONLY when every entry is already in the online copy, so signing
+ * back in (and the passphrase) brings all of it back.
+ *
+ * ⚠️ **Otherwise the book stays, and says why.** Online backup is opt-in, so a
+ * signed-in book with backup off — or with edits the last save did not reach
+ * — has no other copy, and the sign-out happens in the SDK's menu, after which
+ * nothing can be saved. Wiping then would be deleting somebody's only copy for
+ * pressing Sign out.
+ *
+ * `seen`: this page watched the sign-out happen. Unseen (found at load), a
+ * book that is not all online is left exactly as before: `hydrate` folds it
+ * back in on the next sign-in, which depends on the bookkeeping staying.
+ */
+async function leaveDevice(seen: boolean, unsaved: boolean): Promise<void> {
+  const meta = await loadSyncMeta()
+  if (!seen && !meta) return
+  await Promise.all([useBookStore.getState().init(), useTodoStore.getState().init()])
+  const book = { contacts: useBookStore.getState().contacts, todos: useTodoStore.getState().todos }
+  if (!unsaved && allOnline(meta, book)) {
+    try {
+      sessionStorage.setItem(SIGNED_OUT_NOTE, '1')
+    } catch {
+      // No session storage: the wipe still happens, just without the notice.
+    }
+    // Wipes and reloads — see `resetDevice` for why the reload is part of it.
+    await useLockStore.getState().resetDevice()
+    return
+  }
+  if (!seen) return
+  // As before this change: a shared machine must not keep the key.
+  await forgetVault()
+  if (book.contacts.length > 0 || book.todos.length > 0) {
+    useBookStore
+      .getState()
+      .setNotice(
+        "You're signed out, but this book isn't all in your online backup, so it's still on this device. Sign in and turn on Online backup to keep it safe, or remove it with Actions ▸ Advanced ▸ Delete all data.",
+      )
+  }
+}
+
+/** After a sign-out wipe's reload: say where the book went, once. */
+function takeSignedOutNote(): boolean {
+  try {
+    if (sessionStorage.getItem(SIGNED_OUT_NOTE) === null) return false
+    sessionStorage.removeItem(SIGNED_OUT_NOTE)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function useCloudSync(openPanel: () => void) {
+  const { supabase } = useUniversal()
+  const { user, loading } = useUser()
+  // ⚠️ THE ID, NEVER THE `user` OBJECT. The SDK's `useUser` builds a fresh
+  // `{ id, email }` literal on every render, so `user` in a dependency array is
+  // a NEW value every render and the effect below re-runs every time. That
+  // effect calls `hydrate`, which `set`s a status, which re-renders, which
+  // re-runs the effect: measured at ~320 hydrations a second, each one a
+  // `blackbook_vaults` round trip, an IndexedDB read and an AES-GCM decrypt.
+  // It made the whole browser sluggish, and only ever while signed IN —
+  // signed out `user` is a stable `null`, which is why it hid for so long.
+  const userId = user?.id ?? null
+  const contacts = useBookStore((s) => s.contacts)
+  const tags = useBookStore((s) => s.tags)
+  const todos = useTodoStore((s) => s.todos)
+  const loaded = useBookStore((s) => s.loaded)
+  const hydrate = useSyncStore((s) => s.hydrate)
+  const push = useSyncStore((s) => s.push)
+  const state = useSyncStore((s) => s.state)
+  const status = useSyncStore((s) => s.status)
+
+  const wasSignedIn = useRef(false)
+  // Never reset: tells the load-time check below that a sign-out has already
+  // been handled in this page's life.
+  const everSignedIn = useRef(false)
+
+  useEffect(() => {
+    let cancelled = false
+    // Read BEFORE `hydrate`, which resets the status on the way out.
+    const sync = useSyncStore.getState()
+    const unsaved = sync.dirty || sync.pending !== null || sync.status === 'working' || sync.status === 'error' || sync.status === 'conflict'
+    void hydrate(supabase, userId).then(() => {
+      // Signing in IS turning the backup on: open the panel so the passphrase
+      // and the merge question come straight away. Once per account per
+      // device, so somebody who closes it is not asked on every launch — and
+      // keyed on the stored flag rather than on a null → user transition,
+      // because a sign-in that went via the hub comes back as a fresh page
+      // load with the session already there.
+      if (cancelled || !userId) return
+      // No merge question to open for any more: `hydrate` merges a device's
+      // own entries in by itself (owner's call, 2026-10-08).
+      const { state } = useSyncStore.getState()
+      if ((state === 'locked' || state === 'off') && readPrompted() !== userId) {
+        writePrompted(userId)
+        openPanel()
+      }
+    })
+    if (userId) {
+      wasSignedIn.current = true
+      everSignedIn.current = true
+    } else if (wasSignedIn.current) {
+      wasSignedIn.current = false
+      writePrompted(null)
+      void leaveDevice(true, unsaved)
+    }
+    return () => {
+      cancelled = true
+    }
+  }, [supabase, userId, hydrate, openPanel])
+
+  // A sign-out this page never saw — made in another suite app on the same
+  // site, or a session that expired while the app was shut. The book was left
+  // behind with its sync bookkeeping, which is how it is recognised here.
+  // ⚠️ Only once the SDK has finished loading the session: before that `user`
+  // is null for a signed-in person too, and this would wipe their device on
+  // every launch.
+  useEffect(() => {
+    if (loading || userId || everSignedIn.current) return
+    void leaveDevice(false, false)
+  }, [loading, userId])
+
+  // Only a CHANGE of book marks it unsynced — not this effect re-running
+  // because sync turned on or the page loaded, which would show "Syncing…"
+  // over a book that is already up there.
+  const lastBook = useRef<{ contacts: unknown; tags: unknown; todos: unknown } | null>(null)
+  useEffect(() => {
+    if (!loaded || state !== 'on') {
+      lastBook.current = null
+      return
+    }
+    const changed =
+      lastBook.current !== null &&
+      (lastBook.current.contacts !== contacts || lastBook.current.tags !== tags || lastBook.current.todos !== todos)
+    lastBook.current = { contacts, tags, todos }
+    if (changed) useSyncStore.getState().markDirty()
+    const t = setTimeout(() => void push(supabase), AUTOSAVE_DELAY)
+    return () => clearTimeout(t)
+  }, [contacts, tags, todos, loaded, state, push, supabase])
+
+  // A save that failed for want of a network is tried again, rather than
+  // sitting there until somebody opens the panel and taps Save now (owner's
+  // report, 2026-09-29: "TypeError: Load failed" on the iPhone, which is
+  // WebKit's word for a fetch cut off, typically by the app going to the
+  // background mid-save). Again after a growing wait, and at once when the
+  // connection comes back or the app is brought to the front.
+  const offline = useSyncStore((s) => s.offline)
+  useEffect(() => {
+    if (offline === 0 || state !== 'on') return
+    const retry = () => void push(supabase)
+    // 5 s, 10 s, 20 s, 40 s, then every minute. Each failure bumps `offline`
+    // and re-runs this effect, which is what schedules the next one.
+    const timer = setTimeout(retry, Math.min(5_000 * 2 ** (offline - 1), 60_000))
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') retry()
+    }
+    window.addEventListener('online', retry)
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('online', retry)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [offline, state, push, supabase])
+
+  // A conflict is the one sync outcome the user MUST answer — it is the only
+  // one where the app cannot proceed without destroying somebody's edits — so
+  // it opens the panel rather than waiting to be noticed in a menu.
+  useEffect(() => {
+    if (status === 'conflict') openPanel()
+  }, [status, openPanel])
 }
 
 /**

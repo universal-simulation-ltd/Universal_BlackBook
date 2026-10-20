@@ -2,7 +2,7 @@
 // starting tags, and the view it opens on.
 //
 // ⚠️ A "fresh opening of the app" is modelled as a fresh MODULE GRAPH — the
-// same trick `lock.test.ts` uses — so `vi.resetModules()`
+// same trick `lock.test.ts` and `sync.test.ts` use — so `vi.resetModules()`
 // plus a dynamic import gives a brand new `useBookStore`, with a brand new
 // empty in-memory state, over the SAME fake IndexedDB. That is exactly what a
 // reload, a relaunch or a cold start of the iOS app is, and both features here
@@ -174,7 +174,7 @@ describe('the view the app opens on', () => {
   })
 
   it('ignores a saved tag that has vanished some other way', async () => {
-    // Belt and braces for the same failure: a backup file opened from another
+    // Belt and braces for the same failure: a vault adopted from another
     // device replaces the whole tag list without going through removeTag.
     const first = await reopen()
     first.getState().setQuery({ tagIds: ['ghost'], hiddenTagIds: [], sort: 'recent' })
@@ -302,5 +302,18 @@ describe('the bulk actions', () => {
     const byId = new Map(store.getState().contacts.map((c) => [c.id, c]))
     expect(byId.get('a')?.tagIds).toEqual(['t1', 't2'])
     expect(byId.get('b')?.tagIds).toEqual(['t1', 't2'])
+  })
+})
+
+describe('a saved contact', () => {
+  it('keeps its address across a reopen', async () => {
+    // Regression: lib/store.ts toContact read every field but `address`, so
+    // each address was on disk and dropped from memory on the next launch
+    // (fixed 2026-10-20).
+    await seedDisk({ contacts: [someone({ address: '1 Lovelace Row\nLondon', company: 'Analytical Engines' })] })
+    const store = await reopen()
+    const c = store.getState().contacts.find((x) => x.id === 'c1')
+    expect(c?.address).toBe('1 Lovelace Row\nLondon')
+    expect(c?.company).toBe('Analytical Engines')
   })
 })

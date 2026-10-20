@@ -15,9 +15,10 @@ import { btnGhost, btnPrimary, label } from './ui'
 /**
  * Backup file, then CSV in and out.
  *
- * The backup file (BackupSection) is the app's whole backup story since
- * sign-in and the online vault went (2026-10-20): the complete book, to-dos
- * included. The CSV is the way out to any other address book and in from one,
+ * The backup file (BackupSection) is the whole book, to-dos included, for
+ * moving or keeping a copy without an account; signing in to sync with a
+ * Universal ID (Online backup, CloudPanel) is the other way across devices.
+ * The CSV is the way out to any other address book and in from one,
  * so it stays a first-class screen, and the export button says how many
  * contacts are in the file before you click it.
  */

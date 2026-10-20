@@ -1,7 +1,9 @@
 // The backup file — "Save a backup" / "Open a backup" in Backup, import &
-// export. It replaced the encrypted online vault on 2026-10-20 (James: no
-// logins in the first iterations; where data has to move, a file instead —
-// Docs_UNI_SIM/login-free-plan.md).
+// export. Added 2026-10-20 (Docs_UNI_SIM/login-free-plan.md) as the way to
+// move or keep a copy of a book without an account; it sits beside the
+// optional Universal ID sign-in and its encrypted online vault (syncStore),
+// which came back the same day ("blackbook needs sign-in, it's designed to be
+// on multi devices").
 //
 // The envelope is the suite's transfer file (`@unisim/sdk` transfer.ts):
 // product 'blackbook', kind 'backup', schema 1, with the SDK's optional

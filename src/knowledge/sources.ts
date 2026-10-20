@@ -10,10 +10,13 @@ import type { Source } from './types'
 // RFC 5322 quoted display names for copied email lists in lib/emailList.ts;
 // the book in IndexedDB (lib/store.ts); the PIN kept only as a salted
 // PBKDF2-SHA-256 digest at 600,000 iterations with doubling lock-outs after
-// five misses (lib/lock.ts); the backup file, optionally under AES-GCM-256
-// with a PBKDF2-SHA-256 key (600,000 iterations) via Web Crypto (the SDK's
-// transfer.ts, used by lib/backup.ts; the online vault and its revision-checked
-// saves went on 2026-10-20). Device contacts
+// five misses (lib/lock.ts); the backup as AES-GCM-256 under a PBKDF2-SHA-256
+// key via Web Crypto, remembered as a non-extractable CryptoKey
+// (lib/vault.ts); saves guarded by a revision check, `.eq('rev', …)`, so
+// two devices conflict instead of overwriting (lib/cloud.ts); and the backup
+// file, optionally under AES-GCM-256 with a PBKDF2-SHA-256 key (600,000
+// iterations) via Web Crypto (the SDK's transfer.ts, used by lib/backup.ts).
+// Device contacts
 // come through @capacitor-community/contacts natively and the Contact Picker
 // API in Chrome on Android.
 //
@@ -150,6 +153,39 @@ export const SOURCES: Record<string, Source[]> = {
       licence: 'Public domain (US Government work)',
     },
   ],
+  'encrypted-online-backup': [
+    {
+      kind: 'paper',
+      title: 'The Security and Performance of the Galois/Counter Mode (GCM) of Operation',
+      authors: 'David A. McGrew, John Viega',
+      publisher: 'INDOCRYPT',
+      year: 2004,
+      href: 'https://eprint.iacr.org/2004/193',
+    },
+    {
+      kind: 'standard',
+      title: 'NIST SP 800-38D: Recommendation for Block Cipher Modes of Operation — Galois/Counter Mode (GCM) and GMAC',
+      authors: 'Morris Dworkin',
+      publisher: 'NIST',
+      year: 2007,
+      href: 'https://doi.org/10.6028/NIST.SP.800-38D',
+      pdf: 'papers/nist-sp-800-38d-gcm.pdf',
+      licence: 'Public domain (US Government work)',
+    },
+    {
+      kind: 'guidance',
+      title: 'Password Storage Cheat Sheet (PBKDF2-HMAC-SHA-256: 600,000 iterations)',
+      publisher: 'OWASP',
+      href: 'https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html',
+    },
+    {
+      kind: 'standard',
+      title: 'Web Cryptography Level 2 (non-extractable CryptoKey)',
+      publisher: 'W3C',
+      year: 2025,
+      href: 'https://www.w3.org/TR/webcrypto/',
+    },
+  ],
   'backup-file': [
     {
       kind: 'paper',
@@ -184,5 +220,25 @@ export const SOURCES: Record<string, Source[]> = {
     },
     NIST_800_132,
   ],
-  'using-two-devices': [LOCAL_FIRST],
+  'using-two-devices': [
+    {
+      kind: 'paper',
+      title: 'On Optimistic Methods for Concurrency Control',
+      authors: 'H. T. Kung, John T. Robinson',
+      publisher: 'ACM Transactions on Database Systems',
+      year: 1981,
+      href: 'https://www.eecs.harvard.edu/~htk/publication/1981-tods-kung-robinson.pdf',
+    },
+    {
+      kind: 'standard',
+      title: 'HTTP Semantics (RFC 9110), §13.1.1: If-Match and the lost update problem',
+      authors: 'Roy T. Fielding, Mark Nottingham, Julian Reschke',
+      publisher: 'IETF',
+      year: 2022,
+      href: 'https://www.rfc-editor.org/rfc/rfc9110.html#section-13.1.1',
+      pdf: 'papers/rfc-9110-http-semantics.pdf',
+      licence: 'IETF Trust — RFC, freely redistributable unmodified',
+    },
+    LOCAL_FIRST,
+  ],
 }

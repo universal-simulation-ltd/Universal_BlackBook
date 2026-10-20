@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { clearLock, loadLock, saveLock, wipeDevice } from '../lib/store'
+import { clearLock, loadLock, loadSyncMeta, saveLock, wipeDevice } from '../lib/store'
 import { cooldownMs, isValidPin, makeLock, pinMatches, type LockRecord } from '../lib/lock'
 
 /**
@@ -41,6 +41,15 @@ interface LockState {
   setPin: (pin: string) => Promise<PinResult>
   /** Turn the lock OFF, which needs the PIN that is on. */
   removePin: (pin: string) => Promise<PinResult>
+  /**
+   * Is there an online copy of this book, so a reset is recoverable?
+   *
+   * Read from the sync bookkeeping on disk, NOT from the network — the lock
+   * screen is the first thing the app draws and may well be offline, and the
+   * answer decides which of two very different warnings the reset shows.
+   * `null` means "could not tell", which the UI must treat as the bad case.
+   */
+  hasOnlineCopy: () => Promise<boolean | null>
   /**
    * The way back in for somebody who has genuinely forgotten their PIN: throw
    * this device's copy away and start it over, unlocked.
@@ -115,6 +124,19 @@ export const useLockStore = create<LockState>((set, get) => ({
     return 'ok'
   },
 
+  hasOnlineCopy: async () => {
+    try {
+      const meta = await loadSyncMeta()
+      // `rev > 0` and not merely "there is a row": bookkeeping exists from the
+      // moment a vault is set up, but until a push has actually landed there
+      // is nothing on the server to come back from. Promising a restore that
+      // does not exist is the one wrong answer this function can give.
+      return meta !== null && meta.rev > 0
+    } catch {
+      return null
+    }
+  },
+
   resetDevice: async () => {
     await wipeDevice()
     set({ record: null, status: 'off', failures: 0, blockedUntil: 0 })
@@ -122,9 +144,13 @@ export const useLockStore = create<LockState>((set, get) => ({
     // IndexedDB leaves three copies of what was just destroyed sitting in
     // memory, and every one of them puts it back:
     //   • bookStore still holds the contacts, so the app would render the list
-    //     it has just deleted, and the next edit would write it all back.
-    //   • todoStore still holds the to-do list, the same way.
-    // Resetting each store by hand would work until somebody adds a third,
+    //     it has just deleted — and App.tsx's autosave would push that list
+    //     back into the vault a couple of seconds later.
+    //   • syncStore still holds the derived vault CryptoKey, which is the one
+    //     secret this device is not supposed to have any more.
+    //   • the autosave timer is already scheduled and does not care that the
+    //     store beneath it changed.
+    // Resetting each store by hand would work until somebody adds a fourth,
     // so this does the one thing that cannot be forgotten. It lives here
     // rather than at the call site for the same reason.
     //

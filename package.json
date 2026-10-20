@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "license": "AGPL-3.0-or-later",
-  "description": "Universal BlackBook — a private address book. Custom categories, how often you want to be in touch, and notes. No account, nothing sent anywhere; a backup file (optionally password-protected) moves your book between devices.",
+  "description": "Universal BlackBook — a private address book. Custom categories, how often you want to be in touch, and notes. No account needed: sync with your Universal ID across devices (optional, end-to-end encrypted), or a backup file.",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

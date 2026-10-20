@@ -11,8 +11,10 @@ import { btnDanger, btnGhost, btnPrimary, checkboxCls, inputCls, label } from '.
 /**
  * Save a backup / Open a backup — the whole book as one file (lib/backup.ts).
  *
- * This is what replaced the online vault and its sign-in (2026-10-20): the way
- * to keep a second copy, and the way to move a book to another device. It sits
+ * Added 2026-10-20 beside the online vault (Online backup, CloudPanel): the way
+ * to keep a second copy, or move a book to another device, without an account.
+ * Signed in with sync on, whatever a backup brings in is pushed like any other
+ * edit. It sits
  * above the CSV section because it is the complete copy; the CSV is the way
  * out to other address books and leaves the to-dos behind.
  *

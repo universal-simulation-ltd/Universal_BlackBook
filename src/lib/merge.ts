@@ -1,34 +1,36 @@
-// Merging a backup file into the book on this device — "Add to what's here"
-// in Import & export (lib/backup.ts). It was written for the online vault's
-// sign-in merge, which went on 2026-10-20; the rules carried over unchanged.
+// Merging this device's book into the online copy — what happens when somebody
+// signs in on a device that already has contacts of its own. `mergeBooks` also
+// backs "Add to what's here" when a backup file is opened (lib/backup.ts), with
+// the book already on this device as the base (`online`) and the file's as `local`.
 //
-// ⚠️ The book ALREADY HERE is the base (the `online` argument, named for its
-// first job), and the file's book is folded into it (`local`). Everything here
-// stays; the only question is which of the file's contacts it does not have.
+// ⚠️ The ONLINE copy is the base, and this device's book is folded into it.
+// Signing in is "bring my book here", so everything already online stays, and
+// the only question is which of this device's contacts it does not have yet.
 //
-// A person counts as already here by either of two tests:
+// A person counts as already there by either of two tests:
 //
-//   1. **The same id.** The contact was in this book when the backup was
-//      saved, or came from it. Whichever copy was edited last wins.
+//   1. **The same id.** The contact went up from this device, or came down to
+//      it, at some point. Whichever copy was edited last wins.
 //   2. **The same person** by `identityKeys` — name + email, or name + phone.
-//      The same friend typed in on two devices has two ids and is still one
-//      person. The copy already here is kept.
+//      The same friend typed in on two devices before either was signed in has
+//      two ids and is still one person. The online copy is kept.
 //
-// Tags are matched by id and then by name, so "Work" in both becomes one tag
-// and the file's contacts are re-pointed at it.
+// Tags are matched by id and then by name, so "Work" made on both devices
+// becomes one tag and this device's contacts are re-pointed at it.
 
 import { identityKeys } from './deviceContacts'
 import { fold } from './filter'
 import type { Contact, Tag } from './types'
+import type { Todo } from './todos'
 
 export interface MergedBook {
   contacts: Contact[]
   tags: Tag[]
-  /** Contacts from the file that were not here at all. */
+  /** This device's contacts that were not online at all. */
   added: number
-  /** Contacts in both, where the file's copy was the newer edit. */
+  /** Contacts in both, where this device's copy was the newer edit. */
   updated: number
-  /** File tag id → the tag of the same name already here that it was folded into. */
+  /** Local tag id → the online tag of the same name it was folded into. */
   remap: Map<string, string>
 }
 
@@ -79,4 +81,64 @@ export function mergeBooks(
   }
 
   return { contacts, tags, added, updated, remap }
+}
+
+/**
+ * How many of this device's contacts and to-dos the online copy does not have:
+ * added or edited here after `since` (when this device last matched the online
+ * copy), and either missing online or older there.
+ *
+ * Non-zero means taking the online copy as it is would LOSE them, so signing
+ * in has to ask rather than adopt. The case it exists for (owner's report,
+ * 2026-09-29): signed out without BlackBook seeing it (another suite app on
+ * the same site, or an expired session), so the remembered key stayed; a
+ * contact added while signed out; then signing back in, after another device
+ * had saved, silently replaced the book and the contact was gone.
+ *
+ * Deliberately blind to deletions. Something deleted here and still online
+ * comes back after a merge, which is recoverable. The reverse, a person
+ * deleted on another device counted here as "unsynced", would ask a question
+ * on every sign-in behind the server, so edits since `since` are all it looks at.
+ *
+ * `online.todos` absent means the blob says nothing about to-dos, and adopting
+ * keeps this device's list (see `adopt`), so none of them can be lost.
+ */
+export function unsyncedWork(
+  local: { contacts: Contact[]; todos: Todo[] },
+  online: { contacts?: Contact[]; todos?: Todo[] },
+  since: number,
+): number {
+  const count = <T extends { id: string; updatedAt: number }>(mine: T[], theirs: T[]) => {
+    const there = new Map(theirs.map((x) => [x.id, x.updatedAt]))
+    return mine.filter((x) => {
+      if (x.updatedAt <= since) return false
+      const at = there.get(x.id)
+      return at === undefined || at < x.updatedAt
+    }).length
+  }
+  return (
+    count(local.contacts, Array.isArray(online.contacts) ? online.contacts : []) +
+    (Array.isArray(online.todos) ? count(local.todos, online.todos) : 0)
+  )
+}
+
+/**
+ * Is everything in this book already in the online copy? The test for taking
+ * the book off the device at sign-out (James, 2026-10-11) — a wipe is only
+ * safe when signing back in brings every entry back.
+ *
+ * False with no vault, or one nothing has reached yet (`rev` 0), and false if
+ * any contact or to-do was added or edited after this device last matched the
+ * online copy. Blind to deletions and tags, like `unsyncedWork`: the caller
+ * adds the in-memory "edited since the last save" flag, which catches those
+ * while the app is open, and a deletion that comes back is recoverable.
+ */
+export function allOnline(
+  meta: { rev: number; pushedAt: number; syncedAt?: number } | null,
+  local: { contacts: Contact[]; todos: Todo[] },
+): boolean {
+  if (!meta || meta.rev <= 0) return false
+  const since = meta.syncedAt ?? meta.pushedAt
+  if (!since) return false
+  return local.contacts.every((c) => c.updatedAt <= since) && local.todos.every((t) => t.updatedAt <= since)
 }

@@ -29,7 +29,7 @@
 // It is stored ALONGSIDE the digest so the number can be raised later without
 // locking out every PIN set before the change.
 
-import { fromBase64, toBase64 } from './base64'
+import { fromBase64, toBase64 } from './vault'
 
 /** Bumped only for a change that makes an existing record unreadable. */
 export const LOCK_VERSION = 1

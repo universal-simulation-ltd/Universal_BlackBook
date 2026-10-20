@@ -1,8 +1,8 @@
 // IndexedDB persistence — three object stores, no dependency.
 //
-// This is the ONLY copy of a user's book (a backup file the user saves from
-// Import & export is the only other, and only if they made one). A bug here is
-// not a sync conflict, it is somebody's address book gone. Two rules follow from that and are worth keeping:
+// This is the ONLY copy of a user's book (the encrypted vault is an optional
+// backup, not the primary, and so is a backup file saved from Import & export). There is no export-on-write, so a bug here is not
+// a sync conflict, it is somebody's address book gone. Two rules follow from that and are worth keeping:
 //
 //   • `onupgradeneeded` only ever ADDS stores. Never delete or rebuild one on
 //     a version bump — a partially-shipped migration would take the data with
@@ -28,8 +28,8 @@ const CONTACTS = 'contacts'
 // is a wire format. It is not worth a single byte of risk.
 const TAGS = 'categories'
 /**
- * Out-of-line store: the PIN lock, the saved view, the to-do list and the seed
- * marker (and, until 2026-10-20, the online vault's key and bookkeeping).
+ * Out-of-line store: the remembered vault key, the sync bookkeeping, and the
+ * PIN lock.
  *
  * ⚠️ The lock record lives HERE, in an existing store, rather than in one of
  * its own — because a new object store means a DB_VERSION bump, and this
@@ -207,26 +207,73 @@ export async function replaceAll(contacts: Contact[], tags: Tag[]): Promise<void
   }
 }
 
-// ─────────────────────────────────────────────────────── the 'sync' store
+// ─────────────────────────────────────────────────────── the sync store
 //
-// Fixed keys, all scoped to the browser profile they live in:
+// Two fixed keys, both scoped to the browser profile they live in:
 //
-//   'key'   (gone) the online vault's remembered CryptoKey, and
-//   'meta'  (gone) its sync bookkeeping. Online sync was removed on 2026-10-20
-//           (no sign-in; a backup file instead). `forgetOldSync` deletes both
-//           from any device that still has them.
+//   'key'   the remembered vault CryptoKey. IndexedDB stores CryptoKey objects
+//           natively via the structured clone algorithm — the key is put in as
+//           an object, not as bytes, and because it was derived with
+//           `extractable: false` (lib/vault.ts) its material still cannot be
+//           read back out. This is the whole reason "remember this device"
+//           can be offered without writing a passphrase to disk.
+//   'meta'  what the last sync saw, so the next one can detect that the
+//           server moved underneath us.
 //   'lock'  the PIN lock's salt and digest (lib/lock.ts). Device-local, and
-//           NOT part of a backup file: a PIN is the door on this device.
-//   'view'  the filters and order this app opens on. A preference about this
-//           device, so a backup file carries it but only "Replace everything"
-//           brings it back; "Add to what's here" leaves this device's own.
+//           NOT part of the vault — it is never uploaded, and `forgetVault`
+//           below leaves it alone: signing out of a Universal ID has nothing
+//           to do with the door on the front of this device's app.
+//   'view'  the filters and order this app opens on. Device-local for the same
+//           reason the lock is: which tags you want in front of you on the
+//           phone in your pocket is not a fact about your address book, and
+//           syncing it would mean a laptop deciding how the phone opens.
 //   'todos' the To-do tab's whole list, as ONE array. Here rather than in an
 //           object store of its own for the reason the lock is: a new store is
 //           a DB_VERSION bump. A to-do list is small enough that rewriting it
-//           whole on every tick costs nothing. It is data, not a preference,
-//           and always part of a backup file.
+//           whole on every tick costs nothing. Unlike 'view' and 'lock' it IS
+//           part of the vault — it is data, not a preference.
 //   'seed'  whether this device has ever been given its two starting tags. A
 //           marker and not a count, so deleting them is a decision that sticks.
+
+export interface SyncMeta {
+  /** The Universal ID this vault belongs to. */
+  userId: string
+  /** Server revision this device last successfully read or wrote. */
+  rev: number
+  /** PBKDF2 parameters the vault was written with. */
+  salt: string
+  iterations: number
+  /** Epoch ms of the last successful push. */
+  pushedAt: number
+  /**
+   * Epoch ms this device's book last MATCHED the online copy: after a push, an
+   * adopt or a merge. Anything edited here since then is not online yet, and
+   * signing in asks before replacing it (`unsyncedWork`).
+   *
+   * 0 while an unlock's merge question is unanswered: the two books are
+   * unrelated until it is, so every local contact counts. Absent on meta
+   * written before 2026-09-29, where `pushedAt` stands in.
+   */
+  syncedAt?: number
+}
+
+export async function loadVaultKey(): Promise<CryptoKey | null> {
+  const key = await tx<CryptoKey | undefined>(SYNC, 'readonly', (s) => s.get('key') as IDBRequest<CryptoKey | undefined>)
+  return key ?? null
+}
+
+export async function saveVaultKey(key: CryptoKey): Promise<void> {
+  await tx(SYNC, 'readwrite', (s) => s.put(key, 'key'))
+}
+
+export async function loadSyncMeta(): Promise<SyncMeta | null> {
+  const meta = await tx<SyncMeta | undefined>(SYNC, 'readonly', (s) => s.get('meta') as IDBRequest<SyncMeta | undefined>)
+  return meta ?? null
+}
+
+export async function saveSyncMeta(meta: SyncMeta): Promise<void> {
+  await tx(SYNC, 'readwrite', (s) => s.put(meta, 'meta'))
+}
 
 // ── the view the app opens on ────────────────────────────────────────────────
 
@@ -324,8 +371,14 @@ export async function clearLock(): Promise<void> {
  * for this can destroy the book but can never read it, and the owner gets a
  * working app back instead of a phone they have to reinstall.
  *
- * The online vault's old key and bookkeeping go too, on a device that still
- * has them (see `forgetOldSync`).
+ * ⚠️ **The remembered vault key is the part that is easy to miss, and leaving
+ * it would undo everything above.** It is a non-extractable CryptoKey sitting
+ * in this same store; a reset that wiped the contacts and left it behind would
+ * hand the next screen a device that pulls the whole book back down from the
+ * vault on its own, with no passphrase asked for. So the key and the sync
+ * bookkeeping go too, and getting the book back afterwards costs a Universal
+ * ID sign-in AND the vault passphrase — neither of which this device now
+ * holds.
  *
  * Each store is cleared in its own transaction. There is no atomicity to
  * protect here: every partial outcome is strictly safer than the state before
@@ -359,11 +412,26 @@ export async function wipeDevice(): Promise<void> {
 }
 
 /**
- * Drop what the online vault (removed 2026-10-20) left on this device: its
- * remembered key and its bookkeeping. Never the contacts. Run once per launch
- * by bookStore.init; deleting a key that is not there costs nothing.
+ * Forget everything about the online copy on THIS device — the remembered key
+ * and the bookkeeping, never the contacts.
+ *
+ * Called on "forget this device" and on sign-out. Sign-out matters: a shared
+ * machine must not leave a key behind that decrypts the next person's view of
+ * an account they have just signed into.
  */
-export async function forgetOldSync(): Promise<void> {
+/**
+ * Drop only the remembered key, keeping `meta`.
+ *
+ * For a device whose key has gone stale because the passphrase was changed
+ * somewhere else. The vault is still there and still this account's, so the
+ * bookkeeping stays — `hasOnlineCopy` reads it to decide which warning the PIN
+ * reset shows, and losing it would make that warning the wrong one.
+ */
+export async function forgetVaultKey(): Promise<void> {
+  await tx(SYNC, 'readwrite', (s) => s.delete('key'))
+}
+
+export async function forgetVault(): Promise<void> {
   await tx(SYNC, 'readwrite', (s) => s.delete('key'))
   await tx(SYNC, 'readwrite', (s) => s.delete('meta'))
 }

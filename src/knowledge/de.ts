@@ -35,13 +35,13 @@ Tabellenprogramme formatieren manchmal um, was sie öffnen, und machen aus einem
     title: 'Wo Ihr Adressbuch gespeichert ist',
     summary: 'Auf diesem Gerät, ohne Konto – und was das für Sie bedeutet.',
     group: 'Grundlagen',
-    body: `BlackBook speichert Ihr Adressbuch auf dem Gerät, das Sie gerade verwenden. Im Browser liegt es im Speicher, den dieser Browser für diese Website vorsieht; in der App auf dem Telefon liegt es im eigenen Speicher der App. Nichts über Ihre Kontakte wird jemals irgendwohin gesendet.
+    body: `BlackBook speichert Ihr Adressbuch auf dem Gerät, das Sie gerade verwenden. Im Browser liegt es im Speicher, den dieser Browser für diese Website vorsieht; in der App auf dem Telefon liegt es im eigenen Speicher der App. Nichts über Ihre Kontakte wird irgendwohin gesendet, es sei denn, Sie schalten die Online-Sicherung ein.
 
-Es gibt kein Konto und nichts, wobei Sie sich anmelden müssten.
+Sie brauchen kein Konto, um BlackBook zu nutzen. Alles funktioniert auch ohne Anmeldung.
 
 ## Was das praktisch bedeutet
 
-- **Jedes Gerät hat sein eigenes Adressbuch.** Kontakte, die Sie am Laptop hinzufügen, erscheinen nicht von selbst auf dem Telefon. Mit einer Sicherungsdatei bringen Sie sie hinüber.
+- **Jedes Gerät hat sein eigenes Adressbuch.** Kontakte, die Sie am Laptop hinzufügen, erscheinen nicht von selbst auf dem Telefon. Die Online-Sicherung verbindet sie. Mit einer Sicherungsdatei bringen Sie sie hinüber.
 - **Browserdaten löschen kann das Adressbuch löschen.** Wenn Sie Website-Daten oder den Verlauf dieser Website löschen, ein privates Fenster verwenden oder die App deinstallieren, wird das dort gespeicherte Adressbuch entfernt.
 - **Die Kontakte Ihres Geräts sind getrennt.** BlackBook fügt dem eingebauten Adressbuch Ihres Telefons nichts hinzu, ändert es nicht und synchronisiert sich nicht damit.
 
@@ -49,8 +49,9 @@ Es gibt kein Konto und nichts, wobei Sie sich anmelden müssten.
 
 Da das Adressbuch auf Ihrem Gerät womöglich die einzige Kopie ist, lohnt sich eine zweite:
 
-1. Speichern Sie ab und zu eine Sicherungsdatei („Erweitert“, dann „Sicherung, Import & Export“) und bewahren Sie sie sicher auf. Sie enthält alles, auch Ihre Aufgaben, und kann ein Passwort haben.
-2. Oder exportieren Sie eine CSV-Datei. Jedes Tabellenprogramm und jedes Adressbuch kann sie lesen, aber Ihre Aufgaben fehlen darin.
+1. Melden Sie sich mit Ihrer Universal ID an und schalten Sie die verschlüsselte Online-Sicherung ein.
+2. Speichern Sie ab und zu eine Sicherungsdatei („Erweitert“, dann „Sicherung, Import & Export“) und bewahren Sie sie sicher auf. Sie enthält alles, auch Ihre Aufgaben, und kann ein Passwort haben.
+3. Oder exportieren Sie eine CSV-Datei. Jedes Tabellenprogramm und jedes Adressbuch kann sie lesen, aber Ihre Aufgaben fehlen darin.
 
 ## Diese App anpassen
 
@@ -124,7 +125,7 @@ Beim Löschen wird immer zuerst nachgefragt und genannt, wer gelöscht wird. Auf
 - Niemand kann die App auf diesem Gerät ohne die PIN öffnen.
 - Nach fünf falschen Versuchen hintereinander lässt Sie das Tastenfeld warten, bevor Sie es erneut versuchen können, und die Wartezeit verdoppelt sich jedes Mal.
 - Ihre PIN selbst wird nie gespeichert. BlackBook bewahrt nur einen unkenntlich gemachten Fingerabdruck davon auf, dessen Prüfung absichtlich langsam ist. Das macht Raten aufwendig.
-- Die Sperre gehört nur zu diesem Gerät und kommt nie in eine Sicherungsdatei.
+- Die Sperre gehört nur zu diesem Gerät und wird nie hochgeladen.
 
 ## Was sie nicht tut
 
@@ -134,7 +135,38 @@ Die PIN sperrt die App, nicht die Daten. Ihr Adressbuch liegt weiterhin genau so
 
 Niemand kann Ihnen Ihre PIN nennen oder die Sperre für Sie aufheben. Der einzige Weg an einer vergessenen PIN vorbei ist die Schaltfläche „Forgotten your PIN?“ auf dem Sperrbildschirm. Sie **löscht das Adressbuch auf diesem Gerät** und beginnt neu, ohne Sperre. Genau deshalb ist sie sicher: Ein Fremder könnte die App leeren, aber nie lesen.
 
-Wenn Sie eine Sicherungsdatei haben, ist eine vergessene PIN nur lästig: Öffnen Sie nach dem Zurücksetzen die Sicherung, und Ihr Adressbuch ist wieder da. Ohne Sicherung gibt es nichts wiederherzustellen. Speichern Sie also eine Sicherung, bevor Sie eine PIN festlegen.`,
+Wenn Sie die verschlüsselte Online-Sicherung nutzen, ist eine vergessene PIN nur lästig: Melden Sie sich erneut an, geben Sie Ihre Passphrase für die Sicherung ein, und Ihr Adressbuch ist wieder da. Wenn Sie eine Sicherungsdatei haben, ist eine vergessene PIN nur lästig: Öffnen Sie nach dem Zurücksetzen die Sicherung, und Ihr Adressbuch ist wieder da. Ohne Sicherung gibt es nichts wiederherzustellen. Speichern Sie also eine Sicherung, bevor Sie eine PIN festlegen.`,
+  },
+  {
+    id: 'encrypted-online-backup',
+    title: 'Die verschlüsselte Online-Sicherung',
+    summary: 'Wie Ihr Adressbuch verschlüsselt wird, bevor es das Gerät verlässt, und warum niemand sonst es lesen kann.',
+    group: 'Datenschutz und Sicherheit',
+    body: `Die Online-Sicherung ist freiwillig und bleibt aus, bis Sie sich mit Ihrer Universal ID anmelden. Ist sie eingeschaltet, speichert BlackBook eine Kopie Ihres Adressbuchs auf den Servern von UNI·SIM. So übersteht es den Verlust eines Geräts und lässt sich auf einem anderen öffnen.
+
+## Verschlüsselt, bevor es losgeht
+
+Ihr Adressbuch wird auf Ihrem Gerät verschlüsselt, bevor irgendetwas gesendet wird. Der Server empfängt und speichert nur unlesbare Daten, für die er keinen Schlüssel hat. UNI·SIM kann Ihre Kontakte, Notizen, Schlagwörter und Aufgaben daher nicht lesen.
+
+- Verschlüsselt wird mit **AES-GCM und einem 256-Bit-Schlüssel**, einem weit verbreiteten Standard.
+- Der Schlüssel wird aus einer **Passphrase, die Sie selbst wählen**, mit PBKDF2 und SHA-256 in 600.000 Durchläufen abgeleitet. Das macht jeden Rateversuch langsam und teuer.
+- Ihre Passphrase verlässt nie Ihr Gerät. Sie ist **nicht** das Passwort Ihrer Universal ID, und eine Änderung dieses Passworts wirkt sich nicht auf sie aus.
+
+Das ist wichtig, weil sich die Menschen in Ihrem Adressbuch nirgends angemeldet haben. Ihre Namen, Adressen und Ihre privaten Notizen über sie verdienen dieselbe Sorgfalt wie Ihre eigenen Daten.
+
+## Keine Wiederherstellung
+
+UNI·SIM besitzt keine Kopie Ihres Schlüssels und kann Ihre Passphrase nicht zurücksetzen. Wenn Sie sie vergessen, kann niemand die Online-Kopie öffnen. Das Adressbuch auf Ihrem Gerät ist davon nicht betroffen – deshalb ist die Online-Kopie eine Sicherung und nicht die Hauptkopie.
+
+## Ein Gerät merken
+
+Sie können ein Gerät den Schlüssel merken lassen, damit Sie die Passphrase nicht jedes Mal eingeben müssen. Der Schlüssel wird so gespeichert, dass die App ihn verwenden, aber nicht auslesen kann. Abmelden oder „Forget this device“ entfernt ihn.
+
+## Ändern oder löschen
+
+Zum Ändern der Passphrase brauchen Sie die aktuelle, auch auf einem Gerät, das sie sich merkt. Die Sicherung wird dann in einem Schritt neu verschlüsselt. Wenn Sie die Sicherung ausschalten, wird die Online-Kopie vollständig gelöscht und das Adressbuch auf Ihrem Gerät bleibt, wie es ist. Wenn Sie Ihre Universal ID löschen, wird die Online-Kopie mitgelöscht.
+
+Die Sicherung ist auf etwa 2 MB verschlüsselte Daten begrenzt, das sind viele Tausend Kontakte. Meist sind sehr lange Notizen der Grund, wenn ein Adressbuch diese Grenze erreicht.`,
   },
   {
     id: 'backup-file',
@@ -174,25 +206,37 @@ BlackBook prüft jedes Feld einer Datei, bevor es sie verwendet. Eine beschädig
   {
     id: 'using-two-devices',
     title: 'BlackBook auf mehreren Geräten nutzen',
-    summary: 'Ihr Adressbuch mit einer Sicherungsdatei von einem Gerät auf ein anderes bringen.',
+    summary: 'Zusammenführen bei der Anmeldung, automatisches Speichern und was passiert, wenn zwei Geräte sich widersprechen.',
     group: 'Datenschutz und Sicherheit',
-    body: `BlackBook hat kein Konto und keine Online-Kopie. Jedes Gerät hat also sein eigenes Adressbuch, und nichts verbindet sie hinter Ihrem Rücken. Um Ihr Adressbuch auf ein anderes Gerät zu bringen, verwenden Sie eine Sicherungsdatei.
+    body: `Mit eingeschalteter Online-Sicherung können Sie dasselbe Adressbuch auf Telefon, Tablet und Computer öffnen. Jedes Gerät hat seine eigene Kopie, und die Online-Sicherung hält sie auf demselben Stand.
 
-## Ihr Adressbuch umziehen
+## Auf einem neuen Gerät anmelden
+
+1. Melden Sie sich mit Ihrer Universal ID an.
+2. Geben Sie Ihre Passphrase für die Sicherung ein.
+3. Hat dieses Gerät schon eigene Kontakte, fragt BlackBook, ob sie zusammengeführt werden sollen oder ob nur die Online-Kopie verwendet werden soll.
+
+Beim Zusammenführen ist die Online-Kopie die Grundlage, und die Kontakte dieses Geräts werden ergänzt. Wer schon vorhanden ist – als dieselbe Karte oder mit demselben Namen und derselben E-Mail-Adresse oder Telefonnummer –, wird nicht doppelt hinzugefügt. Schlagwörter mit gleichem Namen werden zu einem.
+
+## Speichern
+
+Solange die Sicherung eingeschaltet ist, wird jede Änderung wenige Sekunden danach verschlüsselt und online gespeichert. Der Synchronisierungshinweis neben dem Titel zeigt, dass gerade gespeichert wird. Wenn Sie BlackBook auf einem anderen Gerät öffnen, holt es die neuere Kopie.
+
+## Wenn zwei Geräte sich widersprechen
+
+Die Online-Kopie wird als ganzes Adressbuch gespeichert. Haben zwei Geräte das Adressbuch seit dem letzten Speichern beide geändert, entscheidet BlackBook nicht stillschweigend. Es hält an und fragt, welche Version bleiben soll: die neuere Online-Kopie oder die dieses Geräts. Die andere wird ersetzt. Exportieren Sie im Zweifel vorher eine CSV-Datei.
+
+## Nach einer Änderung der Passphrase
+
+Wenn Sie die Passphrase auf einem Gerät ändern, hören Ihre anderen Geräte auf zu speichern und fragen nach der neuen. Auf ihnen geht nichts verloren, und beim Entsperren bieten sie an, ihre Kontakte wieder zusammenzuführen. Ein Gerät mit dem alten Schlüssel kann die Änderung nicht überschreiben.
+
+## Ihr Adressbuch ohne Konto umziehen
 
 1. Speichern Sie auf dem Gerät, auf dem Ihr Adressbuch ist, eine Sicherungsdatei. Ein Passwort ist sinnvoll, wenn die Datei per E-Mail oder über einen Cloud-Speicher reist.
 2. Bringen Sie die Datei auf das andere Gerät, zum Beispiel per AirDrop, Cloud-Speicher oder E-Mail.
 3. Öffnen Sie auf dem anderen Gerät BlackBook, wählen Sie „Sicherung öffnen“ und dann die Datei.
 
-Ist das andere Gerät neu, wählen Sie „Alles ersetzen“. Hat es schon eigene Personen, wählen Sie „Zum Vorhandenen hinzufügen“, und die beiden Adressbücher werden zusammengeführt.
-
-## Zwei Geräte auf demselben Stand halten
-
-Es gibt keine automatische Synchronisierung. Wenn Sie auf beiden Geräten Personen hinzufügen, speichern Sie auf dem einen eine Sicherung und öffnen Sie sie auf dem anderen mit „Zum Vorhandenen hinzufügen“: Niemand wird doppelt hinzugefügt, und die zuletzt bearbeitete Fassung gewinnt. Zusammenführen fügt immer nur hinzu. Jemand, den Sie auf einem Gerät gelöscht haben, kann also aus einer Sicherung zurückkommen, in der er noch steht.
-
-## Warum es keine Anmeldung gibt
-
-Ein Adressbuch enthält die Namen und Nummern anderer Menschen und Ihre Notizen über sie. Wenn es nur auf Ihren eigenen Geräten liegt und in einer Datei reist, über die Sie bestimmen, liegt nirgends eine Kopie davon auf einem fremden Server.`,
+Ist das andere Gerät neu, wählen Sie „Alles ersetzen“. Hat es schon eigene Personen, wählen Sie „Zum Vorhandenen hinzufügen“, und die beiden Adressbücher werden zusammengeführt.`,
   },
 ]
 

@@ -35,13 +35,13 @@ Programas de planilha às vezes mudam o formato do que abrem, transformando um a
     title: 'Onde sua agenda fica guardada',
     summary: 'Neste aparelho, sem precisar de conta, e o que isso significa para você.',
     group: 'O básico',
-    body: `O BlackBook guarda sua agenda no aparelho que você está usando. No navegador, ela fica no armazenamento que esse navegador reserva para este site; no aplicativo do celular, fica no armazenamento do próprio aplicativo. Nada sobre seus contatos é enviado a lugar nenhum, nunca.
+    body: `O BlackBook guarda sua agenda no aparelho que você está usando. No navegador, ela fica no armazenamento que esse navegador reserva para este site; no aplicativo do celular, fica no armazenamento do próprio aplicativo. Nada sobre seus contatos é enviado a lugar nenhum, a menos que você ative o backup on-line.
 
-Não há conta nem nada em que fazer login.
+Você não precisa de conta para usar o BlackBook. Tudo funciona sem fazer login.
 
 ## O que isso significa na prática
 
-- **Cada aparelho tem sua própria agenda.** Contatos adicionados no notebook não aparecem sozinhos no celular. Um arquivo de backup é o jeito de levá-los de um para o outro.
+- **Cada aparelho tem sua própria agenda.** Contatos adicionados no notebook não aparecem sozinhos no celular. É o backup on-line que junta tudo. Um arquivo de backup é o jeito de levá-los de um para o outro.
 - **Limpar o navegador pode apagar a agenda.** Apagar os dados ou o histórico deste site, usar uma janela anônima ou desinstalar o aplicativo remove a agenda guardada ali.
 - **Os contatos do aparelho são separados.** O BlackBook não adiciona nada, não altera e não sincroniza com a agenda embutida do seu celular.
 
@@ -49,8 +49,9 @@ Não há conta nem nada em que fazer login.
 
 Como a agenda do seu aparelho pode ser a única cópia, vale a pena ter outra:
 
-1. Salve um arquivo de backup de vez em quando (Avançado, depois Backup, importação e exportação) e guarde em um lugar seguro. Ele tem tudo, inclusive as tarefas, e pode ter senha.
-2. Ou exporte um arquivo CSV, que qualquer planilha ou agenda consegue ler, mas que deixa as tarefas de fora.
+1. Faça login com seu Universal ID e ative o backup on-line criptografado.
+2. Salve um arquivo de backup de vez em quando (Avançado, depois Backup, importação e exportação) e guarde em um lugar seguro. Ele tem tudo, inclusive as tarefas, e pode ter senha.
+3. Ou exporte um arquivo CSV, que qualquer planilha ou agenda consegue ler, mas que deixa as tarefas de fora.
 
 ## Ajustar este app
 
@@ -124,7 +125,7 @@ Apagar sempre pede confirmação e diz quem será apagado. No celular, deslizar 
 - Impede que qualquer pessoa abra o aplicativo neste aparelho sem o PIN.
 - Depois de cinco tentativas erradas seguidas, o teclado faz você esperar antes de tentar de novo, e a espera dobra a cada vez.
 - O PIN em si nunca é guardado. O BlackBook guarda apenas uma impressão embaralhada dele, que é propositalmente lenta de conferir, o que torna caro tentar adivinhar.
-- O bloqueio pertence só a este aparelho e nunca entra em um arquivo de backup.
+- O bloqueio pertence só a este aparelho e nunca é enviado para a internet.
 
 ## O que ele não faz
 
@@ -134,7 +135,38 @@ O PIN bloqueia o aplicativo, não os dados. Sua agenda continua no armazenamento
 
 Ninguém pode dizer seu PIN nem tirar o bloqueio por você. A única forma de passar por um PIN esquecido é o botão "Forgotten your PIN?" na tela de bloqueio, que **apaga a agenda deste aparelho** e recomeça do zero, sem bloqueio. É isso que torna seguro oferecê-lo: um estranho poderia esvaziar o aplicativo, mas nunca lê-lo.
 
-Se você tem um arquivo de backup, esquecer o PIN é só um incômodo: depois de recomeçar, abra o backup e sua agenda volta. Sem ele, não há de onde restaurar, então salve um backup antes de definir um PIN.`,
+Se você usa o backup on-line criptografado, esquecer o PIN é só um incômodo: faça login de novo, digite a frase secreta do backup e sua agenda volta. Se você tem um arquivo de backup, esquecer o PIN é só um incômodo: depois de recomeçar, abra o backup e sua agenda volta. Sem ele, não há de onde restaurar, então salve um backup antes de definir um PIN.`,
+  },
+  {
+    id: 'encrypted-online-backup',
+    title: 'O backup on-line criptografado',
+    summary: 'Como sua agenda é criptografada antes de sair do aparelho e por que ninguém mais consegue lê-la.',
+    group: 'Privacidade e segurança',
+    body: `O backup on-line é opcional e fica desligado até você fazer login com seu Universal ID. Depois de ativado, o BlackBook guarda uma cópia da sua agenda nos servidores da UNI·SIM, para que ela sobreviva à perda de um aparelho e possa ser aberta em outro.
+
+## Criptografado antes de sair
+
+Sua agenda é criptografada no seu aparelho antes de qualquer envio. O servidor recebe e guarda apenas dados embaralhados para os quais não tem chave, então a UNI·SIM não consegue ler seus contatos, anotações, etiquetas ou tarefas.
+
+- A criptografia é **AES-GCM com chave de 256 bits**, um padrão amplamente usado.
+- A chave é gerada a partir de uma **frase secreta escolhida por você**, usando PBKDF2 com SHA-256 e 600.000 rodadas, o que torna cada tentativa de adivinhar a frase lenta e cara.
+- Sua frase secreta nunca sai do seu aparelho. Ela **não** é a senha do seu Universal ID, e mudar essa senha não a afeta.
+
+Isso importa porque as pessoas da sua agenda não se cadastraram em nada. Os nomes, os endereços e suas anotações particulares sobre elas merecem o mesmo cuidado que os seus próprios dados.
+
+## Não há recuperação
+
+A UNI·SIM não guarda nenhuma cópia da sua chave e não tem como redefinir sua frase secreta. Se você esquecê-la, ninguém consegue abrir a cópia on-line. A agenda no seu aparelho não é afetada, e é por isso que a cópia on-line é um backup, e não a cópia principal.
+
+## Lembrar um aparelho
+
+Você pode pedir que um aparelho lembre a chave, para não precisar digitar a frase secreta toda vez. A chave é guardada de um jeito que o aplicativo consegue usar, mas não consegue extrair. Sair da conta, ou escolher esquecer este aparelho, apaga a chave.
+
+## Mudar ou apagar
+
+Para mudar a frase secreta é preciso informar a atual, mesmo em um aparelho que a lembra, e o backup é criptografado de novo em uma única etapa. Desligar o backup apaga completamente a cópia on-line e deixa a agenda do seu aparelho como está. Excluir seu Universal ID exclui junto a cópia on-line.
+
+O backup tem um limite de cerca de 2 MB de dados criptografados, o que equivale a muitos milhares de contatos. Anotações muito longas costumam ser o motivo quando uma agenda chega a esse limite.`,
   },
   {
     id: 'backup-file',
@@ -174,25 +206,37 @@ O BlackBook confere cada campo de um arquivo antes de usá-lo, então um arquivo
   {
     id: 'using-two-devices',
     title: 'Usando o BlackBook em mais de um aparelho',
-    summary: 'Levando sua agenda de um aparelho para outro com um arquivo de backup.',
+    summary: 'Mesclar ao fazer login, salvamento automático e o que acontece quando dois aparelhos discordam.',
     group: 'Privacidade e segurança',
-    body: `O BlackBook não tem conta nem cópia on-line, então cada aparelho guarda sua própria agenda e nada as junta sem você saber. Para levar sua agenda para outro aparelho, use um arquivo de backup.
+    body: `Com o backup on-line ativado, você pode abrir a mesma agenda no celular, no tablet e no computador. Cada aparelho guarda sua própria cópia, e o backup on-line mantém todas em dia.
 
-## Levando sua agenda
+## Fazendo login em um aparelho novo
+
+1. Faça login com seu Universal ID.
+2. Digite a frase secreta do backup.
+3. Se este aparelho já tiver contatos próprios, o BlackBook pergunta se você quer mesclá-los ou usar apenas a cópia on-line.
+
+Ao mesclar, a cópia on-line é o ponto de partida e os contatos deste aparelho são adicionados a ela. Quem já está lá, reconhecido como o mesmo cartão ou pelo mesmo nome com o mesmo e-mail ou telefone, não é adicionado duas vezes. Etiquetas com o mesmo nome viram uma só.
+
+## Salvamento
+
+Enquanto o backup está ativo, cada alteração é criptografada e salva on-line poucos segundos depois. O aviso de sincronização ao lado do título mostra que um salvamento está a caminho. Quando você abre o BlackBook em outro aparelho, ele baixa a cópia mais recente.
+
+## Quando dois aparelhos discordam
+
+A cópia on-line é salva como uma agenda inteira. Se dois aparelhos alteraram a agenda desde o último salvamento, o BlackBook não escolhe em silêncio. Ele para e pergunta qual manter: a cópia on-line mais recente ou a versão deste aparelho. A que você não escolher é substituída, então exporte um arquivo CSV antes se estiver em dúvida.
+
+## Depois de mudar a frase secreta
+
+Quando você muda a frase secreta em um aparelho, os outros param de salvar e pedem a nova. Nada se perde neles, e ao desbloqueá-los eles oferecem mesclar de novo seus contatos. Um aparelho que ainda tenha a chave antiga não consegue sobrescrever a mudança.
+
+## Levando sua agenda sem conta
 
 1. No aparelho que tem sua agenda, salve um arquivo de backup. Uma senha é uma boa ideia se o arquivo for passar por e-mail ou por um serviço de nuvem.
 2. Coloque o arquivo no outro aparelho, por exemplo com AirDrop, um serviço de nuvem ou e-mail.
 3. No outro aparelho, abra o BlackBook, escolha Abrir um backup e selecione o arquivo.
 
-Se o outro aparelho for novo, escolha Substituir tudo. Se ele já tiver pessoas próprias, escolha Adicionar ao que já existe e as duas agendas são mescladas.
-
-## Mantendo dois aparelhos em dia
-
-Não há sincronização automática. Se você adicionar pessoas nos dois aparelhos, salve um backup em um deles e abra no outro com Adicionar ao que já existe: ninguém é adicionado duas vezes, e vale a cópia editada por último. Mesclar só adiciona, então alguém que você apagou em um aparelho pode voltar de um backup que ainda o tenha.
-
-## Por que não há login
-
-Uma agenda guarda nomes e números de outras pessoas, e suas anotações sobre elas. Mantê-la só nos seus próprios aparelhos, e levá-la em um arquivo que você controla, significa que não existe cópia dela no servidor de ninguém.`,
+Se o outro aparelho for novo, escolha Substituir tudo. Se ele já tiver pessoas próprias, escolha Adicionar ao que já existe e as duas agendas são mescladas.`,
   },
 ]
 

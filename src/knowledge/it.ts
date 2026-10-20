@@ -35,13 +35,13 @@ I fogli di calcolo a volte cambiano il formato di ciò che aprono, trasformando 
     title: 'Dove viene conservata la tua rubrica',
     summary: 'Su questo dispositivo, senza bisogno di un account, e cosa significa per te.',
     group: 'Le basi',
-    body: `BlackBook conserva la tua rubrica sul dispositivo che stai usando. In un browser si trova nello spazio che quel browser riserva a questo sito; nell’app per telefono si trova nello spazio di archiviazione dell’app. Nulla dei tuoi contatti viene mai inviato da nessuna parte.
+    body: `BlackBook conserva la tua rubrica sul dispositivo che stai usando. In un browser si trova nello spazio che quel browser riserva a questo sito; nell’app per telefono si trova nello spazio di archiviazione dell’app. Nulla dei tuoi contatti viene inviato da nessuna parte, a meno che tu non attivi il backup online.
 
-Non c’è nessun account e nessun accesso da fare.
+Non ti serve un account per usare BlackBook. Tutto funziona senza accedere.
 
 ## Cosa significa in pratica
 
-- **Ogni dispositivo ha la sua rubrica.** I contatti aggiunti sul portatile non compaiono da soli sul telefono. Per spostarli serve un file di backup.
+- **Ogni dispositivo ha la sua rubrica.** I contatti aggiunti sul portatile non compaiono da soli sul telefono. È il backup online a collegarli. Per spostarli serve un file di backup.
 - **Svuotare il browser può svuotare la rubrica.** Eliminare i dati o la cronologia di questo sito, usare una finestra privata o disinstallare l’app cancella la rubrica conservata lì.
 - **I contatti del dispositivo sono separati.** BlackBook non aggiunge nulla, non modifica e non si sincronizza con la rubrica integrata nel telefono.
 
@@ -49,8 +49,9 @@ Non c’è nessun account e nessun accesso da fare.
 
 Poiché la rubrica sul tuo dispositivo potrebbe essere l’unica copia, conviene averne un’altra:
 
-1. Salva ogni tanto un file di backup (Avanzate, poi Backup, importazione ed esportazione) e conservalo in un posto sicuro. Contiene tutto, attività comprese, e può avere una password.
-2. Oppure esporta un file CSV, che qualsiasi foglio di calcolo o rubrica può leggere ma che esclude le tue attività.
+1. Accedi con il tuo Universal ID e attiva il backup online crittografato.
+2. Salva ogni tanto un file di backup (Avanzate, poi Backup, importazione ed esportazione) e conservalo in un posto sicuro. Contiene tutto, attività comprese, e può avere una password.
+3. Oppure esporta un file CSV, che qualsiasi foglio di calcolo o rubrica può leggere ma che esclude le tue attività.
 
 ## Regola questa app
 
@@ -124,7 +125,7 @@ L’eliminazione chiede sempre conferma e indica chi verrà eliminato. Sul telef
 - Impedisce a chiunque di aprire l’app su questo dispositivo senza il PIN.
 - Dopo cinque tentativi sbagliati di fila, il tastierino ti fa aspettare prima di riprovare, e l’attesa raddoppia ogni volta.
 - Il PIN in sé non viene mai salvato. BlackBook conserva solo un’impronta codificata, volutamente lenta da verificare, che rende costoso tirare a indovinare.
-- Il blocco riguarda solo questo dispositivo e non viene mai inserito in un file di backup.
+- Il blocco riguarda solo questo dispositivo e non viene mai caricato online.
 
 ## Cosa non fa
 
@@ -134,7 +135,38 @@ Il PIN blocca l’app, non i dati. La rubrica resta nella memoria del dispositiv
 
 Nessuno può dirti il tuo PIN né togliere il blocco al posto tuo. L’unico modo per superare un PIN dimenticato è il pulsante «Forgotten your PIN?» nella schermata di blocco, che **cancella la rubrica su questo dispositivo** e ricomincia da capo, senza blocco. È questo che lo rende sicuro: un estraneo potrebbe svuotare l’app, ma mai leggerla.
 
-Se hai un file di backup, un PIN dimenticato è solo un fastidio: dopo l’azzeramento, apri il backup e la rubrica torna. Senza un backup non c’è nulla da ripristinare, quindi salvane uno prima di impostare un PIN.`,
+Se usi il backup online crittografato, un PIN dimenticato è solo un fastidio: accedi di nuovo, inserisci la passphrase del backup e la rubrica torna. Se hai un file di backup, un PIN dimenticato è solo un fastidio: dopo l’azzeramento, apri il backup e la rubrica torna. Senza un backup non c’è nulla da ripristinare, quindi salvane uno prima di impostare un PIN.`,
+  },
+  {
+    id: 'encrypted-online-backup',
+    title: 'Il backup online crittografato',
+    summary: 'Come la rubrica viene crittografata prima di lasciare il dispositivo e perché nessun altro può leggerla.',
+    group: 'Privacy e sicurezza',
+    body: `Il backup online è facoltativo e resta disattivato finché non accedi con il tuo Universal ID. Una volta attivo, BlackBook conserva una copia della rubrica sui server di UNI·SIM, così sopravvive alla perdita di un dispositivo e si può aprire su un altro.
+
+## Crittografato prima di partire
+
+La rubrica viene crittografata sul tuo dispositivo prima che venga inviato qualsiasi cosa. Il server riceve e conserva solo dati codificati di cui non ha la chiave, quindi UNI·SIM non può leggere i tuoi contatti, le note, le etichette o le attività.
+
+- La crittografia è **AES-GCM con una chiave a 256 bit**, uno standard molto diffuso.
+- La chiave è ricavata da una **passphrase che scegli tu**, con PBKDF2 e SHA-256 su 600.000 cicli, il che rende ogni tentativo di indovinarla lento e costoso.
+- La passphrase non lascia mai il tuo dispositivo. **Non** è la password del tuo Universal ID, e cambiare quella password non la modifica.
+
+È importante perché le persone nella tua rubrica non si sono iscritte a niente. I loro nomi, i loro indirizzi e le tue note private su di loro meritano la stessa cura dei tuoi dati.
+
+## Nessun recupero
+
+UNI·SIM non conserva alcuna copia della tua chiave e non ha modo di reimpostare la passphrase. Se la dimentichi, nessuno può aprire la copia online. La rubrica sul tuo dispositivo non viene toccata: per questo la copia online è un backup e non la copia principale.
+
+## Ricordare un dispositivo
+
+Puoi chiedere a un dispositivo di ricordare la chiave, così non devi inserire la passphrase ogni volta. La chiave viene conservata in una forma che l’app può usare ma non estrarre. Uscire dall’account, o scegliere di dimenticare questo dispositivo, la rimuove.
+
+## Cambiarlo o eliminarlo
+
+Per cambiare la passphrase serve quella attuale, anche su un dispositivo che la ricorda, e il backup viene crittografato di nuovo in un solo passaggio. Disattivare il backup elimina completamente la copia online e lascia la rubrica sul dispositivo com’è. Eliminare il tuo Universal ID elimina anche la copia online.
+
+Il backup ha un limite di circa 2 MB di dati crittografati, pari a molte migliaia di contatti. Di solito sono le note molto lunghe a far raggiungere il limite.`,
   },
   {
     id: 'backup-file',
@@ -174,25 +206,37 @@ BlackBook controlla ogni campo di un file prima di usarlo, così un file dannegg
   {
     id: 'using-two-devices',
     title: 'Usare BlackBook su più dispositivi',
-    summary: 'Spostare la rubrica da un dispositivo all’altro con un file di backup.',
+    summary: 'L’unione all’accesso, il salvataggio automatico e cosa succede quando due dispositivi non concordano.',
     group: 'Privacy e sicurezza',
-    body: `BlackBook non ha un account né una copia online, quindi ogni dispositivo tiene la sua rubrica e nulla le collega a tua insaputa. Per portare la rubrica su un altro dispositivo, usa un file di backup.
+    body: `Con il backup online attivo puoi aprire la stessa rubrica su telefono, tablet e computer. Ogni dispositivo tiene la propria copia e il backup online le mantiene allineate.
 
-## Spostare la rubrica
+## Accedere su un nuovo dispositivo
+
+1. Accedi con il tuo Universal ID.
+2. Inserisci la passphrase del backup.
+3. Se questo dispositivo ha già dei contatti suoi, BlackBook ti chiede se unirli o usare solo la copia online.
+
+Nell’unione, la copia online è il punto di partenza e vi si aggiungono i contatti di questo dispositivo. Chi c’è già, riconosciuto come la stessa scheda oppure per lo stesso nome con la stessa email o lo stesso numero, non viene aggiunto due volte. Le etichette con lo stesso nome diventano una sola.
+
+## Salvataggio
+
+Finché il backup è attivo, ogni modifica viene crittografata e salvata online pochi secondi dopo. L’indicazione di sincronizzazione accanto al titolo mostra che un salvataggio è in corso. Quando apri BlackBook su un altro dispositivo, scarica la copia più recente.
+
+## Quando due dispositivi non concordano
+
+La copia online viene salvata come rubrica intera. Se due dispositivi hanno entrambi modificato la rubrica dall’ultimo salvataggio, BlackBook non sceglie in silenzio. Si ferma e ti chiede quale tenere: la copia online più recente o la versione di questo dispositivo. Quella che non scegli viene sostituita, quindi, se hai dubbi, esporta prima un file CSV.
+
+## Dopo il cambio della passphrase
+
+Quando cambi la passphrase su un dispositivo, gli altri smettono di salvare e chiedono quella nuova. Su di essi non si perde nulla, e quando li sblocchi propongono di unire di nuovo i loro contatti. Un dispositivo che ha ancora la vecchia chiave non può sovrascrivere il cambiamento.
+
+## Spostare la rubrica senza account
 
 1. Sul dispositivo che ha la tua rubrica, salva un file di backup. Una password è una buona idea se il file passerà per email o per un servizio cloud.
 2. Porta il file sull’altro dispositivo, per esempio con AirDrop, un servizio cloud o un’email.
 3. Sull’altro dispositivo, apri BlackBook, scegli Apri un backup e seleziona il file.
 
-Se l’altro dispositivo è nuovo, scegli Sostituisci tutto. Se ha già dei contatti suoi, scegli Aggiungi a quello che c’è e le due rubriche vengono unite.
-
-## Tenere allineati due dispositivi
-
-Non c’è sincronizzazione automatica. Se aggiungi persone su entrambi i dispositivi, salva un backup su uno e aprilo sull’altro con Aggiungi a quello che c’è: nessuno viene aggiunto due volte e vince la copia modificata per ultima. L’unione aggiunge soltanto, quindi una persona che hai eliminato su un dispositivo può tornare da un backup che la contiene ancora.
-
-## Perché non c’è un accesso
-
-Una rubrica contiene nomi e numeri di altre persone, e le tue note su di loro. Tenerla solo sui tuoi dispositivi, e spostarla in un file che controlli tu, significa che non ne esiste una copia sul server di nessuno.`,
+Se l’altro dispositivo è nuovo, scegli Sostituisci tutto. Se ha già dei contatti suoi, scegli Aggiungi a quello che c’è e le due rubriche vengono unite.`,
   },
 ]
 

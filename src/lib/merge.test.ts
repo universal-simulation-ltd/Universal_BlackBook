@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { mergeBooks } from './merge'
+import { allOnline, mergeBooks, unsyncedWork } from './merge'
+import type { Todo } from './todos'
 import type { Contact, Tag } from './types'
 
 const contact = (id: string, name: string, patch: Partial<Contact> = {}): Contact => ({
@@ -57,5 +58,54 @@ describe('mergeBooks', () => {
     )
     expect(m.tags.map((t) => t.id)).toEqual(['t1', 't2'])
     expect(m.contacts[0].tagIds).toEqual(['t1', 't2'])
+  })
+})
+
+describe('unsyncedWork', () => {
+  const since = 100
+  it('counts contacts edited here since the last sync that the online copy lacks or has older', () => {
+    const local = [
+      contact('old', 'Old', { updatedAt: 50 }),
+      contact('new', 'New', { updatedAt: 150 }),
+      contact('edited', 'Edited', { updatedAt: 150 }),
+      contact('same', 'Same', { updatedAt: 150 }),
+    ]
+    const online = [contact('edited', 'Edited', { updatedAt: 120 }), contact('same', 'Same', { updatedAt: 150 })]
+    expect(unsyncedWork({ contacts: local, todos: [] }, { contacts: online }, since)).toBe(2)
+  })
+
+  it('ignores deletions: something online and gone here is not unsynced work', () => {
+    expect(unsyncedWork({ contacts: [], todos: [] }, { contacts: [contact('a', 'A', { updatedAt: 999 })] }, since)).toBe(0)
+  })
+
+  it('counts to-dos only when the online copy has a to-do list at all', () => {
+    const todo = { id: 't', title: 'Call', details: '', tagIds: [], createdAt: 150, updatedAt: 150 }
+    expect(unsyncedWork({ contacts: [], todos: [todo] }, { contacts: [] }, since)).toBe(0)
+    expect(unsyncedWork({ contacts: [], todos: [todo] }, { contacts: [], todos: [] }, since)).toBe(1)
+  })
+})
+
+describe('allOnline', () => {
+  const meta = { rev: 3, pushedAt: 100, syncedAt: 100 }
+  const todo = (updatedAt: number): Todo => ({ id: `t${updatedAt}`, title: 'Call', details: '', tagIds: [], createdAt: 1, updatedAt })
+
+  it('is true when nothing changed after the last match with the online copy', () => {
+    const book = { contacts: [contact('a', 'Ada', { updatedAt: 90 }), contact('b', 'Bob', { updatedAt: 100 })], todos: [todo(50)] }
+    expect(allOnline(meta, book)).toBe(true)
+  })
+
+  it('is false with no vault, or one nothing has reached yet', () => {
+    const book = { contacts: [contact('a', 'Ada', { updatedAt: 1 })], todos: [] }
+    expect(allOnline(null, book)).toBe(false)
+    expect(allOnline({ ...meta, rev: 0 }, book)).toBe(false)
+  })
+
+  it('is false when a contact or a to-do was edited after it', () => {
+    expect(allOnline(meta, { contacts: [contact('a', 'Ada', { updatedAt: 101 })], todos: [] })).toBe(false)
+    expect(allOnline(meta, { contacts: [], todos: [todo(101)] })).toBe(false)
+  })
+
+  it('is false while an unlock\'s merge question is unanswered (syncedAt 0)', () => {
+    expect(allOnline({ ...meta, syncedAt: 0 }, { contacts: [], todos: [] })).toBe(false)
   })
 })
