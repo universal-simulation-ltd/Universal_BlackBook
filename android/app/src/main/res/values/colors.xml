@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- The window background behind the web view.
 
-     It only shows once `android.adjustMarginsForEdgeToEdge` is on (in
-     capacitor.config.ts): Capacitor then insets the web view by the status-bar,
-     navigation-bar and camera-cutout margins, and those strips show the
-     WINDOW's background, not the page's. BlackBook is dark-only (README, "Dark
-     only"), so the strips are its slate-950 ground, #020617 — the same value
-     index.css paints the page and the dock with. -->
+     It shows where Capacitor 8's SystemBars (capacitor.config.ts) insets the
+     web view by the status-bar, navigation-bar and camera-cutout margins,
+     which it does on a WebView older than Chromium 140; those strips show the
+     WINDOW's background, not the page's. Two colours, one per app theme: the
+     phone app's paper and its leather (`html.bb-phone` in src/index.css). The
+     light one is the theme's own (the app's default); WindowThemePlugin
+     switches to the dark one when the app is set to Dark, or to Match my
+     device on a phone in dark mode. -->
 <resources>
-    <color name="unisimWindowBackground">#020617</color>
+    <color name="unisimWindowBackground">#faf7f1</color>
+    <color name="unisimWindowBackgroundDark">#111010</color>
 </resources>

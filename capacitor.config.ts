@@ -23,14 +23,15 @@ const config: CapacitorConfig = {
   // `env(safe-area-inset-*)` carries the real insets — which this app already
   // pads by, exactly as on iOS. On an older WebView, where those env values
   // read 0, it pads the web view natively instead and the strips show the
-  // WINDOW background, which values/styles.xml pins to the app's own
-  // slate-950 (BlackBook is dark-only).
+  // WINDOW background: values/styles.xml pins it to the phone app's paper,
+  // and WindowThemePlugin repaints it to the leather for Dark.
   plugins: {
     SystemBars: {
-      // Light glyphs, for BlackBook's dark chrome ("DARK" means "for a dark
-      // background"). Left at DEFAULT it would follow the phone's theme — dark
-      // glyphs on the dark strip whenever the phone is in light mode.
-      style: 'DARK',
+      // Dark glyphs, for the app's default LIGHT paper ("LIGHT" means "for a
+      // light background"). src/native/systemBars.ts flips them when the app
+      // is set to Dark. Left at DEFAULT they would follow the PHONE's theme,
+      // not the app's — light glyphs on the paper whenever the phone is dark.
+      style: 'LIGHT',
       // index.html says cover; saying so here spares a layout jump on start.
       initialViewportFitValueHint: 'cover',
     },

@@ -5,9 +5,6 @@ export const en = {
   back: 'Back',
   dismiss: 'Dismiss',
   loading: 'Loading…',
-  close: 'Close',
-  done: 'Done',
-  cancel: 'Cancel',
   save: 'Save',
 
   tabs_label: 'BlackBook',
@@ -36,7 +33,6 @@ export const en = {
   share_copied: 'Copied, ready to paste',
 
   filters_title: 'Filters',
-  filters_done: 'Show the list',
   row_more: 'More for this row',
 
   tune_look: 'Look',
@@ -99,8 +95,6 @@ export const en = {
   kb_intro: 'Short answers to the questions people ask: where your book is kept, what the backups do, and how the files move.',
   kb_sources: 'Sources',
 
-  confirm_keep: 'Keep',
-  choose: 'Choose',
 } as const
 
 export type Key = keyof typeof en
