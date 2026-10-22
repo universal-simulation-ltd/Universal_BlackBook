@@ -83,10 +83,10 @@ export default defineConfig(({ mode }) => {
           name: 'Universal BlackBook',
           short_name: 'BlackBook',
           description: 'A private address book. Your people, your categories, your pace.',
-          theme_color: '#020617',
-          // Matches index.css's <html> background, so the splash screen is the
-          // app's own black rather than a white flash before first paint.
-          background_color: '#020617',
+          theme_color: '#ffffff',
+          // Light, like the app's first paint (it is light until the user
+          // picks Dark in Tune this app).
+          background_color: '#ffffff',
           display: 'standalone',
           start_url: BASE_PATH,
           scope: BASE_PATH,

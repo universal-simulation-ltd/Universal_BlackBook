@@ -9,7 +9,8 @@ import tseslint from 'typescript-eslint'
 // React plugins. No type-aware rules — they need a project service and buy
 // little here, and `tsc -b` in `npm run build` is the type gate.
 export default tseslint.config(
-  { ignores: ['dist', 'dev-dist', 'playwright-report', 'test-results'] },
+  // android/ and ios/ hold copies of the built bundle and Capacitor's own JS.
+  { ignores: ['dist', 'dev-dist', 'playwright-report', 'test-results', 'android', 'ios'] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ['**/*.{ts,tsx}'],

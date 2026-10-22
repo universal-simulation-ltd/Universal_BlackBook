@@ -1,14 +1,14 @@
 // Shared class strings — one visual language across the app.
 //
-// ⚠️ NOT A SINGLE `dark:` VARIANT IN THIS FILE, on purpose. BlackBook is a
-// dark-only app (see index.css for why), so there is exactly one palette and
-// these classes ARE it. Writing `bg-white dark:bg-slate-900` here would mean
-// every new component silently had a light rendering nobody ever looks at, and
-// the first one to forget the `dark:` half would ship a white panel into a
-// black app. One palette, no variants, nothing to forget.
+// ⚠️ NOT A SINGLE `dark:` VARIANT IN THIS FILE, and none is wanted. These are
+// written in the dark palette the app was designed in, and index.css repaints
+// that palette for Light (and for the phone app's own look) by redefining the
+// colour variables the classes compile to. So one class string serves every
+// theme, and a new component cannot forget its light half.
 //
-// The colours: ground #0b1120, panels slate-900, hairlines slate-800, body
-// text slate-200, secondary slate-400, accent the brand orange #fe8c01.
+// The roles: page slate-950, panels slate-900, hairlines slate-800, body text
+// slate-200, secondary slate-400, the accent orange (the suite's #fe8c01 in
+// Dark, #e05504 in Light, the ribbon red on the phone).
 
 export const btnPrimary =
   'rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-orange-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:cursor-not-allowed disabled:opacity-40'

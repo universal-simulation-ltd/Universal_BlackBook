@@ -8,10 +8,12 @@
 #
 # Content-Security-Policy (2026-10-12), enforced, copied from Universal PDF's
 # approach and cut down to what BlackBook really reaches for:
-#   • script-src: its own bundle (index.html has no inline script; the JSON-LD
-#     block is data, not script), and Google's sign-in script, which the SDK
-#     loads from accounts.google.com/gsi/client on demand. No 'unsafe-inline',
-#     no 'unsafe-eval', no WebAssembly.
+#   • script-src: its own bundle; index.html's one inline script (the theme
+#     pre-paint, 2026-10-22), allowed by its sha256 — src/lib/theme.test.ts
+#     fails if the script changes without this hash; and Google's sign-in
+#     script, which the SDK loads from accounts.google.com/gsi/client on
+#     demand. (The JSON-LD block is data, not script.) No 'unsafe-inline', no
+#     'unsafe-eval', no WebAssembly.
 #   • style-src 'unsafe-inline': React style attributes, everywhere.
 #   • connect-src: Supabase (sign-in, the encrypted online copy, the usage
 #     event, and the anonymous daily open count on the website), the suite changelog, Google
@@ -33,4 +35,4 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: SAMEORIGIN
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' data: blob: https://rygfxgalojojppxmhddo.supabase.co wss://rygfxgalojojppxmhddo.supabase.co https://changelog.unisim.co.uk https://accounts.google.com/gsi/; worker-src 'self' blob:; frame-src 'self' https://accounts.google.com/gsi/; media-src 'self' blob: data:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-hVaKprp/X8bOpWAQQOEvfdanU3VNh3qGz3boOH09OWg=' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' data: blob: https://rygfxgalojojppxmhddo.supabase.co wss://rygfxgalojojppxmhddo.supabase.co https://changelog.unisim.co.uk https://accounts.google.com/gsi/; worker-src 'self' blob:; frame-src 'self' https://accounts.google.com/gsi/; media-src 'self' blob: data:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'

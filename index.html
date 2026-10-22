@@ -12,7 +12,26 @@
     />
     <meta name="keywords" content="address book, contacts app, private contacts, keep in touch, personal CRM, encrypted contacts, no account" />
     <meta name="author" content="UNI·SIM" />
-    <meta name="theme-color" content="#020617" />
+    <meta name="theme-color" content="#ffffff" />
+    <!-- Light / Dark / Match my device, before the first paint, so a Dark user
+         never sees a light frame (and nobody sees a flip). The same reads as
+         src/stores/themeStore.ts: this app's own choice, else the suite's
+         global one, else LIGHT (the suite rule; BlackBook was dark-only until
+         2026-10-22). ⚠️ The key is duplicated there — rename both or neither.
+         `bb-phone` is the phone app's own look (src/native/native.css), set
+         here too so its paper is the first colour on screen in the shell. -->
+    <script>
+      try {
+        var p = localStorage.getItem('unisim-blackbook-theme') || localStorage.getItem('universal:color-scheme') || 'light'
+        var d = p === 'dark' || (p === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
+        var r = document.documentElement
+        r.classList.toggle('dark', d)
+        r.style.colorScheme = d ? 'dark' : 'light'
+        var c = window.Capacitor
+        var phone = (c && c.isNativePlatform && c.isNativePlatform()) || sessionStorage.getItem('blackbook:store-capture') === '1'
+        if (phone) r.classList.add('bb-phone')
+      } catch (e) {}
+    </script>
     <link rel="canonical" href="https://opensource.unisim.co.uk/blackbook/" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Universal BlackBook" />

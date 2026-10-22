@@ -5,6 +5,7 @@ import { usePageScrollLock } from '../lib/scrollLock'
 import { isList } from '../lib/lists'
 import type { Tag } from '../lib/types'
 import { useBookStore } from '../stores/bookStore'
+import { useEffectiveTheme } from '../stores/themeStore'
 import { CloseGlyph } from './Modal'
 import { ListChip } from './ListChip'
 import { TagChip } from './TagChip'
@@ -409,10 +410,11 @@ function Row({ name, children }: { name: string; children: ReactNode }) {
  * read exactly as typed; the link takes the email row's orange.
  */
 function Linked({ text }: { text: string }) {
+  const theme = useEffectiveTheme()
   return (
     <LinkifiedText
       text={text}
-      theme="dark"
+      theme={theme}
       linkClassName="break-all text-orange-300 underline underline-offset-4 hover:text-orange-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
     />
   )

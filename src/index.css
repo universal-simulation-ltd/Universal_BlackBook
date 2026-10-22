@@ -1,40 +1,144 @@
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────────────────────────────────────
-   BlackBook is DARK ONLY, and that is a product decision, not an oversight.
+   Light, Dark, or Match my device — LIGHT by default (James, 2026-10-20, the
+   suite rule; BlackBook was dark-only from 2026-08-24 until 2026-10-22).
 
-   The suite's standing rule is that every app opens in light mode until the
-   user explicitly asks for something else (Docs_UNI_SIM/landmines.md →
-   Standing policies). This app is the deliberate exception, agreed with the
-   owner on 2026-08-24: it is a little black book, it has one appearance, and
-   there is no theme switcher in the menu because there is nothing to switch.
+   The components are written ONCE, in the dark palette they were designed in
+   (ui.tsx: page slate-950, panels slate-900, hairlines slate-800, text
+   slate-200, the accent orange-300/400). There is no `dark:` variant anywhere,
+   and none is needed: Tailwind v4 compiles every colour utility to
+   `var(--color-<hue>-<step>)`, so a theme is a different VALUE for each of
+   those variables. The blocks below redefine them:
 
-   Two consequences worth being explicit about, because they are what makes
-   the exception cheap rather than a rolling cost:
+     • html:not(.dark)        the website in Light. The slate ramp turns over
+                              (950, the page, becomes white; 200, body text,
+                              becomes ink) and the accents step to their deep
+                              ends so a "300" label still reads on white.
+     • html.bb-phone          the phone app's own look (src/native/): paper and
+                              ink in Light, warm leather in Dark, and a ribbon
+                              red in place of the suite orange (store-listings
+                              §7: its own accent, not suite orange).
+     • html.dark (website)    Tailwind's own values — nothing to redefine.
 
-     • There is no `dark:` variant anywhere in this codebase, and no `.dark`
-       class on <html>. The classes in components/ui.tsx ARE the palette. A
-       `dark:` prefix here would be dead code that the next person maintains.
-     • `color-scheme: dark` below is doing real work. It is what makes the
-       NATIVE widgets — <select> dropdowns, scrollbars, autofill highlight,
-       the file picker — render dark. Without it a black page opens white
-       system menus, which is the single most obvious way a dark app looks
-       half-finished.
+   `.dark` on <html> is the SDK theme store's (src/stores/themeStore.ts, and
+   index.html's pre-paint script for the first frame). The SDK's chips and
+   dialogs read the same class, so they follow without any wiring.
 
-   If light mode is ever wanted, the changes are: this file, ui.tsx, and the
-   navbar's `theme` prop. Nothing is stored in a user's data that assumes
-   dark — see lib/palette.ts for why swatches are keys and not hexes.
+   ⚠️ A colour written as a hex in a class (`bg-[#…]`) or an inline style does
+   NOT follow. Use the palette, or a variable below.
    ───────────────────────────────────────────────────────────────────────── */
 
-html {
-  color-scheme: dark;
+html:not(.dark) {
+  --color-slate-950: #ffffff;
+  --color-slate-900: oklch(98.4% 0.003 247.858);
+  --color-slate-800: oklch(92.9% 0.013 255.508);
+  --color-slate-700: oklch(86.9% 0.022 252.894);
+  --color-slate-600: oklch(70.4% 0.04 256.788);
+  --color-slate-500: oklch(55.4% 0.046 257.417);
+  --color-slate-400: oklch(44.6% 0.043 257.281);
+  --color-slate-300: oklch(37.2% 0.044 257.287);
+  --color-slate-200: oklch(27.9% 0.041 260.031);
+  --color-slate-100: oklch(20.8% 0.042 265.755);
+  --color-slate-50: oklch(12.9% 0.042 264.695);
+
+  /* The suite's light accent is #E05504 (BRANDING.md ▸ Theme tokens). */
+  --color-orange-50: oklch(26.6% 0.079 36.259);
+  --color-orange-100: oklch(40.8% 0.123 38.172);
+  --color-orange-200: oklch(47% 0.157 37.304);
+  --color-orange-300: oklch(47% 0.157 37.304);
+  --color-orange-400: oklch(55.3% 0.195 38.402);
+  --color-orange-500: #e05504;
+  --color-orange-600: oklch(55.3% 0.195 38.402);
+  --color-orange-700: oklch(47% 0.157 37.304);
+  --color-orange-800: oklch(90.1% 0.076 70.697);
+  --color-orange-900: oklch(90.1% 0.076 70.697);
+  --color-orange-950: oklch(95.4% 0.038 75.164);
+
+  --color-rose-50: oklch(27.1% 0.105 12.094);
+  --color-rose-100: oklch(41% 0.159 10.272);
+  --color-rose-200: oklch(45.5% 0.188 13.697);
+  --color-rose-300: oklch(51.4% 0.222 16.935);
+  --color-rose-400: oklch(51.4% 0.222 16.935);
+  --color-rose-800: oklch(89.2% 0.058 10.001);
+  --color-rose-900: oklch(89.2% 0.058 10.001);
+  --color-rose-950: oklch(96.9% 0.015 12.422);
+
+  --color-emerald-200: oklch(43.2% 0.095 166.913);
+  --color-emerald-300: oklch(50.8% 0.118 165.612);
+  --color-emerald-400: oklch(50.8% 0.118 165.612);
+  --color-emerald-800: oklch(90.5% 0.093 164.15);
+  --color-emerald-900: oklch(90.5% 0.093 164.15);
+  --color-emerald-950: oklch(97.9% 0.021 166.113);
+
+  --color-amber-200: oklch(47.3% 0.137 46.201);
+  --color-amber-300: oklch(47.3% 0.137 46.201);
+  --color-amber-400: oklch(55.5% 0.163 48.998);
+  --color-amber-800: oklch(92.4% 0.12 95.746);
+  --color-amber-900: oklch(92.4% 0.12 95.746);
+  --color-amber-950: oklch(98.7% 0.022 95.277);
+}
+
+/* The phone app, Light: cream paper, white slips, ink, and the ribbon. */
+html.bb-phone:not(.dark) {
+  --color-slate-950: #faf7f1;
+  --color-slate-900: #ffffff;
+  --color-slate-800: #e8e1d4;
+  --color-slate-700: #d5ccbb;
+  --color-slate-600: #9b9182;
+  --color-slate-500: #6f6658;
+  --color-slate-400: #574f43;
+  --color-slate-300: #3f392f;
+  --color-slate-200: #2a251f;
+  --color-slate-100: #1c1915;
+  --color-slate-50: #120f0c;
+
+  --color-orange-50: #4a0e11;
+  --color-orange-100: #5f1216;
+  --color-orange-200: #7a181d;
+  --color-orange-300: #8f1d22;
+  --color-orange-400: #a3242a;
+  --color-orange-500: #b3262d;
+  --color-orange-600: #9c1f26;
+  --color-orange-700: #861b21;
+  --color-orange-800: #f3d9d6;
+  --color-orange-900: #f0d0cc;
+  --color-orange-950: #fbecea;
+}
+
+/* The phone app, Dark: the book's black leather, cream type, the ribbon lit. */
+html.bb-phone.dark {
+  --color-slate-950: #111010;
+  --color-slate-900: #1b1918;
+  --color-slate-800: #2c2926;
+  --color-slate-700: #3d3934;
+  --color-slate-600: #625c55;
+  --color-slate-500: #8c857b;
+  --color-slate-400: #aaa398;
+  --color-slate-300: #cbc4b9;
+  --color-slate-200: #e3ddd3;
+  --color-slate-100: #f2ede5;
+  --color-slate-50: #faf7f2;
+
+  --color-orange-50: #fff1f0;
+  --color-orange-100: #ffe0dd;
+  --color-orange-200: #ffc9c4;
+  --color-orange-300: #f8a9a2;
+  --color-orange-400: #f08a82;
+  --color-orange-500: #e0544b;
+  --color-orange-600: #c23b33;
+  --color-orange-700: #9f2e28;
+  --color-orange-800: #6e211d;
+  --color-orange-900: #561a17;
+  --color-orange-950: #2e0f0d;
 }
 
 html,
 body {
   height: 100%;
   margin: 0;
-  background: #020617; /* slate-950 — painted here so overscroll is dark too */
+  /* The page colour, painted here so an overscroll shows it too. */
+  background: var(--color-slate-950);
 }
 
 #root {
@@ -123,17 +227,17 @@ body {
 /* Chrome paints autofilled fields a hardcoded pale yellow that no background
    rule overrides — only an inset shadow large enough to cover the box does.
    Without this, saving a contact after the browser has offered to fill the
-   email field leaves one blindingly white row in a black form. */
+   email field leaves one yellow row in the form, in either theme. */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {
-  -webkit-text-fill-color: #f1f5f9;
-  -webkit-box-shadow: 0 0 0 1000px #020617 inset;
-  caret-color: #f1f5f9;
+  -webkit-text-fill-color: var(--color-slate-100);
+  -webkit-box-shadow: 0 0 0 1000px var(--color-slate-950) inset;
+  caret-color: var(--color-slate-100);
 }
 
 /* The native dialog backdrop does not inherit anything; without this the modal
    opens over a transparent backdrop on engines that default it to none. */
 dialog::backdrop {
-  background: rgb(2 6 23 / 0.8);
+  background: color-mix(in srgb, var(--color-slate-950) 80%, transparent);
 }

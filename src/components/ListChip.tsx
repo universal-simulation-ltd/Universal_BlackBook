@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { ValueChip } from '@unisim/sdk'
+import { useEffectiveTheme } from '../stores/themeStore'
 
 /**
  * An Email list's name, as the suite's VALUE chip — a solid key holding a list
@@ -26,8 +27,9 @@ export function ListChip({
   selected?: boolean
   trailing?: ReactNode
 }) {
+  const ground = useEffectiveTheme()
   const chip = (
-    <ValueChip ground="dark" label={selected ? <Tick /> : <ListGlyph />} className="max-w-full">
+    <ValueChip ground={ground} label={selected ? <Tick /> : <ListGlyph />} className="max-w-full">
       <span className="min-w-0 truncate">{name}</span>
       {trailing}
     </ValueChip>

@@ -124,8 +124,11 @@ export function SwipeRow({
     // whose rows stretch, and a percentage height only resolves through
     // ancestors that have one. Without it the cards in a row stop matching.
     <div className="relative h-full overflow-hidden rounded-xl">
-      {left && <ActionButton action={left} side="left" open={open === 'left'} />}
-      {right && <ActionButton action={right} side="right" open={open === 'right'} />}
+      {/* Only while the card is off its rest: drawn under a card at rest, the
+          button's colour bled through the card's anti-aliased round corners,
+          a red hairline down every card on a light page. */}
+      {left && (offset > 0 || open === 'left') && <ActionButton action={left} side="left" open={open === 'left'} />}
+      {right && (offset < 0 || open === 'right') && <ActionButton action={right} side="right" open={open === 'right'} />}
 
       <div
         onTouchStart={onTouchStart}

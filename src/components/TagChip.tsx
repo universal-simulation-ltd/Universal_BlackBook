@@ -1,9 +1,19 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { accessibleColor, Chip, ChipToggle } from '@unisim/sdk'
-import { swatch } from '../lib/palette'
+import { swatch, type Swatch } from '../lib/palette'
+import { useEffectiveTheme } from '../stores/themeStore'
 
-// The suite's dark page, which the selected chip's label has to be read on.
+// The grounds a selected chip's label has to be read on: the suite's dark page,
+// and white (the light theme's cards and page).
 const DARK_GROUND = '#0a0e16'
+const LIGHT_GROUND = '#ffffff'
+
+/** A swatch's colour as readable text on the current theme's ground. */
+function readable(s: Swatch, theme: 'light' | 'dark'): string {
+  return theme === 'dark'
+    ? accessibleColor(s.dot, { against: DARK_GROUND }) ?? s.text
+    : accessibleColor(s.dot, { against: LIGHT_GROUND }) ?? s.dot
+}
 
 /**
  * A tag, as the suite's Orbit chip — a `ChipToggle` when it can be clicked.
@@ -12,8 +22,8 @@ const DARK_GROUND = '#0a0e16'
  * through the chip's own knobs rather than Tailwind classes (Tailwind only
  * emits classes it can see in the source at build time). The swatch paints the
  * arc; a selected chip's label is the same hue run through `accessibleColor`,
- * so it clears 4.5:1 whichever swatch it came from. This app is dark-only and
- * sets no `.dark` class, so the chip is told its ground outright.
+ * so it clears 4.5:1 whichever swatch it came from, on the light ground or the
+ * dark one (the chip is told which outright).
  *
  * Every chip carries the coloured DOT as well as the arc. Colour alone is not
  * a label: seven swatches at chip size are hard to tell apart for anyone with
@@ -45,9 +55,12 @@ export function TagChip({
   trailing?: ReactNode
 }) {
   const s = swatch(colour)
+  const ground = useEffectiveTheme()
   const style = {
+    '--u-chip-accent': s.dot,
+    '--u-chip-accent-text': readable(s, 'light'),
     '--u-chip-accent-dark': s.dot,
-    '--u-chip-accent-text-dark': accessibleColor(s.dot, { against: DARK_GROUND }) ?? s.text,
+    '--u-chip-accent-text-dark': readable(s, 'dark'),
   } as CSSProperties
   // An 8px dot centred in the chip's 14px icon box, so it sits where the
   // selected tick will and the chip's width holds.
@@ -75,14 +88,14 @@ export function TagChip({
 
   if (!onClick) {
     return (
-      <Chip ground="dark" icon={mark} title={title} style={style} className="max-w-full">
+      <Chip ground={ground} icon={mark} title={title} style={style} className="max-w-full">
         {body}
       </Chip>
     )
   }
   return (
     <ChipToggle
-      ground="dark"
+      ground={ground}
       selected={selected === true}
       onClick={onClick}
       icon={hidden ? eyeOff : mark}
@@ -109,6 +122,7 @@ export function TagChip({
  */
 export function TagDot({ name, colour }: { name: string; colour: string }) {
   const s = swatch(colour)
+  const theme = useEffectiveTheme()
   const style = { '--tag-bg': s.bg, '--tag-border': s.border } as CSSProperties
   return (
     <span
@@ -120,7 +134,7 @@ export function TagDot({ name, colour }: { name: string; colour: string }) {
         <circle cx="5" cy="5" r="4" fill={s.dot} />
       </svg>
       <span
-        style={{ color: s.text }}
+        style={{ color: readable(s, theme) }}
         className="max-w-0 overflow-hidden whitespace-nowrap text-xs font-medium opacity-0 transition-[max-width,opacity,margin] duration-150 group-hover/dot:ml-1 group-hover/dot:max-w-40 group-hover/dot:opacity-100"
       >
         {name}

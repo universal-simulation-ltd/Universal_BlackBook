@@ -20,11 +20,14 @@ import { KNOWLEDGE_BASE } from '../../knowledge'
 // "blackbook needs sign-in, it's designed to be on multi devices".)
 
 export default function AppMenu({
+  theme,
   onTags,
   onImportExport,
   onBackup,
   onDeleteAll,
 }: {
+  /** The page's theme, which the SDK's menu rows are drawn for. */
+  theme: 'light' | 'dark'
   onTags: () => void
   onImportExport: () => void
   onBackup: () => void
@@ -36,7 +39,7 @@ export default function AppMenu({
           the same place, and whatever goes in it next is one change rather than
           nineteen. The knowledge base goes HERE, not on the navbar: the navbar's
           `knowledgeBase` would draw a second Advanced section under this one. */}
-      <AdvancedMenu theme="dark" knowledgeBase={KNOWLEDGE_BASE}>
+      <AdvancedMenu theme={theme} knowledgeBase={KNOWLEDGE_BASE}>
         {/* Tags moved in here too (owner's call, 2026-09-17: "tags can move
             into advanced, you can manage them from normal use and adding
             contacts etc"). Tags are made and applied while adding or editing a
@@ -45,7 +48,7 @@ export default function AppMenu({
             menu's only top-level row, under a "Your book" heading that then had
             nothing left to head. */}
         <AdvancedMenuItem
-          theme="dark"
+          theme={theme}
           icon={<span aria-hidden>🏷️</span>}
           label="Tags"
           onSelect={onTags}
@@ -56,13 +59,13 @@ export default function AppMenu({
             also where the backup file is saved and opened (the way to move or
             keep a copy without an account), so the row says so. */}
         <AdvancedMenuItem
-          theme="dark"
+          theme={theme}
           icon={<span aria-hidden>📄</span>}
           label="Backup, import & export"
           onSelect={onImportExport}
         />
         <AdvancedMenuItem
-          theme="dark"
+          theme={theme}
           icon={<span aria-hidden>☁️</span>}
           label="Online backup"
           onSelect={onBackup}
@@ -71,7 +74,7 @@ export default function AppMenu({
             everything gone). Last, after Backup, import & export and Online
             backup, so "save a copy first" is right above it. See DeleteAllData. */}
         <AdvancedMenuItem
-          theme="dark"
+          theme={theme}
           icon={<span aria-hidden>🗑️</span>}
           label="Delete all data"
           onSelect={onDeleteAll}

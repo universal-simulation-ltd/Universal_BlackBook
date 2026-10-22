@@ -44,6 +44,7 @@ import { useLockStore } from './stores/lockStore'
 import { useSettingsStore } from './stores/settingsStore'
 import { useSyncStore } from './stores/syncStore'
 import { useTodoStore } from './stores/todoStore'
+import { useEffectiveTheme, useThemeStore } from './stores/themeStore'
 
 // The single page container. The navbar (via the SDK's `contentClassName`), the
 // page body and the footer all share it, so the suite switcher lines up with
@@ -127,6 +128,7 @@ export default function App() {
   const { canPick, picking, pick } = useContactPicker()
   const lockStatus = useLockStore((s) => s.status)
   const initLock = useLockStore((s) => s.init)
+  const theme = useEffectiveTheme()
 
   useEffect(() => {
     void init()
@@ -170,13 +172,18 @@ export default function App() {
     <div className="flex min-h-screen flex-col bg-slate-950 text-slate-200 pt-[env(safe-area-inset-top)]">
       <UniversalAppsNavBar
         contentClassName={CONTAINER}
-        theme="dark"
+        theme={theme}
+        // Light / Dark / Match my device in Tune this app (2026-10-22: light
+        // first; BlackBook was dark-only until then). index.css says how one
+        // set of classes paints both.
+        themeStore={useThemeStore}
         product="blackbook"
         productLogo={<ProductLogo />}
         productHomeHref={import.meta.env.BASE_URL}
         about={APP_ABOUT}
         actions={
           <AppMenu
+            theme={theme}
             onTags={() => setPanel('tags')}
             onImportExport={() => setPanel('io')}
             onBackup={openCloud}
@@ -184,8 +191,7 @@ export default function App() {
           />
         }
         // ⚙ menu ▸ App preferences (SDK 0.143). The SDK adds Language and
-        // Colour scheme; BlackBook is dark-only, which the SDK reads off
-        // `theme` and shows as "always dark".
+        // Colour scheme (from `themeStore`) above BlackBook's own rows.
         appPreferences={PREFERENCE_ROWS}
         // Reset to defaults: the SDK clears the default tab and the language;
         // this puts BlackBook's own switches back to off. The book, its tags
@@ -807,6 +813,7 @@ function TuneThisApp() {
   const reopenParked = useBookStore((s) => s.reopenParked)
   const resetSettings = useSettingsStore((s) => s.reset)
   const { splitPreferences } = useUniversal()
+  const theme = useEffectiveTheme()
   return (
     <PreferencesDialog
       kind="app"
@@ -815,8 +822,8 @@ function TuneThisApp() {
         closeTune()
         reopenParked()
       }}
-      theme="dark"
-      fixedColorScheme="dark"
+      theme={theme}
+      themeStore={useThemeStore}
       combined={!splitPreferences}
       about={APP_ABOUT}
       onResetDefaults={resetSettings}

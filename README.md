@@ -278,11 +278,12 @@ their contacts back in. A device still holding the old key can never
 write it back over the change. Knowing the current passphrase is required, so
 this is not a recovery route.
 
-## Dark only
+## Light, Dark, or Match my device
 
-BlackBook has one appearance. It is a little black book; there is no theme
-switcher because there is nothing to switch. (Every other Universal App defaults
-to light — this one is the deliberate exception.)
+BlackBook opens **light**, like every Universal App, until you choose otherwise
+in **Tune this app ▸ Colour scheme**: Light, Dark, or Match my device. (It was
+dark-only until October 2026.) On the phone app the status bar follows the
+choice too.
 
 ## Developing
 
