@@ -688,7 +688,7 @@ function ConfirmDelete({
   onDelete: () => void
 }) {
   return (
-    <Modal title="Delete contact" onClose={onKeep}>
+    <Modal phone="sheet" title="Delete contact" onClose={onKeep}>
       <p className="text-sm text-slate-300">
         Delete <span className="font-semibold text-slate-100">{contact.name || 'this contact'}</span>?
       </p>
@@ -822,7 +822,7 @@ function ConfirmBulkDelete({
   const names = people.slice(0, 5).map((c) => c.name || 'Unnamed')
   const more = people.length - names.length
   return (
-    <Modal title="Delete contacts" onClose={onKeep}>
+    <Modal phone="sheet" title="Delete contacts" onClose={onKeep}>
       <p className="text-sm text-slate-300">
         Delete{' '}
         <span className="font-semibold text-slate-100">
@@ -854,7 +854,7 @@ function ConfirmBulkDelete({
 function BulkTag({ count, onClose, onAdd }: { count: number; onClose: () => void; onAdd: (tagIds: string[]) => void }) {
   const [tagIds, setTagIds] = useState<string[]>([])
   return (
-    <Modal title={`Tag ${count} ${count === 1 ? 'person' : 'people'}`} onClose={onClose}>
+    <Modal phone="sheet" title={`Tag ${count} ${count === 1 ? 'person' : 'people'}`} onClose={onClose}>
       <p className="mb-3 text-sm text-slate-400">The tags you pick are added to everybody selected.</p>
       <TagPicker value={tagIds} onChange={setTagIds} />
       <div className="mt-5 flex justify-end gap-2">

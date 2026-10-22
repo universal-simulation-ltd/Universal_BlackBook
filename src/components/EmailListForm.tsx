@@ -5,6 +5,7 @@ import type { Contact, Tag } from '../lib/types'
 import { useBookStore } from '../stores/bookStore'
 import { Modal } from './Modal'
 import { NotesFullscreen } from './NotesFullscreen'
+import { autoFocusOK, usePhoneKit } from '../native/kit'
 import { ListChip } from './ListChip'
 import { TagPicker } from './TagPicker'
 import { btnGhost, btnPrimary, inputCls, label } from './ui'
@@ -136,7 +137,7 @@ export function EmailListForm({
             grid.current?.querySelector('input')?.focus()
           }}
           placeholder="Book club"
-          autoFocus={!initialName}
+          autoFocus={!initialName && autoFocusOK()}
           autoComplete="off"
         />
         {lists.length > 0 && (
@@ -334,19 +335,47 @@ function RowMenu({
   onUnlink: () => void
 }) {
   const ref = useRef<HTMLDivElement>(null)
+  const kit = usePhoneKit()
   useEffect(() => {
+    // The phone's sheet is drawn outside this row and closes itself.
+    if (kit) return
     const onDown = (e: PointerEvent) => {
       if (!ref.current?.parentElement?.contains(e.target as Node)) onClose()
     }
     document.addEventListener('pointerdown', onDown)
     return () => document.removeEventListener('pointerdown', onDown)
-  }, [onClose])
+  }, [onClose, kit])
 
   const item =
     'block w-full whitespace-nowrap px-3 py-2 text-left text-sm text-slate-200 hover:bg-slate-800 focus:outline-none focus-visible:bg-slate-800'
   const run = (fn: () => void) => () => {
     onClose()
     fn()
+  }
+  // The phone screens: the same choices in a bottom sheet, not a menu
+  // dropped open under the button (no website popups on the phone).
+  if (kit) {
+    const row = 'flex min-h-[52px] w-full items-center rounded-xl px-3 text-left text-[16px] text-slate-100 active:bg-slate-800'
+    return (
+      <kit.Sheet title={kit.t('row_more')} onClose={onClose}>
+        <button type="button" className={row} onClick={run(onNote)}>
+          {hasNote ? 'Edit note' : 'Add a note'}
+        </button>
+        {!hasCompany && (
+          <button type="button" className={row} onClick={run(onCompany)}>
+            Add company
+          </button>
+        )}
+        <button type="button" className={row} onClick={run(onLink)}>
+          {linked ? 'Link to a different contact' : 'Link to a contact'}
+        </button>
+        {linked && (
+          <button type="button" className={row} onClick={run(onUnlink)}>
+            Unlink
+          </button>
+        )}
+      </kit.Sheet>
+    )
   }
   return (
     <div
@@ -405,7 +434,7 @@ function LinkPicker({ tags, onClose, onPick }: { tags: Tag[]; onClose: () => voi
           }}
           placeholder="Search names and emails…"
           aria-label="Search contacts"
-          autoFocus
+          autoFocus={autoFocusOK()}
           autoComplete="off"
         />
         {found.length === 0 ? (

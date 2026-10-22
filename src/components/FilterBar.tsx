@@ -12,6 +12,7 @@ import {
 } from '../lib/filter'
 import { isList } from '../lib/lists'
 import { useBookStore } from '../stores/bookStore'
+import { usePhoneKit } from '../native/kit'
 import { TagChip } from './TagChip'
 import { btnSubtle, inputCls, label } from './ui'
 
@@ -70,6 +71,7 @@ export function FilterBar({
   const saveDefaultView = useBookStore((s) => s.saveDefaultView)
   const forgetDefaultView = useBookStore((s) => s.forgetDefaultView)
   const [open, setOpen] = useState(false)
+  const kit = usePhoneKit()
   const rootRef = useRef<HTMLDivElement>(null)
   const panelId = useId()
 
@@ -93,7 +95,9 @@ export function FilterBar({
   // Escape and click-away, both only while the panel is open, so tapping a
   // contact while it is open shuts it rather than landing on somebody.
   useEffect(() => {
-    if (!open) return
+    // The phone's sheet closes itself (scrim, swipe, Escape), and is drawn
+    // outside this root, where this click-away would shut it on every tap.
+    if (!open || kit) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpen(false)
     }
@@ -106,7 +110,7 @@ export function FilterBar({
       document.removeEventListener('keydown', onKey)
       document.removeEventListener('pointerdown', onDown)
     }
-  }, [open])
+  }, [open, kit])
 
   // off → ✓ shown → hidden → off. See `cycleTag`.
   const toggleTag = (id: string) => setQuery(cycleTag(query, id))
@@ -123,6 +127,152 @@ export function FilterBar({
             : 'Hidden from the list — tap to clear',
     }
   }
+
+  const panel = (
+    <>
+      <section>
+        <span className={label}>View</span>
+        <button
+          type="button"
+          aria-pressed={birthdays}
+          // Back to Name A–Z when switched off, not to whatever it was
+          // before: remembering the previous order means the list can land
+          // somewhere the user did not choose and cannot see the reason for.
+          onClick={() => setQuery({ sort: birthdays ? 'name' : 'birthday' })}
+          className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+            birthdays
+              ? 'border-orange-500/60 bg-orange-500/15 text-orange-300'
+              : 'border-slate-700 text-slate-300 hover:border-slate-600 hover:bg-slate-800'
+          }`}
+        >
+          <span aria-hidden>🎂</span> Birthdays
+        </button>
+        {birthdays && (
+          <p className="mt-1.5 text-xs text-slate-500">
+            Soonest first, and only people whose birthday you have. Anyone you'd rather not be
+            reminded about can be hidden from the list without losing their date.
+          </p>
+        )}
+      </section>
+
+      {/* The order buttons are meaningless while the birthdays view is on —
+          that view IS an order — so they are hidden rather than left there
+          showing a value that is not what the list is doing. */}
+      {!birthdays && (
+        <section>
+          <span className={label}>Order</span>
+          <div className="flex flex-wrap gap-2">
+            {SORTS.map((s) => (
+              <button
+                key={s}
+                type="button"
+                aria-pressed={query.sort === s}
+                onClick={() => setQuery({ sort: s })}
+                className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+                  query.sort === s
+                    ? 'border-orange-500/50 bg-orange-500/15 text-orange-300'
+                    : 'border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-200'
+                }`}
+              >
+                {SORT_LABELS[s]}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section>
+        <span className={label}>Tags</span>
+        {tags.length > 0 && (
+          <p className="-mt-0.5 mb-2 text-xs text-slate-500">
+            Tap once to show only those people, again to hide them from the list, and again to clear.
+            {query.hiddenTagIds.length > 0 && ' Hidden people still turn up when you search.'}
+          </p>
+        )}
+        {tags.length === 0 ? (
+          <p className="text-sm text-slate-500">
+            No tags yet. Add one while you're filling in a contact — they're entirely yours.
+          </p>
+        ) : (
+          <div className="flex flex-wrap gap-1.5">
+            {tags.map((t) => (
+              <TagChip
+                key={t.id}
+                name={t.name}
+                colour={t.colour}
+                {...chipState(t.id)}
+                onClick={() => toggleTag(t.id)}
+              />
+            ))}
+            <TagChip
+              name="Untagged"
+              colour="slate"
+              {...chipState(UNTAGGED)}
+              onClick={() => toggleTag(UNTAGGED)}
+            />
+          </div>
+        )}
+      </section>
+
+      {/* ⚠️ "Default" is a DESTINATION, not a reset (owner's request,
+          2026-09-11). "Clear everything" below turns the whole query off
+          and always has; this button goes to the view the app opens on,
+          which may itself be a tag filter and a birthdays view. When
+          nothing has been saved the two do the same thing, and that is
+          fine — the point is that once somebody saves a default, one tap
+          gets them back to it from wherever they have wandered.
+
+          The saved view is device-local (lib/store.ts, the 'view' key),
+          like the PIN lock and unlike the book: which tags a phone opens
+          on is not a fact about an address book, and syncing it would mean
+          a laptop deciding how the phone opens. */}
+      <section>
+        <span className={label}>Opens on</span>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={applyDefaultView}
+            disabled={showingDefault}
+            className="rounded-lg border border-slate-700 px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:border-slate-600 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Default
+          </button>
+          <button
+            type="button"
+            onClick={() => void saveDefaultView()}
+            disabled={showingDefault}
+            className="rounded-lg border border-orange-500/60 px-3 py-2 text-sm font-medium text-orange-300 transition-colors hover:bg-orange-500/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Save these as default
+          </button>
+          {customDefault && (
+            <button type="button" className={`${btnSubtle} px-2 py-1.5`} onClick={() => void forgetDefaultView()}>
+              Forget
+            </button>
+          )}
+        </div>
+        <p className="mt-1.5 text-xs text-slate-500">
+          {showingDefault
+            ? `This is what the app opens on: ${defaultSummary}.`
+            : `The app opens on ${defaultSummary}. The search box is never saved.`}
+        </p>
+      </section>
+
+      <div className="flex items-center justify-between gap-2 border-t border-slate-800 pt-3">
+        <button
+          type="button"
+          className={`${btnSubtle} px-2 py-1.5 disabled:cursor-not-allowed disabled:opacity-40`}
+          onClick={resetQuery}
+          disabled={!dirty}
+        >
+          Clear everything
+        </button>
+        <button type="button" className={`${btnSubtle} px-2 py-1.5`} onClick={() => setOpen(false)}>
+          Done
+        </button>
+      </div>
+    </>
+  )
 
   return (
     <div ref={rootRef} className="flex flex-col gap-3">
@@ -197,155 +347,24 @@ export function FilterBar({
         </button>
       </div>
 
-      {open && (
+      {open && !kit && (
         <div
           id={panelId}
           // A cap and its own scroll: on a phone the tag list can be longer
           // than the screen, and the search box should stay in view above it.
           className="max-h-[55vh] space-y-4 overflow-y-auto rounded-xl border border-slate-800 bg-slate-900 p-3 shadow-lg shadow-black/40"
         >
-          <section>
-            <span className={label}>View</span>
-            <button
-              type="button"
-              aria-pressed={birthdays}
-              // Back to Name A–Z when switched off, not to whatever it was
-              // before: remembering the previous order means the list can land
-              // somewhere the user did not choose and cannot see the reason for.
-              onClick={() => setQuery({ sort: birthdays ? 'name' : 'birthday' })}
-              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
-                birthdays
-                  ? 'border-orange-500/60 bg-orange-500/15 text-orange-300'
-                  : 'border-slate-700 text-slate-300 hover:border-slate-600 hover:bg-slate-800'
-              }`}
-            >
-              <span aria-hidden>🎂</span> Birthdays
-            </button>
-            {birthdays && (
-              <p className="mt-1.5 text-xs text-slate-500">
-                Soonest first, and only people whose birthday you have. Anyone you'd rather not be
-                reminded about can be hidden from the list without losing their date.
-              </p>
-            )}
-          </section>
-
-          {/* The order buttons are meaningless while the birthdays view is on —
-              that view IS an order — so they are hidden rather than left there
-              showing a value that is not what the list is doing. */}
-          {!birthdays && (
-            <section>
-              <span className={label}>Order</span>
-              <div className="flex flex-wrap gap-2">
-                {SORTS.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    aria-pressed={query.sort === s}
-                    onClick={() => setQuery({ sort: s })}
-                    className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
-                      query.sort === s
-                        ? 'border-orange-500/50 bg-orange-500/15 text-orange-300'
-                        : 'border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-200'
-                    }`}
-                  >
-                    {SORT_LABELS[s]}
-                  </button>
-                ))}
-              </div>
-            </section>
-          )}
-
-          <section>
-            <span className={label}>Tags</span>
-            {tags.length > 0 && (
-              <p className="-mt-0.5 mb-2 text-xs text-slate-500">
-                Tap once to show only those people, again to hide them from the list, and again to clear.
-                {query.hiddenTagIds.length > 0 && ' Hidden people still turn up when you search.'}
-              </p>
-            )}
-            {tags.length === 0 ? (
-              <p className="text-sm text-slate-500">
-                No tags yet. Add one while you're filling in a contact — they're entirely yours.
-              </p>
-            ) : (
-              <div className="flex flex-wrap gap-1.5">
-                {tags.map((t) => (
-                  <TagChip
-                    key={t.id}
-                    name={t.name}
-                    colour={t.colour}
-                    {...chipState(t.id)}
-                    onClick={() => toggleTag(t.id)}
-                  />
-                ))}
-                <TagChip
-                  name="Untagged"
-                  colour="slate"
-                  {...chipState(UNTAGGED)}
-                  onClick={() => toggleTag(UNTAGGED)}
-                />
-              </div>
-            )}
-          </section>
-
-          {/* ⚠️ "Default" is a DESTINATION, not a reset (owner's request,
-              2026-09-11). "Clear everything" below turns the whole query off
-              and always has; this button goes to the view the app opens on,
-              which may itself be a tag filter and a birthdays view. When
-              nothing has been saved the two do the same thing, and that is
-              fine — the point is that once somebody saves a default, one tap
-              gets them back to it from wherever they have wandered.
-
-              The saved view is device-local (lib/store.ts, the 'view' key),
-              like the PIN lock and unlike the book: which tags a phone opens
-              on is not a fact about an address book, and syncing it would mean
-              a laptop deciding how the phone opens. */}
-          <section>
-            <span className={label}>Opens on</span>
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={applyDefaultView}
-                disabled={showingDefault}
-                className="rounded-lg border border-slate-700 px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:border-slate-600 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Default
-              </button>
-              <button
-                type="button"
-                onClick={() => void saveDefaultView()}
-                disabled={showingDefault}
-                className="rounded-lg border border-orange-500/60 px-3 py-2 text-sm font-medium text-orange-300 transition-colors hover:bg-orange-500/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Save these as default
-              </button>
-              {customDefault && (
-                <button type="button" className={`${btnSubtle} px-2 py-1.5`} onClick={() => void forgetDefaultView()}>
-                  Forget
-                </button>
-              )}
-            </div>
-            <p className="mt-1.5 text-xs text-slate-500">
-              {showingDefault
-                ? `This is what the app opens on: ${defaultSummary}.`
-                : `The app opens on ${defaultSummary}. The search box is never saved.`}
-            </p>
-          </section>
-
-          <div className="flex items-center justify-between gap-2 border-t border-slate-800 pt-3">
-            <button
-              type="button"
-              className={`${btnSubtle} px-2 py-1.5 disabled:cursor-not-allowed disabled:opacity-40`}
-              onClick={resetQuery}
-              disabled={!dirty}
-            >
-              Clear everything
-            </button>
-            <button type="button" className={`${btnSubtle} px-2 py-1.5`} onClick={() => setOpen(false)}>
-              Done
-            </button>
-          </div>
+          {panel}
         </div>
+      )}
+      {/* The phone screens: the same choices in a bottom sheet, not a panel
+          dropped open under the button (no website popups on the phone). */}
+      {open && kit && (
+        <kit.Sheet title={kit.t('filters_title')} onClose={() => setOpen(false)}>
+          <div id={panelId} className="space-y-4 pb-2">
+            {panel}
+          </div>
+        </kit.Sheet>
       )}
     </div>
   )

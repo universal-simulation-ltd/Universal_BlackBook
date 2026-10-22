@@ -9,6 +9,7 @@ import { ContactRow, ListExport } from './ContactList'
 import { ListChip } from './ListChip'
 import { TagChip } from './TagChip'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls } from './ui'
+import { autoFocusOK } from '../native/kit'
 
 /**
  * The Lists tab on the landing screen (owner's request, 2026-09-17), there
@@ -154,7 +155,7 @@ function ListPage({ list, onBack }: { list: Tag; onBack: () => void }) {
               className={`${inputCls} max-w-sm`}
               value={list.name}
               aria-label="List name"
-              autoFocus
+              autoFocus={autoFocusOK()}
               onChange={(e) => void renameTag(list.id, e.target.value)}
               onBlur={() => setRenaming(false)}
               onKeyDown={(e) => {

@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import {
-  DefaultViewSelect,
   PreferencesDialog,
   requestSearch,
   UniversalAppsNavBar,
@@ -8,7 +7,6 @@ import {
   useDefaultView,
   useUniversal,
   useUser,
-  type AboutAppConfig,
 } from '@unisim/sdk'
 // <UsageTracker /> sends one "session.opened" row for a signed-in visitor, and
 // nothing else may ever be tracked here: no names, email addresses, category
@@ -17,15 +15,8 @@ import {
 import { UsageTracker } from '@unisim/sdk'
 import ProductLogo from './components/Header/ProductLogo'
 import AppMenu from './components/Header/AppMenu'
-// Generated — `npm run credits` after any dependency change. Never edit it by
-// hand: it is read off the installed tree, so a hand-kept list drifts from the
-// lockfile the first time anyone upgrades anything, and a credits list naming a
-// package we removed is worse than no list at all.
-import credits from './generated/credits.json'
 import { TagManager } from './components/TagManager'
 import { CloudPanel } from './components/CloudPanel'
-import { EmailListsPreference } from './components/EmailListsPreference'
-import { FormFieldsPreference } from './components/FormFieldsPreference'
 import { ContactForm } from './components/ContactForm'
 import { ContactList } from './components/ContactList'
 import { ContactView } from './components/ContactView'
@@ -36,7 +27,6 @@ import { SearchDrawer } from './components/SearchDrawer'
 import { TodoView } from './components/TodoView'
 import { LockPanel, LockScreen } from './components/Lock'
 import { btnGhost, btnPrimary } from './components/ui'
-import { contactsAvailability, ContactsPermissionError, pickOneContact } from './lib/deviceContacts'
 import { allOnline } from './lib/merge'
 import { forgetVault, loadSyncMeta } from './lib/store'
 import { useBookStore } from './stores/bookStore'
@@ -44,7 +34,11 @@ import { useLockStore } from './stores/lockStore'
 import { useSettingsStore } from './stores/settingsStore'
 import { useSyncStore } from './stores/syncStore'
 import { useTodoStore } from './stores/todoStore'
+import { usePanelStore } from './stores/panelStore'
+import { APP_ABOUT, availableTabs, LockLink, PREFERENCE_ROWS, REPO_URL, SyncStatus, TAB_NAMES, TABS, useContactPicker, type Tab } from './appParts'
 import { useEffectiveTheme, useThemeStore } from './stores/themeStore'
+import { phoneScreens } from './native/shell'
+import { followThemeWithStatusBar } from './native/systemBars'
 
 // The single page container. The navbar (via the SDK's `contentClassName`), the
 // page body and the footer all share it, so the suite switcher lines up with
@@ -58,40 +52,22 @@ import { useEffectiveTheme, useThemeStore } from './stores/themeStore'
 // notch along with everything it lines up with.
 const CONTAINER = 'gutter mx-auto w-full max-w-7xl'
 
-const REPO_URL = 'https://github.com/universal-simulation-ltd/Universal_BlackBook'
+/**
+ * The phone app's own screens (src/native/, lazy-loaded — the website never
+ * downloads them). Decided once: see native/shell.ts. The class is the phone's
+ * own look (index.css), on <html> so the lock screen and the overscroll wear
+ * it too; index.html's pre-paint sets it in the shell before this runs.
+ */
+const PHONE = phoneScreens()
+if (PHONE) {
+  document.documentElement.classList.add('bb-phone')
+  // From the start, so the lock screen's clock is legible in Dark too.
+  followThemeWithStatusBar()
+}
+const NativeApp = lazy(() => import('./native/NativeApp'))
 
 /** How long to wait after the last edit before pushing to the vault. */
 const AUTOSAVE_DELAY = 2500
-
-type Panel = 'tags' | 'io' | 'cloud' | 'lock' | 'wipe' | null
-
-/** The landing screen's tabs. Lists and To-do each need their App preference on. */
-const TABS = ['contacts', 'lists', 'todos'] as const
-type Tab = (typeof TABS)[number]
-const TAB_NAMES: Record<Tab, string> = { contacts: 'Contacts', lists: 'Lists', todos: 'To-do' }
-
-// "About this app" — handed to <UniversalAppsNavBar about>, which draws it at
-// the foot of "Tune this app" (SDK 0.161.0+) and opens its own AboutAppDialog.
-// It used to be the last row of the Advanced menu (Header/AppMenu.tsx).
-/** BlackBook's own rows in Tune this app — in the ⚙ menu's copy and in ours (see `TuneThisApp`). */
-const PREFERENCE_ROWS = (
-  <>
-    <EmailListsPreference />
-    <OpensOnPreference />
-    <FormFieldsPreference />
-  </>
-)
-
-const APP_ABOUT: AboutAppConfig = {
-  repo:    'https://github.com/universal-simulation-ltd/Universal_BlackBook',
-  subject: 'Your contacts',
-  plural:  true,
-  except:  'the end-to-end encrypted backup you choose to store',
-  headline: 'Other address books keep your contacts on their servers.',
-  version: __APP_VERSION__,
-  credits,
-  noticesHref: 'https://github.com/universal-simulation-ltd/Universal_BlackBook/blob/main/THIRD-PARTY-NOTICES.md',
-}
 
 export default function App() {
   const init = useBookStore((s) => s.init)
@@ -106,7 +82,9 @@ export default function App() {
       setNotice('Signed out, so your book has been removed from this device. Sign in again to bring it back from your online backup.')
     }
   }, [setNotice])
-  const [panel, setPanel] = useState<Panel>(null)
+  const panel = usePanelStore((s) => s.panel)
+  const setPanel = usePanelStore((s) => s.open)
+  const closePanel = usePanelStore((s) => s.close)
   const resetSettings = useSettingsStore((s) => s.reset)
   // Contacts | Lists | To-do, on the landing screen. Lists only exists with App
   // preferences ▸ Email lists on, To-do with ▸ To-do; turning either off drops
@@ -149,7 +127,7 @@ export default function App() {
   // Stable, not an inline arrow: `openPanel` is a dependency of an effect in
   // there, and a fresh closure per render re-runs it per render — the same
   // shape of bug as the `user` object below, one step short of a loop.
-  const openCloud = useCallback(() => setPanel('cloud'), [])
+  const openCloud = useCallback(() => setPanel('cloud'), [setPanel])
   useCloudSync(openCloud)
 
   // ⚠️ Every hook above runs whatever the lock says — they have to, and none of
@@ -159,6 +137,14 @@ export default function App() {
   // keypad appears is exactly what this feature exists to prevent.
   if (lockStatus === 'unknown') return <div className="min-h-screen bg-slate-950" />
   if (lockStatus === 'locked') return <LockScreen />
+
+  if (PHONE) {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-slate-950" />}>
+        <NativeApp openCloud={openCloud} />
+      </Suspense>
+    )
+  }
 
   return (
     // ⚠️ pt-[env(safe-area-inset-top)] is for the native (Capacitor) build, not
@@ -429,151 +415,13 @@ export default function App() {
       {viewing && <ContactView key={`view-${viewing}`} id={viewing} />}
       {editing && <ContactForm key={`form-${editing}`} id={editing} />}
       <TuneThisApp />
-      {panel === 'tags' && <TagManager onClose={() => setPanel(null)} />}
-      {panel === 'io' && <ImportExport onClose={() => setPanel(null)} />}
-      {panel === 'cloud' && <CloudPanel onClose={() => setPanel(null)} />}
-      {panel === 'lock' && <LockPanel onClose={() => setPanel(null)} />}
-      {panel === 'wipe' && <DeleteAllData onClose={() => setPanel(null)} />}
+      {panel === 'tags' && <TagManager onClose={closePanel} />}
+      {panel === 'io' && <ImportExport onClose={closePanel} />}
+      {panel === 'cloud' && <CloudPanel onClose={closePanel} />}
+      {panel === 'lock' && <LockPanel onClose={closePanel} />}
+      {panel === 'wipe' && <DeleteAllData onClose={closePanel} />}
     </div>
   )
-}
-
-/**
- * The padlock beside the page title: the whole of the PIN lock's front door.
- *
- * With a PIN set it states: "🔒 Locked" is what the app IS, which is the
- * thing worth knowing at a glance, and tapping it asks for the PIN before
- * taking the lock off. With NO PIN it offers: "🔓 Lock with PIN" (owner's
- * call, 2026-10-12). It used to read "🔓 Unlocked" there, which described a
- * lock nobody had set up as if it had been opened. `title` and the accessible
- * name carry the action either way.
- *
- * It sits in the body rather than in the ⚙ menu (owner's call) because a lock
- * nobody knows is available is a lock nobody turns on — and because "is this
- * thing locked?" deserves an answer without opening a menu to find it.
- *
- * The padlocks are emoji, and that is checked rather than assumed: 🔒 is
- * already shipping in this app's own menu (Header/AppMenu.tsx). See the notes
- * on 📇 and ✕ elsewhere for the two codepoints that were NOT safe.
- */
-function LockLink({ onClick }: { onClick: () => void }) {
-  const locked = useLockStore((s) => s.record !== null)
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={locked ? 'Turn the PIN lock off' : 'Lock this app with a 4-digit PIN'}
-      className="inline-flex items-center gap-1 rounded text-sm text-slate-400 underline-offset-4 hover:text-orange-400 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
-    >
-      <span aria-hidden>{locked ? '\u{1F512}' : '\u{1F513}'}</span>
-      <span>{locked ? 'Locked' : 'Lock with PIN'}</span>
-      {locked && <span className="sr-only">— tap to turn the PIN lock off</span>}
-    </button>
-  )
-}
-
-/**
- * "Syncing…" / "Synced" beside the page title (owner's request, 2026-09-17:
- * show that what was just added is backed up).
- *
- * Only while signed in — signed out the book is local-first by design, and a
- * permanent "not backed up" would nag people who chose that. Signed in without
- * a backup yet, or with one waiting for its passphrase, it says so and opens
- * the backup panel; the same for a failed or conflicting save.
- */
-function SyncStatus({ onOpen }: { onOpen: () => void }) {
-  const state = useSyncStore((s) => s.state)
-  const status = useSyncStore((s) => s.status)
-  const dirty = useSyncStore((s) => s.dirty)
-  const lastPushedAt = useSyncStore((s) => s.lastPushedAt)
-  if (state === 'signed-out') return null
-
-  const problem = status === 'error' || status === 'conflict'
-  const view =
-    state === 'off'
-      ? { text: 'Not backed up', tone: 'text-slate-400', icon: '☁︎' }
-      : state === 'locked'
-        ? { text: 'Backup locked', tone: 'text-slate-400', icon: '☁︎' }
-        : problem
-          ? { text: 'Not synced', tone: 'text-rose-300', icon: '!' }
-          : dirty || status === 'working'
-            ? { text: 'Syncing…', tone: 'text-slate-400', icon: '↻' }
-            : { text: 'Synced', tone: 'text-emerald-300', icon: '✓' }
-  const clickable = state !== 'on' || problem
-
-  const body = (
-    <>
-      <span aria-hidden className={view.text === 'Syncing…' ? 'inline-block animate-spin' : undefined}>
-        {view.icon}
-      </span>
-      <span>{view.text}</span>
-    </>
-  )
-  const cls = `inline-flex items-center gap-1 text-sm ${view.tone}`
-  return clickable ? (
-    <button
-      type="button"
-      onClick={onOpen}
-      className={`${cls} rounded underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400`}
-    >
-      {body}
-    </button>
-  ) : (
-    <span
-      className={cls}
-      role="status"
-      aria-live="polite"
-      title={lastPushedAt ? `Backed up ${new Date(lastPushedAt).toLocaleString('en-GB')}` : undefined}
-    >
-      {body}
-    </span>
-  )
-}
-
-/**
- * "From my contacts" — the phone's own address book, one person at a time.
- *
- * The picked name, email, number and birthday open the normal Add form rather
- * than being saved straight into the book. That is the whole point of the
- * feature: the fields the phone can fill in are not the fields anybody opens
- * BlackBook for, so it hands you the form with the boring half done and the
- * cursor free for the note and the tags.
- *
- * ⚠️ **`picking` never disables the button, deliberately.** iOS's contact
- * picker has no cancel callback in @capacitor-community/contacts 7.2.0, so
- * closing it without choosing anybody leaves this promise pending forever
- * (see `pickOneContact`). A disabled button would make one cancel the end of
- * the feature until the app restarts; a stale "waiting" line that a second tap
- * clears is the harmless version of the same bug.
- */
-function useContactPicker() {
-  const startWith = useBookStore((s) => s.startWith)
-  const setNotice = useBookStore((s) => s.setNotice)
-  // Read once: whether the device has contacts to offer cannot change while
-  // the app is open, and calling it per render would run a feature detection
-  // on every keystroke in the search box.
-  const [where] = useState(contactsAvailability)
-  const [picking, setPicking] = useState(false)
-
-  const pick = useCallback(async () => {
-    setPicking(true)
-    try {
-      const picked = await pickOneContact()
-      // Null is the web picker's cancel, which is a decision and not a fault:
-      // nothing is said about it.
-      if (picked) startWith({ ...picked })
-    } catch (e) {
-      setNotice(
-        e instanceof ContactsPermissionError
-          ? 'BlackBook cannot see your contacts. Allow it in Settings ▸ Privacy ▸ Contacts, or add them by hand.'
-          : 'That contact could not be read. You can still add them by hand.',
-      )
-    } finally {
-      setPicking(false)
-    }
-  }, [startWith, setNotice])
-
-  return { canPick: where !== 'none', picking, pick: () => void pick() }
 }
 
 /**
@@ -833,27 +681,3 @@ function TuneThisApp() {
   )
 }
 
-/** The tabs the landing screen shows, given App preferences ▸ Email lists and ▸ To-do. */
-function availableTabs(emailLists: boolean, todos: boolean): Tab[] {
-  return TABS.filter((t) => t === 'contacts' || (t === 'lists' ? emailLists : todos))
-}
-
-/**
- * Tune this app ▸ "Opens on": the double-tapped default tab as a row, for
- * anybody who cannot double-tap. Only while there is more than one tab to open
- * on — with Email lists and To-do both off there is only Contacts.
- */
-function OpensOnPreference() {
-  const emailLists = useSettingsStore((s) => s.emailLists)
-  const todos = useSettingsStore((s) => s.todos)
-  const tabs = availableTabs(emailLists, todos)
-  if (tabs.length < 2) return null
-  return (
-    <DefaultViewSelect<Tab>
-      id="tab"
-      label="Opens on"
-      fallback="contacts"
-      views={tabs.map((t) => ({ value: t, label: TAB_NAMES[t] }))}
-    />
-  )
-}

@@ -1,0 +1,475 @@
+/* The phone screens' own look: a little black book. Paper and ink in Light,
+   the black leather cover in Dark, a red ribbon for the accent, and the
+   book's titles set in a serif (New York on an iPhone, Noto Serif / Georgia
+   elsewhere). The colours are index.css's `html.bb-phone` palettes, read
+   through the same Tailwind variables the shared components use, so the list,
+   the form and the panels wear the look without knowing it. Loaded only with
+   the phone screens, so none of this reaches the website. */
+
+:root {
+  --bb-serif: ui-serif, 'New York', 'Iowan Old Style', 'Noto Serif', Georgia, serif;
+  --bb-bar-h: 52px;
+  --bb-tabs-h: 58px;
+}
+
+html.bb-phone body {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bb-app {
+  min-height: 100dvh;
+  color: var(--color-slate-200);
+  background: var(--color-slate-950);
+}
+
+/* ── Top bar ─────────────────────────────────────────────────────────────── */
+.bb-top {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  padding-top: env(safe-area-inset-top);
+  background: color-mix(in srgb, var(--color-slate-950) 92%, transparent);
+  -webkit-backdrop-filter: saturate(1.4) blur(14px);
+  backdrop-filter: saturate(1.4) blur(14px);
+  border-bottom: 1px solid var(--color-slate-800);
+}
+.bb-topbar {
+  height: var(--bb-bar-h);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 max(12px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left));
+}
+.bb-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+  font-family: var(--bb-serif);
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-slate-100);
+}
+.bb-brand small {
+  font-family: -apple-system, system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-slate-500);
+}
+.bb-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  color: var(--color-orange-400);
+}
+.bb-iconbtn:active {
+  background: var(--color-slate-800);
+}
+
+/* ── The page under the bars ─────────────────────────────────────────────── */
+.bb-main {
+  padding: calc(env(safe-area-inset-top) + var(--bb-bar-h) + 14px) max(16px, env(safe-area-inset-right))
+    calc(env(safe-area-inset-bottom) + var(--bb-tabs-h) + 24px) max(16px, env(safe-area-inset-left));
+}
+.bb-h1 {
+  font-family: var(--bb-serif);
+  font-size: 30px;
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--color-slate-100);
+}
+
+/* ── Tab bar ─────────────────────────────────────────────────────────────── */
+.bb-tabs {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  padding: 6px max(8px, env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 4px) max(8px, env(safe-area-inset-left));
+  background: color-mix(in srgb, var(--color-slate-900) 94%, transparent);
+  -webkit-backdrop-filter: saturate(1.4) blur(14px);
+  backdrop-filter: saturate(1.4) blur(14px);
+  border-top: 1px solid var(--color-slate-800);
+}
+.bb-tab {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-height: 48px;
+  padding-top: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-slate-500);
+  touch-action: manipulation;
+}
+.bb-tab[aria-current='page'] {
+  color: var(--color-orange-400);
+}
+/* The tab the app opens on (double-tap a tab): a ribbon tucked over it. */
+.bb-tab .bb-default {
+  position: absolute;
+  top: -6px;
+  left: calc(50% + 10px);
+  width: 7px;
+  height: 12px;
+  background: var(--color-orange-500);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%);
+}
+.bb-tab.flash {
+  animation: bb-pop 420ms ease-out;
+}
+@keyframes bb-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.14); }
+  100% { transform: scale(1); }
+}
+
+/* ── Pages ───────────────────────────────────────────────────────────────── */
+.bb-page {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-slate-950);
+  color: var(--color-slate-200);
+  animation: bb-slide-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes bb-slide-in {
+  from { transform: translateX(36px); opacity: 0.4; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.bb-pagebar {
+  flex: none;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 4px;
+  min-height: var(--bb-bar-h);
+  padding: env(safe-area-inset-top) max(8px, env(safe-area-inset-right)) 0 max(4px, env(safe-area-inset-left));
+  border-bottom: 1px solid var(--color-slate-800);
+  background: var(--color-slate-950);
+}
+.bb-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  min-height: 44px;
+  max-width: 40vw;
+  padding: 0 8px 0 2px;
+  font-size: 16px;
+  color: var(--color-orange-400);
+}
+.bb-back span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bb-pagetitle {
+  font-family: var(--bb-serif);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--color-slate-100);
+}
+.bb-pageactions {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 44px;
+}
+.bb-pagebody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px max(16px, env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 28px) max(16px, env(safe-area-inset-left));
+}
+.bb-pagebody.bare {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Sheets ──────────────────────────────────────────────────────────────── */
+.bb-sheetwrap {
+  position: fixed;
+  inset: 0;
+}
+.bb-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(12, 10, 8, 0.42);
+  animation: bb-fade 160ms ease-out;
+}
+.bb-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: calc(100dvh - env(safe-area-inset-top) - 24px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 22px 22px 0 0;
+  background: var(--color-slate-900);
+  color: var(--color-slate-200);
+  box-shadow: 0 -10px 30px rgba(20, 14, 8, 0.22);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 14px);
+  animation: bb-rise 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes bb-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes bb-rise {
+  from { transform: translateY(48px); opacity: 0.4; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.bb-gripzone {
+  flex: none;
+  display: flex;
+  justify-content: center;
+  padding: 6px 0 4px;
+  touch-action: none;
+  cursor: grab;
+}
+.bb-grip {
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--color-slate-700);
+}
+.bb-sheettitle {
+  font-family: var(--bb-serif);
+  flex: none;
+  padding: 2px 20px 8px;
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--color-slate-100);
+}
+.bb-sheetbody {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 max(16px, env(safe-area-inset-right)) 4px max(16px, env(safe-area-inset-left));
+}
+.bb-sheetrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 12px;
+  border-radius: 12px;
+  font-size: 16px;
+  color: var(--color-slate-100);
+}
+.bb-sheetrow:active {
+  background: var(--color-slate-800);
+}
+.bb-sheetrow.danger {
+  color: var(--color-rose-400);
+}
+.bb-sheetrow-icon {
+  display: inline-flex;
+  width: 24px;
+  justify-content: center;
+  color: var(--color-orange-400);
+}
+
+/* ── Lists of rows (Tune, About) ─────────────────────────────────────────── */
+.bb-group {
+  margin-top: 22px;
+}
+.bb-group > h2 {
+  margin: 0 4px 8px;
+  font-family: -apple-system, system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-slate-500);
+}
+.bb-card {
+  border-radius: 16px;
+  border: 1px solid var(--color-slate-800);
+  background: var(--color-slate-900);
+  overflow: hidden;
+}
+.bb-card > * + * {
+  border-top: 1px solid var(--color-slate-800);
+}
+.bb-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 16px;
+  color: var(--color-slate-100);
+}
+.bb-row:active {
+  background: var(--color-slate-800);
+}
+.bb-row .note {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--color-slate-500);
+}
+.bb-row .value {
+  font-size: 15px;
+  color: var(--color-slate-500);
+}
+.bb-row.danger {
+  color: var(--color-rose-400);
+}
+.bb-row-icon {
+  display: inline-flex;
+  width: 22px;
+  justify-content: center;
+  color: var(--color-orange-400);
+}
+.bb-cardpad {
+  padding: 12px 14px;
+}
+
+/* A segmented control: Light · Dark · Match my device. */
+.bb-segs {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--color-slate-800);
+}
+.bb-segs button {
+  min-height: 40px;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-slate-400);
+}
+.bb-segs button[aria-pressed='true'] {
+  background: var(--color-slate-900);
+  color: var(--color-slate-100);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+/* The bottom of Tune and About: who made it, in the book's own words. */
+.bb-credit {
+  margin: 28px 8px 0;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-slate-500);
+}
+.bb-credit a {
+  color: var(--color-orange-400);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* A contact's quick actions: call, message, email, share. */
+.bb-actions {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 8px;
+}
+.bb-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 4px;
+  border-radius: 14px;
+  background: var(--color-slate-900);
+  border: 1px solid var(--color-slate-800);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-orange-400);
+}
+.bb-action[aria-disabled='true'] {
+  opacity: 0.4;
+}
+
+.bb-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom) + var(--bb-tabs-h) + 18px);
+  z-index: 300;
+  transform: translateX(-50%);
+  max-width: min(340px, calc(100vw - 32px));
+  padding: 10px 16px;
+  border-radius: 16px;
+  background: var(--color-slate-100);
+  color: var(--color-slate-950);
+  font-size: 14px;
+  text-align: center;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  animation: bb-rise 200ms ease-out;
+}
+
+/* Article text in the knowledge base. */
+.bb-article p,
+.bb-article li {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--color-slate-200);
+}
+.bb-article p + p,
+.bb-article ul,
+.bb-article ol {
+  margin-top: 12px;
+}
+.bb-article h3 {
+  font-family: var(--bb-serif);
+  margin-top: 22px;
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--color-slate-100);
+}
+.bb-article ul {
+  list-style: disc;
+  padding-left: 22px;
+}
+.bb-article ol {
+  list-style: decimal;
+  padding-left: 22px;
+}
+.bb-article strong {
+  color: var(--color-slate-100);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bb-page,
+  .bb-sheet,
+  .bb-scrim,
+  .bb-toast,
+  .bb-tab.flash {
+    animation: none;
+  }
+}

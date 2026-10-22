@@ -3,6 +3,7 @@ import { onlyDigits, PIN_LENGTH } from '../lib/lock'
 import { useLockStore, type PinResult } from '../stores/lockStore'
 import ProductLogo from './Header/ProductLogo'
 import { Modal } from './Modal'
+import { autoFocusOK } from '../native/kit'
 import { btnDanger, btnGhost, btnPrimary, inputBase, label } from './ui'
 
 /**
@@ -289,7 +290,7 @@ function TurnOn({ onDone }: { onDone: () => void }) {
         id="lock-new"
         name={`Choose a ${PIN_LENGTH}-digit PIN`}
         value={pin}
-        autoFocus
+        autoFocus={autoFocusOK()}
         disabled={busy}
         onChange={(v) => {
           setPin(v)
@@ -377,7 +378,7 @@ function TurnOff({ onDone }: { onDone: () => void }) {
         id="lock-current"
         name="Enter your PIN to turn the lock off"
         value={pin}
-        autoFocus
+        autoFocus={autoFocusOK()}
         disabled={busy || waiting > 0}
         onChange={(v) => {
           setPin(v)

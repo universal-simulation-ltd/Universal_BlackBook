@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { usePageScrollLock } from '../lib/scrollLock'
+import { usePhoneKit } from '../native/kit'
 import { btnPrimary } from './ui'
 
 /**
@@ -61,6 +62,7 @@ export function NotesFullscreen({
   // Third lock in the stack — the list, the form and this note. See
   // lib/scrollLock.ts for why they count rather than each set and clear it.
   usePageScrollLock()
+  const kit = usePhoneKit()
 
   useEffect(() => {
     const el = ref.current
@@ -80,6 +82,27 @@ export function NotesFullscreen({
       if (el.open) el.close()
     }
   }, [])
+
+  // The phone screens: a page of its own, back to the form with the back
+  // button or a swipe from the left edge. Still not focused on arrival.
+  if (kit) {
+    return (
+      <kit.Page
+        title={name.trim() ? kit.t('notes_of', { name: name.trim() }) : kit.t('notes_title')}
+        backLabel={kit.t('back_to_form')}
+        onBack={onClose}
+        bare
+      >
+        <textarea
+          className="min-h-0 w-full flex-auto resize-none border-0 bg-slate-950 px-4 py-4 text-base leading-7 text-slate-100 placeholder:text-slate-600 focus:outline-none"
+          style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Met at the Leeds conference. Two kids. Allergic to shellfish."
+        />
+      </kit.Page>
+    )
+  }
 
   return (
     <dialog

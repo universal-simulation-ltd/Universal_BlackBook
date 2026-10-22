@@ -6,6 +6,7 @@ import { isList } from '../lib/lists'
 import type { Tag } from '../lib/types'
 import { useBookStore } from '../stores/bookStore'
 import { useEffectiveTheme } from '../stores/themeStore'
+import { usePhoneKit } from '../native/kit'
 import { CloseGlyph } from './Modal'
 import { ListChip } from './ListChip'
 import { TagChip } from './TagChip'
@@ -45,6 +46,7 @@ export function ContactView({ id }: { id: string }) {
   const setNotes = useBookStore((s) => s.setNotes)
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
+  const kit = usePhoneKit()
 
   usePageScrollLock()
 
@@ -135,6 +137,214 @@ export function ContactView({ id }: { id: string }) {
     chips.length === 0 &&
     !notes.trim()
 
+  const details = (
+    <div className="mx-auto w-full max-w-2xl space-y-5">
+      {contact.listOnly && listChips.length > 0 && (
+        // Somebody who came in on a list and is not in Contacts — say so,
+        // and offer the one tap that makes them a contact.
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-800 bg-slate-900 px-3 py-2.5">
+          <p className="text-sm text-slate-400">Only on {listChips.length === 1 ? 'a list' : 'lists'} — not in Contacts.</p>
+          <button type="button" className={btnGhost} onClick={() => void addToContacts(contact.id)}>
+            Add to Contacts
+          </button>
+        </div>
+      )}
+
+      {contact.email.trim() && (
+        <Row name="Email">
+          <a
+            href={`mailto:${contact.email.trim()}`}
+            className="break-all text-base text-orange-300 underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+          >
+            {contact.email}
+          </a>
+        </Row>
+      )}
+
+      {contact.company?.trim() && (
+        <Row name="Company">
+          <p className="break-words text-base text-slate-200"><Linked text={contact.company} /></p>
+        </Row>
+      )}
+
+      {contact.phone.trim() && (
+        <Row name="Phone">
+          {/* The stored string is what is SHOWN — spacing, brackets and all
+              (see Contact.phone) — and the digits are what is dialled. A
+              `tel:` href keeps the punctuation the phone would choke on out
+              of the URL without rewriting what the user typed. */}
+          <a
+            href={`tel:${contact.phone.replace(/[^\d+]/g, '')}`}
+            className="text-base tabular-nums text-orange-300 underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+          >
+            {contact.phone}
+          </a>
+        </Row>
+      )}
+
+      {contact.address?.trim() && (
+        <Row name="Address">
+          {/* `pre-line`: the line breaks are the address. */}
+          <p className="whitespace-pre-line break-words text-base text-slate-200"><Linked text={contact.address.trim()} /></p>
+        </Row>
+      )}
+
+      {contact.birthdate && (
+        <Row name="Birthday">
+          <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-base text-slate-200">
+            <span>{formatBirthday(contact.birthdate)}</span>
+            {age !== null && <span className="text-sm text-slate-500 tabular-nums">Age {age}</span>}
+          </p>
+          {/* The countdown is here on every contact, not only in the
+              birthdays view: "in 9 days" is the reason to have opened
+              somebody's card at all in the week before it. */}
+          {next && (
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-orange-300/90">
+              <span aria-hidden>{next.inDays === 0 ? '🎉' : '🎂'}</span>
+              <span>{countdownLabel(next.inDays)}</span>
+              {next.turning !== null && (
+                <>
+                  <span aria-hidden className="text-slate-600">·</span>
+                  <span className="tabular-nums">Turning {next.turning}</span>
+                </>
+              )}
+            </p>
+          )}
+        </Row>
+      )}
+
+      {tagChips.length > 0 && (
+        <Row name="Tags">
+          <div className="flex flex-wrap gap-1.5">
+            {tagChips.map((t) => (
+              <TagChip key={t.id} name={t.name} colour={t.colour} />
+            ))}
+          </div>
+        </Row>
+      )}
+
+      {listChips.length > 0 && (
+        <Row name="Lists">
+          <div className="flex flex-wrap gap-1.5">
+            {listChips.map((t) => (
+              <ListChip key={t.id} name={t.name} />
+            ))}
+          </div>
+        </Row>
+      )}
+
+      <div>
+        {/* A real `<label>` here, unlike `Row`: this one has a control. */}
+        <label htmlFor={`${titleId}-notes`} className={label}>
+          Notes
+        </label>
+        {typing ? (
+          // Typed into directly (owner's request, 2026-10-08). Borderless,
+          // so a note still reads as a note and not as a form; no clamp
+          // and no inner scroll (see the height effect above).
+          <textarea
+            id={`${titleId}-notes`}
+            ref={notesRef}
+            rows={3}
+            autoFocus
+            // The caret goes to the END: the usual reason to tap a note is to
+            // add the next entry under the last one, as in the dated log
+            // that prompted this.
+            onFocus={(e) => {
+              const end = e.currentTarget.value.length
+              e.currentTarget.setSelectionRange(end, end)
+            }}
+            value={notes}
+            onChange={(e) => {
+              const v = e.target.value
+              setDraft(v)
+              draftRef.current = v
+              clearTimeout(timer.current)
+              timer.current = setTimeout(() => flushRef.current(), 500)
+            }}
+            onBlur={() => {
+              if (timer.current !== undefined) flush()
+              setTyping(false)
+            }}
+            placeholder="Met at the Leeds conference. Two kids. Allergic to shellfish."
+            className="-mx-2 block w-[calc(100%+1rem)] resize-none overflow-hidden rounded-lg border-0 bg-slate-900 px-2 py-1 text-base leading-7 text-slate-100 placeholder:text-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
+          />
+        ) : (
+          // ⚠️ Read with its links live until tapped — a textarea cannot
+          // hold a link, and the links in a note are half of why it is
+          // opened. A tap on the words (not on a link) starts typing; the
+          // keyboard only comes up then, never just for opening somebody.
+          // A div and not a button: a button may not hold links.
+          <div
+            id={`${titleId}-notes`}
+            role="textbox"
+            aria-multiline="true"
+            aria-readonly="false"
+            tabIndex={0}
+            onClick={(e) => {
+              if ((e.target as HTMLElement).closest('a, button')) return
+              setTyping(true)
+            }}
+            onKeyDown={(e) => {
+              if (e.target !== e.currentTarget) return
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                setTyping(true)
+              }
+            }}
+            className="-mx-2 cursor-text rounded-lg px-2 py-1 hover:bg-slate-900/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
+          >
+            {notes.trim() ? (
+              <p className="whitespace-pre-wrap break-words text-base leading-7 text-slate-200">
+                <Linked text={notes} />
+              </p>
+            ) : (
+              <p className="text-base leading-7 text-slate-500">Nothing written down yet — tap to start.</p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {bare && (
+        <p className="text-sm text-slate-500">
+          A name and nothing else so far. Fine-tune them to add an email, a number, a birthday or the
+          thing you want to remember.
+        </p>
+      )}
+    </div>
+  )
+
+  // The phone screens: the person as a PAGE (back to the list with the back
+  // button or a swipe from the left edge), with Call · Message · Email · Share
+  // across the top. Fine-tune is in the page's bar.
+  if (kit) {
+    return (
+      <kit.Page
+        title={contact.name || 'Unnamed'}
+        backLabel={kit.t('contact_back')}
+        onBack={() => {
+          flush()
+          close(null)
+        }}
+        actions={
+          <button
+            type="button"
+            className="min-h-[44px] px-2 text-[16px] font-semibold text-orange-400"
+            onClick={() => {
+              flush()
+              edit(contact.id)
+            }}
+          >
+            {kit.t('fine_tune')}
+          </button>
+        }
+      >
+        <kit.ContactActions contact={contact} />
+        {details}
+      </kit.Page>
+    )
+  }
+
   return (
     <dialog
       ref={ref}
@@ -204,180 +414,7 @@ export function ContactView({ id }: { id: string }) {
           paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom))',
         }}
       >
-        <div className="mx-auto w-full max-w-2xl space-y-5">
-          {contact.listOnly && listChips.length > 0 && (
-            // Somebody who came in on a list and is not in Contacts — say so,
-            // and offer the one tap that makes them a contact.
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-800 bg-slate-900 px-3 py-2.5">
-              <p className="text-sm text-slate-400">Only on {listChips.length === 1 ? 'a list' : 'lists'} — not in Contacts.</p>
-              <button type="button" className={btnGhost} onClick={() => void addToContacts(contact.id)}>
-                Add to Contacts
-              </button>
-            </div>
-          )}
-
-          {contact.email.trim() && (
-            <Row name="Email">
-              <a
-                href={`mailto:${contact.email.trim()}`}
-                className="break-all text-base text-orange-300 underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
-              >
-                {contact.email}
-              </a>
-            </Row>
-          )}
-
-          {contact.company?.trim() && (
-            <Row name="Company">
-              <p className="break-words text-base text-slate-200"><Linked text={contact.company} /></p>
-            </Row>
-          )}
-
-          {contact.phone.trim() && (
-            <Row name="Phone">
-              {/* The stored string is what is SHOWN — spacing, brackets and all
-                  (see Contact.phone) — and the digits are what is dialled. A
-                  `tel:` href keeps the punctuation the phone would choke on out
-                  of the URL without rewriting what the user typed. */}
-              <a
-                href={`tel:${contact.phone.replace(/[^\d+]/g, '')}`}
-                className="text-base tabular-nums text-orange-300 underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
-              >
-                {contact.phone}
-              </a>
-            </Row>
-          )}
-
-          {contact.address?.trim() && (
-            <Row name="Address">
-              {/* `pre-line`: the line breaks are the address. */}
-              <p className="whitespace-pre-line break-words text-base text-slate-200"><Linked text={contact.address.trim()} /></p>
-            </Row>
-          )}
-
-          {contact.birthdate && (
-            <Row name="Birthday">
-              <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-base text-slate-200">
-                <span>{formatBirthday(contact.birthdate)}</span>
-                {age !== null && <span className="text-sm text-slate-500 tabular-nums">Age {age}</span>}
-              </p>
-              {/* The countdown is here on every contact, not only in the
-                  birthdays view: "in 9 days" is the reason to have opened
-                  somebody's card at all in the week before it. */}
-              {next && (
-                <p className="mt-1 flex items-center gap-1.5 text-sm text-orange-300/90">
-                  <span aria-hidden>{next.inDays === 0 ? '🎉' : '🎂'}</span>
-                  <span>{countdownLabel(next.inDays)}</span>
-                  {next.turning !== null && (
-                    <>
-                      <span aria-hidden className="text-slate-600">·</span>
-                      <span className="tabular-nums">Turning {next.turning}</span>
-                    </>
-                  )}
-                </p>
-              )}
-            </Row>
-          )}
-
-          {tagChips.length > 0 && (
-            <Row name="Tags">
-              <div className="flex flex-wrap gap-1.5">
-                {tagChips.map((t) => (
-                  <TagChip key={t.id} name={t.name} colour={t.colour} />
-                ))}
-              </div>
-            </Row>
-          )}
-
-          {listChips.length > 0 && (
-            <Row name="Lists">
-              <div className="flex flex-wrap gap-1.5">
-                {listChips.map((t) => (
-                  <ListChip key={t.id} name={t.name} />
-                ))}
-              </div>
-            </Row>
-          )}
-
-          <div>
-            {/* A real `<label>` here, unlike `Row`: this one has a control. */}
-            <label htmlFor={`${titleId}-notes`} className={label}>
-              Notes
-            </label>
-            {typing ? (
-              // Typed into directly (owner's request, 2026-10-08). Borderless,
-              // so a note still reads as a note and not as a form; no clamp
-              // and no inner scroll (see the height effect above).
-              <textarea
-                id={`${titleId}-notes`}
-                ref={notesRef}
-                rows={3}
-                autoFocus
-                // The caret goes to the END: the usual reason to tap a note is to
-                // add the next entry under the last one, as in the dated log
-                // that prompted this.
-                onFocus={(e) => {
-                  const end = e.currentTarget.value.length
-                  e.currentTarget.setSelectionRange(end, end)
-                }}
-                value={notes}
-                onChange={(e) => {
-                  const v = e.target.value
-                  setDraft(v)
-                  draftRef.current = v
-                  clearTimeout(timer.current)
-                  timer.current = setTimeout(() => flushRef.current(), 500)
-                }}
-                onBlur={() => {
-                  if (timer.current !== undefined) flush()
-                  setTyping(false)
-                }}
-                placeholder="Met at the Leeds conference. Two kids. Allergic to shellfish."
-                className="-mx-2 block w-[calc(100%+1rem)] resize-none overflow-hidden rounded-lg border-0 bg-slate-900 px-2 py-1 text-base leading-7 text-slate-100 placeholder:text-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
-              />
-            ) : (
-              // ⚠️ Read with its links live until tapped — a textarea cannot
-              // hold a link, and the links in a note are half of why it is
-              // opened. A tap on the words (not on a link) starts typing; the
-              // keyboard only comes up then, never just for opening somebody.
-              // A div and not a button: a button may not hold links.
-              <div
-                id={`${titleId}-notes`}
-                role="textbox"
-                aria-multiline="true"
-                aria-readonly="false"
-                tabIndex={0}
-                onClick={(e) => {
-                  if ((e.target as HTMLElement).closest('a, button')) return
-                  setTyping(true)
-                }}
-                onKeyDown={(e) => {
-                  if (e.target !== e.currentTarget) return
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault()
-                    setTyping(true)
-                  }
-                }}
-                className="-mx-2 cursor-text rounded-lg px-2 py-1 hover:bg-slate-900/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
-              >
-                {notes.trim() ? (
-                  <p className="whitespace-pre-wrap break-words text-base leading-7 text-slate-200">
-                    <Linked text={notes} />
-                  </p>
-                ) : (
-                  <p className="text-base leading-7 text-slate-500">Nothing written down yet — tap to start.</p>
-                )}
-              </div>
-            )}
-          </div>
-
-          {bare && (
-            <p className="text-sm text-slate-500">
-              A name and nothing else so far. Fine-tune them to add an email, a number, a birthday or the
-              thing you want to remember.
-            </p>
-          )}
-        </div>
+        {details}
       </div>
     </dialog>
   )
@@ -411,6 +448,11 @@ function Row({ name, children }: { name: string; children: ReactNode }) {
  */
 function Linked({ text }: { text: string }) {
   const theme = useEffectiveTheme()
+  const kit = usePhoneKit()
+  const linkClassName =
+    'break-all text-orange-300 underline underline-offset-4 hover:text-orange-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400'
+  // The phone guards the same way but warns in a bottom sheet, not a dialog.
+  if (kit) return <kit.Linkified text={text} linkClassName={linkClassName} />
   return (
     <LinkifiedText
       text={text}

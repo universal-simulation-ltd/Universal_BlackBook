@@ -9,6 +9,7 @@ import { Modal } from './Modal'
 import { TagChip } from './TagChip'
 import { TagPicker } from './TagPicker'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label, textareaCls } from './ui'
+import { autoFocusOK } from '../native/kit'
 
 /**
  * The To-do tab (owner's request, 2026-09-27), there only with App
@@ -252,7 +253,7 @@ function TodoForm({ id }: { id: string }) {
             value={draft.title}
             onChange={(e) => patch({ title: e.target.value })}
             placeholder="What needs doing"
-            autoFocus
+            autoFocus={autoFocusOK()}
             required
           />
         </div>

@@ -10,6 +10,7 @@ import { TagPicker } from './TagPicker'
 import { Modal } from './Modal'
 import { ExpandGlyph, NotesFullscreen } from './NotesFullscreen'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label, PinGlyph, textareaCls } from './ui'
+import { autoFocusOK, usePhoneKit } from '../native/kit'
 
 /**
  * Add or edit one person. Six fields, in the order they matter — but on a blank
@@ -133,6 +134,8 @@ export function ContactForm({ id }: { id: string }) {
   /** Is Notes showing on its own, full screen? */
   const [notesFull, setNotesFull] = useState(false)
   const moreId = useId()
+  const formId = useId()
+  const kit = usePhoneKit()
   /**
    * The Lists tab's Add new opens the Email list form here instead of a
    * person; a string is the open list's name. Read once, at mount, like
@@ -325,8 +328,21 @@ export function ContactForm({ id }: { id: string }) {
   }
 
   return (
-    <Modal title={existing ? 'Fine-tune contact' : 'Add new'} onClose={dismiss}>
-      <form onSubmit={submit} className="space-y-4">
+    <Modal
+      title={existing ? 'Fine-tune contact' : 'Add new'}
+      onClose={dismiss}
+      // The phone: back to the person (or the list), and Save in the bar —
+      // the button at the foot of a long form is a scroll away.
+      backLabel={kit ? (existing ? existing.name || kit.t('back') : kit.t('contact_back')) : undefined}
+      phoneActions={
+        kit && (
+          <button type="submit" form={formId} disabled={!valid} className="min-h-[44px] px-2 text-[16px] font-semibold text-orange-400 disabled:opacity-40">
+            {kit.t('save')}
+          </button>
+        )
+      }
+    >
+      <form id={formId} onSubmit={submit} className="space-y-4">
         {offering && (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-orange-900/60 bg-orange-950/30 px-3 py-2.5">
             <p className="text-sm text-orange-200">
@@ -361,7 +377,7 @@ export function ContactForm({ id }: { id: string }) {
             value={draft.name}
             onChange={(e) => patch({ name: e.target.value })}
             placeholder="Sam Okonkwo"
-            autoFocus
+            autoFocus={autoFocusOK()}
             autoComplete="off"
           />
         </div>

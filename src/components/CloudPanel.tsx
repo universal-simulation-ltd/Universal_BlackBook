@@ -6,6 +6,7 @@ import { useBookStore } from '../stores/bookStore'
 import { OFFLINE, useSyncStore } from '../stores/syncStore'
 import { Modal } from './Modal'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, checkboxCls, inputCls, label } from './ui'
+import { autoFocusOK, usePhoneKit } from '../native/kit'
 
 const MIN_PASSPHRASE = 10
 
@@ -29,6 +30,7 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
 
   const sync = useSyncStore()
   const [signInOpen, setSignInOpen] = useState(false)
+  const kit = usePhoneKit()
   const [passphrase, setPassphrase] = useState('')
   const [confirm, setConfirm] = useState('')
   const [remember, setRemember] = useState(true)
@@ -196,7 +198,7 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
                   autoComplete="current-password"
                   value={passphrase}
                   onChange={(e) => setPassphrase(e.target.value)}
-                  autoFocus
+                  autoFocus={autoFocusOK()}
                 />
               </div>
               <label className="flex items-center gap-2 text-sm text-slate-300">
@@ -324,7 +326,13 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
           )}
         </div>
       </Modal>
-      <SignInDialog open={signInOpen} onClose={() => setSignInOpen(false)} />
+      {/* The phone screens sign in on a page of their own, Apple and Google
+          in the phone's own sheet (native/SignInScreen.tsx). */}
+      {kit ? (
+        signInOpen && <kit.SignIn onClose={() => setSignInOpen(false)} />
+      ) : (
+        <SignInDialog open={signInOpen} onClose={() => setSignInOpen(false)} />
+      )}
     </>
   )
 }
@@ -371,7 +379,7 @@ function ChangePassphraseForm({
           autoComplete="current-password"
           value={current}
           onChange={(e) => setCurrent(e.target.value)}
-          autoFocus
+          autoFocus={autoFocusOK()}
         />
       </div>
       <div>

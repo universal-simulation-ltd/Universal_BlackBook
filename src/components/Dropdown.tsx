@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
+import { usePhoneKit } from '../native/kit'
 
 /**
  * A dropdown the PAGE draws, used in place of `<select>` inside the modal.
@@ -46,14 +47,7 @@ const MAX_PANEL = 288
 const GAP = 4
 const EDGE = 8
 
-export function Dropdown({
-  value,
-  options,
-  placeholder,
-  ariaLabel,
-  onChange,
-  className = '',
-}: {
+interface DropdownProps {
   /** '' when nothing is chosen. */
   value: string
   options: DropdownOption[]
@@ -62,7 +56,38 @@ export function Dropdown({
   ariaLabel: string
   onChange: (next: string) => void
   className?: string
-}) {
+}
+
+export function Dropdown(props: DropdownProps) {
+  // On the phone screens there is no `<dialog>` and no top layer (forms are
+  // pages, kit.ts), so the reason for this component is gone — and a native
+  // `<select>` IS the system's own picker there: the wheel on an iPhone, the
+  // sheet on Android. No website dropdown on the phone.
+  if (usePhoneKit()) return <NativeSelect {...props} />
+  return <WebDropdown {...props} />
+}
+
+function NativeSelect({ value, options, placeholder, ariaLabel, onChange, className = '' }: DropdownProps) {
+  return (
+    <select
+      aria-label={ariaLabel}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={`min-h-[44px] w-full min-w-0 rounded-lg border border-slate-700 bg-slate-950 px-2 text-slate-100 focus:border-orange-500 focus:outline-none ${
+        value ? '' : 'text-slate-500'
+      } ${className}`}
+    >
+      <option value="">{placeholder}</option>
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
+  )
+}
+
+function WebDropdown({ value, options, placeholder, ariaLabel, onChange, className = '' }: DropdownProps) {
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(-1)
   const [box, setBox] = useState<{ left: number; width: number; maxHeight: number; top?: number; bottom?: number }>()

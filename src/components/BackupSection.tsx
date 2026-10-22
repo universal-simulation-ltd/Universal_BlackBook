@@ -7,6 +7,7 @@ import { useBookStore } from '../stores/bookStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useTodoStore } from '../stores/todoStore'
 import { btnDanger, btnGhost, btnPrimary, checkboxCls, inputCls, label } from './ui'
+import { autoFocusOK } from '../native/kit'
 
 /**
  * Save a backup / Open a backup — the whole book as one file (lib/backup.ts).
@@ -270,7 +271,7 @@ export function BackupSection({ onDone }: { onDone: () => void }) {
               autoComplete="current-password"
               className={inputCls}
               value={filePassword}
-              autoFocus
+              autoFocus={autoFocusOK()}
               onChange={(e) => setFilePassword(e.target.value)}
             />
             <div className="flex flex-wrap gap-2">

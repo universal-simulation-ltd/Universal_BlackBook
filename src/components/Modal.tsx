@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { usePageScrollLock } from '../lib/scrollLock'
+import { usePhoneKit } from '../native/kit'
 
 /**
  * The app's one dialog.
@@ -34,17 +35,41 @@ import { usePageScrollLock } from '../lib/scrollLock'
  * paddings carry the safe-area insets; in landscape on a notched phone the 1rem
  * gutter is narrower than the notch, and the home indicator eats the bottom.
  */
-export function Modal({
-  title,
-  onClose,
-  children,
-  wide = false,
-}: {
+export function Modal(props: ModalProps) {
+  // On the phone screens there are no website popups (kit.ts): the same
+  // contents as a page with a back gesture, or — for a short question — a
+  // bottom sheet. Two components rather than a branch inside one, so neither
+  // runs the other's hooks.
+  const kit = usePhoneKit()
+  if (kit) {
+    const { title, onClose, children, phone = 'page', backLabel, phoneActions } = props
+    return phone === 'sheet' ? (
+      <kit.Sheet title={title} onClose={onClose}>
+        {children}
+      </kit.Sheet>
+    ) : (
+      <kit.Page title={title} onBack={onClose} backLabel={backLabel} actions={phoneActions}>
+        {children}
+      </kit.Page>
+    )
+  }
+  return <WebModal {...props} />
+}
+
+interface ModalProps {
   title: string
   onClose: () => void
   children: ReactNode
   wide?: boolean
-}) {
+  /** On the phone screens: a page (the default) or, for a short question, a bottom sheet. */
+  phone?: 'page' | 'sheet'
+  /** On the phone screens: what the page's back button says. */
+  backLabel?: string
+  /** On the phone screens: buttons at the right of the page's bar (a form's Save). */
+  phoneActions?: ReactNode
+}
+
+function WebModal({ title, onClose, children, wide = false }: ModalProps) {
   const ref = useRef<HTMLDialogElement>(null)
 
   // The page behind stays put. `showModal()` makes it inert but not unscrollable
