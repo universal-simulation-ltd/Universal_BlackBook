@@ -22,8 +22,12 @@ interface NoteState {
   editing: string | null
   /** What the Notes tab's search box holds. Never remembered. */
   query: string
+  /** A new note's title, typed into the search first ("Add “…”"). */
+  prefillTitle: string | null
   init: () => Promise<void>
   edit: (id: string | null) => void
+  /** A new note, its title already in it. */
+  startNote: (title: string) => void
   setQuery: (query: string) => void
   save: (draft: NoteDraft) => Promise<void>
   remove: (id: string) => Promise<void>
@@ -42,6 +46,7 @@ export const useNoteStore = create<NoteState>((set, get) => {
     loaded: false,
     editing: null,
     query: '',
+    prefillTitle: null,
 
     init: async () => {
       if (get().loaded) return
@@ -51,7 +56,8 @@ export const useNoteStore = create<NoteState>((set, get) => {
       set({ notes, loaded: true })
     },
 
-    edit: (editing) => set({ editing }),
+    edit: (editing) => set({ editing, prefillTitle: null }),
+    startNote: (title) => set({ editing: 'new', prefillTitle: title }),
     setQuery: (query) => set({ query }),
 
     save: async (draft) => {

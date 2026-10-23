@@ -58,7 +58,7 @@ export const ptPT: Dict = {
   tune_delete_all: "Apagar todos os dados",
   tune_help: "Ajuda",
   tune_reset: "Repor predefinições",
-  tune_reset_note: "Desliga de novo cada interruptor aqui, repõe o esquema de cores e o idioma da suite e esquece o separador que tocou duas vezes. A sua agenda fica exatamente como está.",
+  tune_reset_note: "Repõe cada interruptor aqui na predefinição, repõe o esquema de cores e o idioma da suite e esquece o separador que tocou duas vezes. A sua agenda fica exatamente como está.",
   tune_reset_done: "Predefinições repostas",
   online_backup: "Cópia online",
   signin_title: "Iniciar sessão",

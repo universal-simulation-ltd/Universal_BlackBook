@@ -36,8 +36,10 @@ export function EmailListsPreference() {
       <input
         type="checkbox"
         className={`${checkboxCls} mt-0.5`}
-        checked={todos}
-        onChange={(e) => set({ todos: e.target.checked })}
+        // Inverted: the tab is on by default and the box hides it, so the box
+        // starts unticked (the suite rule) while To-do starts on.
+        checked={!todos}
+        onChange={(e) => set({ todos: !e.target.checked })}
       />
       <span>
         {t('pref.todos')}
@@ -48,8 +50,8 @@ export function EmailListsPreference() {
       <input
         type="checkbox"
         className={`${checkboxCls} mt-0.5`}
-        checked={notes}
-        onChange={(e) => set({ notes: e.target.checked })}
+        checked={!notes}
+        onChange={(e) => set({ notes: !e.target.checked })}
       />
       <span>
         {t('pref.notes')}

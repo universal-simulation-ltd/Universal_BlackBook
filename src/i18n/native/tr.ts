@@ -58,7 +58,7 @@ export const tr: Dict = {
   tune_delete_all: "Tüm verileri sil",
   tune_help: "Yardım",
   tune_reset: "Varsayılanlara dön",
-  tune_reset_note: "Buradaki her anahtarı yeniden kapatır, renk düzenini ve dili paketinkilere döndürür ve iki kez dokunduğun sekmeyi unutur. Defterin olduğu gibi kalır.",
+  tune_reset_note: "Buradaki her anahtarı varsayılanına döndürür, renk düzenini ve dili paketinkilere döndürür ve iki kez dokunduğun sekmeyi unutur. Defterin olduğu gibi kalır.",
   tune_reset_done: "Varsayılanlara dönüldü",
   online_backup: "Çevrimiçi yedek",
   signin_title: "Giriş yap",

@@ -1,7 +1,7 @@
 import { useEffect, useId, useState, type FormEvent, type ReactNode } from 'react'
 import { blankDraft, draftIsEmpty, useBookStore, type ContactDraft } from '../stores/bookStore'
 import { useSettingsStore } from '../stores/settingsStore'
-import { listIdsOf } from '../lib/lists'
+import { isList, listIdsOf } from '../lib/lists'
 import { ABOVE_NOTES, fieldLabel, FORM_FIELDS, type FormField } from '../lib/formFields'
 import { useT } from '../i18n'
 import type { Tag } from '../lib/types'
@@ -320,7 +320,14 @@ export function ContactForm({ id }: { id: string }) {
   if (listMode !== false) {
     return (
       <Modal
-        title={typeof listMode === 'string' ? t('form.add_to_named', { name: listMode }) : t('form.new_list')}
+        title={
+          // A name typed into the Lists tab's search may be a list that does
+          // not exist yet: then it is a new list with that name.
+          typeof listMode === 'string' &&
+          tags.some((x) => isList(x) && x.name.trim().toLowerCase() === listMode.trim().toLowerCase())
+            ? t('form.add_to_named', { name: listMode })
+            : t('form.new_list')
+        }
         onClose={() => close(null)}
       >
         <EmailListForm

@@ -11,7 +11,8 @@ import { FORM_FIELDS, isFormField, type FormField } from '../lib/formFields'
  * same call as the saved "Opens on" view. Unreadable storage (private window,
  * blocked site data) just means the defaults.
  *
- * ⚠️ Every switch starts OFF, and is worded so that off is the plain app.
+ * ⚠️ Every TICK BOX starts unticked: Email lists is off by default; To-do and
+ * Notes are on, and their boxes say "Hide …", bound inverted (2026-10-23).
  */
 export interface Settings {
   /** Add new ▸ Email list, and Copy emails / Export CSV above the list. */
@@ -31,15 +32,25 @@ export interface Settings {
 }
 
 const KEY = 'blackbook.settings'
-const DEFAULTS: Settings = { emailLists: false, todos: false, notes: false, shownFields: [] }
+// To-do and Notes are ON by default, Email lists off (James, 2026-10-23: "have
+// all active as default except email lists"). Their tick boxes are worded as
+// opt-outs ("Hide the To-do tab"), so every box still starts unticked.
+const DEFAULTS: Settings = { emailLists: false, todos: true, notes: true, shownFields: [] }
+/**
+ * The stored shape's version. 1 (no `v`) wrote every switch whenever any one
+ * changed, so a stored `false` for To-do or Notes cannot be told from "never
+ * touched": both read as unset now, i.e. on. A stored `true` stays on.
+ */
+const VERSION = 2
 
 function load(): Settings {
   try {
     const raw = JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<Settings>
     return {
       emailLists: raw.emailLists === true,
-      todos: raw.todos === true,
-      notes: raw.notes === true,
+      // Version 2 stores the choice; version 1's `false` was the old default.
+      todos: (raw as { v?: number }).v === VERSION ? raw.todos !== false : true,
+      notes: (raw as { v?: number }).v === VERSION ? raw.notes !== false : true,
       // Kept in FORM_FIELDS order whatever order they were ticked in, and
       // anything unknown (a field since removed) dropped.
       shownFields: Array.isArray(raw.shownFields)
@@ -77,7 +88,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     set(patch)
     try {
       const { emailLists, todos, notes, shownFields } = get()
-      localStorage.setItem(KEY, JSON.stringify({ emailLists, todos, notes, shownFields }))
+      localStorage.setItem(KEY, JSON.stringify({ v: VERSION, emailLists, todos, notes, shownFields }))
     } catch {
       // See the note above: the switch still works until the app is closed.
     }

@@ -459,13 +459,12 @@ export const appEn = {
   'notes.title_placeholder': "What it is about",
   'notes.delete_title': "Delete note",
   'notes.no_undo': "There is no undo.",
-  'pref.notes': "Notes",
-  'pref.notes_note': "Adds a Notes tab beside Contacts: notes of your own, each a title and the details. Turning it off hides the tab and keeps the notes.",
+  'pref.notes': "Hide the Notes tab",
+  'pref.notes_note': "The Notes tab beside Contacts holds notes of your own, each a title and the details. Hiding it keeps the notes.",
   'pref.email_lists': "Email lists",
   'pref.email_lists_note': "Adds Lists beside Contacts, an Email list tab to Add new, and Copy emails and Export CSV for whatever the list is showing.",
-  'pref.todos': "To-do",
-  'pref.todos_note': "Adds a To-do tab beside Contacts: things to do, with details, a deadline and your tags. Turning it off hides the tab and keeps the list.",
-
+  'pref.todos': "Hide the To-do tab",
+  'pref.todos_note': "The To-do tab beside Contacts holds things to do, with details, a deadline and your tags. Hiding it keeps the list.",
   // ── Tune this app rows ────────────────────────────────────────────────────
   'pref.form': "Contact form",
   'pref.form_note': "Tick the fields to show straight away when you add someone. The rest stay under More. A field with something in it always shows.",
@@ -527,6 +526,10 @@ export const appEn = {
   'app.tabs': "Contacts, lists, to-do or notes",
   'app.title': "Your BlackBook",
   'app.tagline': "The people worth staying in touch with — tagged your way, and never a birthday missed.",
+  'todo.search': "Search to-dos",
+  'todo.no_match': "No to-do has that in it.",
+  'lists.search': "Search lists",
+  'lists.no_match': "No list is called that.",
 } as const
 
 export type AppKey = keyof typeof appEn

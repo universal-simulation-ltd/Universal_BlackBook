@@ -139,15 +139,21 @@ export type OpenResult =
 export async function openBackup(input: Blob | string, password?: string): Promise<OpenResult> {
   const read = await readTransfer(input, {
     product: BACKUP_PRODUCT,
-    // Schema 1 is schema 2 without notes: nothing to change, `parseBackup`
-    // reads the missing `pages` as none.
-    kinds: { [BACKUP_KIND]: { schema: BACKUP_SCHEMA, migrate: (data) => data } },
+    // Schema 1 is schema 2 without notes: `parseBackup` reads the missing
+    // `pages` as none. Its `todos: false` was the old default (off), which
+    // since 2026-10-23 is on, so it reads as unset; `true` stays true.
+    kinds: { [BACKUP_KIND]: { schema: BACKUP_SCHEMA, migrate: (data) => fromSchema1(data) } },
     password: password || undefined,
   })
   if (!read.ok) return { ok: false, reason: read.reason }
   const data = parseBackup(read.data)
   if (!data) return { ok: false, reason: 'damaged' }
   return { ok: true, data, exportedAt: read.exportedAt, encrypted: read.encrypted }
+}
+
+function fromSchema1(data: unknown): unknown {
+  if (!isRecord(data) || !isRecord(data.settings)) return data
+  return { ...data, settings: { ...data.settings, todos: true, notes: true } }
 }
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -281,8 +287,9 @@ function parseSettings(raw: unknown): BackupSettings | null {
   const shown = Array.isArray(raw.shownFields) ? raw.shownFields.slice(0, 50).filter(isFormField) : []
   return {
     emailLists: raw.emailLists === true,
-    todos: raw.todos === true,
-    notes: raw.notes === true,
+    // On unless the file says off (the defaults since 2026-10-23).
+    todos: raw.todos !== false,
+    notes: raw.notes !== false,
     shownFields: FORM_FIELDS.filter((f) => shown.includes(f)),
   }
 }

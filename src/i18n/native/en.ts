@@ -65,7 +65,7 @@ export const en = {
   tune_delete_all: 'Delete all data',
   tune_help: 'Help',
   tune_reset: 'Reset to defaults',
-  tune_reset_note: 'Puts every switch here back to off, the colour scheme and language back to the suite’s, and forgets the tab you double-tapped. Your book is left exactly as it is.',
+  tune_reset_note: 'Puts every switch here back to its default, the colour scheme and language back to the suite’s, and forgets the tab you double-tapped. Your book is left exactly as it is.',
   tune_reset_done: 'Back to the defaults',
 
   online_backup: 'Online backup',

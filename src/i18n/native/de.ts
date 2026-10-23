@@ -58,7 +58,7 @@ export const de: Dict = {
   tune_delete_all: "Alle Daten löschen",
   tune_help: "Hilfe",
   tune_reset: "Auf Standard zurücksetzen",
-  tune_reset_note: "Stellt jeden Schalter hier wieder auf aus, Farbschema und Sprache wieder auf die der Suite und vergisst den Tab, den du doppelt angetippt hast. Dein Buch bleibt genau, wie es ist.",
+  tune_reset_note: "Stellt jeden Schalter hier wieder auf seinen Standard, Farbschema und Sprache wieder auf die der Suite und vergisst den Tab, den du doppelt angetippt hast. Dein Buch bleibt genau, wie es ist.",
   tune_reset_done: "Zurück auf Standard",
   online_backup: "Online-Sicherung",
   signin_title: "Anmelden",

@@ -58,7 +58,7 @@ export const fr: Dict = {
   tune_delete_all: "Supprimer toutes les données",
   tune_help: "Aide",
   tune_reset: "Rétablir les réglages par défaut",
-  tune_reset_note: "Remet chaque interrupteur ici sur désactivé, le thème et la langue sur ceux de la suite, et oublie l’onglet touché deux fois. Votre carnet reste exactement tel quel.",
+  tune_reset_note: "Remet chaque interrupteur ici à sa valeur par défaut, le thème et la langue sur ceux de la suite, et oublie l’onglet touché deux fois. Votre carnet reste exactement tel quel.",
   tune_reset_done: "Réglages par défaut rétablis",
   online_backup: "Sauvegarde en ligne",
   signin_title: "Se connecter",

@@ -9,6 +9,8 @@ import { Modal } from './Modal'
 import { TagChip } from './TagChip'
 import { TagPicker } from './TagPicker'
 import { TagCombo } from './TagCombo'
+import { AddTyped, ListSearch } from './ListSearch'
+import { matchesNote } from '../lib/notes'
 import { useT } from '../i18n'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label, textareaCls } from './ui'
 import { autoFocusOK } from '../native/kit'
@@ -32,6 +34,10 @@ export function TodoView() {
   const clearDone = useTodoStore((s) => s.clearDone)
   const tags = useBookStore((s) => s.tags)
   const [showDone, setShowDone] = useState(false)
+  // The tab's search (James, 2026-10-23): pulled down on a phone, a box
+  // elsewhere; never remembered.
+  const [query, setQuery] = useState('')
+  const startTodo = useTodoStore((s) => s.startTodo)
   const doneId = useId()
   // Once per mount, as in ContactList: a tab left open over midnight keeps
   // yesterday's "Due today" until it is reopened.
@@ -48,12 +54,18 @@ export function TodoView() {
   // would filter to nothing with no lit chip to explain why.
   const activeFilter = tagFilter.filter((id) => usedTags.some((t) => t.id === id))
   const open = useMemo(
-    () => todos.filter((t) => !t.doneAt && matchesTodoTags(t, activeFilter)).sort(compareOpen),
-    [todos, activeFilter],
+    () =>
+      todos
+        .filter((t) => !t.doneAt && matchesTodoTags(t, activeFilter) && matchesNote(t, query))
+        .sort(compareOpen),
+    [todos, activeFilter, query],
   )
   const done = useMemo(
-    () => todos.filter((t) => t.doneAt && matchesTodoTags(t, activeFilter)).sort(compareDone),
-    [todos, activeFilter],
+    () =>
+      todos
+        .filter((t) => t.doneAt && matchesTodoTags(t, activeFilter) && matchesNote(t, query))
+        .sort(compareDone),
+    [todos, activeFilter, query],
   )
 
   return (
@@ -70,6 +82,10 @@ export function TodoView() {
           </button>
         )}
       </div>
+
+      <ListSearch value={query} onChange={setQuery} label={t('todo.search')} />
+      {/* What was typed, as a new to-do's title. */}
+      <AddTyped text={query} onAdd={(title) => startTodo(title)} />
 
       {usedTags.length > 0 && (
         <div role="group" aria-label={t('tags.filter_by')}>
@@ -107,7 +123,7 @@ export function TodoView() {
         </div>
       ) : open.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-slate-800 px-6 py-8 text-center text-sm text-slate-400">
-          {activeFilter.length > 0 ? t('todo.none_tagged') : t('todo.all_done')}
+          {query.trim() ? t('todo.no_match') : activeFilter.length > 0 ? t('todo.none_tagged') : t('todo.all_done')}
         </p>
       ) : (
         <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
@@ -239,7 +255,7 @@ function TodoForm({ id }: { id: string }) {
   const close = useTodoStore((s) => s.edit)
   const [draft, setDraft] = useState<TodoDraft>(() => ({
     id: existing?.id,
-    title: existing?.title ?? '',
+    title: existing?.title ?? useTodoStore.getState().prefillTitle ?? '',
     details: existing?.details ?? '',
     due: existing?.due,
     tagIds: existing?.tagIds ?? [],

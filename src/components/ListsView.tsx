@@ -12,6 +12,7 @@ import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls } from './ui'
 import { autoFocusOK } from '../native/kit'
 import { phoneScreens } from '../native/shell'
 import { useT } from '../i18n'
+import { AddTyped, ListSearch } from './ListSearch'
 
 /**
  * The Lists tab on the landing screen (owner's request, 2026-09-17), there
@@ -32,14 +33,17 @@ export function ListsView() {
   const tags = useBookStore((s) => s.tags)
   const newList = useBookStore((s) => s.newList)
   const [openId, setOpenId] = useState<string | null>(null)
+  // The tab's search (James, 2026-10-23), never remembered.
+  const [query, setQuery] = useState('')
 
   const lists = useMemo(
     () =>
       tags
         .filter(isList)
         .sort((a, b) => fold(a.name).localeCompare(fold(b.name), t.locale))
+        .filter((tag) => !query.trim() || fold(tag.name).includes(fold(query.trim())))
         .map((t) => ({ tag: t, people: contacts.filter((c) => c.tagIds.includes(t.id)) })),
-    [tags, contacts, t],
+    [tags, contacts, t, query],
   )
 
   const byId = useMemo(() => new Map(tags.map((t) => [t.id, t])), [tags])
@@ -63,7 +67,15 @@ export function ListsView() {
         )}
       </div>
 
-      {lists.length === 0 ? (
+      <ListSearch value={query} onChange={setQuery} label={t('lists.search')} />
+      {/* What was typed, as a new list's name. */}
+      <AddTyped text={query} onAdd={(name) => newList(name)} />
+
+      {lists.length === 0 && query.trim() ? (
+        <p className="rounded-2xl border border-dashed border-slate-800 px-6 py-8 text-center text-sm text-slate-400">
+          {t('lists.no_match')}
+        </p>
+      ) : lists.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-800 px-6 py-14 text-center">
           <p className="text-sm text-slate-400">
             {phoneScreens() ? t('lists.none_phone') : t('lists.none')}

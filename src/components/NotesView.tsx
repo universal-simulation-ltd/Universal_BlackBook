@@ -1,13 +1,5 @@
-import { useCallback, useId, useMemo, useRef, useState, type RefObject } from 'react'
-import {
-  PullDrawer,
-  TOUCH_PHONE_QUERY,
-  insideScrolledChild,
-  modalIsOpen,
-  openThenFocus,
-  useMediaQuery,
-  useSearchRequests,
-} from '@unisim/sdk'
+import { useId, useMemo, useState } from 'react'
+import { AddTyped, ListSearch } from './ListSearch'
 import { compareNotes, matchesNote, preview, type Note } from '../lib/notes'
 import { useNoteStore } from '../stores/noteStore'
 import { Modal } from './Modal'
@@ -33,7 +25,8 @@ export function NotesView() {
   const editing = useNoteStore((s) => s.editing)
   const edit = useNoteStore((s) => s.edit)
   const query = useNoteStore((s) => s.query)
-  const phone = useMediaQuery(TOUCH_PHONE_QUERY)
+  const setQuery = useNoteStore((s) => s.setQuery)
+  const startNote = useNoteStore((s) => s.startNote)
 
   const sorted = useMemo(() => [...notes].sort(compareNotes), [notes])
   const shown = useMemo(() => sorted.filter((n) => matchesNote(n, query)), [sorted, query])
@@ -54,7 +47,9 @@ export function NotesView() {
         )}
       </div>
 
-      {phone ? <PhoneNoteSearch /> : notes.length > 0 && <NoteSearchBox />}
+      <ListSearch value={query} onChange={setQuery} label={t('notes.search')} />
+      {/* What was typed, as a new note's title (James, 2026-10-23). */}
+      <AddTyped text={query} onAdd={(title) => startNote(title)} />
 
       {loaded && notes.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-800 px-6 py-14 text-center">
@@ -78,71 +73,6 @@ export function NotesView() {
 
       {editing && <NotePage key={editing} id={editing} />}
     </div>
-  )
-}
-
-function NoteSearchBox({ input }: { input?: RefObject<HTMLInputElement> }) {
-  const t = useT()
-  const query = useNoteStore((s) => s.query)
-  const setQuery = useNoteStore((s) => s.setQuery)
-  return (
-    <div className="relative">
-      <input
-        ref={input}
-        type="search"
-        enterKeyHint="search"
-        className={`${inputCls} pl-9`}
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder={t('notes.search')}
-        aria-label={t('notes.search')}
-      />
-      <svg
-        viewBox="0 0 20 20"
-        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        aria-hidden
-      >
-        <circle cx="9" cy="9" r="5.5" />
-        <path d="m13.5 13.5 3 3" strokeLinecap="round" />
-      </svg>
-    </div>
-  )
-}
-
-const notAPull = (e: TouchEvent) => modalIsOpen() || insideScrolledChild(e.target)
-
-/** The phone's way in: pull down for the box, again for the keyboard (BRANDING.md). */
-function PhoneNoteSearch() {
-  const query = useNoteStore((s) => s.query)
-  const [pulled, setPulled] = useState(false)
-  const searching = query.trim() !== ''
-  const input = useRef<HTMLInputElement>(null)
-  const open = useCallback(() => setPulled(true), [])
-  const close = useCallback(() => setPulled(false), [])
-  const focus = useCallback(() => input.current?.focus({ preventScroll: true }), [])
-  useSearchRequests({
-    onOpen: () => openThenFocus(() => setPulled(true), input, {}),
-    onShut: () => {
-      if (searching) return
-      input.current?.blur()
-      setPulled(false)
-    },
-  })
-  return (
-    <PullDrawer
-      shown={pulled || searching}
-      onOpen={open}
-      onScrolledAway={searching ? undefined : close}
-      onPullAgain={focus}
-      ignoreTouch={notAPull}
-      containOverscroll
-      innerClassName="pb-1"
-    >
-      <NoteSearchBox input={input} />
-    </PullDrawer>
   )
 }
 
@@ -173,7 +103,7 @@ function NotePage({ id }: { id: string }) {
   const save = useNoteStore((s) => s.save)
   const remove = useNoteStore((s) => s.remove)
   const close = useNoteStore((s) => s.edit)
-  const [title, setTitle] = useState(existing?.title ?? '')
+  const [title, setTitle] = useState(() => existing?.title ?? useNoteStore.getState().prefillTitle ?? '')
   const [details, setDetails] = useState(existing?.details ?? '')
   const [confirming, setConfirming] = useState(false)
   const titleId = useId()

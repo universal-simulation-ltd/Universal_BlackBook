@@ -81,14 +81,15 @@ describe('backup file', () => {
       product: 'blackbook',
       kind: 'backup',
       schema: 1,
-      data: { contacts: [contact('c1', 'Ada')], tags: [], todos: [], settings: { emailLists: false, todos: true, shownFields: [] } },
+      data: { contacts: [contact('c1', 'Ada')], tags: [], todos: [], settings: { emailLists: false, todos: false, shownFields: [] } },
     })
     const opened = await openBackup(old)
     expect(opened.ok).toBe(true)
     if (!opened.ok) return
     expect(opened.data.contacts).toHaveLength(1)
     expect(opened.data.pages).toEqual([])
-    expect(opened.data.settings).toMatchObject({ todos: true, notes: false })
+    // Schema 1's To-do switch was opt-in; on is the default now, and Notes is new.
+    expect(opened.data.settings).toMatchObject({ todos: true, notes: true })
     expect(JSON.parse((await packBackup(source())).text).schema).toBe(2)
   })
 
@@ -136,7 +137,7 @@ describe('parseBackup (untrusted data)', () => {
     expect(data.todos).toHaveLength(1)
     expect(data.todos[0].due).toBeUndefined()
     expect(data.todos[0].doneAt).toBeUndefined()
-    expect(data.settings).toEqual({ emailLists: false, todos: true, notes: false, shownFields: ['phone'] })
+    expect(data.settings).toEqual({ emailLists: false, todos: true, notes: true, shownFields: ['phone'] })
     expect(data.view).toBeNull()
   })
 

@@ -58,7 +58,7 @@ export const it: Dict = {
   tune_delete_all: "Elimina tutti i dati",
   tune_help: "Aiuto",
   tune_reset: "Ripristina le impostazioni predefinite",
-  tune_reset_note: "Rimette su disattivo ogni interruttore qui, riporta combinazione colori e lingua a quelle della suite e dimentica la scheda toccata due volte. La tua rubrica resta esattamente com’è.",
+  tune_reset_note: "Riporta ogni interruttore qui al suo valore predefinito, riporta combinazione colori e lingua a quelle della suite e dimentica la scheda toccata due volte. La tua rubrica resta esattamente com’è.",
   tune_reset_done: "Impostazioni predefinite ripristinate",
   online_backup: "Backup online",
   signin_title: "Accedi",

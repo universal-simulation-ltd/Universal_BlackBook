@@ -191,7 +191,7 @@ const CAPTURES = {
   '07-notes': {
     dark: false,
     async run(page) {
-      await page.locator('.bb-tab').nth(1).click()
+      await page.locator('.bb-tab').nth(2).click() // Contacts, To-do, Notes, Tune
     },
   },
   // Tune this app, in Dark: Light / Dark / Match my device and the switches.
@@ -245,8 +245,8 @@ for (const locale of locales) {
           localStorage.setItem('unisim-blackbook-theme', dark ? 'dark' : 'light')
           // The first-run "Pull down to search" belongs to somebody's first minute.
           localStorage.setItem('blackbook.pullSearchLearnt', '1')
-          // The Notes tab on (Tune this app ▸ Notes), for 07-notes.
-          localStorage.setItem('blackbook.settings', JSON.stringify({ emailLists: false, todos: false, notes: true, shownFields: [] }))
+          // The app's own defaults since 2026-10-23: To-do and Notes on, Email lists off.
+          localStorage.setItem('blackbook.settings', JSON.stringify({ v: 2, emailLists: false, todos: true, notes: true, shownFields: [] }))
         } catch { /* fails loudly below */ }
       }, { lang: LOCALES[locale], dark: capture.dark })
       const page = await ctx.newPage()

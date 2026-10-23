@@ -129,24 +129,28 @@ opens the full form for everything else.
 
 ## To-do
 
-⚙ menu ▸ App preferences ▸ **To-do** adds a To-do tab beside Contacts: a name,
+A **To-do** tab sits beside Contacts from the start (Tune this app ▸ **Hide the To-do tab** puts it away): a name,
 details, a deadline and your tags — the same tags your contacts use. Open ones
 sort by deadline (overdue first, in red), then a "done" drawer. Adding a tagged
 to-do filters the tab to its tags, as contacts do. To-dos live on this device and
 go into the encrypted online backup and the backup file with the rest of the
-book (the CSV leaves them out). Turning the switch
-off hides the tab and keeps the list.
+book (the CSV leaves them out). Hiding the tab keeps the list. Search it from the box above the list (pulled
+down on a phone); what you type is offered as "Add “…”", a new to-do with that
+title.
 
 ## Notes
 
-Tune this app ▸ **Notes** adds a Notes tab beside Contacts: notes of your own,
+A **Notes** tab sits beside Contacts from the start (Tune this app ▸ **Hide the Notes tab** puts it away): notes of your own,
 each a title and the details, newest edited first. Tap one to open it; it saves
 itself as you close it, and an empty new note is not kept. Search them from the
-box above the list (pulled down from the top on a phone, like the contacts').
+box above the list (pulled down from the top on a phone, like the contacts'); what you
+type is offered as "Add “…”", a new note with that title. The Lists tab (Email lists) has the same search and Add row.
 They travel with everything else: the online backup and the backup file
 (schema 2 since Notes; an older file opens with no notes, and a newer file in an
 older version of the app is refused rather than opened without its notes).
-Turning the tab off hides it and keeps the notes.
+Hiding the tab keeps the notes. To-do and Notes on, Email lists off, are the
+defaults since 2026-10-23; the tick boxes say "Hide …" so they still start unticked,
+and a device that never touched the old switches gets the new defaults.
 
 ## Locking the app
 

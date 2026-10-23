@@ -288,7 +288,7 @@ export default function App() {
                   // needs to raise the keyboard. The second tap of a double tap
                   // is making the tab the default, so it shuts it again. Only a
                   // phone listens (SearchDrawer); elsewhere the box is on show.
-                  if ((t === 'contacts' || t === 'notes') && t === current) requestSearch(!double)
+                  if (t === current) requestSearch(!double)
                   setTab(t)
                 }}
                 // The default tab is orange: filled while you are on it, an

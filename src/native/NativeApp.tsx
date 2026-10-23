@@ -119,7 +119,7 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
       // Contacts tapped while on it opens the search, keyboard up (Jukebox's
       // tab tap); the second tap of a double tap shuts it again. Sent inside
       // the tap, which iOS needs to raise the keyboard.
-      if (target === 'contacts' || target === 'notes') requestSearch(!double)
+      if (target !== 'tune') requestSearch(!double)
     }
     setTab(target)
   }

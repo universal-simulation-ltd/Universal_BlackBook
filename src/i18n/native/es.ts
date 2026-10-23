@@ -58,7 +58,7 @@ export const es: Dict = {
   tune_delete_all: "Borrar todos los datos",
   tune_help: "Ayuda",
   tune_reset: "Restablecer valores predeterminados",
-  tune_reset_note: "Vuelve a desactivar cada interruptor de aquí, devuelve la combinación de colores y el idioma a los de la suite y olvida la pestaña que tocaste dos veces. Tu agenda queda exactamente igual.",
+  tune_reset_note: "Devuelve cada interruptor de aquí a su valor predeterminado, devuelve la combinación de colores y el idioma a los de la suite y olvida la pestaña que tocaste dos veces. Tu agenda queda exactamente igual.",
   tune_reset_done: "Valores predeterminados restablecidos",
   online_backup: "Copia en línea",
   signin_title: "Iniciar sesión",

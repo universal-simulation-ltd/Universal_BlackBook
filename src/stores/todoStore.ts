@@ -27,6 +27,10 @@ interface TodoState {
   tagFilter: string[]
   /** 'new', a to-do's id, or null — the form is open on it. */
   editing: string | null
+  /** A new to-do's title, typed into the tab's search first ("Add “…”"). */
+  prefillTitle: string | null
+  /** A new to-do, its title already in it. */
+  startTodo: (title: string) => void
   init: () => Promise<void>
   setTagFilter: (tagIds: string[]) => void
   edit: (id: string | null) => void
@@ -51,6 +55,7 @@ export const useTodoStore = create<TodoState>((set, get) => {
     loaded: false,
     tagFilter: [],
     editing: null,
+    prefillTitle: null,
 
     init: async () => {
       if (get().loaded) return
@@ -62,7 +67,8 @@ export const useTodoStore = create<TodoState>((set, get) => {
     },
 
     setTagFilter: (tagFilter) => set({ tagFilter }),
-    edit: (editing) => set({ editing }),
+    edit: (editing) => set({ editing, prefillTitle: null }),
+    startTodo: (title) => set({ editing: 'new', prefillTitle: title }),
 
     save: async (draft) => {
       const now = Date.now()

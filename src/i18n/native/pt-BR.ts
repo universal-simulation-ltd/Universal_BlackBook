@@ -58,7 +58,7 @@ export const ptBR: Dict = {
   tune_delete_all: "Apagar todos os dados",
   tune_help: "Ajuda",
   tune_reset: "Restaurar padrões",
-  tune_reset_note: "Desliga de novo cada chave aqui, volta o esquema de cores e o idioma para os da suíte e esquece a aba que você tocou duas vezes. Sua agenda fica exatamente como está.",
+  tune_reset_note: "Volta cada chave aqui ao padrão, volta o esquema de cores e o idioma para os da suíte e esquece a aba que você tocou duas vezes. Sua agenda fica exatamente como está.",
   tune_reset_done: "Padrões restaurados",
   online_backup: "Backup on-line",
   signin_title: "Entrar",
