@@ -2,7 +2,8 @@ import { useEffect, useId, useState, type FormEvent, type ReactNode } from 'reac
 import { blankDraft, draftIsEmpty, useBookStore, type ContactDraft } from '../stores/bookStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { listIdsOf } from '../lib/lists'
-import { ABOVE_NOTES, FIELD_LABELS, FORM_FIELDS, type FormField } from '../lib/formFields'
+import { ABOVE_NOTES, fieldLabel, FORM_FIELDS, type FormField } from '../lib/formFields'
+import { useT } from '../i18n'
 import type { Tag } from '../lib/types'
 import { BirthdayField } from './BirthdayField'
 import { EmailListForm } from './EmailListForm'
@@ -74,6 +75,7 @@ import { autoFocusOK, usePhoneKit } from '../native/kit'
  * entry in a little black book.
  */
 export function ContactForm({ id }: { id: string }) {
+  const t = useT()
   const contacts = useBookStore((s) => s.contacts)
   const saveContact = useBookStore((s) => s.saveContact)
   const removeContact = useBookStore((s) => s.removeContact)
@@ -185,7 +187,7 @@ export function ContactForm({ id }: { id: string }) {
         return (
           <div key={k}>
             <label className={label} htmlFor="cf-email">
-              Email
+              {fieldLabel('email')}
             </label>
             <input
               id="cf-email"
@@ -209,7 +211,7 @@ export function ContactForm({ id }: { id: string }) {
         return (
           <div key={k}>
             <label className={label} htmlFor="cf-company">
-              Company
+              {fieldLabel('company')}
             </label>
             <input
               id="cf-company"
@@ -225,7 +227,7 @@ export function ContactForm({ id }: { id: string }) {
         return (
           <div key={k}>
             <label className={label} htmlFor="cf-phone">
-              Phone
+              {fieldLabel('phone')}
             </label>
             <input
               id="cf-phone"
@@ -249,7 +251,7 @@ export function ContactForm({ id }: { id: string }) {
         return (
           <div key={k}>
             <label className={label} htmlFor="cf-address">
-              Address
+              {fieldLabel('address')}
             </label>
             <textarea
               id="cf-address"
@@ -266,13 +268,13 @@ export function ContactForm({ id }: { id: string }) {
         )
       case 'birthday':
         return (
-          <Field key={k} name={EXTRA_LABELS[k]}>
+          <Field key={k} name={fieldLabel(k)}>
             <BirthdayField value={draft.birthdate} onChange={(birthdate) => patch({ birthdate })} />
           </Field>
         )
       case 'tags':
         return (
-          <Field key={k} name={EXTRA_LABELS[k]}>
+          <Field key={k} name={fieldLabel(k)}>
             <TagPicker value={draft.tagIds} onChange={(tagIds) => patch({ tagIds })} />
           </Field>
         )
@@ -280,7 +282,7 @@ export function ContactForm({ id }: { id: string }) {
         return (
           // "Lists" on the More button, but the heading says what the section
           // does, in the owner's words.
-          <Field key={k} name="Add to list">
+          <Field key={k} name={t('form.add_to_list')}>
             <TagPicker value={draft.tagIds} onChange={(tagIds) => patch({ tagIds })} kind="list" />
           </Field>
         )
@@ -317,7 +319,10 @@ export function ContactForm({ id }: { id: string }) {
 
   if (listMode !== false) {
     return (
-      <Modal title={typeof listMode === 'string' ? `Add to ${listMode}` : 'New list'} onClose={() => close(null)}>
+      <Modal
+        title={typeof listMode === 'string' ? t('form.add_to_named', { name: listMode }) : t('form.new_list')}
+        onClose={() => close(null)}
+      >
         <EmailListForm
           initialName={typeof listMode === 'string' ? listMode : ''}
           onCancel={() => close(null)}
@@ -329,7 +334,7 @@ export function ContactForm({ id }: { id: string }) {
 
   return (
     <Modal
-      title={existing ? 'Fine-tune contact' : 'Add new'}
+      title={existing ? t('form.fine_tune_title') : t('c.add_new')}
       onClose={dismiss}
       // The phone: back to the person (or the list), and Save in the bar —
       // the button at the foot of a long form is a scroll away.
@@ -346,11 +351,11 @@ export function ContactForm({ id }: { id: string }) {
         {offering && (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-orange-900/60 bg-orange-950/30 px-3 py-2.5">
             <p className="text-sm text-orange-200">
-              You were part way through adding someone. Here it is.
+              {t('form.restore')}
             </p>
             <div className="flex gap-2">
               <button type="button" className={btnPrimary} onClick={() => setOffering(false)}>
-                Continue
+                {t('form.continue')}
               </button>
               <button
                 type="button"
@@ -361,7 +366,7 @@ export function ContactForm({ id }: { id: string }) {
                   setOffering(false)
                 }}
               >
-                Discard
+                {t('form.discard')}
               </button>
             </div>
           </div>
@@ -369,7 +374,7 @@ export function ContactForm({ id }: { id: string }) {
 
         <div>
           <label className={label} htmlFor="cf-name">
-            Name
+            {t('form.name')}
           </label>
           <input
             id="cf-name"
@@ -394,7 +399,7 @@ export function ContactForm({ id }: { id: string }) {
               width (see ui.tsx). */}
           <div className="flex items-center justify-between gap-2">
             <label className={label} htmlFor="cf-notes">
-              Notes
+              {t('form.notes')}
             </label>
             <button
               type="button"
@@ -402,7 +407,7 @@ export function ContactForm({ id }: { id: string }) {
               onClick={() => setNotesFull(true)}
             >
               <ExpandGlyph />
-              Full screen
+              {t('form.full_screen')}
             </button>
           </div>
           <textarea
@@ -418,7 +423,7 @@ export function ContactForm({ id }: { id: string }) {
             rows={7}
             value={draft.notes}
             onChange={(e) => patch({ notes: e.target.value })}
-            placeholder="Met at the Leeds conference. Two kids. Allergic to shellfish."
+            placeholder={t('form.notes_placeholder')}
           />
         </div>
 
@@ -433,12 +438,12 @@ export function ContactForm({ id }: { id: string }) {
               aria-controls={moreId}
               className="flex w-full items-center justify-between gap-2 rounded-lg border border-slate-800 px-3 py-2.5 text-left transition-colors hover:border-slate-700 hover:bg-slate-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
             >
-              <span className="text-sm font-medium text-slate-300">More</span>
+              <span className="text-sm font-medium text-slate-300">{t('form.more')}</span>
               <span className="flex items-center gap-1.5 text-xs text-slate-500">
                 {/* Names what is inside rather than saying "More" twice. A
                     disclosure that does not say what it discloses is one
                     people never open. */}
-                {listOf(hidden.map((k) => EXTRA_LABELS[k]))}
+                {listOf(hidden.map((k) => fieldLabel(k)), t.locale)}
                 <svg
                   viewBox="0 0 16 16"
                   className={`h-3.5 w-3.5 shrink-0 transition-transform ${more ? 'rotate-180' : ''}`}
@@ -477,7 +482,7 @@ export function ContactForm({ id }: { id: string }) {
             }}
           >
             <SlidersGlyph />
-            Customise fields
+            {t('form.customise')}
           </button>
         </div>
 
@@ -486,12 +491,16 @@ export function ContactForm({ id }: { id: string }) {
             {existing &&
               (confirmDelete ? (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-rose-300">Delete {existing.name || 'this contact'}?</span>
+                  <span className="text-sm text-rose-300">
+                    {t('del.ask_before')}
+                    {existing.name || t('c.this_contact')}
+                    {t('del.ask_after')}
+                  </span>
                   <button type="button" className={btnDanger} onClick={() => void removeContact(existing.id)}>
-                    Delete
+                    {t('c.delete')}
                   </button>
                   <button type="button" className={btnGhost} onClick={() => setConfirmDelete(false)}>
-                    Keep
+                    {t('c.keep')}
                   </button>
                 </div>
               ) : (
@@ -505,13 +514,13 @@ export function ContactForm({ id }: { id: string }) {
                     aria-pressed={existing.pinnedAt !== undefined}
                     className={`${btnSubtle} flex items-center gap-1.5 ${existing.pinnedAt !== undefined ? '!text-orange-400 hover:!text-orange-300' : ''}`}
                     onClick={() => void setPinned(existing.id, existing.pinnedAt === undefined)}
-                    title={existing.pinnedAt !== undefined ? 'Unpin' : 'Pin to the top of your list'}
+                    title={existing.pinnedAt !== undefined ? t('form.unpin') : t('form.pin_title')}
                   >
                     <PinGlyph filled={existing.pinnedAt !== undefined} />
-                    {existing.pinnedAt !== undefined ? 'Pinned' : 'Pin'}
+                    {existing.pinnedAt !== undefined ? t('list.pinned') : t('form.pin')}
                   </button>
                   <button type="button" className={btnDanger} onClick={() => setConfirmDelete(true)}>
-                    Delete
+                    {t('c.delete')}
                   </button>
                 </div>
               ))}
@@ -519,18 +528,17 @@ export function ContactForm({ id }: { id: string }) {
           {!confirmDelete && (
             <div className="flex gap-2">
               <button type="button" className={btnGhost} onClick={cancel}>
-                Cancel
+                {t('c.cancel')}
               </button>
               <button type="submit" className={btnPrimary} disabled={!valid}>
-                Save
+                {t('c.save')}
               </button>
             </div>
           )}
         </div>
         {!valid && (
           <p className="text-xs text-slate-500">
-            Give them a name — it is the only thing this needs. A person, a company, or
-            "Plumber (the good one)".
+            {t('form.needs_name')}
           </p>
         )}
       </form>
@@ -554,7 +562,6 @@ export function ContactForm({ id }: { id: string }) {
 // Customise section in Tune this app shares.
 const EXTRAS = FORM_FIELDS
 type Extra = FormField
-const EXTRA_LABELS = FIELD_LABELS
 
 function SlidersGlyph() {
   return (
@@ -590,9 +597,9 @@ function hasValue(k: Extra, draft: ContactDraft, tags: Tag[]): boolean {
  * Tags", which is what a plain `join(' and ')` gave once there were more than
  * two of these.
  */
-function listOf(names: string[]): string {
+function listOf(names: string[], locale: string): string {
   if (names.length <= 1) return names[0] ?? ''
-  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
+  return new Intl.ListFormat(locale, { type: 'conjunction' }).format(names)
 }
 
 /**

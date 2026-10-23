@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { buildBirthday, daysInMonth, MONTH_OPTIONS, parseBirthday } from '../lib/birthday'
+import { buildBirthday, daysInMonth, monthOptions, parseBirthday } from '../lib/birthday'
+import { useT } from '../i18n'
 import { Dropdown } from './Dropdown'
 import { btnSubtle, inputBase } from './ui'
 
@@ -34,6 +35,7 @@ export function BirthdayField({
   value: string | undefined
   onChange: (next: string | undefined) => void
 }) {
+  const t = useT()
   const initial = parseBirthday(value)
   const [day, setDay] = useState(initial?.day ?? 0)
   const [month, setMonth] = useState(initial?.month ?? 0)
@@ -74,8 +76,8 @@ export function BirthdayField({
         <Dropdown
           className="min-w-0 flex-1"
           value={day ? String(day) : ''}
-          placeholder="Day"
-          ariaLabel="Day of birth"
+          placeholder={t('bday.day')}
+          ariaLabel={t('bday.day_label')}
           options={Array.from({ length: maxDay }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }))}
           onChange={(next) => {
             const d = Number(next)
@@ -87,9 +89,9 @@ export function BirthdayField({
         <Dropdown
           className="min-w-0 flex-[2]"
           value={month ? String(month) : ''}
-          placeholder="Month"
-          ariaLabel="Month of birth"
-          options={MONTH_OPTIONS.map((m) => ({ value: String(m.value), label: m.label }))}
+          placeholder={t('bday.month')}
+          ariaLabel={t('bday.month_label')}
+          options={monthOptions(t.locale).map((m) => ({ value: String(m.value), label: m.label }))}
           onChange={(next) => {
             const m = Number(next)
             const clamped = clampDay(day, m, year)
@@ -107,8 +109,8 @@ export function BirthdayField({
           type="text"
           inputMode="numeric"
           maxLength={4}
-          placeholder="Year"
-          aria-label="Year of birth (optional)"
+          placeholder={t('bday.year')}
+          aria-label={t('bday.year_label')}
           value={yearText}
           onChange={(e) => {
             const digits = e.target.value.replace(/\D/g, '').slice(0, 4)
@@ -134,16 +136,16 @@ export function BirthdayField({
               onChange(undefined)
             }}
           >
-            Clear
+            {t('c.clear')}
           </button>
         )}
       </div>
       <p className="mt-1.5 text-xs text-slate-500">
         {day && month
           ? year === null
-            ? "Year is optional — leave it blank if you don't know it."
+            ? t('bday.year_optional')
             : ''
-          : 'Optional. A day and a month are enough.'}
+          : t('bday.optional')}
       </p>
     </div>
   )

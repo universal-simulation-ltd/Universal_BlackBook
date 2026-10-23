@@ -1,3 +1,4 @@
+import { currentT } from '../i18n'
 import { create } from 'zustand'
 import type { Contact, Tag } from '../lib/types'
 import { DEFAULT_VIEW, EMPTY_QUERY, UNTAGGED, viewOf, type Query, type View } from '../lib/filter'
@@ -203,11 +204,13 @@ export function draftIsEmpty(d: ContactDraft): boolean {
  * them, delete them. Nothing in the app treats them specially and nothing
  * brings them back — see `loadSeeded` for the marker that guarantees that.
  */
-const SEED_TAGS = ['Important People', 'Important Notes'] as const
+// Named in the language on screen when the book is made; a tag's name is the
+// owner's from then on, so it never changes language afterwards.
+const SEED_TAGS = ['seed.people', 'seed.notes'] as const
 
 /** The starting tags, as records. Fixed swatches so the pair always contrast. */
 function seedTags(): Tag[] {
-  return SEED_TAGS.map((name, i) => ({ id: newId(), name, colour: SWATCHES[i].key }))
+  return SEED_TAGS.map((key, i) => ({ id: newId(), name: currentT()(key), colour: SWATCHES[i].key }))
 }
 
 export const useBookStore = create<BookState>((set, get) => ({
@@ -620,14 +623,15 @@ export const useBookStore = create<BookState>((set, get) => ({
     if (listTagIds) await get().setListTags(tag.id, listTagIds)
     const { added, tagged, already } = planListImport(rows, get().contacts, tag.id)
     const bits: string[] = []
-    if (added.length) bits.push(`added ${added.length} ${added.length === 1 ? 'person' : 'people'}`)
-    if (tagged.length) bits.push(`${tagged.length} already in your book`)
-    if (already) bits.push(`${already} already on it`)
+    const t = currentT()
+    if (added.length) bits.push(t.plural('el.added', added.length))
+    if (tagged.length) bits.push(t('el.in_book', { count: tagged.length }))
+    if (already) bits.push(t('el.on_it', { count: already }))
     const byId = new Map(tagged.map((c) => [c.id, c]))
     set((s) => ({
       contacts: [...s.contacts.map((c) => byId.get(c.id) ?? c), ...added],
       editing: null,
-      notice: `${tag.name}: ${bits.join(', ') || 'nothing new'}.`,
+      notice: t('el.notice', { name: tag.name, text: bits.join(', ') || t('el.nothing_new') }),
     }))
     await Promise.all([...tagged, ...added].map(putContact))
   },

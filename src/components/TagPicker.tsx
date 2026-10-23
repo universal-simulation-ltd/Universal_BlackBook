@@ -5,6 +5,7 @@ import { isList } from '../lib/lists'
 import { ListChip } from './ListChip'
 import { TagChip } from './TagChip'
 import { TagCombo } from './TagCombo'
+import { useT, type Key } from '../i18n'
 
 /**
  * The multi-select on the contact form, collapsed (TagCombo, 2026-10-23): the
@@ -45,6 +46,7 @@ export function TagPicker({
    */
   kind?: 'list'
 }) {
+  const t = useT()
   const all = useBookStore((s) => s.tags)
   const listMode = kind === 'list'
   const tags = all.filter((t) => (listMode ? isList(t) : !isList(t)))
@@ -80,12 +82,12 @@ export function TagPicker({
 
   const swatches = (
     <div className="mt-2 flex flex-wrap items-center gap-1.5">
-      <span className="mr-0.5 text-xs text-slate-500">Colour</span>
+      <span className="mr-0.5 text-xs text-slate-500">{t('tags.colour')}</span>
       {SWATCHES.map((s) => (
         <button
           key={s.key}
           type="button"
-          aria-label={s.label}
+          aria-label={t(`colour.${s.key}` as Key)}
           aria-pressed={colour === s.key}
           onClick={() => setColour(s.key)}
           className={`h-5 w-5 rounded-full border-2 transition-transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
@@ -111,9 +113,9 @@ export function TagPicker({
       suggestion={(t) => (listMode ? <ListChip name={t.name} /> : <TagChip name={t.name} colour={t.colour} />)}
       onPick={(id) => onChange(value.includes(id) ? value : [...value, id])}
       onCreate={create}
-      placeholder={listMode ? 'Find or add a list' : 'Find or add a tag'}
-      createLabel={listMode ? 'Add new list “{name}”' : 'Add new tag “{name}”'}
-      fullLabel={listMode ? 'Show all lists' : 'Show all tags'}
+      placeholder={listMode ? t('tags.find_or_add_list') : t('tags.find_or_add')}
+      createLabel={listMode ? t('tags.add_new_list') : t('tags.add_new')}
+      fullLabel={listMode ? t('tags.show_all_lists') : t('tags.show_all')}
       // Lists have no colour of their own to pick — see ListChip.
       belowInput={(_, willCreate) => (willCreate && !listMode ? swatches : null)}
     />

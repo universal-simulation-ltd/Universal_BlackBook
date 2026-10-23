@@ -14,7 +14,7 @@ import { useLockStore } from './stores/lockStore'
 import { useSettingsStore } from './stores/settingsStore'
 import { useSyncStore } from './stores/syncStore'
 import { btnPrimary } from './components/ui'
-import { useT } from './native/i18n'
+import { DICTS, en as EN, useT, type Key, type Translator } from './i18n'
 
 // The pieces both layouts share: the website's (App.tsx) and the phone
 // screens' (src/native/NativeApp.tsx).
@@ -24,7 +24,9 @@ export const REPO_URL = 'https://github.com/universal-simulation-ltd/Universal_B
 /** The landing screen's tabs. Lists and To-do each need their App preference on. */
 export const TABS = ['contacts', 'lists', 'todos', 'notes'] as const
 export type Tab = (typeof TABS)[number]
-export const TAB_NAMES: Record<Tab, string> = { contacts: 'Contacts', lists: 'Lists', todos: 'To-do', notes: 'Notes' }
+const TAB_KEYS: Record<Tab, Key> = { contacts: 'tab_contacts', lists: 'tab_lists', todos: 'tab_todos', notes: 'tab_notes' }
+/** A tab's name, in the language on screen. */
+export const tabName = (t: Translator, tab: Tab) => t(TAB_KEYS[tab])
 
 // "About this app" — handed to <UniversalAppsNavBar about>, which draws it at
 // the foot of "Tune this app" (SDK 0.161.0+) and opens its own AboutAppDialog.
@@ -38,12 +40,19 @@ export const PREFERENCE_ROWS = (
   </>
 )
 
+/** One string in every language, as the SDK's `{ en, fr, … }` maps take it. */
+function everyLanguage(key: Key): { en: string } & Record<string, string> {
+  const out: { en: string } & Record<string, string> = { en: EN[key] }
+  for (const [code, dict] of Object.entries(DICTS)) if (dict[key]) out[code] = dict[key]!
+  return out
+}
+
 export const APP_ABOUT: AboutAppConfig = {
   repo:    'https://github.com/universal-simulation-ltd/Universal_BlackBook',
-  subject: 'Your contacts',
+  subject: everyLanguage('about.subject'),
   plural:  true,
-  except:  'the end-to-end encrypted backup you choose to store',
-  headline: 'Other address books keep your contacts on their servers.',
+  except:  everyLanguage('about.except'),
+  headline: everyLanguage('about.headline'),
   version: __APP_VERSION__,
   credits,
   noticesHref: 'https://github.com/universal-simulation-ltd/Universal_BlackBook/blob/main/THIRD-PARTY-NOTICES.md',
@@ -69,16 +78,17 @@ export const APP_ABOUT: AboutAppConfig = {
  */
 export function LockLink({ onClick }: { onClick: () => void }) {
   const locked = useLockStore((s) => s.record !== null)
+  const t = useT()
   return (
     <button
       type="button"
       onClick={onClick}
-      title={locked ? 'Turn the PIN lock off' : 'Lock this app with a 4-digit PIN'}
+      title={locked ? t('pin.turn_off_title') : t('pin.lock_title')}
       className="inline-flex items-center gap-1 rounded text-sm text-slate-400 underline-offset-4 hover:text-orange-400 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
     >
       <span aria-hidden>{locked ? '\u{1F512}' : '\u{1F513}'}</span>
-      <span>{locked ? 'Locked' : 'Lock with PIN'}</span>
-      {locked && <span className="sr-only">— tap to turn the PIN lock off</span>}
+      <span>{locked ? t('pin.locked') : t('tune_pin')}</span>
+      {locked && <span className="sr-only">{t('pin.tap_off')}</span>}
     </button>
   )
 }
@@ -97,24 +107,25 @@ export function SyncStatus({ onOpen }: { onOpen: () => void }) {
   const status = useSyncStore((s) => s.status)
   const dirty = useSyncStore((s) => s.dirty)
   const lastPushedAt = useSyncStore((s) => s.lastPushedAt)
+  const t = useT()
   if (state === 'signed-out') return null
 
   const problem = status === 'error' || status === 'conflict'
   const view =
     state === 'off'
-      ? { text: 'Not backed up', tone: 'text-slate-400', icon: '☁︎' }
+      ? { text: t('st.off'), tone: 'text-slate-400', icon: '☁︎', spin: false }
       : state === 'locked'
-        ? { text: 'Backup locked', tone: 'text-slate-400', icon: '☁︎' }
+        ? { text: t('st.locked'), tone: 'text-slate-400', icon: '☁︎', spin: false }
         : problem
-          ? { text: 'Not synced', tone: 'text-rose-300', icon: '!' }
+          ? { text: t('st.problem'), tone: 'text-rose-300', icon: '!', spin: false }
           : dirty || status === 'working'
-            ? { text: 'Syncing…', tone: 'text-slate-400', icon: '↻' }
-            : { text: 'Synced', tone: 'text-emerald-300', icon: '✓' }
+            ? { text: t('st.syncing'), tone: 'text-slate-400', icon: '↻', spin: true }
+            : { text: t('st.synced'), tone: 'text-emerald-300', icon: '✓', spin: false }
   const clickable = state !== 'on' || problem
 
   const body = (
     <>
-      <span aria-hidden className={view.text === 'Syncing…' ? 'inline-block animate-spin' : undefined}>
+      <span aria-hidden className={view.spin ? 'inline-block animate-spin' : undefined}>
         {view.icon}
       </span>
       <span>{view.text}</span>
@@ -134,7 +145,7 @@ export function SyncStatus({ onOpen }: { onOpen: () => void }) {
       className={cls}
       role="status"
       aria-live="polite"
-      title={lastPushedAt ? `Backed up ${new Date(lastPushedAt).toLocaleString('en-GB')}` : undefined}
+      title={lastPushedAt ? t('st.backed_up', { when: new Date(lastPushedAt).toLocaleString(t.locale) }) : undefined}
     >
       {body}
     </span>
@@ -160,6 +171,7 @@ export function SyncStatus({ onOpen }: { onOpen: () => void }) {
 export function useContactPicker() {
   const startWith = useBookStore((s) => s.startWith)
   const setNotice = useBookStore((s) => s.setNotice)
+  const t = useT()
   // Read once: whether the device has contacts to offer cannot change while
   // the app is open, and calling it per render would run a feature detection
   // on every keystroke in the search box.
@@ -176,13 +188,13 @@ export function useContactPicker() {
     } catch (e) {
       setNotice(
         e instanceof ContactsPermissionError
-          ? 'BlackBook cannot see your contacts. Allow it in Settings ▸ Privacy ▸ Contacts, or add them by hand.'
-          : 'That contact could not be read. You can still add them by hand.',
+          ? t('pick.denied')
+          : t('pick.failed'),
       )
     } finally {
       setPicking(false)
     }
-  }, [startWith, setNotice])
+  }, [startWith, setNotice, t])
 
   return { canPick: where !== 'none', picking, pick: () => void pick() }
 }
@@ -202,14 +214,15 @@ function OpensOnPreference() {
   const emailLists = useSettingsStore((s) => s.emailLists)
   const todos = useSettingsStore((s) => s.todos)
   const notes = useSettingsStore((s) => s.notes)
+  const t = useT()
   const tabs = availableTabs(emailLists, todos, notes)
   if (tabs.length < 2) return null
   return (
     <DefaultViewSelect<Tab>
       id="tab"
-      label="Opens on"
+      label={t('pref.opens_on')}
       fallback="contacts"
-      views={tabs.map((t) => ({ value: t, label: TAB_NAMES[t] }))}
+      views={tabs.map((tab) => ({ value: tab, label: tabName(t, tab) }))}
     />
   )
 }

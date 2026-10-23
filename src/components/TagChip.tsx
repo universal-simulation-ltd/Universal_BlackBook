@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import { accessibleColor, Chip, ChipToggle } from '@unisim/sdk'
 import { swatch, type Swatch } from '../lib/palette'
 import { useEffectiveTheme } from '../stores/themeStore'
+import { currentT } from '../i18n'
 
 // The grounds a selected chip's label has to be read on: the suite's dark page,
 // and white (the light theme's cards and page).
@@ -81,7 +82,7 @@ export function TagChip({
   const body = (
     <>
       <span className={`min-w-0 truncate ${hidden ? 'line-through opacity-60' : ''}`}>{name}</span>
-      {hidden && <span className="sr-only"> (hidden from the list)</span>}
+      {hidden && <span className="sr-only"> {currentT()('chip.hidden')}</span>}
       {trailing}
     </>
   )

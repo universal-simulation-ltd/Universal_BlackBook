@@ -21,7 +21,7 @@ import { useSettingsStore } from '../stores/settingsStore'
 import { useSyncStore } from '../stores/syncStore'
 import { useThemeStore } from '../stores/themeStore'
 import { Credit } from './Credit'
-import { useT, type Key } from './i18n'
+import { useT, type Key } from '../i18n'
 import { IconChevron } from './icons'
 import { useNativeNav } from './nav'
 

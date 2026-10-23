@@ -8,7 +8,7 @@ import { Fragment, useEffect, useState, type ReactNode } from 'react'
 import { parseArticleBody, useLanguage } from '@unisim/sdk'
 import { loadArticles } from '../knowledge'
 import type { Article } from '../knowledge/types'
-import { useT } from './i18n'
+import { useT } from '../i18n'
 import { LinkRow } from './TuneScreen'
 
 export function useArticles(): Article[] | null {

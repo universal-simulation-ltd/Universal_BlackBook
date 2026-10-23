@@ -1,3 +1,4 @@
+import { currentT } from '../i18n'
 import type { Contact } from './types'
 import { formatBirthday, nextBirthday, type Today } from './birthday'
 import { keptOffContacts } from './lists'
@@ -23,11 +24,16 @@ export type SortKey = (typeof SORT_KEYS)[number]
  * — it is still a value `Query.sort` can hold, and the summary has to be able
  * to name it.
  */
-export const SORT_LABELS: Record<SortKey, string> = {
-  name: 'Name A–Z',
-  'name-desc': 'Name Z–A',
-  recent: 'Recently added',
-  birthday: 'Birthdays',
+const SORT_KEYS_I18N = {
+  name: 'sort.name',
+  'name-desc': 'sort.name_desc',
+  recent: 'sort.recent',
+  birthday: 'sort.birthday',
+} as const
+
+/** "Name A–Z", in the language on screen. */
+export function sortLabel(key: SortKey): string {
+  return currentT()(SORT_KEYS_I18N[key] ?? SORT_KEYS_I18N.name)
 }
 
 /** The pseudo-tag for "carrying no tags at all". Not a real Tag id. */
@@ -120,16 +126,17 @@ export function cycleTag(
  * are left, not as a line of gibberish.
  */
 export function describeView(view: View, tagName: (id: string) => string | null): string {
+  const t = currentT()
   const list = (ids: string[]) => {
     const names = ids
-      .map((id) => (id === UNTAGGED ? 'Untagged' : tagName(id)))
+      .map((id) => (id === UNTAGGED ? t('filter.untagged') : tagName(id)))
       .filter((n): n is string => Boolean(n))
     if (names.length <= 1) return names[0] ?? null
-    return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
+    return new Intl.ListFormat(t.locale, { type: 'conjunction' }).format(names)
   }
   const shown = list(view.tagIds)
   const hidden = list(view.hiddenTagIds)
-  return [SORT_LABELS[view.sort] ?? SORT_LABELS.name, shown, hidden && `hiding ${hidden}`]
+  return [sortLabel(view.sort), shown, hidden && t('filter.hiding', { tags: hidden })]
     .filter(Boolean)
     .join(' · ')
 }
@@ -183,6 +190,8 @@ export function matchesText(contact: Contact, text: string): boolean {
     fold(contact.phone),
     fold(contact.notes),
     fold(formatBirthday(contact.birthdate)),
+    // English too, whatever the language on screen: "june" keeps finding June.
+    fold(formatBirthday(contact.birthdate, 'en-GB')),
     fold(contact.birthdate ?? ''),
   ].join(' ')
   // The number's digits are searched separately from its text, and the term is
@@ -383,10 +392,11 @@ export function addedWhen(createdAt: number, now: Date = new Date()): string {
   const added = new Date(createdAt)
   const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
   const days = Math.round((startOfDay(now) - startOfDay(added)) / 86_400_000)
-  if (days <= 0) return 'today'
-  if (days === 1) return 'yesterday'
+  const t = currentT()
+  if (days <= 0) return t('when.today')
+  if (days === 1) return t('when.yesterday')
   const sameYear = added.getFullYear() === now.getFullYear()
-  return added.toLocaleDateString('en-GB', {
+  return added.toLocaleDateString(t.locale, {
     day: 'numeric',
     month: 'short',
     ...(sameYear ? {} : { year: 'numeric' }),

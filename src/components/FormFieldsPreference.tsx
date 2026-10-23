@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react'
-import { FIELD_LABELS, FORM_FIELDS } from '../lib/formFields'
+import { fieldLabel, FORM_FIELDS } from '../lib/formFields'
 import { useSettingsStore } from '../stores/settingsStore'
 import { checkboxCls } from './ui'
+import { useT } from '../i18n'
 
 /**
  * Tune this app ▸ Contact form: which fields a new contact's form shows
@@ -16,6 +17,7 @@ import { checkboxCls } from './ui'
  * Lists only appears with Email lists on, as it does on the form.
  */
 export function FormFieldsPreference() {
+  const t = useT()
   const shown = useSettingsStore((s) => s.shownFields)
   const toggle = useSettingsStore((s) => s.toggleField)
   const emailLists = useSettingsStore((s) => s.emailLists)
@@ -30,14 +32,11 @@ export function FormFieldsPreference() {
 
   return (
     <fieldset ref={ref} className="mt-3 border-t border-slate-800 pt-3">
-      <legend className="sr-only">Contact form</legend>
+      <legend className="sr-only">{t('pref.form')}</legend>
       <p aria-hidden className="text-sm font-medium text-slate-200">
-        Contact form
+        {t('pref.form')}
       </p>
-      <p className="mb-2 mt-0.5 text-xs text-slate-400">
-        Tick the fields to show straight away when you add someone. The rest stay under More. A field with
-        something in it always shows.
-      </p>
+      <p className="mb-2 mt-0.5 text-xs text-slate-400">{t('pref.form_note')}</p>
       <div className="grid grid-cols-2 gap-x-4">
         {FORM_FIELDS.filter((f) => f !== 'lists' || emailLists).map((f) => (
           <label key={f} className="flex items-center gap-3 py-1 text-sm text-slate-200">
@@ -47,7 +46,7 @@ export function FormFieldsPreference() {
               checked={shown.includes(f)}
               onChange={(e) => toggle(f, e.target.checked)}
             />
-            {FIELD_LABELS[f]}
+            {fieldLabel(f)}
           </label>
         ))}
       </div>

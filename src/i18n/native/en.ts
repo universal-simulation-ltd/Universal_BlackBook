@@ -1,5 +1,5 @@
 // The phone screens' words in English (GB) — the source every other language
-// translates. See ../i18n.ts.
+// translates. See ../index.ts.
 
 export const en = {
   back: 'Back',

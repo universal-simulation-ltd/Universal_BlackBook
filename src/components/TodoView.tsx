@@ -9,6 +9,7 @@ import { Modal } from './Modal'
 import { TagChip } from './TagChip'
 import { TagPicker } from './TagPicker'
 import { TagCombo } from './TagCombo'
+import { useT } from '../i18n'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label, textareaCls } from './ui'
 import { autoFocusOK } from '../native/kit'
 import { phoneScreens } from '../native/shell'
@@ -21,6 +22,7 @@ import { phoneScreens } from '../native/shell'
  * one off, tap the card to edit it.
  */
 export function TodoView() {
+  const t = useT()
   const todos = useTodoStore((s) => s.todos)
   const loaded = useTodoStore((s) => s.loaded)
   const editing = useTodoStore((s) => s.editing)
@@ -58,19 +60,19 @@ export function TodoView() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-slate-100 sm:text-2xl">To-do</h1>
-          <p className="text-sm text-slate-500">Things to do, soonest deadline first.</p>
+          <h1 className="text-xl font-semibold text-slate-100 sm:text-2xl">{t('tab_todos')}</h1>
+          <p className="text-sm text-slate-500">{t('todo.intro')}</p>
         </div>
         {/* On the phone the top bar's + does this. */}
         {!phoneScreens() && (
           <button type="button" className={btnPrimary} onClick={() => edit('new')}>
-            Add new
+            {t('c.add_new')}
           </button>
         )}
       </div>
 
       {usedTags.length > 0 && (
-        <div role="group" aria-label="Filter by tag">
+        <div role="group" aria-label={t('tags.filter_by')}>
           <TagCombo
             options={usedTags}
             isOn={(id) => activeFilter.includes(id)}
@@ -88,12 +90,12 @@ export function TodoView() {
             )}
             suggestion={(t) => <TagChip name={t.name} colour={t.colour} />}
             onPick={(id) => setTagFilter([...activeFilter, id])}
-            placeholder="Filter by tag"
-            fullLabel="Show all tags"
+            placeholder={t('tags.filter_by')}
+            fullLabel={t('tags.show_all')}
           />
           {activeFilter.length > 0 && (
             <button type="button" className={`${btnSubtle} mt-1.5`} onClick={() => setTagFilter([])}>
-              Clear
+              {t('c.clear')}
             </button>
           )}
         </div>
@@ -101,11 +103,11 @@ export function TodoView() {
 
       {loaded && todos.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-800 px-6 py-14 text-center">
-          <p className="text-sm text-slate-400">Nothing to do yet. Add the first thing with Add new.</p>
+          <p className="text-sm text-slate-400">{phoneScreens() ? t('todo.none_phone') : t('todo.none')}</p>
         </div>
       ) : open.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-slate-800 px-6 py-8 text-center text-sm text-slate-400">
-          {activeFilter.length > 0 ? 'Nothing left to do with those tags.' : 'All done.'}
+          {activeFilter.length > 0 ? t('todo.none_tagged') : t('todo.all_done')}
         </p>
       ) : (
         <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
@@ -135,11 +137,11 @@ export function TodoView() {
               >
                 <path d="M6 3.5 10.5 8 6 12.5V3.5Z" />
               </svg>
-              <span className="tabular-nums">{done.length} done</span>
+              <span className="tabular-nums">{t('todo.done_count', { count: done.length })}</span>
             </button>
             {showDone && (
               <button type="button" className={btnSubtle} onClick={() => void clearDone()}>
-                Clear done
+                {t('todo.clear_done')}
               </button>
             )}
           </div>
@@ -161,6 +163,7 @@ export function TodoView() {
 }
 
 function TodoRow({ todo, byId, today }: { todo: Todo; byId: Map<string, Tag>; today: ReturnType<typeof todayParts> }) {
+  const t = useT()
   const setDone = useTodoStore((s) => s.setDone)
   const edit = useTodoStore((s) => s.edit)
   const done = todo.doneAt !== undefined
@@ -179,7 +182,7 @@ function TodoRow({ todo, byId, today }: { todo: Todo; byId: Map<string, Tag>; to
         }`}
       >
         <p className={`font-semibold text-slate-100 ${done ? 'line-through decoration-slate-500' : ''}`}>
-          {todo.title || 'Untitled'}
+          {todo.title || t('c.untitled')}
         </p>
         {todo.details && <p className="line-clamp-2 whitespace-pre-wrap text-sm text-slate-400">{todo.details}</p>}
         {todo.due && !done && (
@@ -203,7 +206,7 @@ function TodoRow({ todo, byId, today }: { todo: Todo; byId: Map<string, Tag>; to
         type="button"
         role="checkbox"
         aria-checked={done}
-        aria-label={done ? `Mark "${todo.title}" as not done` : `Mark "${todo.title}" as done`}
+        aria-label={done ? t('todo.mark_undone', { title: todo.title }) : t('todo.mark_done', { title: todo.title })}
         onClick={() => void setDone(todo.id, !done)}
         className="absolute left-1.5 top-1.5 flex h-10 w-10 items-center justify-center rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
       >
@@ -229,6 +232,7 @@ function TodoRow({ todo, byId, today }: { todo: Todo; byId: Map<string, Tag>; to
  * purpose (owner's spec). Delete lives here for an existing one.
  */
 function TodoForm({ id }: { id: string }) {
+  const t = useT()
   const existing = useTodoStore((s) => (id === 'new' ? undefined : s.todos.find((t) => t.id === id)))
   const save = useTodoStore((s) => s.save)
   const remove = useTodoStore((s) => s.remove)
@@ -253,25 +257,25 @@ function TodoForm({ id }: { id: string }) {
   }
 
   return (
-    <Modal title={existing ? 'Fine-tune to-do' : 'New to-do'} onClose={() => close(null)}>
+    <Modal title={existing ? t('todo.fine_tune') : t('add_todo')} onClose={() => close(null)}>
       <form onSubmit={submit} className="space-y-4">
         <div>
           <label htmlFor={titleId} className={label}>
-            Name
+            {t('form.name')}
           </label>
           <input
             id={titleId}
             className={inputCls}
             value={draft.title}
             onChange={(e) => patch({ title: e.target.value })}
-            placeholder="What needs doing"
+            placeholder={t('todo.placeholder')}
             autoFocus={autoFocusOK()}
             required
           />
         </div>
         <div>
           <label htmlFor={detailsId} className={label}>
-            Details
+            {t('todo.details')}
           </label>
           <textarea
             id={detailsId}
@@ -283,7 +287,7 @@ function TodoForm({ id }: { id: string }) {
         </div>
         <div>
           <label htmlFor={dueId} className={label}>
-            Deadline
+            {t('todo.deadline')}
           </label>
           <div className="flex items-center gap-2">
             {/* The browser's own date picker — the phone's wheel on iOS. */}
@@ -296,13 +300,13 @@ function TodoForm({ id }: { id: string }) {
             />
             {draft.due && (
               <button type="button" className={btnSubtle} onClick={() => patch({ due: undefined })}>
-                Clear
+                {t('c.clear')}
               </button>
             )}
           </div>
         </div>
         <div>
-          <span className={label}>Tags</span>
+          <span className={label}>{t('field.tags')}</span>
           <TagPicker value={draft.tagIds} onChange={(tagIds) => patch({ tagIds })} />
         </div>
 
@@ -310,11 +314,11 @@ function TodoForm({ id }: { id: string }) {
           {existing ? (
             confirming ? (
               <button type="button" className={btnDanger} onClick={() => void remove(existing.id)}>
-                Really delete
+                {t('todo.really_delete')}
               </button>
             ) : (
               <button type="button" className={btnSubtle} onClick={() => setConfirming(true)}>
-                Delete
+                {t('c.delete')}
               </button>
             )
           ) : (
@@ -322,10 +326,10 @@ function TodoForm({ id }: { id: string }) {
           )}
           <div className="flex gap-2">
             <button type="button" className={btnGhost} onClick={() => close(null)}>
-              Cancel
+              {t('c.cancel')}
             </button>
             <button type="submit" className={btnPrimary} disabled={!valid}>
-              {existing ? 'Save' : 'Add to-do'}
+              {existing ? t('c.save') : t('todo.add')}
             </button>
           </div>
         </div>

@@ -3,10 +3,11 @@ import { SignInDialog, useRevealOnOpen, useUniversal, useUser } from '@unisim/sd
 import { mergeBooks } from '../lib/merge'
 import { payloadTags } from '../lib/cloud'
 import { useBookStore } from '../stores/bookStore'
-import { OFFLINE, useSyncStore } from '../stores/syncStore'
+import { offlineMessage, useSyncStore } from '../stores/syncStore'
 import { Modal } from './Modal'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, checkboxCls, inputCls, label } from './ui'
 import { autoFocusOK, usePhoneKit } from '../native/kit'
+import { currentT, useT } from '../i18n'
 
 const MIN_PASSPHRASE = 10
 
@@ -23,6 +24,7 @@ const MIN_PASSPHRASE = 10
  * BlackBook still works completely without an account.
  */
 export function CloudPanel({ onClose }: { onClose: () => void }) {
+  const t = useT()
   const { supabase } = useUniversal()
   const { user } = useUser()
   const contacts = useBookStore((s) => s.contacts)
@@ -66,24 +68,19 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
 
   return (
     <>
-      <Modal title="Online backup" onClose={onClose} wide>
+      <Modal title={t('online_backup')} onClose={onClose} wide>
         <div className="space-y-4">
           <PrivacyNote />
 
           {sync.state === 'signed-out' && (
             <div className="space-y-3">
               <p className="text-sm text-slate-300">
-                Sign in with your Universal ID and BlackBook keeps an encrypted copy of your book, so
-                it survives a lost device and opens on your phone.
+                {t('cp.signin_why')}
               </p>
               <button type="button" className={btnPrimary} onClick={() => setSignInOpen(true)}>
-                Sign in with Universal ID
+                {t('cp.signin')}
               </button>
-              <p className="text-xs text-slate-500">
-                One account across every UNI·SIM app. BlackBook works perfectly well without one — your
-                book stays on this device, and a backup file (Advanced ▸ Backup, import &amp; export)
-                moves or keeps a copy without an account.
-              </p>
+              <p className="text-xs text-slate-500">{t('cp.one_account')}</p>
             </div>
           )}
 
@@ -96,13 +93,13 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
               }}
             >
               <p className="text-sm text-slate-300">
-                Signed in as <span className="font-medium text-slate-100">{user.email}</span>. There is
-                no online copy of your book yet. Choose a passphrase to encrypt it with — it never leaves
-                this device, and you will need it to open your book on another one.
+                {t('cp.signed_in_as')}
+                <span className="font-medium text-slate-100">{user.email}</span>
+                {t('cp.none_yet')}
               </p>
               <div>
                 <label className={label} htmlFor="cp-pass">
-                  Passphrase
+                  {t('cp.passphrase')}
                 </label>
                 <input
                   id="cp-pass"
@@ -111,12 +108,12 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
                   autoComplete="new-password"
                   value={passphrase}
                   onChange={(e) => setPassphrase(e.target.value)}
-                  placeholder={`At least ${MIN_PASSPHRASE} characters`}
+                  placeholder={t('cp.at_least', { count: MIN_PASSPHRASE })}
                 />
               </div>
               <div>
                 <label className={label} htmlFor="cp-confirm">
-                  Passphrase again
+                  {t('cp.again')}
                 </label>
                 <input
                   id="cp-confirm"
@@ -135,11 +132,8 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
                   onChange={(e) => setRemember(e.target.checked)}
                 />
                 <span>
-                  Remember on this device
-                  <span className="block text-xs text-slate-500">
-                    Keeps the key here so you don't retype the passphrase. Leave it off on a shared
-                    computer.
-                  </span>
+                  {t('cp.remember')}
+                  <span className="block text-xs text-slate-500">{t('cp.remember_note')}</span>
                 </span>
               </label>
               <label className="flex items-start gap-2 text-sm text-slate-300">
@@ -150,8 +144,9 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
                   onChange={(e) => setAcknowledged(e.target.checked)}
                 />
                 <span>
-                  I understand there is <strong className="font-semibold">no way to recover</strong> this
-                  passphrase. Lose it and the online copy is gone for good.
+                  {t('cp.ack_before')}
+                  <strong className="font-semibold">{t('cp.ack_strong')}</strong>
+                  {t('cp.ack_after')}
                 </span>
               </label>
               <button
@@ -164,13 +159,13 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
                   passphrase !== confirm
                 }
               >
-                {busy ? 'Encrypting…' : `Back up ${contacts.length} ${contacts.length === 1 ? 'contact' : 'contacts'}`}
+                {busy ? t('cp.encrypting') : t.plural('cp.back_up', contacts.length)}
               </button>
               {passphrase.length > 0 && passphrase.length < MIN_PASSPHRASE && (
-                <p className="text-xs text-slate-500">A few more characters — {MIN_PASSPHRASE} minimum.</p>
+                <p className="text-xs text-slate-500">{t('cp.more_chars', { count: MIN_PASSPHRASE })}</p>
               )}
               {confirm.length > 0 && passphrase !== confirm && (
-                <p className="text-xs text-rose-300">The two passphrases don't match.</p>
+                <p className="text-xs text-rose-300">{t('cp.mismatch')}</p>
               )}
             </form>
           )}
@@ -184,12 +179,13 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
               }}
             >
               <p className="text-sm text-slate-300">
-                Signed in as <span className="font-medium text-slate-100">{user.email}</span>. Your book
-                is backed up online — enter the passphrase you chose to download it.
+                {t('cp.signed_in_as')}
+                <span className="font-medium text-slate-100">{user.email}</span>
+                {t('cp.locked')}
               </p>
               <div>
                 <label className={label} htmlFor="cp-unlock">
-                  Passphrase
+                  {t('cp.passphrase')}
                 </label>
                 <input
                   id="cp-unlock"
@@ -208,32 +204,33 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
                   checked={remember}
                   onChange={(e) => setRemember(e.target.checked)}
                 />
-                Remember on this device
+                {t('cp.remember')}
               </label>
               <button type="submit" className={btnPrimary} disabled={busy || passphrase.length === 0}>
-                {busy ? 'Downloading…' : 'Download my book'}
+                {busy ? t('cp.downloading') : t('cp.download')}
               </button>
             </form>
           )}
 
           {pending && preview && (
             <ChoiceBlock
-              title={`Merge ${contacts.length} ${contacts.length === 1 ? 'contact' : 'contacts'} from this device?`}
-              body={`Your online copy has ${pending.contacts.length} ${
-                pending.contacts.length === 1 ? 'contact' : 'contacts'
-              }. ${mergeSummary(preview.added, contacts.length)} Using the online copy only removes this device's contacts.`}
-              primary={{ label: 'Merge', onClick: () => void sync.mergePending(supabase) }}
-              secondary={{ label: 'Use the online copy only', onClick: () => void sync.adoptPending() }}
+              title={t.plural('cp.merge_title', contacts.length)}
+              body={t('cp.merge_body', {
+                online: t.plural('c.contacts', pending.contacts.length),
+                summary: mergeSummary(preview.added, contacts.length),
+              })}
+              primary={{ label: t('cp.merge'), onClick: () => void sync.mergePending(supabase) }}
+              secondary={{ label: t('cp.online_only'), onClick: () => void sync.adoptPending() }}
             />
           )}
 
           {sync.status === 'conflict' && !sync.pending && (
             <ChoiceBlock
-              title="Saved somewhere else too"
-              body="Another device saved a newer copy since this one last synced. Choose which to keep — the other is replaced."
-              primary={{ label: 'Take the newer online copy', onClick: () => void sync.pull(supabase) }}
+              title={t('cp.conflict_title')}
+              body={t('cp.conflict_body')}
+              primary={{ label: t('cp.take_online'), onClick: () => void sync.pull(supabase) }}
               secondary={{
-                label: 'Keep this device, overwrite online',
+                label: t('cp.keep_device'),
                 onClick: () => void sync.push(supabase, true),
               }}
             />
@@ -246,37 +243,37 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
                   above the red error that said otherwise (iPhone, 2026-09-29). */}
               {sync.dirty || sync.offline > 0 ? (
                 <div className="rounded-xl border border-amber-900/60 bg-amber-950/30 px-3 py-2.5">
-                  <p className="text-sm font-medium text-amber-300">Changes not saved online yet</p>
+                  <p className="text-sm font-medium text-amber-300">{t('cp.unsaved')}</p>
                   <p className="mt-0.5 text-xs text-amber-200/70">
-                    {sync.offline > 0 ? 'Waiting for a connection — it will try again by itself.' : 'Saving…'}
-                    {sync.lastPushedAt && ` Last saved ${new Date(sync.lastPushedAt).toLocaleString('en-GB')}.`}
+                    {sync.offline > 0 ? t('cp.waiting') : t('bk.saving')}
+                    {sync.lastPushedAt && ` ${t('cp.last_saved_sentence', { when: new Date(sync.lastPushedAt).toLocaleString(t.locale) })}`}
                   </p>
                 </div>
               ) : (
                 <div className="rounded-xl border border-emerald-900/60 bg-emerald-950/30 px-3 py-2.5">
-                  <p className="text-sm font-medium text-emerald-300">Your book is backed up online</p>
+                  <p className="text-sm font-medium text-emerald-300">{t('cp.backed_up')}</p>
                   <p className="mt-0.5 text-xs text-emerald-200/70">
                     {sync.lastPushedAt
-                      ? `Last saved ${new Date(sync.lastPushedAt).toLocaleString('en-GB')}`
-                      : 'Encrypted on this device before it is sent.'}
+                      ? t('cp.last_saved', { when: new Date(sync.lastPushedAt).toLocaleString(t.locale) })
+                      : t('cp.encrypted_here')}
                   </p>
                 </div>
               )}
               <div className="flex flex-wrap gap-2">
                 <button type="button" className={btnGhost} disabled={busy} onClick={() => void sync.push(supabase)}>
-                  Save now
+                  {t('cp.save_now')}
                 </button>
                 <button type="button" className={btnGhost} disabled={busy} onClick={() => void sync.pull(supabase)}>
-                  Fetch online copy
+                  {t('cp.fetch')}
                 </button>
                 {sync.remembered && (
                   <button type="button" className={btnGhost} onClick={() => void sync.forgetDevice()}>
-                    Forget this device
+                    {t('cp.forget')}
                   </button>
                 )}
                 {!changing && (
                   <button type="button" className={btnGhost} disabled={busy} onClick={() => setChanging(true)}>
-                    Change passphrase
+                    {t('cp.change')}
                   </button>
                 )}
               </div>
@@ -293,21 +290,20 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
                 {confirmDelete ? (
                   <div ref={revealConfirmRef} className="space-y-2">
                     <p className="text-sm text-rose-300">
-                      Delete the online copy? Your book stays on this device — only the encrypted copy on
-                      our servers is removed.
+                      {t('cp.delete_ask')}
                     </p>
                     <div className="flex gap-2">
                       <button type="button" className={btnDanger} onClick={() => void sync.disable(supabase)}>
-                        Delete it
+                        {t('cp.delete_it')}
                       </button>
                       <button type="button" className={btnGhost} onClick={() => setConfirmDelete(false)}>
-                        Cancel
+                        {t('c.cancel')}
                       </button>
                     </div>
                   </div>
                 ) : (
                   <button type="button" className={btnSubtle} onClick={() => setConfirmDelete(true)}>
-                    Turn off and delete the online copy
+                    {t('cp.turn_off')}
                   </button>
                 )}
               </div>
@@ -315,7 +311,7 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
           )}
 
           {/* The offline message is the amber box above; red as well would say it twice. */}
-          {sync.message && !(sync.state === 'on' && sync.message === OFFLINE) && (
+          {sync.message && !(sync.state === 'on' && sync.message === offlineMessage()) && (
             <p
               className={`rounded-lg px-3 py-2 text-sm ${
                 sync.status === 'error' ? 'bg-rose-950/50 text-rose-300' : 'bg-slate-800 text-slate-300'
@@ -352,6 +348,7 @@ function ChangePassphraseForm({
   onSubmit: (current: string, next: string) => Promise<void>
   onCancel: () => void
 }) {
+  const t = useT()
   const [current, setCurrent] = useState('')
   const [next, setNext] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -367,10 +364,10 @@ function ChangePassphraseForm({
         void onSubmit(current, next)
       }}
     >
-      <p className="text-sm font-semibold text-slate-200">Change passphrase</p>
+      <p className="text-sm font-semibold text-slate-200">{t('cp.change')}</p>
       <div>
         <label className={label} htmlFor="cp-current">
-          Current passphrase
+          {t('cp.current')}
         </label>
         <input
           id="cp-current"
@@ -384,7 +381,7 @@ function ChangePassphraseForm({
       </div>
       <div>
         <label className={label} htmlFor="cp-new">
-          New passphrase
+          {t('cp.new')}
         </label>
         <input
           id="cp-new"
@@ -393,12 +390,12 @@ function ChangePassphraseForm({
           autoComplete="new-password"
           value={next}
           onChange={(e) => setNext(e.target.value)}
-          placeholder={`At least ${MIN_PASSPHRASE} characters`}
+          placeholder={t('cp.at_least', { count: MIN_PASSPHRASE })}
         />
       </div>
       <div>
         <label className={label} htmlFor="cp-new-confirm">
-          New passphrase again
+          {t('cp.new_again')}
         </label>
         <input
           id="cp-new-confirm"
@@ -410,8 +407,7 @@ function ChangePassphraseForm({
         />
       </div>
       <p className="text-xs text-slate-500">
-        Your other devices stop syncing until you enter the new passphrase on them. Nothing on them is
-        lost — they offer to merge their contacts back in.
+        {t('cp.change_note')}
       </p>
       <label className="flex items-start gap-2 text-sm text-slate-300">
         <input
@@ -421,8 +417,9 @@ function ChangePassphraseForm({
           onChange={(e) => setAcknowledged(e.target.checked)}
         />
         <span>
-          I understand there is <strong className="font-semibold">no way to recover</strong> the new
-          passphrase either.
+          {t('cp.ack_before')}
+          <strong className="font-semibold">{t('cp.ack_strong')}</strong>
+          {t('cp.ack_new_after')}
         </span>
       </label>
       <div className="flex flex-wrap gap-2">
@@ -437,17 +434,17 @@ function ChangePassphraseForm({
             next !== confirm
           }
         >
-          {busy ? 'Re-encrypting…' : 'Change passphrase'}
+          {busy ? t('cp.reencrypting') : t('cp.change')}
         </button>
         <button type="button" className={btnGhost} onClick={onCancel}>
-          Cancel
+          {t('c.cancel')}
         </button>
       </div>
       {next.length > 0 && next.length < MIN_PASSPHRASE && (
-        <p className="text-xs text-slate-500">A few more characters — {MIN_PASSPHRASE} minimum.</p>
+        <p className="text-xs text-slate-500">{t('cp.more_chars', { count: MIN_PASSPHRASE })}</p>
       )}
       {confirm.length > 0 && next !== confirm && (
-        <p className="text-xs text-rose-300">The two passphrases don't match.</p>
+        <p className="text-xs text-rose-300">{t('cp.mismatch')}</p>
       )}
     </form>
   )
@@ -455,19 +452,18 @@ function ChangePassphraseForm({
 
 /** How many of this device's contacts a merge would actually bring in. */
 function mergeSummary(added: number, local: number): string {
-  if (added === 0) return 'Everyone on this device is already in it.'
-  if (added === local) return `Merging adds all ${local} of them.`
-  return `Merging adds ${added} — the other ${local - added} are already in it.`
+  const t = currentT()
+  if (added === 0) return t('cp.merge_none')
+  if (added === local) return t('cp.merge_all', { count: local })
+  return t('cp.merge_some', { count: added, rest: local - added })
 }
 
 function PrivacyNote() {
+  const t = useT()
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2.5 text-xs leading-relaxed text-slate-400">
       <p>
-        <strong className="font-semibold text-slate-200">We cannot read your book.</strong> It is
-        encrypted in your browser with a passphrase only you know, and the server stores bytes it has no
-        key for. That matters here more than in most apps: the names, emails and notes in a BlackBook
-        belong to people who never signed up for anything.
+        <strong className="font-semibold text-slate-200">{t('cp.privacy_strong')}</strong> {t('cp.privacy')}
       </p>
     </div>
   )

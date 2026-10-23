@@ -630,7 +630,7 @@ describe('turning it off', () => {
   })
 
   it('a save cut off by the network is counted for a retry, in plain words, and clears once one lands', async () => {
-    const { OFFLINE } = await import('./syncStore')
+    const { offlineMessage } = await import('./syncStore')
     const a = await boot(server)
     await seed(a, ['Ada'])
     await use(a).sync.getState().enable(a.client, USER, PASS, true)
@@ -642,7 +642,7 @@ describe('turning it off', () => {
     server.failNext = 'TypeError: Load failed'
     await use(a).sync.getState().push(a.client)
     expect(use(a).sync.getState().offline).toBe(2)
-    expect(use(a).sync.getState().message).toBe(OFFLINE)
+    expect(use(a).sync.getState().message).toBe(offlineMessage())
 
     await use(a).sync.getState().push(a.client)
     expect(use(a).sync.getState().offline).toBe(0)

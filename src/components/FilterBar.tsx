@@ -4,7 +4,7 @@ import {
   DEFAULT_VIEW,
   describeView,
   sameView,
-  SORT_LABELS,
+  sortLabel,
   tagState,
   UNTAGGED,
   viewOf,
@@ -15,6 +15,7 @@ import { useBookStore } from '../stores/bookStore'
 import { usePhoneKit } from '../native/kit'
 import { TagChip } from './TagChip'
 import { TagCombo } from './TagCombo'
+import { useT } from '../i18n'
 import { btnSubtle, inputCls, label } from './ui'
 
 // The orders offered as buttons. `birthday` is not among them on purpose — it
@@ -60,12 +61,13 @@ export function FilterBar({
   /** Given on a phone: the ✕ in the box, and Escape — clear it and fold the bar away. */
   onClose?: () => void
 } = {}) {
+  const t = useT()
   const allTags = useBookStore((s) => s.tags)
   // Tags only. Lists are not tags and are not filtered by here (2026-09-18) —
   // they have the Lists tab, and runQuery ignores a list id left in a query.
   const tags = useMemo(() => allTags.filter((t) => !isList(t)), [allTags])
   // "Untagged" is one more choice, last, found by name like the rest.
-  const filterOptions = useMemo(() => [...tags, { id: UNTAGGED, name: 'Untagged', colour: 'slate' }], [tags])
+  const filterOptions = useMemo(() => [...tags, { id: UNTAGGED, name: t('filter.untagged'), colour: 'slate' }], [tags, t])
   const query = useBookStore((s) => s.query)
   const setQuery = useBookStore((s) => s.setQuery)
   const resetQuery = useBookStore((s) => s.resetQuery)
@@ -124,17 +126,17 @@ export function FilterBar({
       hidden: state === 'hidden',
       title:
         state === 'off'
-          ? 'Tap to show only these'
+          ? t('filter.tap_show')
           : state === 'shown'
-            ? 'Tap again to hide these from the list'
-            : 'Hidden from the list — tap to clear',
+            ? t('filter.tap_hide')
+            : t('filter.tap_clear'),
     }
   }
 
   const panel = (
     <>
       <section>
-        <span className={label}>View</span>
+        <span className={label}>{t('filter.view')}</span>
         <button
           type="button"
           aria-pressed={birthdays}
@@ -148,12 +150,11 @@ export function FilterBar({
               : 'border-slate-700 text-slate-300 hover:border-slate-600 hover:bg-slate-800'
           }`}
         >
-          <span aria-hidden>🎂</span> Birthdays
+          <span aria-hidden>🎂</span> {t('sort.birthday')}
         </button>
         {birthdays && (
           <p className="mt-1.5 text-xs text-slate-500">
-            Soonest first, and only people whose birthday you have. Anyone you'd rather not be
-            reminded about can be hidden from the list without losing their date.
+            {t('filter.birthdays_note')}
           </p>
         )}
       </section>
@@ -163,7 +164,7 @@ export function FilterBar({
           showing a value that is not what the list is doing. */}
       {!birthdays && (
         <section>
-          <span className={label}>Order</span>
+          <span className={label}>{t('filter.order')}</span>
           <div className="flex flex-wrap gap-2">
             {SORTS.map((s) => (
               <button
@@ -177,7 +178,7 @@ export function FilterBar({
                     : 'border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-200'
                 }`}
               >
-                {SORT_LABELS[s]}
+                {sortLabel(s)}
               </button>
             ))}
           </div>
@@ -185,16 +186,16 @@ export function FilterBar({
       )}
 
       <section>
-        <span className={label}>Tags</span>
+        <span className={label}>{t('field.tags')}</span>
         {tags.length > 0 && (
           <p className="-mt-0.5 mb-2 text-xs text-slate-500">
-            Tap once to show only those people, again to hide them from the list, and again to clear.
-            {query.hiddenTagIds.length > 0 && ' Hidden people still turn up when you search.'}
+            {t('filter.tags_note')}
+            {query.hiddenTagIds.length > 0 && t('filter.hidden_search_note')}
           </p>
         )}
         {tags.length === 0 ? (
           <p className="text-sm text-slate-500">
-            No tags yet. Add one while you're filling in a contact — they're entirely yours.
+            {t('filter.no_tags')}
           </p>
         ) : (
           // Collapsed (2026-10-23): the tags in use as chips, a box to find
@@ -206,8 +207,8 @@ export function FilterBar({
             chip={(t) => <TagChip name={t.name} colour={t.colour} {...chipState(t.id)} onClick={() => toggleTag(t.id)} />}
             suggestion={(t) => <TagChip name={t.name} colour={t.colour} />}
             onPick={toggleTag}
-            placeholder="Find a tag"
-            fullLabel="Show all tags"
+            placeholder={t('tags.find')}
+            fullLabel={t('tags.show_all')}
           />
         )}
       </section>
@@ -225,7 +226,7 @@ export function FilterBar({
           on is not a fact about an address book, and syncing it would mean
           a laptop deciding how the phone opens. */}
       <section>
-        <span className={label}>Opens on</span>
+        <span className={label}>{t('filter.opens_on')}</span>
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
@@ -233,7 +234,7 @@ export function FilterBar({
             disabled={showingDefault}
             className="rounded-lg border border-slate-700 px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:border-slate-600 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            Default
+            {t('filter.default')}
           </button>
           <button
             type="button"
@@ -241,18 +242,18 @@ export function FilterBar({
             disabled={showingDefault}
             className="rounded-lg border border-orange-500/60 px-3 py-2 text-sm font-medium text-orange-300 transition-colors hover:bg-orange-500/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            Save these as default
+            {t('filter.save_default')}
           </button>
           {customDefault && (
             <button type="button" className={`${btnSubtle} px-2 py-1.5`} onClick={() => void forgetDefaultView()}>
-              Forget
+              {t('filter.forget')}
             </button>
           )}
         </div>
         <p className="mt-1.5 text-xs text-slate-500">
           {showingDefault
-            ? `This is what the app opens on: ${defaultSummary}.`
-            : `The app opens on ${defaultSummary}. The search box is never saved.`}
+            ? t('filter.is_default', { view: defaultSummary })
+            : t('filter.opens_note', { view: defaultSummary })}
         </p>
       </section>
 
@@ -263,10 +264,10 @@ export function FilterBar({
           onClick={resetQuery}
           disabled={!dirty}
         >
-          Clear everything
+          {t('filter.clear_all')}
         </button>
         <button type="button" className={`${btnSubtle} px-2 py-1.5`} onClick={() => setOpen(false)}>
-          Done
+          {t('c.done')}
         </button>
       </div>
     </>
@@ -289,8 +290,8 @@ export function FilterBar({
             onKeyDown={(e) => {
               if (e.key === 'Escape' && onClose && !open) onClose()
             }}
-            placeholder="Search names, emails, phones, notes…"
-            aria-label="Search contacts"
+            placeholder={t('search.placeholder')}
+            aria-label={t('search.label')}
             enterKeyHint="search"
           />
           {onClose && (
@@ -301,8 +302,8 @@ export function FilterBar({
               // can move the layout out from under the finger.
               onMouseDown={(e) => e.preventDefault()}
               onClick={onClose}
-              aria-label="Clear the search and fold it away"
-              title="Clear and fold away"
+              aria-label={t('search.clear_label')}
+              title={t('search.clear_title')}
               className="absolute right-1 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md text-slate-500 hover:text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
             >
               <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
@@ -340,7 +341,7 @@ export function FilterBar({
             <path d="M10 6.5A3.5 3.5 0 1 0 10 13.5 3.5 3.5 0 0 0 10 6.5Zm0 5.5a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z" />
             <path d="M8.94 1.5a1.2 1.2 0 0 0-1.19 1.02l-.16 1.06a6.5 6.5 0 0 0-1.2.7l-1-.4a1.2 1.2 0 0 0-1.44.52l-1.06 1.83a1.2 1.2 0 0 0 .25 1.5l.83.68a6.6 6.6 0 0 0 0 1.38l-.83.68a1.2 1.2 0 0 0-.25 1.5l1.06 1.83c.3.52.93.73 1.45.52l1-.4c.37.28.77.51 1.2.7l.15 1.06c.09.6.6 1.02 1.19 1.02h2.12c.6 0 1.1-.43 1.19-1.02l.16-1.06c.42-.19.82-.42 1.19-.7l1 .4c.53.21 1.15 0 1.45-.52l1.06-1.83a1.2 1.2 0 0 0-.25-1.5l-.83-.68a6.6 6.6 0 0 0 0-1.38l.83-.68a1.2 1.2 0 0 0 .25-1.5L16.2 4.4a1.2 1.2 0 0 0-1.45-.52l-1 .4a6.5 6.5 0 0 0-1.19-.7l-.16-1.06a1.2 1.2 0 0 0-1.19-1.02H8.94Zm.19 1.5h1.74l.21 1.44.5.19c.44.17.85.4 1.21.7l.41.33 1.35-.54.87 1.5-1.13.93.06.52a5.1 5.1 0 0 1 0 1.06l-.06.52 1.13.93-.87 1.5-1.35-.54-.41.33c-.36.3-.77.53-1.21.7l-.5.19-.21 1.44H9.13l-.21-1.44-.5-.19a5 5 0 0 1-1.21-.7l-.41-.33-1.35.54-.87-1.5 1.13-.93-.06-.52a5.1 5.1 0 0 1 0-1.06l.06-.52-1.13-.93.87-1.5 1.35.54.41-.33c.36-.3.77-.53 1.21-.7l.5-.19.21-1.44Z" />
           </svg>
-          <span>Filters</span>
+          <span>{t('filter.button')}</span>
           {active > 0 && <span className="tabular-nums">({active})</span>}
         </button>
       </div>

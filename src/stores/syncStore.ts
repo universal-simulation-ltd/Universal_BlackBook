@@ -1,3 +1,4 @@
+import { currentT } from '../i18n'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { create } from 'zustand'
 import {
@@ -183,17 +184,16 @@ async function lockIfPassphraseChanged(row: VaultRow): Promise<boolean> {
     iterations: row.kdf_iterations,
     key: null,
     remembered: false,
-    message: PASSPHRASE_CHANGED,
+    message: passphraseChanged(),
   })
   return true
 }
 
 /** Shown while a save is waiting for the network; App keeps retrying. */
-export const OFFLINE = 'Not saved online yet — no connection. It will try again by itself.'
+export const offlineMessage = () => currentT()('sync.offline')
 
 /** Shown on a device whose key stopped working because of `changePassphrase` elsewhere. */
-export const PASSPHRASE_CHANGED =
-  'The passphrase for your online copy was changed on another device. Enter the new one to carry on syncing.'
+export const passphraseChanged = () => currentT()('sync.passphrase_changed')
 
 export const useSyncStore = create<SyncStore>((set, get) => ({
   state: 'signed-out',
@@ -274,7 +274,7 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
           iterations: row.kdf_iterations,
           key: null,
           remembered: false,
-          message: changed ? PASSPHRASE_CHANGED : null,
+          message: changed ? passphraseChanged() : null,
         })
         return
       }
@@ -319,7 +319,7 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       if (ask) await get().push(supabase)
       else await saveSyncMeta({ ...meta, rev: row.rev, syncedAt: behind ? Date.now() : since })
     } catch (e) {
-      set({ status: 'error', message: e instanceof Error ? e.message : 'Could not reach the server' })
+      set({ status: 'error', message: e instanceof Error ? e.message : currentT()('sync.unreachable') })
     }
   },
 
@@ -357,10 +357,10 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
         status: 'error',
         message:
           e instanceof VaultConflictError
-            ? 'You already have an online copy — reload and unlock it instead.'
+            ? currentT()('sync.exists')
             : e instanceof Error
               ? e.message
-              : 'Could not save online',
+              : currentT()('sync.save_failed'),
       })
     }
   },
@@ -378,7 +378,7 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       const key = await deriveKey(passphrase, row.kdf_salt, row.kdf_iterations)
       const payload = await decryptJson<VaultPayload>(row.ciphertext, key)
       if (!payload) {
-        set({ status: 'error', message: 'That passphrase does not open this book.' })
+        set({ status: 'error', message: currentT()('sync.wrong_passphrase') })
         return
       }
       // To-dos count as local data too: a device holding only to-dos must be
@@ -417,7 +417,7 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
         await get().push(supabase)
       }
     } catch (e) {
-      set({ status: 'error', message: e instanceof Error ? e.message : 'Could not reach the server' })
+      set({ status: 'error', message: e instanceof Error ? e.message : currentT()('sync.unreachable') })
     }
   },
 
@@ -490,15 +490,15 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
         if (row && (await lockIfPassphraseChanged(row))) return
         set({
           status: 'conflict',
-          message: 'Another device saved a newer copy. Choose which one to keep.',
+          message: currentT()('sync.conflict'),
         })
         return
       }
       if (e instanceof VaultOfflineError) {
-        set((s) => ({ status: 'error', message: OFFLINE, offline: s.offline + 1 }))
+        set((s) => ({ status: 'error', message: offlineMessage(), offline: s.offline + 1 }))
         return
       }
-      set({ status: 'error', message: e instanceof Error ? e.message : 'Could not save online' })
+      set({ status: 'error', message: e instanceof Error ? e.message : currentT()('sync.save_failed') })
     }
   },
 
@@ -515,7 +515,7 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       const payload = await decryptJson<VaultPayload>(row.ciphertext, key)
       if (!payload) {
         if (await lockIfPassphraseChanged(row)) return
-        set({ status: 'error', message: 'The online copy could not be opened with this device’s key.' })
+        set({ status: 'error', message: currentT()('sync.bad_key') })
         return
       }
       await adopt(payload)
@@ -523,7 +523,7 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       if (meta) await saveSyncMeta({ ...meta, rev: row.rev, syncedAt: Date.now() })
       set({ status: 'saved', rev: row.rev, message: null })
     } catch (e) {
-      set({ status: 'error', message: e instanceof Error ? e.message : 'Could not reach the server' })
+      set({ status: 'error', message: e instanceof Error ? e.message : currentT()('sync.unreachable') })
     }
   },
 
@@ -542,14 +542,14 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       // the key without anybody having typed it.
       const oldKey = await deriveKey(current, row.kdf_salt, row.kdf_iterations)
       if (!(await decryptJson<VaultPayload>(row.ciphertext, oldKey))) {
-        set({ status: 'error', message: 'That is not your current passphrase.' })
+        set({ status: 'error', message: currentT()('sync.not_current') })
         return false
       }
       if (row.rev !== rev) {
         // Re-encrypting THIS device's book over a newer one would lose the
         // other device's edits under cover of a passphrase change. Settle
         // which book is current first.
-        set({ status: 'conflict', message: 'Another device saved a newer copy. Choose which one to keep, then change the passphrase.' })
+        set({ status: 'conflict', message: currentT()('sync.conflict_change') })
         return false
       }
       // A fresh salt, and today's iteration count — so a change is also how an
@@ -580,15 +580,15 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
         lastPushedAt: pushedAt,
         dirty: false,
         status: 'saved',
-        message: 'Passphrase changed. Your other devices will ask for the new one.',
+        message: currentT()('sync.changed'),
       })
       return true
     } catch (e) {
       if (e instanceof VaultConflictError) {
-        set({ status: 'conflict', message: 'Another device saved a newer copy. Choose which one to keep, then change the passphrase.' })
+        set({ status: 'conflict', message: currentT()('sync.conflict_change') })
         return false
       }
-      set({ status: 'error', message: e instanceof Error ? e.message : 'Could not change the passphrase' })
+      set({ status: 'error', message: e instanceof Error ? e.message : currentT()('sync.change_failed') })
       return false
     }
   },
@@ -600,7 +600,7 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       await forgetVault()
       set({ state: 'off', status: 'idle', rev: 0, salt: null, key: null, remembered: false, pending: null, lastPushedAt: null })
     } catch (e) {
-      set({ status: 'error', message: e instanceof Error ? e.message : 'Could not delete the online copy' })
+      set({ status: 'error', message: e instanceof Error ? e.message : currentT()('sync.delete_failed') })
     }
   },
 

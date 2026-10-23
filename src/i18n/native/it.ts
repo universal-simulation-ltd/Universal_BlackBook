@@ -1,4 +1,4 @@
-import type { Dict } from '../i18n'
+import type { Dict } from '../index'
 
 export const it: Dict = {
   back: "Indietro",

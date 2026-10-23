@@ -1,5 +1,6 @@
 import { AdvancedMenu, AdvancedMenuItem } from '@unisim/sdk'
 import { KNOWLEDGE_BASE } from '../../knowledge'
+import { useT } from '../../i18n'
 
 // The per-app rows that slot into <UniversalAppsNavBar />'s `actions` prop —
 // ROWS ONLY, no trigger and no panel of its own. Inline styles match the SDK
@@ -33,6 +34,7 @@ export default function AppMenu({
   onBackup: () => void
   onDeleteAll: () => void
 }) {
+  const t = useT()
   return (
     <>
       {/* Advanced — the SDK's own category, so every app in the suite has one in
@@ -50,7 +52,7 @@ export default function AppMenu({
         <AdvancedMenuItem
           theme={theme}
           icon={<span aria-hidden>🏷️</span>}
-          label="Tags"
+          label={t('tune_tags')}
           onSelect={onTags}
         />
         {/* Import & export lives here (owner's call, 2026-09-17): moving a whole
@@ -61,13 +63,13 @@ export default function AppMenu({
         <AdvancedMenuItem
           theme={theme}
           icon={<span aria-hidden>📄</span>}
-          label="Backup, import & export"
+          label={t('tune_backup_file')}
           onSelect={onImportExport}
         />
         <AdvancedMenuItem
           theme={theme}
           icon={<span aria-hidden>☁️</span>}
-          label="Online backup"
+          label={t('online_backup')}
           onSelect={onBackup}
         />
         {/* Delete all data (owner's request, 2026-10-08 — a guest wanting
@@ -76,7 +78,7 @@ export default function AppMenu({
         <AdvancedMenuItem
           theme={theme}
           icon={<span aria-hidden>🗑️</span>}
-          label="Delete all data"
+          label={t('tune_delete_all')}
           onSelect={onDeleteAll}
         />
       </AdvancedMenu>

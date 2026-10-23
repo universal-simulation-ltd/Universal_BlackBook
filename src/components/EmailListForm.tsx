@@ -9,6 +9,8 @@ import { autoFocusOK, usePhoneKit } from '../native/kit'
 import { ListChip } from './ListChip'
 import { TagPicker } from './TagPicker'
 import { btnGhost, btnPrimary, inputCls, label } from './ui'
+import { useT } from '../i18n'
+import { fieldLabel } from '../lib/formFields'
 
 // `label` minus its bottom margin: the grid's gap spaces the headings, and
 // adding `mb-0` to `label` loses to its `mb-1.5` by CSS source order (ui.tsx).
@@ -69,6 +71,7 @@ export function EmailListForm({
   onCancel: () => void
   onSaved: () => void
 }) {
+  const t = useT()
   const all = useBookStore((s) => s.tags)
   const lists = useMemo(() => all.filter(isList), [all])
   const saveEmailList = useBookStore((s) => s.saveEmailList)
@@ -124,7 +127,7 @@ export function EmailListForm({
     <form onSubmit={(e) => void submit(e)} className="space-y-4">
       <div>
         <label className={label} htmlFor="el-name">
-          List name
+          {t('lists.name')}
         </label>
         <input
           id="el-name"
@@ -136,13 +139,13 @@ export function EmailListForm({
             e.preventDefault()
             grid.current?.querySelector('input')?.focus()
           }}
-          placeholder="Book club"
+          placeholder={t('el.name_placeholder')}
           autoFocus={!initialName && autoFocusOK()}
           autoComplete="off"
         />
         {lists.length > 0 && (
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            <span className="text-xs text-slate-500">Or add to:</span>
+            <span className="text-xs text-slate-500">{t('el.or_add_to')}</span>
             {lists.map((t) => (
               <ListChip
                 key={t.id}
@@ -156,8 +159,8 @@ export function EmailListForm({
       </div>
 
       <div ref={grid} className="grid grid-cols-[1fr_1fr_auto] items-center gap-x-2 gap-y-2">
-        <span className={heading}>Name</span>
-        <span className={heading}>Email</span>
+        <span className={heading}>{t('form.name')}</span>
+        <span className={heading}>{fieldLabel('email')}</span>
         {/* An empty cell over the note buttons, not an `sr-only` heading: that is
             absolutely positioned, takes no grid cell, and shifts every row one
             column along. The buttons carry their own labels. */}
@@ -170,7 +173,7 @@ export function EmailListForm({
               onChange={(e) => update(r.key, { name: e.target.value })}
               onKeyDown={onKeyDown}
               placeholder={i === 0 ? 'Sam Okonkwo' : ''}
-              aria-label={`Name, row ${i + 1}`}
+              aria-label={t('el.name_row', { row: i + 1 })}
               autoComplete="off"
             />
             <input
@@ -183,7 +186,7 @@ export function EmailListForm({
               onChange={(e) => update(r.key, { email: e.target.value })}
               onKeyDown={onKeyDown}
               placeholder={i === 0 ? 'sam@example.com' : ''}
-              aria-label={`Email, row ${i + 1}`}
+              aria-label={t('el.email_row', { row: i + 1 })}
               autoComplete="off"
               autoCapitalize="off"
               spellCheck={false}
@@ -194,7 +197,11 @@ export function EmailListForm({
                 onClick={() => setMenuFor(menuFor === r.key ? null : r.key)}
                 aria-expanded={menuFor === r.key}
                 aria-haspopup="menu"
-                aria-label={`More for row ${i + 1}${r.notes.trim() ? ', has a note' : ''}${r.contactId ? ', linked to a contact' : ''}`}
+                aria-label={[
+                  t('el.more_row', { row: i + 1 }),
+                  r.notes.trim() ? t('el.has_note') : '',
+                  r.contactId ? t('el.linked_short') : '',
+                ].join('')}
                 className={`flex h-9 w-9 items-center justify-center rounded-lg border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 disabled:cursor-not-allowed disabled:opacity-30 ${
                   r.notes.trim() || r.contactId
                     ? 'border-orange-500/60 bg-orange-500/15 text-orange-300'
@@ -229,15 +236,15 @@ export function EmailListForm({
                 value={r.company}
                 onChange={(e) => update(r.key, { company: e.target.value })}
                 onKeyDown={onKeyDown}
-                placeholder="Company"
-                aria-label={`Company, row ${i + 1}`}
+                placeholder={fieldLabel('company')}
+                aria-label={t('el.company_row', { row: i + 1 })}
                 autoComplete="off"
               />
             )}
             {r.withCompany && <span aria-hidden />}
             {r.contactId && (
               <p className="col-span-3 -mt-1 text-xs text-slate-500">
-                <span aria-hidden>🔗</span> Linked to an existing contact
+                <span aria-hidden>🔗</span> {t('el.linked')}
               </p>
             )}
           </div>
@@ -245,19 +252,19 @@ export function EmailListForm({
       </div>
 
       <div>
-        <span className={label}>Tags for this list</span>
+        <span className={label}>{t('el.tags')}</span>
         <TagPicker value={listTagIds} onChange={setListTagIds} />
       </div>
 
       <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-800 pt-4">
         <button type="button" className={btnGhost} onClick={onCancel}>
-          Cancel
+          {t('c.cancel')}
         </button>
         <button type="submit" className={btnPrimary} disabled={!valid}>
-          {people.length === 0 ? 'Save' : `Save ${people.length} ${people.length === 1 ? 'person' : 'people'}`}
+          {people.length === 0 ? t('c.save') : t('el.save_n', { people: t.plural('c.people', people.length) })}
         </button>
       </div>
-      {people.length > 0 && !listName.trim() && <p className="text-xs text-slate-500">Give the list a name first.</p>}
+      {people.length > 0 && !listName.trim() && <p className="text-xs text-slate-500">{t('el.name_first')}</p>}
 
       {notingRow && (
         <NotesFullscreen
@@ -336,6 +343,7 @@ function RowMenu({
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const kit = usePhoneKit()
+  const t = useT()
   useEffect(() => {
     // The phone's sheet is drawn outside this row and closes itself.
     if (kit) return
@@ -359,19 +367,19 @@ function RowMenu({
     return (
       <kit.Sheet title={kit.t('row_more')} onClose={onClose}>
         <button type="button" className={row} onClick={run(onNote)}>
-          {hasNote ? 'Edit note' : 'Add a note'}
+          {hasNote ? t('el.edit_note') : t('el.add_note')}
         </button>
         {!hasCompany && (
           <button type="button" className={row} onClick={run(onCompany)}>
-            Add company
+            {t('el.add_company')}
           </button>
         )}
         <button type="button" className={row} onClick={run(onLink)}>
-          {linked ? 'Link to a different contact' : 'Link to a contact'}
+          {linked ? t('el.link_other') : t('el.link')}
         </button>
         {linked && (
           <button type="button" className={row} onClick={run(onUnlink)}>
-            Unlink
+            {t('el.unlink')}
           </button>
         )}
       </kit.Sheet>
@@ -384,19 +392,19 @@ function RowMenu({
       className="absolute right-0 top-full z-10 mt-1 overflow-hidden rounded-lg border border-slate-700 bg-slate-900 py-1 shadow-lg shadow-black/40"
     >
       <button type="button" role="menuitem" className={item} onClick={run(onNote)}>
-        {hasNote ? 'Edit note' : 'Add a note'}
+        {hasNote ? t('el.edit_note') : t('el.add_note')}
       </button>
       {!hasCompany && (
         <button type="button" role="menuitem" className={item} onClick={run(onCompany)}>
-          Add company
+          {t('el.add_company')}
         </button>
       )}
       <button type="button" role="menuitem" className={item} onClick={run(onLink)}>
-        {linked ? 'Link to a different contact' : 'Link to a contact'}
+        {linked ? t('el.link_other') : t('el.link')}
       </button>
       {linked && (
         <button type="button" role="menuitem" className={item} onClick={run(onUnlink)}>
-          Unlink
+          {t('el.unlink')}
         </button>
       )}
     </div>
@@ -409,6 +417,7 @@ function RowMenu({
  * already on this one.
  */
 function LinkPicker({ tags, onClose, onPick }: { tags: Tag[]; onClose: () => void; onPick: (c: Contact) => void }) {
+  const t = useT()
   const contacts = useBookStore((s) => s.contacts)
   const [text, setText] = useState('')
   const byId = useMemo(() => new Map(tags.map((t) => [t.id, t])), [tags])
@@ -416,13 +425,13 @@ function LinkPicker({ tags, onClose, onPick }: { tags: Tag[]; onClose: () => voi
     () =>
       contacts
         .filter((c) => matchesText(c, text))
-        .sort((a, b) => a.name.localeCompare(b.name, 'en-GB', { sensitivity: 'base' }))
+        .sort((a, b) => a.name.localeCompare(b.name, t.locale, { sensitivity: 'base' }))
         .slice(0, 50),
-    [contacts, text],
+    [contacts, text, t],
   )
 
   return (
-    <Modal title="Link to a contact" onClose={onClose}>
+    <Modal title={t('el.link')} onClose={onClose}>
       <div className="space-y-3">
         <input
           className={inputCls}
@@ -432,13 +441,13 @@ function LinkPicker({ tags, onClose, onPick }: { tags: Tag[]; onClose: () => voi
           onKeyDown={(e) => {
             if (e.key === 'Enter') e.preventDefault()
           }}
-          placeholder="Search names and emails…"
-          aria-label="Search contacts"
+          placeholder={t('el.search')}
+          aria-label={t('search.label')}
           autoFocus={autoFocusOK()}
           autoComplete="off"
         />
         {found.length === 0 ? (
-          <p className="py-4 text-center text-sm text-slate-500">Nobody matches that.</p>
+          <p className="py-4 text-center text-sm text-slate-500">{t('el.no_match')}</p>
         ) : (
           <ul className="max-h-[50vh] divide-y divide-slate-800 overflow-y-auto">
             {found.map((c) => {

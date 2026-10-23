@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { usePageScrollLock } from '../lib/scrollLock'
 import { usePhoneKit } from '../native/kit'
 import { btnPrimary } from './ui'
+import { useT } from '../i18n'
 
 /**
  * The Notes field, on its own, filling the whole screen.
@@ -46,6 +47,7 @@ export function NotesFullscreen({
   /** Whose notes these are, for the title. Blank on a new contact. */
   name: string
 }) {
+  const t = useT()
   const ref = useRef<HTMLDialogElement>(null)
   // ⚠️ `onClose` is read through a ref so the effect below can have an EMPTY
   // dependency list, and that is not a tidiness preference — it is the bug.
@@ -98,7 +100,7 @@ export function NotesFullscreen({
           style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="Met at the Leeds conference. Two kids. Allergic to shellfish."
+          placeholder={t('form.notes_placeholder')}
         />
       </kit.Page>
     )
@@ -107,7 +109,7 @@ export function NotesFullscreen({
   return (
     <dialog
       ref={ref}
-      aria-label="Notes, full screen"
+      aria-label={t('form.notes_full')}
       // Every default the UA puts on a modal dialog is in the way here:
       // `m-auto` centres a box, `max-width`/`max-height` cap it well short of
       // the screen, and the border and radius draw a card edge around
@@ -125,10 +127,10 @@ export function NotesFullscreen({
         }}
       >
         <h2 className="min-w-0 truncate text-base font-semibold text-slate-100">
-          {name.trim() ? `Notes · ${name.trim()}` : 'Notes'}
+          {name.trim() ? t('notes_of', { name: name.trim() }) : t('notes_title')}
         </h2>
         <button type="button" className={`${btnPrimary} shrink-0`} onClick={onClose}>
-          Done
+          {t('c.done')}
         </button>
       </div>
 
@@ -146,7 +148,7 @@ export function NotesFullscreen({
         }}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Met at the Leeds conference. Two kids. Allergic to shellfish."
+        placeholder={t('form.notes_placeholder')}
       />
     </dialog>
   )

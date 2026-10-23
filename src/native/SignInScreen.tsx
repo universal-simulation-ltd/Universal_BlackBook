@@ -27,7 +27,7 @@ import {
 } from '@unisim/sdk'
 import { btnPrimary, inputCls, label } from '../components/ui'
 import { useEffectiveTheme } from '../stores/themeStore'
-import { useT } from './i18n'
+import { useT } from '../i18n'
 
 export function SignInContent({ onDone }: { onDone: () => void }) {
   const t = useT()

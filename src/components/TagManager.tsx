@@ -4,6 +4,7 @@ import { SWATCHES, swatch } from '../lib/palette'
 import { useBookStore } from '../stores/bookStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { Modal } from './Modal'
+import { useT, type Key } from '../i18n'
 import { btnGhost, btnPrimary, btnSubtle, checkboxCls, inputCls } from './ui'
 
 /**
@@ -14,6 +15,7 @@ import { btnGhost, btnPrimary, btnSubtle, checkboxCls, inputCls } from './ui'
  * question and not a shrug. See bookStore.removeTag for the write.
  */
 export function TagManager({ onClose }: { onClose: () => void }) {
+  const t = useT()
   const tags = useBookStore((s) => s.tags)
   const contacts = useBookStore((s) => s.contacts)
   const addTag = useBookStore((s) => s.addTag)
@@ -39,20 +41,20 @@ export function TagManager({ onClose }: { onClose: () => void }) {
   // renamed and deleted from its own page on the Lists tab.
   const sorted = useMemo(
     () =>
-      tags.filter((t) => !isList(t)).sort((a, b) => a.name.localeCompare(b.name, 'en-GB', { sensitivity: 'base' })),
-    [tags],
+      tags.filter((t) => !isList(t)).sort((a, b) => a.name.localeCompare(b.name, t.locale, { sensitivity: 'base' })),
+    [tags, t],
   )
 
   return (
-    <Modal title="Tags" onClose={onClose} wide>
+    <Modal title={t('field.tags')} onClose={onClose} wide>
       <div className="space-y-4">
         <div className="flex gap-2">
           <input
             className={inputCls}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="New tag…"
-            aria-label="New tag name"
+            placeholder={t('tm.new_placeholder')}
+            aria-label={t('tm.new_label')}
             onKeyDown={(e) => {
               if (e.key !== 'Enter') return
               e.preventDefault()
@@ -65,13 +67,13 @@ export function TagManager({ onClose }: { onClose: () => void }) {
             disabled={!draft.trim()}
             onClick={() => void addTag(draft).then(() => setDraft(''))}
           >
-            Add
+            {t('c.add')}
           </button>
         </div>
 
         {sorted.length === 0 ? (
           <p className="py-6 text-center text-sm text-slate-500">
-            No tags yet. Add one above — they're yours to name, colour and change.
+            {t('tm.none')}
           </p>
         ) : (
           <ul className="divide-y divide-slate-800">
@@ -88,11 +90,11 @@ export function TagManager({ onClose }: { onClose: () => void }) {
                     <input
                       className={`${inputCls} flex-1`}
                       value={c.name}
-                      aria-label={`Rename ${c.name}`}
+                      aria-label={t('tm.rename', { name: c.name })}
                       onChange={(e) => void renameTag(c.id, e.target.value)}
                     />
                     <span className="shrink-0 text-xs text-slate-500 tabular-nums">
-                      {count} {count === 1 ? 'contact' : 'contacts'}
+                      {t.plural('c.contacts', count)}
                     </span>
                     {confirming === c.id ? (
                       <span className="flex items-center gap-2">
@@ -104,10 +106,10 @@ export function TagManager({ onClose }: { onClose: () => void }) {
                             setConfirming(null)
                           }}
                         >
-                          <span className="text-rose-300">Delete</span>
+                          <span className="text-rose-300">{t('c.delete')}</span>
                         </button>
                         <button type="button" className={btnSubtle} onClick={() => setConfirming(null)}>
-                          Cancel
+                          {t('c.cancel')}
                         </button>
                       </span>
                     ) : (
@@ -115,16 +117,15 @@ export function TagManager({ onClose }: { onClose: () => void }) {
                         type="button"
                         className={btnSubtle}
                         onClick={() => setConfirming(c.id)}
-                        aria-label={`Delete ${c.name}`}
+                        aria-label={t('swipe.delete_label', { name: c.name })}
                       >
-                        Delete
+                        {t('c.delete')}
                       </button>
                     )}
                   </div>
                   {confirming === c.id && count > 0 && (
                     <p className="mt-1.5 text-xs text-slate-400">
-                      {count} {count === 1 ? 'contact stays' : 'contacts stay'} in your book — they just
-                      lose this tag.
+                      {t.plural('tm.stay', count)}
                     </p>
                   )}
                   {/* Tag → list. Only with Email lists on, and it is how a list
@@ -139,7 +140,7 @@ export function TagManager({ onClose }: { onClose: () => void }) {
                         checked={false}
                         onChange={(e) => e.target.checked && void setTagKind(c.id, 'list')}
                       />
-                      This is an email list (moves it to Lists)
+                      {t('tm.is_list')}
                     </label>
                   )}
                   <div className="mt-2 flex flex-wrap gap-1.5 pl-5">
@@ -147,7 +148,7 @@ export function TagManager({ onClose }: { onClose: () => void }) {
                       <button
                         key={s.key}
                         type="button"
-                        aria-label={`${s.label} for ${c.name}`}
+                        aria-label={t('tm.colour_for', { colour: t(`colour.${s.key}` as Key), name: c.name })}
                         aria-pressed={c.colour === s.key}
                         onClick={() => void recolourTag(c.id, s.key)}
                         className={`h-5 w-5 rounded-full border-2 transition-transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
@@ -165,7 +166,7 @@ export function TagManager({ onClose }: { onClose: () => void }) {
 
         <div className="flex justify-end border-t border-slate-800 pt-4">
           <button type="button" className={btnGhost} onClick={onClose}>
-            Done
+            {t('c.done')}
           </button>
         </div>
       </div>

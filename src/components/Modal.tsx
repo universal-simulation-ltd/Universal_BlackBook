@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { usePageScrollLock } from '../lib/scrollLock'
 import { usePhoneKit } from '../native/kit'
+import { currentT } from '../i18n'
 
 /**
  * The app's one dialog.
@@ -125,7 +126,7 @@ function WebModal({ title, onClose, children, wide = false }: ModalProps) {
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close"
+          aria-label={currentT()('c.close')}
           className="rounded-md px-2 py-1 text-slate-400 hover:bg-slate-800 hover:text-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
         >
           <CloseGlyph />

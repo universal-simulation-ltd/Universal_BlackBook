@@ -4,6 +4,7 @@ import { useLockStore, type PinResult } from '../stores/lockStore'
 import ProductLogo from './Header/ProductLogo'
 import { Modal } from './Modal'
 import { autoFocusOK } from '../native/kit'
+import { useT, type Translator } from '../i18n'
 import { btnDanger, btnGhost, btnPrimary, inputBase, label } from './ui'
 
 /**
@@ -22,11 +23,12 @@ export function LockScreen() {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const waiting = useCountdown(blockedUntil)
+  const t = useT()
 
   const submit = async (value: string) => {
     if (busy) return
     setBusy(true)
-    setError(errorFor(await unlock(value)))
+    setError(errorFor(await unlock(value), t))
     setPin('')
     setBusy(false)
   }
@@ -44,7 +46,7 @@ export function LockScreen() {
           </div>
           <p className="text-sm text-slate-400">
             <span aria-hidden className="mr-1">&#128274;</span>
-            Locked. Enter your {PIN_LENGTH}-digit PIN.
+            {t('lock.locked', { count: PIN_LENGTH })}
           </p>
         </div>
 
@@ -57,7 +59,7 @@ export function LockScreen() {
         >
           <PinInput
             id="lock-pin"
-            name="PIN"
+            name={t('lock.pin')}
             value={pin}
             autoFocus
             disabled={busy || waiting > 0}
@@ -72,7 +74,7 @@ export function LockScreen() {
           />
           {waiting > 0 ? (
             <p className="mt-3 text-center text-sm text-rose-300" role="alert">
-              Too many wrong tries. Try again in {waiting} second{waiting === 1 ? '' : 's'}.
+              {t.plural('lock.wait', waiting)}
             </p>
           ) : (
             error && (
@@ -89,7 +91,7 @@ export function LockScreen() {
             className={`${btnPrimary} mt-4 w-full`}
             disabled={busy || waiting > 0 || pin.length !== PIN_LENGTH}
           >
-            {busy ? 'Checking…' : 'Unlock'}
+            {busy ? t('lock.checking') : t('lock.unlock')}
           </button>
         </form>
 
@@ -121,9 +123,10 @@ export function LockScreen() {
  * being the thief's best outcome; typing DELETE is deliberate in a way that
  * tapping is not.
  */
-const RESET_WORD = 'DELETE'
-
 function Forgotten() {
+  const t = useT()
+  // The word typed to confirm, in the language on screen ("DELETE", "LÖSCHEN").
+  const RESET_WORD = t('reset.word').toLocaleUpperCase(t.locale)
   const [open, setOpen] = useState(false)
   const panelId = useId()
   const [typed, setTyped] = useState('')
@@ -162,45 +165,35 @@ function Forgotten() {
           aria-controls={panelId}
           className="text-xs text-slate-500 underline-offset-2 hover:text-slate-300 hover:underline"
         >
-          Forgotten your PIN?
+          {t('lock.forgotten')}
         </button>
       </div>
       {open && (
         <div id={panelId} className="mt-3 rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-left">
           <p className="text-xs leading-relaxed text-slate-400">
-            Nobody can tell you your PIN and nobody can turn the lock off for you — that is what
-            makes it a lock. What you can do is start this device over: the PIN goes, and so does
-            everything BlackBook is holding on this device.
+            {t('lock.forgotten_body')}
           </p>
 
           {online === 'checking' ? (
-            <p className="mt-3 text-xs text-slate-500">Checking for an online copy…</p>
+            <p className="mt-3 text-xs text-slate-500">{t('lock.checking_online')}</p>
           ) : online === true ? (
             <div className="mt-3 rounded-xl border border-slate-700 bg-slate-800/50 px-3 py-2.5 text-xs leading-relaxed text-slate-300">
-              <p className="font-semibold text-slate-100">Your book is saved online.</p>
-              <p className="mt-1">
-                After this, sign in to your Universal ID and enter your vault passphrase to bring it
-                back. ⚠️ That passphrase is not your PIN and not your account password — if you do
-                not have it either, the online copy cannot be opened by anyone, including us.
-              </p>
+              <p className="font-semibold text-slate-100">{t('lock.online_yes')}</p>
+              <p className="mt-1">{t('lock.online_yes_body')}</p>
             </div>
           ) : (
             <div className="mt-3 rounded-xl border border-rose-900/60 bg-rose-950/30 px-3 py-2.5 text-xs leading-relaxed text-rose-200">
               <p className="font-semibold">
                 {online === null
-                  ? 'This device could not check for an online copy.'
-                  : 'This device has no online copy.'}
+                  ? t('lock.online_unknown')
+                  : t('lock.online_no')}
               </p>
-              <p className="mt-1">
-                Everything in this book will be gone. If you saved a backup file, Advanced ▸ Backup,
-                import &amp; export ▸ Open a backup brings it back afterwards. If not, this cannot be
-                undone.
-              </p>
+              <p className="mt-1">{t('lock.online_no_body')}</p>
             </div>
           )}
 
           <label className={`${label} mt-4`} htmlFor="lock-reset-confirm">
-            Type {RESET_WORD} to erase this device&rsquo;s book
+            {t('lock.type_word', { word: RESET_WORD })}
           </label>
           <input
             id="lock-reset-confirm"
@@ -210,7 +203,7 @@ function Forgotten() {
             autoComplete="off"
             autoCapitalize="characters"
             spellCheck={false}
-            onChange={(e) => setTyped(e.target.value.toUpperCase())}
+            onChange={(e) => setTyped(e.target.value.toLocaleUpperCase(t.locale))}
           />
 
           <div className="mt-4 flex justify-end gap-2">
@@ -223,7 +216,7 @@ function Forgotten() {
                 setTyped('')
               }}
             >
-              Keep trying
+              {t('lock.keep_trying')}
             </button>
             <button
               type="button"
@@ -231,7 +224,7 @@ function Forgotten() {
               disabled={busy || typed !== RESET_WORD}
               onClick={() => void confirm()}
             >
-              {busy ? 'Erasing…' : 'Erase and start over'}
+              {busy ? t('lock.erasing') : t('lock.erase')}
             </button>
           </div>
         </div>
@@ -251,8 +244,9 @@ function Forgotten() {
  */
 export function LockPanel({ onClose }: { onClose: () => void }) {
   const record = useLockStore((s) => s.record)
+  const t = useT()
   return (
-    <Modal title={record ? 'PIN lock' : 'Lock this app'} onClose={onClose}>
+    <Modal title={record ? t('lock.panel_on') : t('lock.panel_off')} onClose={onClose}>
       {record ? <TurnOff onDone={onClose} /> : <TurnOn onDone={onClose} />}
     </Modal>
   )
@@ -264,31 +258,30 @@ function TurnOn({ onDone }: { onDone: () => void }) {
   const [again, setAgain] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const t = useT()
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     if (busy) return
-    if (pin.length !== PIN_LENGTH) return setError(`Your PIN is ${PIN_LENGTH} digits.`)
+    if (pin.length !== PIN_LENGTH) return setError(t('lock.digits', { count: PIN_LENGTH }))
     // Checked here rather than only by the button's disabled state: a mismatch
     // is the one mistake with a lasting cost, because the PIN that gets saved
     // is the one nobody typed twice.
-    if (pin !== again) return setError('Those two do not match.')
+    if (pin !== again) return setError(t('lock.mismatch'))
     setBusy(true)
     const result = await setPinLock(pin)
     setBusy(false)
     if (result === 'ok') return onDone()
-    setError(errorFor(result))
+    setError(errorFor(result, t))
   }
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <p className="text-sm text-slate-400">
-        BlackBook will ask for this PIN every time it is opened on this device.
-      </p>
+      <p className="text-sm text-slate-400">{t('lock.will_ask')}</p>
 
       <PinInput
         id="lock-new"
-        name={`Choose a ${PIN_LENGTH}-digit PIN`}
+        name={t('lock.choose', { count: PIN_LENGTH })}
         value={pin}
         autoFocus={autoFocusOK()}
         disabled={busy}
@@ -299,7 +292,7 @@ function TurnOn({ onDone }: { onDone: () => void }) {
       />
       <PinInput
         id="lock-again"
-        name="Type it again"
+        name={t('bk.repeat')}
         value={again}
         disabled={busy}
         onChange={(v) => {
@@ -320,30 +313,24 @@ function TurnOn({ onDone }: { onDone: () => void }) {
           there is no way out: an accurate warning is the one that gets read
           twice, and "no way to reset" stopped being true. */}
       <div className="rounded-xl border border-orange-900/60 bg-orange-950/30 px-3 py-2.5 text-xs leading-relaxed text-orange-200">
-        <p className="font-semibold">Nobody can reset this PIN for you.</p>
-        <p className="mt-1">
-          If you forget it, the only way back in is to erase this device's book and start over. Sync
-          your book with your Universal ID, or save a backup file (Advanced ▸ Backup, import &amp;
-          export), and that becomes an inconvenience instead of a loss.
-        </p>
+        <p className="font-semibold">{t('lock.no_reset')}</p>
+        <p className="mt-1">{t('lock.no_reset_body')}</p>
       </div>
 
       <p className="text-xs leading-relaxed text-slate-500">
-        It locks the app, not the data. Your book stays in this browser's storage exactly as it is —
-        the PIN keeps out somebody who picks up your phone, and it is not encryption. The online copy
-        has its own passphrase, a backup file its own optional password, and neither is affected.
+        {t('lock.not_encryption')}
       </p>
 
       <div className="flex justify-end gap-2 border-t border-slate-800 pt-4">
         <button type="button" className={btnGhost} onClick={onDone}>
-          Cancel
+          {t('c.cancel')}
         </button>
         <button
           type="submit"
           className={btnPrimary}
           disabled={busy || pin.length !== PIN_LENGTH || again.length !== PIN_LENGTH}
         >
-          {busy ? 'Locking…' : 'Lock BlackBook'}
+          {busy ? t('lock.locking') : t('lock.lock')}
         </button>
       </div>
     </form>
@@ -357,6 +344,7 @@ function TurnOff({ onDone }: { onDone: () => void }) {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const waiting = useCountdown(blockedUntil)
+  const t = useT()
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -366,17 +354,15 @@ function TurnOff({ onDone }: { onDone: () => void }) {
     setBusy(false)
     if (result === 'ok') return onDone()
     setPin('')
-    setError(errorFor(result))
+    setError(errorFor(result, t))
   }
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <p className="text-sm text-slate-400">
-        BlackBook asks for your PIN every time it is opened on this device.
-      </p>
+      <p className="text-sm text-slate-400">{t('lock.asks')}</p>
       <PinInput
         id="lock-current"
-        name="Enter your PIN to turn the lock off"
+        name={t('lock.enter_off')}
         value={pin}
         autoFocus={autoFocusOK()}
         disabled={busy || waiting > 0}
@@ -387,7 +373,7 @@ function TurnOff({ onDone }: { onDone: () => void }) {
       />
       {waiting > 0 ? (
         <p className="text-sm text-rose-300" role="alert">
-          Too many wrong tries. Try again in {waiting} second{waiting === 1 ? '' : 's'}.
+          {t.plural('lock.wait', waiting)}
         </p>
       ) : (
         error && (
@@ -398,14 +384,14 @@ function TurnOff({ onDone }: { onDone: () => void }) {
       )}
       <div className="flex justify-end gap-2 border-t border-slate-800 pt-4">
         <button type="button" className={btnGhost} onClick={onDone}>
-          Keep it on
+          {t('lock.keep_on')}
         </button>
         <button
           type="submit"
           className={btnDanger}
           disabled={busy || waiting > 0 || pin.length !== PIN_LENGTH}
         >
-          {busy ? 'Checking…' : 'Turn the lock off'}
+          {busy ? t('lock.checking') : t('lock.turn_off')}
         </button>
       </div>
     </form>
@@ -482,15 +468,15 @@ function secondsLeft(until: number): number {
   return Math.max(0, Math.ceil((until - Date.now()) / 1000))
 }
 
-function errorFor(result: PinResult): string | null {
+function errorFor(result: PinResult, t: Translator): string | null {
   switch (result) {
     case 'ok':
       return null
     case 'bad':
-      return `Your PIN is ${PIN_LENGTH} digits.`
+      return t('lock.digits', { count: PIN_LENGTH })
     case 'wait':
-      return 'Too many wrong tries. Wait a moment and try again.'
+      return t('lock.wait_moment')
     case 'wrong':
-      return 'That is not the PIN. Try again.'
+      return t('lock.wrong')
   }
 }

@@ -37,7 +37,8 @@ import { useSyncStore } from './stores/syncStore'
 import { useTodoStore } from './stores/todoStore'
 import { useNoteStore } from './stores/noteStore'
 import { usePanelStore } from './stores/panelStore'
-import { AddMenu, APP_ABOUT, availableTabs, LockLink, PREFERENCE_ROWS, REPO_URL, SyncStatus, TAB_NAMES, TABS, useContactPicker, type Tab } from './appParts'
+import { AddMenu, APP_ABOUT, availableTabs, LockLink, PREFERENCE_ROWS, REPO_URL, SyncStatus, tabName, TABS, useContactPicker, type Tab } from './appParts'
+import { currentT, useT } from './i18n'
 import { useEffectiveTheme, useThemeStore } from './stores/themeStore'
 import { phoneScreens } from './native/shell'
 import { followThemeWithStatusBar } from './native/systemBars'
@@ -72,6 +73,9 @@ const NativeApp = lazy(() => import('./native/NativeApp'))
 const AUTOSAVE_DELAY = 2500
 
 export default function App() {
+  // First, so everything rendered below — and the lib/ helpers it calls —
+  // answers in the language on screen (see i18n/index.ts).
+  const tr = useT()
   const init = useBookStore((s) => s.init)
   const loaded = useBookStore((s) => s.loaded)
   const editing = useBookStore((s) => s.editing)
@@ -81,7 +85,7 @@ export default function App() {
   const setNotice = useBookStore((s) => s.setNotice)
   useEffect(() => {
     if (takeSignedOutNote()) {
-      setNotice('Signed out, so your book has been removed from this device. Sign in again to bring it back from your online backup.')
+      setNotice(currentT()('app.signed_out_wiped'))
     }
   }, [setNotice])
   const panel = usePanelStore((s) => s.panel)
@@ -202,9 +206,9 @@ export default function App() {
       <div className={`${CONTAINER} pt-2 sm:hidden`}>
         <p className="flex items-center justify-center gap-1.5 text-[11px] leading-none text-slate-600">
           <span>
-            With{' '}
+            {tr('app.with')}{' '}
             <span aria-hidden="true" className="text-orange-500">&hearts;</span>
-            <span className="sr-only">love</span> from{' '}
+            <span className="sr-only">{tr('app.love')}</span> {tr('app.from')}{' '}
             <a
               href="https://www.unisim.co.uk"
               target="_blank"
@@ -223,8 +227,8 @@ export default function App() {
             href={REPO_URL}
             target="_blank"
             rel="noreferrer"
-            aria-label="Universal BlackBook on GitHub"
-            title="View source on GitHub"
+            aria-label={tr('app.github')}
+            title={tr('app.github_title')}
             className="inline-flex hover:text-slate-400"
           >
             <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
@@ -253,7 +257,7 @@ export default function App() {
               type="button"
               onClick={() => setNotice(null)}
               className="shrink-0 font-semibold"
-              aria-label="Dismiss"
+              aria-label={tr('dismiss')}
             >
               <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
                 <path d="m4 4 8 8M12 4l-8 8" strokeLinecap="round" />
@@ -265,7 +269,7 @@ export default function App() {
         {tabs.length > 1 && (
           <div
             role="tablist"
-            aria-label="Contacts, lists, to-do or notes"
+            aria-label={tr('app.tabs')}
             className={`mb-5 grid gap-1 rounded-lg border border-slate-800 bg-slate-900 p-1 ${
               tabs.length === 4 ? 'grid-cols-4 sm:max-w-md' : tabs.length === 3 ? 'grid-cols-3 sm:max-w-sm' : 'grid-cols-2 sm:max-w-xs'
             }`}
@@ -276,7 +280,7 @@ export default function App() {
                 type="button"
                 role="tab"
                 aria-selected={t === current}
-                {...tabDefault.buttonProps(t, TAB_NAMES[t])}
+                {...tabDefault.buttonProps(t, tabName(tr, t))}
                 onClick={() => {
                   const double = tabDefault.tap(t)
                   // Contacts tapped while already on it: open the search, keyboard
@@ -296,7 +300,7 @@ export default function App() {
                     : 'text-slate-400 hover:text-slate-200 data-[default-view=true]:text-orange-400 data-[default-view=true]:ring-1 data-[default-view=true]:ring-inset data-[default-view=true]:ring-orange-400/70'
                 }`}
               >
-                {TAB_NAMES[t]}
+                {tabName(tr, t)}
               </button>
             ))}
           </div>
@@ -312,12 +316,12 @@ export default function App() {
           <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
             <div>
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <h1 className="text-xl font-semibold text-slate-100 sm:text-2xl">Your BlackBook</h1>
+                <h1 className="text-xl font-semibold text-slate-100 sm:text-2xl">{tr('app.title')}</h1>
                 <LockLink onClick={() => setPanel('lock')} />
               <SyncStatus onOpen={openCloud} />
               </div>
               <p className="text-sm text-slate-500">
-                The people worth staying in touch with — tagged your way, and never a birthday missed.
+                {tr('app.tagline')}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -328,14 +332,14 @@ export default function App() {
                 <AddMenu onNew={() => edit('new')} onPick={pick} />
               ) : (
                 <button type="button" className={btnPrimary} onClick={() => edit('new')}>
-                  Add new
+                  {tr('add_new')}
                 </button>
               )}
             </div>
           </div>
           {picking && (
             <p className="mb-4 text-xs text-slate-500">
-              Waiting for the contact you pick. Closed it without choosing anybody? Tap again.
+              {tr('picking_hint')}
             </p>
           )}
 
@@ -358,10 +362,10 @@ export default function App() {
       <footer className="hidden border-t border-slate-800 bg-slate-900 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:block">
         <div className={`${CONTAINER} flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500`}>
           <p>
-            With{' '}
+            {tr('app.with')}{' '}
             <span aria-hidden="true" className="text-orange-400">&hearts;</span>
-            <span className="sr-only">love</span>{' '}
-            from{' '}
+            <span className="sr-only">{tr('app.love')}</span>{' '}
+            {tr('app.from')}{' '}
             <a
               href="https://www.unisim.co.uk"
               target="_blank"
@@ -375,8 +379,8 @@ export default function App() {
             href={REPO_URL}
             target="_blank"
             rel="noreferrer"
-            aria-label="Universal BlackBook on GitHub"
-            title="View source on GitHub"
+            aria-label={tr('app.github')}
+            title={tr('app.github_title')}
             className="inline-flex items-center gap-1.5 hover:text-slate-300"
           >
             <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
@@ -508,7 +512,7 @@ async function leaveDevice(seen: boolean, unsaved: boolean): Promise<void> {
     useBookStore
       .getState()
       .setNotice(
-        "You're signed out, but this book isn't all in your online backup, so it's still on this device. Sign in and turn on Online backup to keep it safe, or remove it with Actions ▸ Advanced ▸ Delete all data.",
+        currentT()('app.signed_out_kept'),
       )
   }
 }

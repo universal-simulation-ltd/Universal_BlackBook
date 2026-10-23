@@ -1,5 +1,5 @@
 import { Fragment } from 'react'
-import { useT } from './i18n'
+import { useT } from '../i18n'
 
 /**
  * Who made it, in BlackBook's own words — the app's one pointer outward

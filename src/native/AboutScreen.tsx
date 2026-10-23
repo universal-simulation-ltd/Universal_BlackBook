@@ -5,7 +5,7 @@
 import credits from '../generated/credits.json'
 import { REPO_URL } from '../appParts'
 import { Credit } from './Credit'
-import { useT } from './i18n'
+import { useT } from '../i18n'
 import { Ribbon } from './icons'
 import { Group, LinkRow } from './TuneScreen'
 

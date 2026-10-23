@@ -1,5 +1,6 @@
 import { useSettingsStore } from '../stores/settingsStore'
 import { checkboxCls } from './ui'
+import { useT } from '../i18n'
 
 /**
  * BlackBook's own row in the SDK's App preferences dialog (⚙ menu ▸ App
@@ -11,6 +12,7 @@ import { checkboxCls } from './ui'
  * styles, but this row is our markup, so it carries its own dark classes.
  */
 export function EmailListsPreference() {
+  const t = useT()
   const emailLists = useSettingsStore((s) => s.emailLists)
   const todos = useSettingsStore((s) => s.todos)
   const notes = useSettingsStore((s) => s.notes)
@@ -26,11 +28,8 @@ export function EmailListsPreference() {
         onChange={(e) => set({ emailLists: e.target.checked })}
       />
       <span>
-        Email lists
-        <span className="mt-0.5 block text-xs text-slate-400">
-          Adds Lists beside Contacts, an Email list tab to Add new, and Copy emails and Export CSV for
-          whatever the list is showing.
-        </span>
+        {t('pref.email_lists')}
+        <span className="mt-0.5 block text-xs text-slate-400">{t('pref.email_lists_note')}</span>
       </span>
     </label>
     <label className="flex items-start gap-3 py-1 text-sm text-slate-200">
@@ -41,11 +40,8 @@ export function EmailListsPreference() {
         onChange={(e) => set({ todos: e.target.checked })}
       />
       <span>
-        To-do
-        <span className="mt-0.5 block text-xs text-slate-400">
-          Adds a To-do tab beside Contacts: things to do, with details, a deadline and your tags. Turning it
-          off hides the tab and keeps the list.
-        </span>
+        {t('pref.todos')}
+        <span className="mt-0.5 block text-xs text-slate-400">{t('pref.todos_note')}</span>
       </span>
     </label>
     <label className="flex items-start gap-3 py-1 text-sm text-slate-200">
@@ -56,11 +52,8 @@ export function EmailListsPreference() {
         onChange={(e) => set({ notes: e.target.checked })}
       />
       <span>
-        Notes
-        <span className="mt-0.5 block text-xs text-slate-400">
-          Adds a Notes tab beside Contacts: notes of your own, each a title and the details. Turning it off
-          hides the tab and keeps the notes.
-        </span>
+        {t('pref.notes')}
+        <span className="mt-0.5 block text-xs text-slate-400">{t('pref.notes_note')}</span>
       </span>
     </label>
     </>

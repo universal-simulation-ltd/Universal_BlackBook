@@ -12,6 +12,7 @@ import {
 import { DEFAULT_VIEW, describeView, sameView, viewOf } from '../lib/filter'
 import { useBookStore } from '../stores/bookStore'
 import { FilterBar } from './FilterBar'
+import { useT } from '../i18n'
 
 /** Gone for good the first time the drawer opens, by any way in. */
 const LEARNT_KEY = 'blackbook.pullSearchLearnt'
@@ -73,6 +74,7 @@ export function SearchDrawer({ onContacts }: { onContacts: boolean }) {
 }
 
 function PhoneSearch({ onContacts }: { onContacts: boolean }) {
+  const t = useT()
   const query = useBookStore((s) => s.query)
   const setQuery = useBookStore((s) => s.setQuery)
   const hasContacts = useBookStore((s) => s.contacts.length > 0)
@@ -135,7 +137,7 @@ function PhoneSearch({ onContacts }: { onContacts: boolean }) {
           onClick={openAndFocus}
           className="sr-only rounded-lg border-slate-700 bg-slate-900 text-sm font-medium text-slate-200 focus:not-sr-only focus:mb-3 focus:inline-flex focus:border focus:px-3 focus:py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
         >
-          Search contacts
+          {t('search.label')}
         </button>
       )}
 
@@ -147,8 +149,8 @@ function PhoneSearch({ onContacts }: { onContacts: boolean }) {
           onClick={openDrawer}
           className="-mt-2 mb-3 flex max-w-full items-baseline gap-1.5 rounded text-left text-xs text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
         >
-          <span className="min-w-0 truncate">Showing {describeView(view, (id) => tagNames.get(id) ?? null)}</span>
-          <span className="shrink-0 font-medium text-orange-400">Change</span>
+          <span className="min-w-0 truncate">{t('search.showing', { view: describeView(view, (id) => tagNames.get(id) ?? null) })}</span>
+          <span className="shrink-0 font-medium text-orange-400">{t('search.change')}</span>
         </button>
       )}
 
@@ -179,6 +181,7 @@ function PhoneSearch({ onContacts }: { onContacts: boolean }) {
  * A tap opens the drawer too. It bobs, unless reduced motion is asked for.
  */
 function PullHint({ onOpen }: { onOpen: () => void }) {
+  const t = useT()
   return (
     <div className="flex justify-center pb-3">
       <button
@@ -189,7 +192,7 @@ function PullHint({ onOpen }: { onOpen: () => void }) {
         <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
           <path d="M5 8l5 5 5-5" />
         </svg>
-        Pull down to search
+        {t('search.pull_hint')}
       </button>
     </div>
   )

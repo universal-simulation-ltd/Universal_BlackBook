@@ -9,7 +9,7 @@
 import { Capacitor } from '@capacitor/core'
 import type { Contact } from '../lib/types'
 import { formatBirthday } from '../lib/birthday'
-import { useT } from './i18n'
+import { useT } from '../i18n'
 import { IconMail, IconMessage, IconPhone, IconShare } from './icons'
 import { useNativeNav } from './nav'
 

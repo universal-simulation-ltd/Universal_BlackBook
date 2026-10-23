@@ -1,3 +1,4 @@
+import { currentT } from '../i18n'
 // Birthdays.
 //
 // ── Why the year is optional ──────────────────────────────────────────────────
@@ -25,7 +26,11 @@ const MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ]
 
-export const MONTH_OPTIONS = MONTHS.map((label, i) => ({ value: i + 1, label }))
+/** The twelve months for a picker, named in the language on screen. */
+export function monthOptions(locale: string = currentT().locale): { value: number; label: string }[] {
+  const f = new Intl.DateTimeFormat(locale, { month: 'long', timeZone: 'UTC' })
+  return MONTHS.map((_, i) => ({ value: i + 1, label: f.format(Date.UTC(2000, i, 1)) }))
+}
 
 export interface BirthdayParts {
   /** null when the year is not known. */
@@ -96,20 +101,25 @@ export function isValidBirthday(value: string | undefined | null): boolean {
 }
 
 /**
- * Human form: "4 June" or "4 June 1990".
+ * Human form, in the language on screen: "4 June" or "4 June 1990" in
+ * English, "4. Juni 1990" in German, "4 de junio de 1990" in Spanish.
  *
- * Built by hand rather than through `Intl.DateTimeFormat` on purpose. Feeding
- * this to a `Date` means picking a year for the year-less case, and any year
- * you pick is a timezone away from silently printing the 3rd of June for
- * somebody west of UTC. No formatting in this file goes near a `Date` — the
- * only one that exists is `epochDay` at the bottom, which counts rather than
- * prints and uses `Date.UTC` for exactly that reason.
+ * Through `Intl.DateTimeFormat` pinned to UTC, from `Date.UTC`, so no
+ * timezone can move the day: a `Date` read in local time is how the 4th of
+ * June prints as the 3rd for somebody west of UTC. A year-less birthday is
+ * formatted in 2000, a leap year, so the 29th of February still exists, and
+ * the year is simply not asked for.
  */
-export function formatBirthday(value: string | undefined | null): string {
+export function formatBirthday(value: string | undefined | null, locale: string = currentT().locale): string {
   const parts = parseBirthday(value)
   if (!parts) return ''
-  const stem = `${parts.day} ${MONTHS[parts.month - 1]}`
-  return parts.year === null ? stem : `${stem} ${parts.year}`
+  const f = new Intl.DateTimeFormat(locale, {
+    day: 'numeric',
+    month: 'long',
+    ...(parts.year !== null && { year: 'numeric' as const }),
+    timeZone: 'UTC',
+  })
+  return f.format(Date.UTC(parts.year ?? 2000, parts.month - 1, parts.day))
 }
 
 /**
@@ -238,9 +248,10 @@ export function nextBirthday(value: string | undefined | null, today: Today): Ne
 
 /** "Today", "Tomorrow", "in 12 days". The countdown, without the age. */
 export function countdownLabel(inDays: number): string {
-  if (inDays === 0) return 'Today'
-  if (inDays === 1) return 'Tomorrow'
-  return `in ${inDays} days`
+  const t = currentT()
+  if (inDays === 0) return t('bday.today')
+  if (inDays === 1) return t('bday.tomorrow')
+  return t('bday.in_days', { count: inDays })
 }
 
 /**

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLockStore } from '../stores/lockStore'
 import { Modal } from './Modal'
 import { btnDanger, btnGhost, inputBase, label } from './ui'
+import { useT } from '../i18n'
 
 /**
  * Advanced ▸ Delete all data (owner's request, 2026-10-08: "I am a guest and
@@ -20,9 +21,11 @@ import { btnDanger, btnGhost, inputBase, label } from './ui'
  * The confirmation is the typed word, as in the PIN reset, for the same reason:
  * there is no undo, and two taps in a menu is one fumble from losing a book.
  */
-const WORD = 'DELETE'
 
 export function DeleteAllData({ onClose }: { onClose: () => void }) {
+  const t = useT()
+  // The word typed to confirm, in the language on screen.
+  const WORD = t('reset.word').toLocaleUpperCase(t.locale)
   const [typed, setTyped] = useState('')
   const [busy, setBusy] = useState(false)
   const [online, setOnline] = useState<boolean | null | 'checking'>('checking')
@@ -57,36 +60,27 @@ export function DeleteAllData({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <Modal title="Delete all data" onClose={busy ? () => {} : onClose}>
-      <p className="text-sm leading-relaxed text-slate-300">
-        Every contact, tag, list and to-do on this device goes, along with your PIN and your
-        settings. BlackBook then opens as a new, empty book.
-      </p>
+    <Modal title={t('tune_delete_all')} onClose={busy ? () => {} : onClose}>
+      <p className="text-sm leading-relaxed text-slate-300">{t('wipe.body')}</p>
 
       {online === 'checking' ? (
-        <p className="mt-3 text-xs text-slate-500">Checking for an online copy…</p>
+        <p className="mt-3 text-xs text-slate-500">{t('lock.checking_online')}</p>
       ) : online === true ? (
         <div className="mt-3 rounded-xl border border-slate-700 bg-slate-800/50 px-3 py-2.5 text-xs leading-relaxed text-slate-300">
-          <p className="font-semibold text-slate-100">Your online backup is not deleted.</p>
-          <p className="mt-1">
-            Only this device is cleared. Signing in and entering your vault passphrase brings the
-            book back.
-          </p>
+          <p className="font-semibold text-slate-100">{t('wipe.online_kept')}</p>
+          <p className="mt-1">{t('wipe.online_kept_body')}</p>
         </div>
       ) : (
         <div className="mt-3 rounded-xl border border-rose-900/60 bg-rose-950/30 px-3 py-2.5 text-xs leading-relaxed text-rose-200">
           <p className="font-semibold">
-            {online === null ? 'This device could not check for an online copy.' : 'There is no online copy.'}
+            {online === null ? t('lock.online_unknown') : t('wipe.online_none')}
           </p>
-          <p className="mt-1">
-            Nothing can bring this book back afterwards except a backup file. Save one first
-            (Advanced ▸ Backup, import &amp; export ▸ Save a backup) if you might want it again.
-          </p>
+          <p className="mt-1">{t('wipe.online_none_body')}</p>
         </div>
       )}
 
       <label className={`${label} mt-4`} htmlFor="delete-all-confirm">
-        Type {WORD} to delete everything
+        {t('wipe.type_word', { word: WORD })}
       </label>
       <input
         id="delete-all-confirm"
@@ -96,7 +90,7 @@ export function DeleteAllData({ onClose }: { onClose: () => void }) {
         autoComplete="off"
         autoCapitalize="characters"
         spellCheck={false}
-        onChange={(e) => setTyped(e.target.value.toUpperCase())}
+        onChange={(e) => setTyped(e.target.value.toLocaleUpperCase(t.locale))}
         onKeyDown={(e) => {
           if (e.key === 'Enter') void confirm()
         }}
@@ -104,7 +98,7 @@ export function DeleteAllData({ onClose }: { onClose: () => void }) {
 
       <div className="mt-4 flex justify-end gap-2">
         <button type="button" className={btnGhost} disabled={busy} onClick={onClose}>
-          Cancel
+          {t('c.cancel')}
         </button>
         <button
           type="button"
@@ -112,7 +106,7 @@ export function DeleteAllData({ onClose }: { onClose: () => void }) {
           disabled={busy || typed !== WORD}
           onClick={() => void confirm()}
         >
-          {busy ? 'Deleting…' : 'Delete all data'}
+          {busy ? t('wipe.deleting') : t('tune_delete_all')}
         </button>
       </div>
     </Modal>

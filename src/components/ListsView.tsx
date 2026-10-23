@@ -11,6 +11,7 @@ import { TagChip } from './TagChip'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls } from './ui'
 import { autoFocusOK } from '../native/kit'
 import { phoneScreens } from '../native/shell'
+import { useT } from '../i18n'
 
 /**
  * The Lists tab on the landing screen (owner's request, 2026-09-17), there
@@ -26,6 +27,7 @@ import { phoneScreens } from '../native/shell'
  * this page is the one place they are seen.
  */
 export function ListsView() {
+  const t = useT()
   const contacts = useBookStore((s) => s.contacts)
   const tags = useBookStore((s) => s.tags)
   const newList = useBookStore((s) => s.newList)
@@ -35,9 +37,9 @@ export function ListsView() {
     () =>
       tags
         .filter(isList)
-        .sort((a, b) => fold(a.name).localeCompare(fold(b.name)))
+        .sort((a, b) => fold(a.name).localeCompare(fold(b.name), t.locale))
         .map((t) => ({ tag: t, people: contacts.filter((c) => c.tagIds.includes(t.id)) })),
-    [tags, contacts],
+    [tags, contacts, t],
   )
 
   const byId = useMemo(() => new Map(tags.map((t) => [t.id, t])), [tags])
@@ -50,15 +52,13 @@ export function ListsView() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-slate-100 sm:text-2xl">Lists</h1>
-          <p className="text-sm text-slate-500">
-            People you email together. Copy their addresses, export them, or tap a list to see who is on it.
-          </p>
+          <h1 className="text-xl font-semibold text-slate-100 sm:text-2xl">{t('tab_lists')}</h1>
+          <p className="text-sm text-slate-500">{t('lists.intro')}</p>
         </div>
         {/* On the phone the top bar's + does this. */}
         {!phoneScreens() && (
           <button type="button" className={btnPrimary} onClick={() => newList()}>
-            Add new
+            {t('c.add_new')}
           </button>
         )}
       </div>
@@ -66,7 +66,7 @@ export function ListsView() {
       {lists.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-800 px-6 py-14 text-center">
           <p className="text-sm text-slate-400">
-            No lists yet. Make one with Add new — or turn an existing tag into one under Tags.
+            {phoneScreens() ? t('lists.none_phone') : t('lists.none')}
           </p>
         </div>
       ) : (
@@ -83,7 +83,7 @@ export function ListsView() {
               >
                 <ListChip name={tag.name} />
                 <span className="shrink-0 text-xs text-slate-500 tabular-nums">
-                  {people.length} {people.length === 1 ? 'person' : 'people'} ›
+                  {t.plural('c.people', people.length)} ›
                 </span>
               </button>
               <ListTags list={tag} byId={byId} />
@@ -114,6 +114,7 @@ function ListTags({ list, byId }: { list: Tag; byId: Map<string, Tag> }) {
  * which used to live in the Tags panel, back when lists were listed there.
  */
 function ListPage({ list, onBack }: { list: Tag; onBack: () => void }) {
+  const t = useT()
   const contacts = useBookStore((s) => s.contacts)
   const tags = useBookStore((s) => s.tags)
   const newList = useBookStore((s) => s.newList)
@@ -149,7 +150,7 @@ function ListPage({ list, onBack }: { list: Tag; onBack: () => void }) {
         onClick={onBack}
         className="inline-flex items-center gap-1 rounded text-sm text-slate-400 hover:text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
       >
-        <span aria-hidden>‹</span> Lists
+        <span aria-hidden>‹</span> {t('tab_lists')}
       </button>
 
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -158,7 +159,7 @@ function ListPage({ list, onBack }: { list: Tag; onBack: () => void }) {
             <input
               className={`${inputCls} max-w-sm`}
               value={list.name}
-              aria-label="List name"
+              aria-label={t('lists.name')}
               autoFocus={autoFocusOK()}
               onChange={(e) => void renameTag(list.id, e.target.value)}
               onBlur={() => setRenaming(false)}
@@ -169,12 +170,10 @@ function ListPage({ list, onBack }: { list: Tag; onBack: () => void }) {
           ) : (
             <h1 className="truncate text-xl font-semibold text-slate-100 sm:text-2xl">{list.name}</h1>
           )}
-          <p className="text-sm text-slate-500 tabular-nums">
-            {people.length} {people.length === 1 ? 'person' : 'people'}
-          </p>
+          <p className="text-sm text-slate-500 tabular-nums">{t.plural('c.people', people.length)}</p>
         </div>
         <button type="button" className={btnPrimary} onClick={() => newList(list.name)}>
-          Add new
+          {t('c.add_new')}
         </button>
       </div>
 
@@ -184,10 +183,10 @@ function ListPage({ list, onBack }: { list: Tag; onBack: () => void }) {
         {people.length > 0 ? <ListExport contacts={people} tags={tags} tagIds={[list.id]} /> : <span />}
         <div className="flex items-center gap-1">
           <button type="button" className={btnSubtle} onClick={() => setRenaming(true)}>
-            Rename
+            {t('lists.rename')}
           </button>
           <button type="button" className={btnSubtle} onClick={() => setConfirming(true)}>
-            <span className="text-rose-300">Delete list</span>
+            <span className="text-rose-300">{t('lists.delete')}</span>
           </button>
         </div>
       </div>
@@ -195,21 +194,22 @@ function ListPage({ list, onBack }: { list: Tag; onBack: () => void }) {
       {confirming && (
         <div ref={revealConfirmRef} className="space-y-2 rounded-xl border border-rose-900/60 bg-rose-950/20 px-3 py-3">
           <p className="text-sm text-slate-300">
-            Delete <span className="font-semibold text-slate-100">{list.name}</span>?
-            {onlyHere.length > 0 &&
-              ` ${onlyHere.length} ${onlyHere.length === 1 ? 'person is' : 'people are'} only on this list — keep them and they move to Contacts.`}
+            {t('del.ask_before')}
+            <span className="font-semibold text-slate-100">{list.name}</span>
+            {t('del.ask_after')}
+            {onlyHere.length > 0 && ` ${t.plural('lists.only_here', onlyHere.length)}`}
           </p>
           <div className="flex flex-wrap justify-end gap-2">
             <button type="button" className={btnGhost} onClick={() => setConfirming(false)}>
-              Cancel
+              {t('c.cancel')}
             </button>
             {onlyHere.length > 0 && (
               <button type="button" className={btnGhost} onClick={() => void remove(false)}>
-                Delete list, keep people
+                {t('lists.delete_keep')}
               </button>
             )}
             <button type="button" className={btnDanger} onClick={() => void remove(true)}>
-              {onlyHere.length > 0 ? `Delete list and ${onlyHere.length}` : 'Delete list'}
+              {onlyHere.length > 0 ? t('lists.delete_and', { count: onlyHere.length }) : t('lists.delete')}
             </button>
           </div>
         </div>
@@ -217,7 +217,7 @@ function ListPage({ list, onBack }: { list: Tag; onBack: () => void }) {
 
       {people.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-800 px-6 py-14 text-center">
-          <p className="text-sm text-slate-400">Nobody on this list yet. Add new puts people on it.</p>
+          <p className="text-sm text-slate-400">{t('lists.empty')}</p>
         </div>
       ) : (
         <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">

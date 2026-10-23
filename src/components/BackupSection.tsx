@@ -9,6 +9,7 @@ import { useTodoStore } from '../stores/todoStore'
 import { useNoteStore } from '../stores/noteStore'
 import { btnDanger, btnGhost, btnPrimary, checkboxCls, inputCls, label } from './ui'
 import { autoFocusOK } from '../native/kit'
+import { useT, type Translator } from '../i18n'
 
 /**
  * Save a backup / Open a backup — the whole book as one file (lib/backup.ts).
@@ -29,9 +30,16 @@ type Step =
   | { kind: 'choose'; data: BackupData; exportedAt: string | null }
   | { kind: 'confirm-replace'; data: BackupData; exportedAt: string | null }
 
-const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
+/** "2 contacts, 1 to-do, 0 notes and 3 tags", in the language on screen. */
+function bookCounts(t: Translator, n: { contacts: number; todos: number; notes?: number; tags?: number }): string {
+  const parts = [t.plural('c.contacts', n.contacts), t.plural('c.todos', n.todos)]
+  if (n.notes !== undefined) parts.push(t.plural('c.notes', n.notes))
+  if (n.tags !== undefined) parts.push(t.plural('c.tags', n.tags))
+  return new Intl.ListFormat(t.locale, { type: 'conjunction' }).format(parts)
+}
 
 export function BackupSection({ onDone }: { onDone: () => void }) {
+  const t = useT()
   const contacts = useBookStore((s) => s.contacts)
   const tags = useBookStore((s) => s.tags)
   const restoreBook = useBookStore((s) => s.restoreBook)
@@ -77,11 +85,11 @@ export function BackupSection({ onDone }: { onDone: () => void }) {
         },
       )
       saveBlob(packed.blob, packed.fileName)
-      setSaved(protect ? `Saved ${packed.fileName}, protected with your password.` : `Saved ${packed.fileName}.`)
+      setSaved(protect ? t('bk.saved_protected', { file: packed.fileName }) : t('bk.saved', { file: packed.fileName }))
       setPassword('')
       setRepeat('')
     } catch {
-      setError('The backup could not be made. Try again.')
+      setError(t('bk.save_failed'))
     } finally {
       setSaving(false)
     }
@@ -133,7 +141,7 @@ export function BackupSection({ onDone }: { onDone: () => void }) {
         if (data.settings) settings.set(data.settings)
         await restoreBook(
           { contacts: data.contacts, tags: data.tags, view: data.view },
-          `Opened the backup: ${plural(data.contacts.length, 'contact', 'contacts')}, ${plural(data.todos.length, 'to-do', 'to-dos')} and ${plural(data.pages.length, 'note', 'notes')}.`,
+          t('bk.opened', { text: bookCounts(t, { contacts: data.contacts.length, todos: data.todos.length, notes: data.pages.length }) }),
         )
       } else {
         const here = {
@@ -155,14 +163,14 @@ export function BackupSection({ onDone }: { onDone: () => void }) {
             shownFields: [...new Set([...settings.shownFields, ...data.settings.shownFields])],
           })
         }
-        const bits = [merged.added > 0 ? `added ${merged.added}` : 'nothing new to add']
-        if (merged.updated > 0) bits.push(`updated ${merged.updated} edited more recently in the file`)
-        await restoreBook({ contacts: merged.contacts, tags: merged.tags }, `Opened the backup: ${bits.join(', ')}.`)
+        const bits = [merged.added > 0 ? t('bk.added', { count: merged.added }) : t('bk.nothing_new')]
+        if (merged.updated > 0) bits.push(t('bk.updated', { count: merged.updated }))
+        await restoreBook({ contacts: merged.contacts, tags: merged.tags }, t('bk.opened', { text: bits.join(', ') }))
       }
       setStep({ kind: 'idle' })
       onDone()
     } catch {
-      setError('The backup could not be opened into this book. Nothing was changed.')
+      setError(t('bk.open_failed'))
     } finally {
       setBusy(false)
     }
@@ -170,21 +178,20 @@ export function BackupSection({ onDone }: { onDone: () => void }) {
 
   const fileSummary = (data: BackupData, exportedAt: string | null) => {
     const when = exportedAt ? new Date(exportedAt) : null
-    const date = when && !Number.isNaN(when.getTime()) ? ` saved ${when.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''
-    return `This backup${date} holds ${plural(data.contacts.length, 'contact', 'contacts')}, ${plural(data.todos.length, 'to-do', 'to-dos')}, ${plural(data.pages.length, 'note', 'notes')} and ${plural(data.tags.length, 'tag', 'tags')}.`
+    const counts = bookCounts(t, { contacts: data.contacts.length, todos: data.todos.length, notes: data.pages.length, tags: data.tags.length })
+    return when && !Number.isNaN(when.getTime())
+      ? t('bk.holds_dated', { date: when.toLocaleDateString(t.locale, { day: 'numeric', month: 'short', year: 'numeric' }), counts })
+      : t('bk.holds', { counts })
   }
 
   return (
     <section
       {...drop.dropzoneProps}
-      aria-label="Backup file"
+      aria-label={t('bk.title')}
       className={`space-y-3 rounded-xl ${drop.over ? 'outline outline-2 outline-offset-4 outline-orange-400' : ''}`}
     >
-      <h3 className="text-sm font-semibold text-slate-100">Backup file</h3>
-      <p className="text-sm text-slate-400">
-        Everything in BlackBook in one file: contacts with every field, tags and lists, to-dos, notes and your
-        Tune this app choices. Open it on any device to bring the book back. Nothing is sent anywhere.
-      </p>
+      <h3 className="text-sm font-semibold text-slate-100">{t('bk.title')}</h3>
+      <p className="text-sm text-slate-400">{t('bk.body')}</p>
 
       {/* ── Save ─────────────────────────────────────────────────────── */}
       <div className="space-y-2">
@@ -200,17 +207,14 @@ export function BackupSection({ onDone }: { onDone: () => void }) {
             }}
           />
           <span>
-            Protect with a password
-            <span className="block text-xs text-slate-500">
-              Your contacts are personal: with a password nobody who finds the file can read it. Forget
-              it and the file can't be opened, not even by us.
-            </span>
+            {t('bk.protect')}
+            <span className="block text-xs text-slate-500">{t('bk.protect_note')}</span>
           </span>
         </label>
         {protect && (
           <div className="grid gap-2 sm:grid-cols-2">
             <div>
-              <label className={label} htmlFor="backup-password">Password</label>
+              <label className={label} htmlFor="backup-password">{t('bk.password')}</label>
               <input
                 id="backup-password"
                 type="password"
@@ -221,7 +225,7 @@ export function BackupSection({ onDone }: { onDone: () => void }) {
               />
             </div>
             <div>
-              <label className={label} htmlFor="backup-password-repeat">Type it again</label>
+              <label className={label} htmlFor="backup-password-repeat">{t('bk.repeat')}</label>
               <input
                 id="backup-password-repeat"
                 type="password"
@@ -234,15 +238,14 @@ export function BackupSection({ onDone }: { onDone: () => void }) {
                 }}
               />
             </div>
-            {mismatch && <p className="text-xs text-rose-300 sm:col-span-2">The two passwords are different.</p>}
+            {mismatch && <p className="text-xs text-rose-300 sm:col-span-2">{t('bk.mismatch')}</p>}
           </div>
         )}
         <button type="button" className={btnPrimary} onClick={() => void save()} disabled={!canSave}>
-          {saving ? 'Saving…' : 'Save a backup'}
+          {saving ? t('bk.saving') : t('bk.save')}
         </button>
         <p className="text-xs text-slate-500">
-          {plural(contacts.length, 'contact', 'contacts')}, {plural(todos.length, 'to-do', 'to-dos')},{' '}
-          {plural(pages.length, 'note', 'notes')} and {plural(tags.length, 'tag', 'tags')}.
+          {t('io.sentence', { text: bookCounts(t, { contacts: contacts.length, todos: todos.length, notes: pages.length, tags: tags.length }) })}
         </p>
         {saved && (
           <p className="text-sm text-emerald-300" role="status">
@@ -257,10 +260,10 @@ export function BackupSection({ onDone }: { onDone: () => void }) {
         {step.kind === 'idle' && (
           <>
             <button type="button" className={btnGhost} onClick={drop.open} disabled={busy}>
-              {busy ? 'Opening…' : 'Open a backup'}
+              {busy ? t('bk.opening') : t('bk.open_a')}
             </button>
             <p className="text-xs text-slate-500">
-              {Capacitor.isNativePlatform() ? 'Choose the .json file you saved.' : 'Choose the .json file you saved, or drop it here.'}
+              {Capacitor.isNativePlatform() ? t('bk.choose_native') : t('bk.choose_web')}
             </p>
           </>
         )}
@@ -274,7 +277,7 @@ export function BackupSection({ onDone }: { onDone: () => void }) {
             }}
           >
             <label className={label} htmlFor="backup-open-password">
-              This backup has a password
+              {t('bk.has_password')}
             </label>
             <input
               id="backup-open-password"
@@ -287,7 +290,7 @@ export function BackupSection({ onDone }: { onDone: () => void }) {
             />
             <div className="flex flex-wrap gap-2">
               <button type="submit" className={btnPrimary} disabled={busy || !filePassword}>
-                {busy ? 'Opening…' : 'Open'}
+                {busy ? t('bk.opening') : t('bk.open')}
               </button>
               <button
                 type="button"
@@ -299,7 +302,7 @@ export function BackupSection({ onDone }: { onDone: () => void }) {
                   setError(null)
                 }}
               >
-                Cancel
+                {t('c.cancel')}
               </button>
             </div>
           </form>
@@ -310,7 +313,7 @@ export function BackupSection({ onDone }: { onDone: () => void }) {
             <p className="text-sm text-slate-300">{fileSummary(step.data, step.exportedAt)}</p>
             <div className="flex flex-wrap gap-2">
               <button type="button" className={btnPrimary} disabled={busy} onClick={() => void apply(step.data, 'merge')}>
-                Add to what's here
+                {t('bk.merge')}
               </button>
               <button
                 type="button"
@@ -318,14 +321,14 @@ export function BackupSection({ onDone }: { onDone: () => void }) {
                 disabled={busy}
                 onClick={() => setStep({ kind: 'confirm-replace', data: step.data, exportedAt: step.exportedAt })}
               >
-                Replace everything
+                {t('bk.replace')}
               </button>
               <button type="button" className={btnGhost} disabled={busy} onClick={() => setStep({ kind: 'idle' })}>
-                Cancel
+                {t('c.cancel')}
               </button>
             </div>
             <p className="text-xs text-slate-500">
-              Adding keeps everything here. Anyone in both is kept once, as last edited.
+              {t('bk.merge_note')}
             </p>
           </div>
         )}
@@ -333,12 +336,11 @@ export function BackupSection({ onDone }: { onDone: () => void }) {
         {step.kind === 'confirm-replace' && (
           <div className="space-y-2 rounded-xl border border-rose-900/60 bg-rose-950/30 px-3 py-2.5">
             <p className="text-sm text-rose-200">
-              This deletes the {plural(contacts.length, 'contact', 'contacts')}, {plural(todos.length, 'to-do', 'to-dos')},{' '}
-              {plural(pages.length, 'note', 'notes')} and {plural(tags.length, 'tag', 'tags')} on this device and puts the backup's in their place.
+              {t('bk.replace_warning', { counts: bookCounts(t, { contacts: contacts.length, todos: todos.length, notes: pages.length, tags: tags.length }) })}
             </p>
             <div className="flex flex-wrap gap-2">
               <button type="button" className={btnDanger} disabled={busy} onClick={() => void apply(step.data, 'replace')}>
-                Replace everything
+                {t('bk.replace')}
               </button>
               <button
                 type="button"
@@ -346,7 +348,7 @@ export function BackupSection({ onDone }: { onDone: () => void }) {
                 disabled={busy}
                 onClick={() => setStep({ kind: 'choose', data: step.data, exportedAt: step.exportedAt })}
               >
-                Back
+                {t('back')}
               </button>
             </div>
           </div>

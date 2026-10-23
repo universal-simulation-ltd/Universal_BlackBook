@@ -1,3 +1,4 @@
+import { currentT } from '../i18n'
 /**
  * The contact form's optional fields — everything except Name and Notes — in
  * the order they appear, reading top to bottom THROUGH Notes (email, company,
@@ -12,16 +13,9 @@ export type FormField = (typeof FORM_FIELDS)[number]
 /** Of those, the ones that render ABOVE the Notes field. */
 export const ABOVE_NOTES: readonly FormField[] = ['email', 'company', 'phone', 'address']
 
-export const FIELD_LABELS: Record<FormField, string> = {
-  email: 'Email',
-  company: 'Company',
-  phone: 'Phone',
-  address: 'Address',
-  birthday: 'Birthday',
-  tags: 'Tags',
-  // "Add to list" (owner's request, 2026-09-17). Lists used to ride along
-  // underneath the tag chips, where nobody looking for them found them.
-  lists: 'Lists',
+/** A field's name, in the language on screen. */
+export function fieldLabel(field: FormField): string {
+  return currentT()(`field.${field}`)
 }
 
 export function isFormField(v: unknown): v is FormField {

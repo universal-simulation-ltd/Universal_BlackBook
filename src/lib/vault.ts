@@ -1,3 +1,4 @@
+import { currentT } from '../i18n'
 // The encrypted vault — what "save my book online" actually stores.
 //
 // ── Why this is encrypted at all ─────────────────────────────────────────────
@@ -159,11 +160,8 @@ function formatSize(chars: number): string {
  */
 export function vaultSizeError(ciphertextB64: string): string | null {
   if (ciphertextB64.length <= VAULT_MAX_CIPHERTEXT_CHARS) return null
-  return (
-    `This book is too large to save online — ${formatSize(ciphertextB64.length)}, ` +
-    `against a ${formatSize(VAULT_MAX_CIPHERTEXT_CHARS)} limit. ` +
-    `Nothing has been lost: this device still has every contact. ` +
-    `A very long Notes field is the usual cause — shortening the longest ones, ` +
-    `or removing contacts you no longer need, will bring it under.`
-  )
+  return currentT()('sync.too_big', {
+    size: formatSize(ciphertextB64.length),
+    limit: formatSize(VAULT_MAX_CIPHERTEXT_CHARS),
+  })
 }

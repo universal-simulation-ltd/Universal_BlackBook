@@ -11,6 +11,7 @@ import { useBookStore } from '../stores/bookStore'
 import { BackupSection } from './BackupSection'
 import { Modal } from './Modal'
 import { btnGhost, btnPrimary, label } from './ui'
+import { useT } from '../i18n'
 
 /**
  * Backup file, then CSV in and out.
@@ -23,6 +24,7 @@ import { btnGhost, btnPrimary, label } from './ui'
  * contacts are in the file before you click it.
  */
 export function ImportExport({ onClose }: { onClose: () => void }) {
+  const t = useT()
   const contacts = useBookStore((s) => s.contacts)
   const tags = useBookStore((s) => s.tags)
   const importBook = useBookStore((s) => s.importBook)
@@ -50,23 +52,23 @@ export function ImportExport({ onClose }: { onClose: () => void }) {
       if (fresh.length === 0) {
         setError(
           duplicates > 0
-            ? `Nothing new — all ${duplicates} of your phone contacts are already in your book.`
-            : 'No contacts found on this device.',
+            ? t('io.phone_nothing_new', { count: duplicates })
+            : t('io.phone_none'),
         )
         return
       }
-      const bits = [`Added ${fresh.length} ${fresh.length === 1 ? 'contact' : 'contacts'} from your phone`]
-      if (duplicates > 0) bits.push(`skipped ${duplicates} you already had`)
+      const bits = [t.plural('io.phone_added', fresh.length)]
+      if (duplicates > 0) bits.push(t('io.phone_skipped', { count: duplicates }))
       // `tags` unchanged: nothing on a phone maps to a BlackBook tag, and
       // inventing "Imported" as one would be the app filing somebody's friends
       // for them — which is the same call the empty tag list makes.
-      await importBook(fresh, tags, 'merge', `${bits.join(', ')}.`)
+      await importBook(fresh, tags, 'merge', t('io.sentence', { text: bits.join(', ') }))
       onClose()
     } catch (e) {
       setError(
         e instanceof ContactsPermissionError
-          ? 'BlackBook cannot see your contacts. Allow it in Settings ▸ Privacy ▸ Contacts.'
-          : 'Your contacts could not be read.',
+          ? t('io.phone_denied')
+          : t('io.phone_failed'),
       )
     } finally {
       setReading(false)
@@ -92,16 +94,16 @@ export function ImportExport({ onClose }: { onClose: () => void }) {
       const text = await file.text()
       const result = fromCsv(text, tags)
       if (result.contacts.length === 0) {
-        setError('No contacts found in that file. It needs a Name or an Email column.')
+        setError(t('io.csv_none'))
         return
       }
-      const bits = [`Imported ${result.contacts.length} ${result.contacts.length === 1 ? 'contact' : 'contacts'}`]
-      if (result.created.length > 0) bits.push(`created ${result.created.length} new tags`)
-      if (result.skipped > 0) bits.push(`skipped ${result.skipped} empty ${result.skipped === 1 ? 'row' : 'rows'}`)
-      await importBook(result.contacts, result.tags, mode, `${bits.join(', ')}.`)
+      const bits = [t.plural('io.csv_imported', result.contacts.length)]
+      if (result.created.length > 0) bits.push(t.plural('io.csv_created', result.created.length))
+      if (result.skipped > 0) bits.push(t.plural('io.csv_skipped', result.skipped))
+      await importBook(result.contacts, result.tags, mode, t('io.sentence', { text: bits.join(', ') }))
       onClose()
     } catch {
-      setError('That file could not be read.')
+      setError(t('io.csv_failed'))
     }
   }
 
@@ -113,20 +115,16 @@ export function ImportExport({ onClose }: { onClose: () => void }) {
 
   const exportSection = (
     <section className={importFirst ? 'space-y-2 border-t border-slate-800 pt-4' : 'space-y-2'}>
-      <h3 className="text-sm font-semibold text-slate-100">Export a CSV</h3>
-      <p className="text-sm text-slate-400">
-        A plain CSV — Name, Email, Tags, Notes, Birthday, Phone. Opens in any spreadsheet, and
-        BlackBook reads it straight back in. It leaves out your to-dos; the backup file above has
-        everything.
-      </p>
+      <h3 className="text-sm font-semibold text-slate-100">{t('io.export_title')}</h3>
+      <p className="text-sm text-slate-400">{t('io.export_body')}</p>
       <button type="button" className={btnPrimary} onClick={download} disabled={contacts.length === 0}>
-        Download {contacts.length} {contacts.length === 1 ? 'contact' : 'contacts'}
+        {t.plural('io.download', contacts.length)}
       </button>
     </section>
   )
 
   return (
-    <Modal title="Backup, import & export" onClose={onClose}>
+    <Modal title={t('io.title')} onClose={onClose}>
       <div className="space-y-5">
         <BackupSection onDone={onClose} />
 
@@ -135,14 +133,10 @@ export function ImportExport({ onClose }: { onClose: () => void }) {
         {!importFirst && exportSection}
 
         <section className={importFirst ? 'space-y-2' : 'space-y-2 border-t border-slate-800 pt-4'}>
-          <h3 className="text-sm font-semibold text-slate-100">Import a CSV</h3>
-          <p className="text-sm text-slate-400">
-            Any CSV with a Name or Email column. Tags in the file are matched to yours by name and created
-            if they're new — a Categories, Groups or Labels column counts as tags, including one from an
-            older BlackBook export. A Phone, Mobile or Telephone column comes across too.
-          </p>
+          <h3 className="text-sm font-semibold text-slate-100">{t('io.import_title')}</h3>
+          <p className="text-sm text-slate-400">{t('io.import_body')}</p>
           <div>
-            <span className={label}>What to do with what's already here</span>
+            <span className={label}>{t('io.mode')}</span>
             <div className="flex flex-wrap gap-2">
               {(['merge', 'replace'] as const).map((m) => (
                 <button
@@ -156,13 +150,13 @@ export function ImportExport({ onClose }: { onClose: () => void }) {
                       : 'border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-200'
                   }`}
                 >
-                  {m === 'merge' ? 'Add to my book' : 'Replace my book'}
+                  {m === 'merge' ? t('io.merge') : t('io.replace')}
                 </button>
               ))}
             </div>
             {mode === 'replace' && contacts.length > 0 && (
               <p className="mt-1.5 text-xs text-rose-300">
-                This deletes all {contacts.length} contacts already in your book.
+                {t('io.replace_warning', { count: contacts.length })}
               </p>
             )}
           </div>
@@ -180,7 +174,7 @@ export function ImportExport({ onClose }: { onClose: () => void }) {
             }}
           />
           <button type="button" className={btnGhost} onClick={() => fileRef.current?.click()}>
-            Choose a CSV file
+            {t('io.choose')}
           </button>
           {error && <p className="text-sm text-rose-300">{error}</p>}
         </section>
@@ -190,14 +184,10 @@ export function ImportExport({ onClose }: { onClose: () => void }) {
             no bulk read in any browser, and there should not be. */}
         {where === 'native' && (
           <section className="space-y-2 border-t border-slate-800 pt-4">
-            <h3 className="text-sm font-semibold text-slate-100">From this phone</h3>
-            <p className="text-sm text-slate-400">
-              Everyone in your phone's own contacts, names, emails, numbers and birthdays. Anybody
-              already in your book is left alone, so you can do this again whenever you add someone
-              to your phone. Nothing is ever written back to your contacts.
-            </p>
+            <h3 className="text-sm font-semibold text-slate-100">{t('io.phone_title')}</h3>
+            <p className="text-sm text-slate-400">{t('io.phone_body')}</p>
             <button type="button" className={btnGhost} onClick={() => void importFromPhone()} disabled={reading}>
-              {reading ? 'Reading your contacts…' : 'Import my phone contacts'}
+              {reading ? t('io.phone_reading') : t('io.phone_import')}
             </button>
           </section>
         )}

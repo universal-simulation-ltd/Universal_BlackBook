@@ -37,7 +37,7 @@ import { createPortal } from 'react-dom'
 import { usePageScrollLock } from '../lib/scrollLock'
 import { useEdgeSwipeBack } from './edgeSwipe'
 import { usePagePullToType, useSheetBodyPull, useSheetPull, type GripProps } from './gestures'
-import { useT } from './i18n'
+import { useT } from '../i18n'
 import { IconBack } from './icons'
 import type { PhonePageProps, PhoneSheetProps } from './kit'
 

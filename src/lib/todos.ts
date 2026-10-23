@@ -1,3 +1,4 @@
+import { currentT } from '../i18n'
 // The To-do tab (owner's request, 2026-09-27): a deliberately small to-do list
 // beside the address book — a name, some details, a deadline and tags, and
 // nothing else. On only with App preferences ▸ To-do.
@@ -69,17 +70,20 @@ export function daysUntil(due: string, today: Today): number {
 /** "Overdue by 3 days", "Due today", "Due tomorrow", "Due in 5 days", "Due 4 Nov". */
 export function dueLabel(due: string, today: Today): string {
   const n = daysUntil(due, today)
-  if (n < 0) return `Overdue by ${-n} ${n === -1 ? 'day' : 'days'}`
-  if (n === 0) return 'Due today'
-  if (n === 1) return 'Due tomorrow'
-  if (n <= 14) return `Due in ${n} days`
+  const t = currentT()
+  if (n < 0) return t.plural('due.overdue', -n)
+  if (n === 0) return t('due.today')
+  if (n === 1) return t('due.tomorrow')
+  if (n <= 14) return t('due.in_days', { count: n })
   const [y, m, d] = due.split('-').map(Number)
-  return `Due ${new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    ...(y !== today.year && { year: 'numeric' }),
-    timeZone: 'UTC',
-  })}`
+  return t('due.on', {
+    date: new Date(Date.UTC(y, m - 1, d)).toLocaleDateString(t.locale, {
+      day: 'numeric',
+      month: 'short',
+      ...(y !== today.year && { year: 'numeric' }),
+      timeZone: 'UTC',
+    }),
+  })
 }
 
 /**

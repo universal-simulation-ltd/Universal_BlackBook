@@ -11,6 +11,8 @@ import { CloseGlyph } from './Modal'
 import { ListChip } from './ListChip'
 import { TagChip } from './TagChip'
 import { btnGhost, btnPrimary, label } from './ui'
+import { fieldLabel } from '../lib/formFields'
+import { useT } from '../i18n'
 
 /**
  * One person, filling the screen, with an Edit button (owner's request,
@@ -38,6 +40,7 @@ import { btnGhost, btnPrimary, label } from './ui'
  * them, one to write to them.
  */
 export function ContactView({ id }: { id: string }) {
+  const t = useT()
   const contact = useBookStore((s) => s.contacts.find((c) => c.id === id))
   const tags = useBookStore((s) => s.tags)
   const close = useBookStore((s) => s.view)
@@ -143,15 +146,15 @@ export function ContactView({ id }: { id: string }) {
         // Somebody who came in on a list and is not in Contacts — say so,
         // and offer the one tap that makes them a contact.
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-800 bg-slate-900 px-3 py-2.5">
-          <p className="text-sm text-slate-400">Only on {listChips.length === 1 ? 'a list' : 'lists'} — not in Contacts.</p>
+          <p className="text-sm text-slate-400">{listChips.length === 1 ? t('view.only_list') : t('view.only_lists')}</p>
           <button type="button" className={btnGhost} onClick={() => void addToContacts(contact.id)}>
-            Add to Contacts
+            {t('view.add_to_contacts')}
           </button>
         </div>
       )}
 
       {contact.email.trim() && (
-        <Row name="Email">
+        <Row name={fieldLabel('email')}>
           <a
             href={`mailto:${contact.email.trim()}`}
             className="break-all text-base text-orange-300 underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
@@ -162,13 +165,13 @@ export function ContactView({ id }: { id: string }) {
       )}
 
       {contact.company?.trim() && (
-        <Row name="Company">
+        <Row name={fieldLabel('company')}>
           <p className="break-words text-base text-slate-200"><Linked text={contact.company} /></p>
         </Row>
       )}
 
       {contact.phone.trim() && (
-        <Row name="Phone">
+        <Row name={fieldLabel('phone')}>
           {/* The stored string is what is SHOWN — spacing, brackets and all
               (see Contact.phone) — and the digits are what is dialled. A
               `tel:` href keeps the punctuation the phone would choke on out
@@ -183,17 +186,17 @@ export function ContactView({ id }: { id: string }) {
       )}
 
       {contact.address?.trim() && (
-        <Row name="Address">
+        <Row name={fieldLabel('address')}>
           {/* `pre-line`: the line breaks are the address. */}
           <p className="whitespace-pre-line break-words text-base text-slate-200"><Linked text={contact.address.trim()} /></p>
         </Row>
       )}
 
       {contact.birthdate && (
-        <Row name="Birthday">
+        <Row name={fieldLabel('birthday')}>
           <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-base text-slate-200">
             <span>{formatBirthday(contact.birthdate)}</span>
-            {age !== null && <span className="text-sm text-slate-500 tabular-nums">Age {age}</span>}
+            {age !== null && <span className="text-sm text-slate-500 tabular-nums">{t('view.age', { age })}</span>}
           </p>
           {/* The countdown is here on every contact, not only in the
               birthdays view: "in 9 days" is the reason to have opened
@@ -205,7 +208,7 @@ export function ContactView({ id }: { id: string }) {
               {next.turning !== null && (
                 <>
                   <span aria-hidden className="text-slate-600">·</span>
-                  <span className="tabular-nums">Turning {next.turning}</span>
+                  <span className="tabular-nums">{t('bday.turning', { age: next.turning })}</span>
                 </>
               )}
             </p>
@@ -214,7 +217,7 @@ export function ContactView({ id }: { id: string }) {
       )}
 
       {tagChips.length > 0 && (
-        <Row name="Tags">
+        <Row name={fieldLabel('tags')}>
           <div className="flex flex-wrap gap-1.5">
             {tagChips.map((t) => (
               <TagChip key={t.id} name={t.name} colour={t.colour} />
@@ -224,7 +227,7 @@ export function ContactView({ id }: { id: string }) {
       )}
 
       {listChips.length > 0 && (
-        <Row name="Lists">
+        <Row name={fieldLabel('lists')}>
           <div className="flex flex-wrap gap-1.5">
             {listChips.map((t) => (
               <ListChip key={t.id} name={t.name} />
@@ -236,7 +239,7 @@ export function ContactView({ id }: { id: string }) {
       <div>
         {/* A real `<label>` here, unlike `Row`: this one has a control. */}
         <label htmlFor={`${titleId}-notes`} className={label}>
-          Notes
+          {t('form.notes')}
         </label>
         {typing ? (
           // Typed into directly (owner's request, 2026-10-08). Borderless,
@@ -266,7 +269,7 @@ export function ContactView({ id }: { id: string }) {
               if (timer.current !== undefined) flush()
               setTyping(false)
             }}
-            placeholder="Met at the Leeds conference. Two kids. Allergic to shellfish."
+            placeholder={t('form.notes_placeholder')}
             className="-mx-2 block w-[calc(100%+1rem)] resize-none overflow-hidden rounded-lg border-0 bg-slate-900 px-2 py-1 text-base leading-7 text-slate-100 placeholder:text-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/60"
           />
         ) : (
@@ -299,17 +302,14 @@ export function ContactView({ id }: { id: string }) {
                 <Linked text={notes} />
               </p>
             ) : (
-              <p className="text-base leading-7 text-slate-500">Nothing written down yet — tap to start.</p>
+              <p className="text-base leading-7 text-slate-500">{t('view.nothing_yet')}</p>
             )}
           </div>
         )}
       </div>
 
       {bare && (
-        <p className="text-sm text-slate-500">
-          A name and nothing else so far. Fine-tune them to add an email, a number, a birthday or the
-          thing you want to remember.
-        </p>
+        <p className="text-sm text-slate-500">{t('view.bare')}</p>
       )}
     </div>
   )
@@ -320,7 +320,7 @@ export function ContactView({ id }: { id: string }) {
   if (kit) {
     return (
       <kit.Page
-        title={contact.name || 'Unnamed'}
+        title={contact.name || t('c.unnamed')}
         backLabel={kit.t('contact_back')}
         onBack={() => {
           flush()
@@ -371,7 +371,7 @@ export function ContactView({ id }: { id: string }) {
             directly over the fields it belongs to at every width. */}
         <div className="mx-auto flex w-full max-w-2xl items-center gap-3">
           <h2 id={titleId} className="min-w-0 flex-1 truncate text-base font-semibold text-slate-100">
-            {contact.name || 'Unnamed'}
+            {contact.name || t('c.unnamed')}
           </h2>
           {/* The Edit button is FIRST of the two and the primary one: it is the
               thing this screen exists to offer that the list could not. Close is
@@ -388,7 +388,7 @@ export function ContactView({ id }: { id: string }) {
               edit(contact.id)
             }}
           >
-            Fine-tune
+            {t('row.fine_tune')}
           </button>
           <button
             type="button"
@@ -396,7 +396,7 @@ export function ContactView({ id }: { id: string }) {
               flush()
               close(null)
             }}
-            aria-label="Close"
+            aria-label={t('c.close')}
             className="shrink-0 rounded-md px-2 py-1 text-slate-400 hover:bg-slate-800 hover:text-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
           >
             <CloseGlyph />

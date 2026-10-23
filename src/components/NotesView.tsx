@@ -14,6 +14,7 @@ import { Modal } from './Modal'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label, textareaCls } from './ui'
 import { autoFocusOK } from '../native/kit'
 import { phoneScreens } from '../native/shell'
+import { useT } from '../i18n'
 
 /**
  * The Notes tab (James, 2026-10-23), there only with Tune this app ▸ Notes
@@ -26,6 +27,7 @@ import { phoneScreens } from '../native/shell'
  * it too. Everywhere else the box is on show.
  */
 export function NotesView() {
+  const t = useT()
   const notes = useNoteStore((s) => s.notes)
   const loaded = useNoteStore((s) => s.loaded)
   const editing = useNoteStore((s) => s.editing)
@@ -41,13 +43,13 @@ export function NotesView() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-slate-100 sm:text-2xl">Notes</h1>
-          <p className="text-sm text-slate-500">Notes of your own, newest first.</p>
+          <h1 className="text-xl font-semibold text-slate-100 sm:text-2xl">{t('tab_notes')}</h1>
+          <p className="text-sm text-slate-500">{t('notes.intro')}</p>
         </div>
         {/* On the phone the top bar's + does this. */}
         {!phoneScreens() && (
           <button type="button" className={btnPrimary} onClick={() => edit('new')}>
-            Add new
+            {t('c.add_new')}
           </button>
         )}
       </div>
@@ -57,12 +59,12 @@ export function NotesView() {
       {loaded && notes.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-800 px-6 py-14 text-center">
           <p className="text-sm text-slate-400">
-            {phoneScreens() ? 'No notes yet. Tap + to write the first.' : 'No notes yet. Write the first with Add new.'}
+            {phoneScreens() ? t('notes.none_phone') : t('notes.none')}
           </p>
         </div>
       ) : shown.length === 0 && searching ? (
         <p className="rounded-2xl border border-dashed border-slate-800 px-6 py-8 text-center text-sm text-slate-400">
-          No note has that in it.
+          {t('notes.no_match')}
         </p>
       ) : (
         <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
@@ -80,6 +82,7 @@ export function NotesView() {
 }
 
 function NoteSearchBox({ input }: { input?: RefObject<HTMLInputElement> }) {
+  const t = useT()
   const query = useNoteStore((s) => s.query)
   const setQuery = useNoteStore((s) => s.setQuery)
   return (
@@ -91,8 +94,8 @@ function NoteSearchBox({ input }: { input?: RefObject<HTMLInputElement> }) {
         className={`${inputCls} pl-9`}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search notes"
-        aria-label="Search notes"
+        placeholder={t('notes.search')}
+        aria-label={t('notes.search')}
       />
       <svg
         viewBox="0 0 20 20"
@@ -144,6 +147,7 @@ function PhoneNoteSearch() {
 }
 
 function NoteRow({ note, onOpen }: { note: Note; onOpen: () => void }) {
+  const t = useT()
   const line = preview(note)
   return (
     <button
@@ -151,7 +155,7 @@ function NoteRow({ note, onOpen }: { note: Note; onOpen: () => void }) {
       onClick={onOpen}
       className="flex h-full w-full flex-col gap-1 rounded-xl border border-slate-800 bg-slate-900 p-3.5 text-left transition-colors hover:border-slate-700 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
     >
-      <p className="truncate font-semibold text-slate-100">{note.title || 'Untitled'}</p>
+      <p className="truncate font-semibold text-slate-100">{note.title || t('c.untitled')}</p>
       {line && <p className="truncate text-sm text-slate-400">{line}</p>}
     </button>
   )
@@ -164,6 +168,7 @@ function NoteRow({ note, onOpen }: { note: Note; onOpen: () => void }) {
  * the app doubting what you just did. A new note left empty is not kept.
  */
 function NotePage({ id }: { id: string }) {
+  const t = useT()
   const existing = useNoteStore((s) => (id === 'new' ? undefined : s.notes.find((n) => n.id === id)))
   const save = useNoteStore((s) => s.save)
   const remove = useNoteStore((s) => s.remove)
@@ -182,24 +187,24 @@ function NotePage({ id }: { id: string }) {
   }
 
   return (
-    <Modal title={existing ? existing.title || 'Note' : 'New note'} onClose={done} backLabel="Notes">
+    <Modal title={existing ? existing.title || t('notes.note') : t('add_note')} onClose={done} backLabel={t('tab_notes')}>
       <div className="space-y-4">
         <div>
           <label htmlFor={titleId} className={label}>
-            Title
+            {t('notes.title')}
           </label>
           <input
             id={titleId}
             className={inputCls}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="What it is about"
+            placeholder={t('notes.title_placeholder')}
             autoFocus={autoFocusOK() && !existing}
           />
         </div>
         <div>
           <label htmlFor={detailsId} className={label}>
-            Details
+            {t('todo.details')}
           </label>
           <textarea
             id={detailsId}
@@ -212,28 +217,30 @@ function NotePage({ id }: { id: string }) {
         <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
           {existing ? (
             <button type="button" className={btnSubtle} onClick={() => setConfirming(true)}>
-              Delete
+              {t('c.delete')}
             </button>
           ) : (
             <span />
           )}
           <button type="button" className={btnPrimary} onClick={done} disabled={empty && !existing}>
-            Done
+            {t('c.done')}
           </button>
         </div>
       </div>
       {confirming && existing && (
-        <Modal phone="sheet" title="Delete note" onClose={() => setConfirming(false)}>
+        <Modal phone="sheet" title={t('notes.delete_title')} onClose={() => setConfirming(false)}>
           <p className="text-sm text-slate-300">
-            Delete <span className="font-semibold text-slate-100">{existing.title || 'Untitled'}</span>?
+            {t('del.ask_before')}
+            <span className="font-semibold text-slate-100">{existing.title || t('c.untitled')}</span>
+            {t('del.ask_after')}
           </p>
-          <p className="mt-2 text-sm text-slate-500">There is no undo.</p>
+          <p className="mt-2 text-sm text-slate-500">{t('notes.no_undo')}</p>
           <div className="mt-5 flex justify-end gap-2">
             <button type="button" className={btnGhost} onClick={() => setConfirming(false)} autoFocus={autoFocusOK()}>
-              Keep
+              {t('c.keep')}
             </button>
             <button type="button" className={btnDanger} onClick={() => void remove(existing.id)}>
-              Delete
+              {t('c.delete')}
             </button>
           </div>
         </Modal>

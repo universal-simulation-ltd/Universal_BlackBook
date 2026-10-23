@@ -24,7 +24,7 @@ import { ListChip } from './ListChip'
 import { TagDot } from './TagChip'
 import { TagPicker } from './TagPicker'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, TuneGlyph } from './ui'
-import { useT } from '../native/i18n'
+import { currentT, useT } from '../i18n'
 
 // The glyphs the swipe actions carry. SVG and not emoji: 🗑 is one of the
 // codepoints with no glyph in iOS's system font (see Modal's CloseGlyph), and
@@ -55,10 +55,13 @@ const EyeIcon = (
  * its own is the least useful thing it could say. The visible `text` stays one
  * word — the button is 96px wide and the name is already on the card.
  */
+const who = (contact: Contact) => contact.name || currentT()('c.this_contact')
+
 function deleteAction(contact: Contact, onAction: () => void): SwipeAction {
+  const t = currentT()
   return {
-    text: 'Delete',
-    label: `Delete ${contact.name || 'this contact'}`,
+    text: t('c.delete'),
+    label: t('swipe.delete_label', { name: who(contact) }),
     icon: BinIcon,
     tone: 'bg-rose-600 text-white focus-visible:ring-rose-200',
     onAction,
@@ -67,8 +70,8 @@ function deleteAction(contact: Contact, onAction: () => void): SwipeAction {
 
 function hideAction(contact: Contact, onAction: () => void): SwipeAction {
   return {
-    text: 'Hide',
-    label: `Hide ${contact.name || 'this contact'} from the birthdays list`,
+    text: currentT()('c.hide'),
+    label: currentT()('swipe.hide_birthdays_label', { name: who(contact) }),
     icon: EyeOffIcon,
     // Slate, not rose. Hiding is reversible and undramatic, and giving it the
     // colour of the button that deletes somebody would say otherwise — on a
@@ -80,8 +83,8 @@ function hideAction(contact: Contact, onAction: () => void): SwipeAction {
 
 function hideFromListAction(contact: Contact, onAction: () => void): SwipeAction {
   return {
-    text: 'Hide',
-    label: `Hide ${contact.name || 'this contact'} from the list — searching still finds them`,
+    text: currentT()('c.hide'),
+    label: currentT()('swipe.hide_list_label', { name: who(contact) }),
     icon: EyeOffIcon,
     tone: 'bg-slate-700 text-slate-100 focus-visible:ring-slate-300',
     onAction,
@@ -90,8 +93,8 @@ function hideFromListAction(contact: Contact, onAction: () => void): SwipeAction
 
 function showInListAction(contact: Contact, onAction: () => void): SwipeAction {
   return {
-    text: 'Show',
-    label: `Show ${contact.name || 'this contact'} in the list again`,
+    text: currentT()('c.show'),
+    label: currentT()('swipe.show_list_label', { name: who(contact) }),
     icon: EyeIcon,
     tone: 'bg-orange-600 text-white focus-visible:ring-orange-200',
     onAction,
@@ -100,8 +103,8 @@ function showInListAction(contact: Contact, onAction: () => void): SwipeAction {
 
 function showAction(contact: Contact, onAction: () => void): SwipeAction {
   return {
-    text: 'Show',
-    label: `Show ${contact.name || 'this contact'} in the birthdays list again`,
+    text: currentT()('c.show'),
+    label: currentT()('swipe.show_birthdays_label', { name: who(contact) }),
     icon: EyeIcon,
     tone: 'bg-orange-600 text-white focus-visible:ring-orange-200',
     onAction,
@@ -112,6 +115,7 @@ function showAction(contact: Contact, onAction: () => void): SwipeAction {
  *  newcomer who already keeps their people in a spreadsheet or another app
  *  would otherwise have to find it in the Actions menu. */
 export function ContactList({ onImport }: { onImport?: () => void } = {}) {
+  const t = useT()
   const contacts = useBookStore((s) => s.contacts)
   const tags = useBookStore((s) => s.tags)
   const query = useBookStore((s) => s.query)
@@ -232,26 +236,23 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
   if (contacts.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-slate-800 px-6 py-14 text-center">
-        <p className="text-lg font-semibold text-slate-200">Your book is empty</p>
-        <p className="mx-auto mt-1.5 max-w-md text-sm text-slate-400">
-          Add the people you actually want to stay in touch with, and file them however you like. Two
-          tags are here to start you off — rename them, recolour them, or make your own.
-        </p>
+        <p className="text-lg font-semibold text-slate-200">{t('list.empty_title')}</p>
+        <p className="mx-auto mt-1.5 max-w-md text-sm text-slate-400">{t('list.empty_body')}</p>
         {/* Answered here, once, rather than as a standing "not backed up"
             line (see SyncStatus in App): where a newcomer's book lives, and
             that nothing has to be signed up for first. */}
         {signedOut && (
           <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
-            It stays on this device — no account needed.
+            {t('list.empty_local')}
           </p>
         )}
         <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
           <button type="button" className={btnPrimary} onClick={() => edit('new')}>
-            Add your first contact
+            {t('list.add_first')}
           </button>
           {onImport && (
             <button type="button" className={btnGhost} onClick={onImport}>
-              Import a spreadsheet
+              {t('list.import_sheet')}
             </button>
           )}
         </div>
@@ -272,8 +273,8 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
       <div className="rounded-2xl border border-dashed border-slate-800 px-6 py-14 text-center">
         <p className="text-sm text-slate-400">
           {birthdays
-            ? 'Nobody in your book has a birthday recorded yet. Add one to a contact and they will show up here.'
-            : `Nobody matches that. ${contacts.length} ${contacts.length === 1 ? 'person is' : 'people are'} in your book.`}
+            ? t('list.no_birthdays')
+            : t.plural('list.no_match', contacts.length)}
         </p>
       </div>
       </>
@@ -290,7 +291,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                 and a heading of "Pinned" over a card labelled "Pinned" reads
                 as a glitch — so it is for screen readers only. */}
             <h2 id={recentId} className={`text-xs font-medium text-slate-400 ${pins.length ? 'sr-only' : ''}`}>
-              {pins.length ? 'Pinned and last added' : 'Last added'}
+              {pins.length ? t('list.pinned_and_last') : t('list.last_added')}
             </h2>
             {pins.length > 1 && (
               <button
@@ -301,7 +302,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                   setOpenRow(null)
                 }}
               >
-                See all {pins.length} pinned
+                {t('list.see_all_pinned', { count: pins.length })}
               </button>
             )}
           </div>
@@ -312,7 +313,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {topCards.map((c, i) => (
               <div key={c.id} className={i === 1 ? 'hidden sm:block' : i === 2 ? 'hidden xl:block' : undefined}>
-                <p className="mb-1 px-1 text-xs text-slate-500">{c.pinnedAt !== undefined ? 'Pinned' : addedWhen(c.createdAt)}</p>
+                <p className="mb-1 px-1 text-xs text-slate-500">{c.pinnedAt !== undefined ? t('list.pinned') : addedWhen(c.createdAt)}</p>
                 {/* The orange ring says "this one is not part of the list": the
                     same person is in their usual place below, and two
                     identical cards read as a duplicate entry. */}
@@ -340,23 +341,23 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
       <div className="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <p className="text-xs text-slate-500 tabular-nums" aria-live="polite">
           {showingPins
-            ? `${visible.length} pinned, latest pin first`
+            ? t('list.count_pinned', { count: visible.length })
             : birthdays
             ? visible.length === 0
-              ? 'Every birthday you have is hidden'
-              : `${visible.length} ${visible.length === 1 ? 'birthday' : 'birthdays'}, soonest first`
+              ? t('list.all_birthdays_hidden')
+              : t.plural('list.count_birthdays', visible.length)
             : visible.length === 0
-              ? 'Everybody is hidden from this list'
+              ? t('list.all_hidden')
               : // `>=` is belt and braces: nothing visible is outside
               // `inContacts` now that a list filter no longer exists.
               visible.length >= inContacts
-              ? `${visible.length} ${visible.length === 1 ? 'contact' : 'contacts'}`
-              : `${visible.length} of ${inContacts}`}
+              ? t.plural('list.count_contacts', visible.length)
+              : t('list.count_of', { shown: visible.length, total: inContacts })}
         </p>
         <div className="flex items-center gap-1">
           {showingPins && !selecting && (
             <button type="button" className={btnSubtle} onClick={() => setPinsFor(null)}>
-              Show everyone
+              {t('list.show_everyone')}
             </button>
           )}
           {emailLists && visible.length > 0 && !selecting && (
@@ -371,7 +372,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                 setOpenRow(null)
               }}
             >
-              Select
+              {t('list.select')}
             </button>
           )}
         </div>
@@ -462,7 +463,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                 }
                 hideLabel={
                   birthdays
-                    ? { on: 'birthdays list', hidden: false }
+                    ? { on: 'birthdays', hidden: false }
                     : { on: 'list', hidden: Boolean(c.hideFromList) }
                 }
                 dimmed={Boolean(c.hideFromList)}
@@ -493,12 +494,12 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
             >
               <path d="M6 3.5 10.5 8 6 12.5V3.5Z" />
             </svg>
-            <span className="tabular-nums">{tidiedAway.length} hidden from this list</span>
+            <span className="tabular-nums">{t('list.hidden_count', { count: tidiedAway.length })}</span>
           </button>
           {showHidden && (
             <>
               <p className="mb-2 mt-1 px-1.5 text-xs text-slate-600">
-                Still in your book, and still found by searching — just not in the way while you scroll.
+                {t('list.hidden_note')}
               </p>
               <ul id={tidiedId} className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                 {tidiedAway.map((c) => (
@@ -550,13 +551,13 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
               <path d="M6 3.5 10.5 8 6 12.5V3.5Z" />
             </svg>
             <span className="tabular-nums">
-              {hidden.length} hidden from this list
+              {t('list.hidden_count', { count: hidden.length })}
             </span>
           </button>
           {showHidden && (
             <>
               <p className="mb-2 mt-1 px-1.5 text-xs text-slate-600">
-                Their birthdays are still recorded — they are just not counted down here.
+                {t('list.hidden_birthdays_note')}
               </p>
               <ul id={hiddenBirthdaysId} className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                 {hidden.map((c) => (
@@ -584,7 +585,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                         countdown={null}
                         age={currentAge(c.birthdate, today)}
                         onToggleHidden={() => void setBirthdayHidden(c.id, false)}
-                        hideLabel={{ on: 'birthdays list', hidden: true }}
+                        hideLabel={{ on: 'birthdays', hidden: true }}
                         dimmed
                         onFineTune={() => edit(c.id)}
                       />
@@ -695,21 +696,21 @@ function ConfirmDelete({
   onKeep: () => void
   onDelete: () => void
 }) {
+  const t = useT()
   return (
-    <Modal phone="sheet" title="Delete contact" onClose={onKeep}>
+    <Modal phone="sheet" title={t('del.title')} onClose={onKeep}>
       <p className="text-sm text-slate-300">
-        Delete <span className="font-semibold text-slate-100">{contact.name || 'this contact'}</span>?
+        {t('del.ask_before')}
+        <span className="font-semibold text-slate-100">{contact.name || t('c.this_contact')}</span>
+        {t('del.ask_after')}
       </p>
-      <p className="mt-2 text-sm text-slate-500">
-        Their notes, tags and birthday go with them. There is no undo — if you save your book online,
-        the deletion is copied there the next time it syncs.
-      </p>
+      <p className="mt-2 text-sm text-slate-500">{t('del.body')}</p>
       <div className="mt-5 flex justify-end gap-2">
         <button type="button" className={btnGhost} onClick={onKeep} autoFocus>
-          Keep
+          {t('c.keep')}
         </button>
         <button type="button" className={btnDanger} onClick={onDelete}>
-          Delete
+          {t('c.delete')}
         </button>
       </div>
     </Modal>
@@ -741,22 +742,23 @@ function SelectBar({
   onDelete: () => void
   onDone: () => void
 }) {
+  const t = useT()
   const none = count === 0
   const act = `${btnSubtle} disabled:cursor-not-allowed disabled:opacity-40`
   return (
     <div className="sticky top-0 z-30 -mx-1 mb-2 flex flex-wrap items-center gap-x-1 gap-y-1 rounded-xl border border-slate-800 bg-slate-900 px-2 py-1.5">
       <p className="mr-auto px-1 text-sm font-medium text-slate-200 tabular-nums" aria-live="polite">
-        {count} selected
+        {t('sel.count', { count })}
       </p>
       <button type="button" className={act} onClick={onAll}>
-        {allPicked ? 'Select none' : 'Select all'}
+        {allPicked ? t('sel.none') : t('sel.all')}
       </button>
       <button type="button" className={act} onClick={onTag} disabled={none}>
-        Tag
+        {t('sel.tag')}
       </button>
       {hide && (
         <button type="button" className={act} onClick={() => onHide(hide === 'hide')} disabled={none}>
-          {hide === 'hide' ? 'Hide' : 'Show'}
+          {hide === 'hide' ? t('c.hide') : t('c.show')}
         </button>
       )}
       <button
@@ -765,10 +767,10 @@ function SelectBar({
         onClick={onDelete}
         disabled={none}
       >
-        Delete
+        {t('c.delete')}
       </button>
       <button type="button" className={`${act} text-orange-300`} onClick={onDone}>
-        Done
+        {t('c.done')}
       </button>
     </div>
   )
@@ -827,31 +829,27 @@ function ConfirmBulkDelete({
   onKeep: () => void
   onDelete: () => void
 }) {
-  const names = people.slice(0, 5).map((c) => c.name || 'Unnamed')
+  const t = useT()
+  const names = people.slice(0, 5).map((c) => c.name || t('c.unnamed'))
   const more = people.length - names.length
   return (
-    <Modal phone="sheet" title="Delete contacts" onClose={onKeep}>
+    <Modal phone="sheet" title={t('del.many_title')} onClose={onKeep}>
       <p className="text-sm text-slate-300">
-        Delete{' '}
-        <span className="font-semibold text-slate-100">
-          {people.length} {people.length === 1 ? 'person' : 'people'}
-        </span>
-        ?
+        {t('del.ask_before')}
+        <span className="font-semibold text-slate-100">{t.plural('c.people', people.length)}</span>
+        {t('del.ask_after')}
       </p>
       <p className="mt-2 text-sm text-slate-400">
         {names.join(', ')}
-        {more > 0 && ` and ${more} more`}
+        {more > 0 && t('del.and_more', { count: more })}
       </p>
-      <p className="mt-2 text-sm text-slate-500">
-        Their notes, tags and birthdays go with them. There is no undo — if you save your book online,
-        the deletion is copied there the next time it syncs.
-      </p>
+      <p className="mt-2 text-sm text-slate-500">{t('del.many_body')}</p>
       <div className="mt-5 flex justify-end gap-2">
         <button type="button" className={btnGhost} onClick={onKeep} autoFocus>
-          Keep
+          {t('c.keep')}
         </button>
         <button type="button" className={btnDanger} onClick={onDelete}>
-          Delete {people.length}
+          {t('del.delete_n', { count: people.length })}
         </button>
       </div>
     </Modal>
@@ -860,17 +858,18 @@ function ConfirmBulkDelete({
 
 /** Add tags to everybody selected. Adds only — nobody loses a tag here. */
 function BulkTag({ count, onClose, onAdd }: { count: number; onClose: () => void; onAdd: (tagIds: string[]) => void }) {
+  const t = useT()
   const [tagIds, setTagIds] = useState<string[]>([])
   return (
-    <Modal phone="sheet" title={`Tag ${count} ${count === 1 ? 'person' : 'people'}`} onClose={onClose}>
-      <p className="mb-3 text-sm text-slate-400">The tags you pick are added to everybody selected.</p>
+    <Modal phone="sheet" title={t('bulk.tag_title', { people: t.plural('c.people', count) })} onClose={onClose}>
+      <p className="mb-3 text-sm text-slate-400">{t('bulk.tag_note')}</p>
       <TagPicker value={tagIds} onChange={setTagIds} />
       <div className="mt-5 flex justify-end gap-2">
         <button type="button" className={btnGhost} onClick={onClose}>
-          Cancel
+          {t('c.cancel')}
         </button>
         <button type="button" className={btnPrimary} onClick={() => onAdd(tagIds)} disabled={tagIds.length === 0}>
-          Add tags
+          {t('bulk.add_tags')}
         </button>
       </div>
     </Modal>
@@ -884,6 +883,7 @@ function BulkTag({ count, onClose, onAdd }: { count: number; onClose: () => void
  * "Today", the same reason every tag chip carries a dot as well as a name.
  */
 function BirthdayBanner({ next }: { next: NextBirthday }) {
+  const t = useT()
   const soon = next.inDays <= 7
   const today = next.inDays === 0
   return (
@@ -905,7 +905,7 @@ function BirthdayBanner({ next }: { next: NextBirthday }) {
           <span aria-hidden className="text-slate-600">
             ·
           </span>
-          <span className="tabular-nums">Turning {next.turning}</span>
+          <span className="tabular-nums">{t('bday.turning', { age: next.turning })}</span>
         </>
       )}
     </p>
@@ -951,6 +951,8 @@ export function ContactRow({
    */
   onFineTune?: () => void
 }) {
+  const t = useT()
+  const name = contact.name || t('c.this_contact')
   // A dangling id renders as nothing rather than as an "undefined" chip. They
   // shouldn't exist — removeTag strips them — but an imported or hand-edited
   // book can carry one, and a broken chip in the list is a worse outcome than
@@ -1005,7 +1007,7 @@ export function ContactRow({
           <div
             className={`flex min-w-0 items-center gap-1 ${namePad}`}
           >
-            <p className="min-w-0 truncate font-semibold text-slate-100">{contact.name || 'Unnamed'}</p>
+            <p className="min-w-0 truncate font-semibold text-slate-100">{contact.name || t('c.unnamed')}</p>
             {tagChips.length > 0 && (
               <span className="-my-0.5 flex shrink-0 items-center">
                 {tagChips.map((t) => (
@@ -1041,7 +1043,7 @@ export function ContactRow({
                   date truncates and the age stays whole; the other way round
                   gives you "(Age 3…)". */}
               {age !== null && (
-                <span className="shrink-0 text-slate-500 tabular-nums">(Age {age})</span>
+                <span className="shrink-0 text-slate-500 tabular-nums">{t('bday.age_paren', { age })}</span>
               )}
             </p>
           )
@@ -1079,14 +1081,22 @@ export function ContactRow({
           // control has no idea which card it is sitting on, and "Hide" on its
           // own does not say hide from WHAT either.
           aria-label={
-            hideLabel?.hidden
-              ? `Show ${contact.name || 'this contact'} in the ${hideLabel.on} again`
-              : `Hide ${contact.name || 'this contact'} from the ${hideLabel?.on ?? 'list'}`
+            hideLabel?.on === 'birthdays'
+              ? hideLabel.hidden
+                ? t('swipe.show_birthdays_label', { name })
+                : t('swipe.hide_birthdays_label', { name })
+              : hideLabel?.hidden
+                ? t('swipe.show_list_label', { name })
+                : t('row.hide_list_label', { name })
           }
           title={
-            hideLabel?.hidden
-              ? `Show in the ${hideLabel.on} again`
-              : `Hide from the ${hideLabel?.on ?? 'list'}`
+            hideLabel?.on === 'birthdays'
+              ? hideLabel.hidden
+                ? t('row.show_birthdays_title')
+                : t('row.hide_birthdays_title')
+              : hideLabel?.hidden
+                ? t('row.show_list_title')
+                : t('row.hide_list_title')
           }
           className={`absolute ${hideAt} top-1 inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
             dimmed ? 'opacity-60' : ''
@@ -1111,8 +1121,8 @@ export function ContactRow({
         <button
           type="button"
           onClick={onFineTune}
-          aria-label={`Fine-tune ${contact.name || 'this contact'}`}
-          title="Fine-tune"
+          aria-label={t('row.fine_tune_label', { name })}
+          title={t('row.fine_tune')}
           className={`absolute ${tuneAt} top-1 inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400`}
         >
           <TuneGlyph />
@@ -1131,13 +1141,14 @@ export function ContactRow({
  * Advanced ▸ Backup, import & export is still the whole-book export.
  */
 export function ListExport({ contacts, tags, tagIds }: { contacts: Contact[]; tags: Tag[]; tagIds: string[] }) {
+  const t = useT()
   const recipients = useMemo(() => toRecipients(contacts), [contacts])
   const [said, setSaid] = useState<string | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const copy = async () => {
     const ok = await copyText(recipients.text)
-    setSaid(ok ? `Copied ${recipients.count} ${recipients.count === 1 ? 'address' : 'addresses'}` : 'Could not copy')
+    setSaid(ok ? t.plural('export.copied', recipients.count) : t('export.copy_failed'))
     clearTimeout(timer.current)
     timer.current = setTimeout(() => setSaid(null), 2500)
   }
@@ -1167,14 +1178,14 @@ export function ListExport({ contacts, tags, tagIds }: { contacts: Contact[]; ta
         disabled={recipients.count === 0}
         title={
           recipients.count === 0
-            ? 'Nobody in this list has an email address'
-            : `Copy ${recipients.count} addresses to paste into an email`
+            ? t('export.no_emails')
+            : t.plural('export.copy_title', recipients.count)
         }
       >
-        Copy emails
+        {t('export.copy_emails')}
       </button>
-      <button type="button" className={btnSubtle} onClick={csv} title="Download this list as a CSV">
-        Export CSV
+      <button type="button" className={btnSubtle} onClick={csv} title={t('export.csv_title')}>
+        {t('export.csv')}
       </button>
     </div>
   )
