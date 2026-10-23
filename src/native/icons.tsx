@@ -114,9 +114,30 @@ export function IconShare() {
 
 export function IconContactsBook() {
   return (
-    <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden>
+    <svg viewBox="0 0 20 20" className="h-5 w-5" fill="currentColor" aria-hidden>
       <path d="M4 2.5A1.5 1.5 0 0 0 2.5 4v12A1.5 1.5 0 0 0 4 17.5h12a1.5 1.5 0 0 0 1.5-1.5V4A1.5 1.5 0 0 0 16 2.5H4ZM4 4h12v12H4V4Z" />
       <path d="M10 6a2 2 0 1 1 0 4 2 2 0 0 1 0-4Zm0 5c2.2 0 4 1.2 4 2.6v.9H6v-.9C6 12.2 7.8 11 10 11Z" />
+    </svg>
+  )
+}
+
+/** A new person: a head and shoulders with a small plus. */
+export function IconPerson() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" {...stroke} aria-hidden>
+      <circle cx="10" cy="8" r="3.5" />
+      <path d="M3.5 19.5c.8-3.4 3.4-5.5 6.5-5.5 1.6 0 3 .5 4.1 1.4" />
+      <path d="M18 14v6M15 17h6" />
+    </svg>
+  )
+}
+
+/** A file coming in: a page with an arrow into it. */
+export function IconFile() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" {...stroke} aria-hidden>
+      <path d="M14 3.5H7A1.5 1.5 0 0 0 5.5 5v14A1.5 1.5 0 0 0 7 20.5h10a1.5 1.5 0 0 0 1.5-1.5V8Z" />
+      <path d="M14 3.5V8h4.5M12 10.5v6M9.5 14l2.5 2.5 2.5-2.5" />
     </svg>
   )
 }

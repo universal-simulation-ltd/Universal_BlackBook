@@ -10,6 +10,7 @@ import { TagChip } from './TagChip'
 import { TagPicker } from './TagPicker'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label, textareaCls } from './ui'
 import { autoFocusOK } from '../native/kit'
+import { phoneScreens } from '../native/shell'
 
 /**
  * The To-do tab (owner's request, 2026-09-27), there only with App
@@ -59,9 +60,12 @@ export function TodoView() {
           <h1 className="text-xl font-semibold text-slate-100 sm:text-2xl">To-do</h1>
           <p className="text-sm text-slate-500">Things to do, soonest deadline first.</p>
         </div>
-        <button type="button" className={btnPrimary} onClick={() => edit('new')}>
-          Add new
-        </button>
+        {/* On the phone the top bar's + does this. */}
+        {!phoneScreens() && (
+          <button type="button" className={btnPrimary} onClick={() => edit('new')}>
+            Add new
+          </button>
+        )}
       </div>
 
       {usedTags.length > 0 && (

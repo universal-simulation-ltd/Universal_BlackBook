@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components -- hooks and helpers live beside the components that use them; hot reload of these few files is not worth splitting them */
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { DefaultViewSelect, type AboutAppConfig } from '@unisim/sdk'
 // Generated — `npm run credits` after any dependency change. Never edit it by
 // hand: it is read off the installed tree, so a hand-kept list drifts from the
@@ -13,6 +13,8 @@ import { useBookStore } from './stores/bookStore'
 import { useLockStore } from './stores/lockStore'
 import { useSettingsStore } from './stores/settingsStore'
 import { useSyncStore } from './stores/syncStore'
+import { btnPrimary } from './components/ui'
+import { useT } from './native/i18n'
 
 // The pieces both layouts share: the website's (App.tsx) and the phone
 // screens' (src/native/NativeApp.tsx).
@@ -207,5 +209,64 @@ function OpensOnPreference() {
       fallback="contacts"
       views={tabs.map((t) => ({ value: t, label: TAB_NAMES[t] }))}
     />
+  )
+}
+
+/**
+ * The website's Add new, when the device has its own contacts to offer: one
+ * button and a small menu of the ways to add somebody (New contact, From my
+ * contacts), the same grouping as the phone app's + sheet (James, 2026-10-23).
+ * Escape or a click anywhere else closes it.
+ */
+export function AddMenu({ onNew, onPick }: { onNew: () => void; onPick: () => void }) {
+  const t = useT()
+  const [open, setOpen] = useState(false)
+  const box = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!open) return
+    const away = (e: PointerEvent) => {
+      if (!box.current?.contains(e.target as Node)) setOpen(false)
+    }
+    const key = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('pointerdown', away)
+    document.addEventListener('keydown', key)
+    return () => {
+      document.removeEventListener('pointerdown', away)
+      document.removeEventListener('keydown', key)
+    }
+  }, [open])
+  const item =
+    'flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-slate-200 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400'
+  const choose = (f: () => void) => () => {
+    setOpen(false)
+    f()
+  }
+  return (
+    <div ref={box} className="relative">
+      <button
+        type="button"
+        className={`${btnPrimary} inline-flex items-center gap-1.5`}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+      >
+        {t('add_new')}
+        <svg viewBox="0 0 16 16" className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-180' : ''}`} fill="currentColor" aria-hidden>
+          <path d="M4 6h8l-4 4.5Z" />
+        </svg>
+      </button>
+      {open && (
+        <div role="menu" className="absolute right-0 z-40 mt-1.5 w-56 rounded-xl border border-slate-800 bg-slate-900 p-1 shadow-xl">
+          <button type="button" role="menuitem" className={item} onClick={choose(onNew)}>
+            {t('add_new_contact')}
+          </button>
+          <button type="button" role="menuitem" className={item} onClick={choose(onPick)}>
+            {t('from_my_contacts')}
+          </button>
+        </div>
+      )}
+    </div>
   )
 }

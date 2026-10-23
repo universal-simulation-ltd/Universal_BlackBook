@@ -10,6 +10,7 @@ import { ListChip } from './ListChip'
 import { TagChip } from './TagChip'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls } from './ui'
 import { autoFocusOK } from '../native/kit'
+import { phoneScreens } from '../native/shell'
 
 /**
  * The Lists tab on the landing screen (owner's request, 2026-09-17), there
@@ -54,9 +55,12 @@ export function ListsView() {
             People you email together. Copy their addresses, export them, or tap a list to see who is on it.
           </p>
         </div>
-        <button type="button" className={btnPrimary} onClick={() => newList()}>
-          Add new
-        </button>
+        {/* On the phone the top bar's + does this. */}
+        {!phoneScreens() && (
+          <button type="button" className={btnPrimary} onClick={() => newList()}>
+            Add new
+          </button>
+        )}
       </div>
 
       {lists.length === 0 ? (

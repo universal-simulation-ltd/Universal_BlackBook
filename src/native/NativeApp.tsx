@@ -34,15 +34,16 @@ import { SearchDrawer } from '../components/SearchDrawer'
 import { TagManager } from '../components/TagManager'
 import { TodoView } from '../components/TodoView'
 import { useBookStore } from '../stores/bookStore'
+import { useTodoStore } from '../stores/todoStore'
 import { usePanelStore } from '../stores/panelStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { AboutContent } from './AboutScreen'
 import { ContactActions } from './ContactActions'
 import { useT, type Key } from './i18n'
-import { IconBook, IconContactsBook, IconLists, IconPlus, IconTodo, IconTune, Ribbon } from './icons'
+import { IconBook, IconContactsBook, IconFile, IconLists, IconPerson, IconPlus, IconTodo, IconTune, Ribbon } from './icons'
 import { PhoneKitContext, type PhoneKit } from './kit'
 import { ArticleBody, KnowledgeList, useArticles } from './KnowledgeScreen'
-import { Page, Sheet } from './layers'
+import { Page, Sheet, SheetRow } from './layers'
 import { useNativeNav } from './nav'
 import { SignInContent } from './SignInScreen'
 import { PhoneLinkified } from './PhoneLinks'
@@ -92,6 +93,12 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
   // A tab whose switch has since gone off opens on Contacts (the website's rule).
   const current: PhoneTab = tabs.includes(tab) ? tab : 'contacts'
   const { canPick, picking, pick } = useContactPicker()
+  const newList = useBookStore((s) => s.newList)
+  const editTodo = useTodoStore((s) => s.edit)
+  // The top bar's + (James, 2026-10-23): on Contacts it opens a sheet of the
+  // ways to add somebody, so "From my contacts" is no longer a button of its
+  // own on the page; on Lists and To-do there is one way, so + just does it.
+  const [adding, setAdding] = useState(false)
   const articles = useArticles()
 
   // Every tab opens at its top.
@@ -125,7 +132,17 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
               <span className="truncate">BlackBook</span>
             </span>
             {current === 'contacts' && (
-              <button type="button" className="bb-iconbtn" aria-label={t('add_contact')} onClick={() => edit('new')}>
+              <button type="button" className="bb-iconbtn" aria-label={t('add_contact')} aria-haspopup="dialog" onClick={() => setAdding(true)}>
+                <IconPlus />
+              </button>
+            )}
+            {current === 'lists' && (
+              <button type="button" className="bb-iconbtn" aria-label={t('add_list')} onClick={() => newList()}>
+                <IconPlus />
+              </button>
+            )}
+            {current === 'todos' && (
+              <button type="button" className="bb-iconbtn" aria-label={t('add_todo')} onClick={() => editTodo('new')}>
                 <IconPlus />
               </button>
             )}
@@ -152,18 +169,6 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
               <LockLink onClick={() => openPanel('lock')} />
               <SyncStatus onOpen={openCloud} />
             </div>
-            {canPick && (
-              <button
-                type="button"
-                onClick={pick}
-                className="mb-4 inline-flex min-h-[40px] items-center gap-2 rounded-xl border border-slate-800 bg-slate-900 px-3.5 text-[15px] font-medium text-slate-200"
-              >
-                <span className="text-orange-400">
-                  <IconContactsBook />
-                </span>
-                {t('from_my_contacts')}
-              </button>
-            )}
             {picking && <p className="-mt-2 mb-4 text-xs text-slate-500">{t('picking_hint')}</p>}
             {/* ⚠️ The list must stay the drawer's NEXT sibling: it measures it to
                 hold the list still on screen as it folds itself away. */}
@@ -239,6 +244,39 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
           <Page title={article.title} backLabel={t('kb_short')} onBack={() => nav.setArticle(null)}>
             <ArticleBody article={article} />
           </Page>
+        )}
+        {adding && (
+          <Sheet title={t('add_contact')} onClose={() => setAdding(false)}>
+            <SheetRow
+              icon={<IconPerson />}
+              onClick={() => {
+                setAdding(false)
+                edit('new')
+              }}
+            >
+              {t('add_new_contact')}
+            </SheetRow>
+            {canPick && (
+              <SheetRow
+                icon={<IconContactsBook />}
+                onClick={() => {
+                  setAdding(false)
+                  pick()
+                }}
+              >
+                {t('from_my_contacts')}
+              </SheetRow>
+            )}
+            <SheetRow
+              icon={<IconFile />}
+              onClick={() => {
+                setAdding(false)
+                openPanel('io')
+              }}
+            >
+              {t('add_from_file')}
+            </SheetRow>
+          </Sheet>
         )}
         <Toast />
       </div>

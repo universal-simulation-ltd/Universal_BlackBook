@@ -26,7 +26,7 @@ import { ListsView } from './components/ListsView'
 import { SearchDrawer } from './components/SearchDrawer'
 import { TodoView } from './components/TodoView'
 import { LockPanel, LockScreen } from './components/Lock'
-import { btnGhost, btnPrimary } from './components/ui'
+import { btnPrimary } from './components/ui'
 import { allOnline } from './lib/merge'
 import { forgetVault, loadSyncMeta } from './lib/store'
 import { useBookStore } from './stores/bookStore'
@@ -35,7 +35,7 @@ import { useSettingsStore } from './stores/settingsStore'
 import { useSyncStore } from './stores/syncStore'
 import { useTodoStore } from './stores/todoStore'
 import { usePanelStore } from './stores/panelStore'
-import { APP_ABOUT, availableTabs, LockLink, PREFERENCE_ROWS, REPO_URL, SyncStatus, TAB_NAMES, TABS, useContactPicker, type Tab } from './appParts'
+import { AddMenu, APP_ABOUT, availableTabs, LockLink, PREFERENCE_ROWS, REPO_URL, SyncStatus, TAB_NAMES, TABS, useContactPicker, type Tab } from './appParts'
 import { useEffectiveTheme, useThemeStore } from './stores/themeStore'
 import { phoneScreens } from './native/shell'
 import { followThemeWithStatusBar } from './native/systemBars'
@@ -313,24 +313,16 @@ export default function App() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              {canPick && (
-                <button type="button" className={`${btnGhost} inline-flex items-center gap-1.5`} onClick={pick}>
-                  {/* ⚠️ An SVG and not an emoji. 📇 (CARD INDEX) has no glyph in
-                      iOS's emoji font and rendered as a hollow ? box on the
-                      phone — visible in a simulator screenshot, invisible in
-                      every browser, which is exactly the class of bug that ships.
-                      The 🎂 on the birthdays switch is fine; not every codepoint
-                      is. */}
-                  <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden>
-                    <path d="M4 2.5A1.5 1.5 0 0 0 2.5 4v12A1.5 1.5 0 0 0 4 17.5h12a1.5 1.5 0 0 0 1.5-1.5V4A1.5 1.5 0 0 0 16 2.5H4ZM4 4h12v12H4V4Z" />
-                    <path d="M10 6a2 2 0 1 1 0 4 2 2 0 0 1 0-4Zm0 5c2.2 0 4 1.2 4 2.6v.9H6v-.9C6 12.2 7.8 11 10 11Z" />
-                  </svg>
-                  From my contacts
+              {/* With the device's own contacts to offer, the two ways to add
+                  somebody are one Add new menu (James, 2026-10-23, the phone
+                  app's + sheet); without them Add new is still one click. */}
+              {canPick ? (
+                <AddMenu onNew={() => edit('new')} onPick={pick} />
+              ) : (
+                <button type="button" className={btnPrimary} onClick={() => edit('new')}>
+                  Add new
                 </button>
               )}
-              <button type="button" className={btnPrimary} onClick={() => edit('new')}>
-                Add new
-              </button>
             </div>
           </div>
           {picking && (

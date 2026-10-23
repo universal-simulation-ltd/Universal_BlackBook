@@ -24,6 +24,7 @@ import { ListChip } from './ListChip'
 import { TagDot } from './TagChip'
 import { TagPicker } from './TagPicker'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, TuneGlyph } from './ui'
+import { useT } from '../native/i18n'
 
 // The glyphs the swipe actions carry. SVG and not emoji: 🗑 is one of the
 // codepoints with no glyph in iOS's system font (see Modal's CloseGlyph), and
@@ -264,19 +265,24 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
   // drawer that puts them back sits below a list that is not rendered.
   if (visible.length === 0 && hidden.length === 0 && tidiedAway.length === 0) {
     return (
+      <>
+      {/* Above what the search found (James, 2026-10-23), here above "nobody
+          matches" as much as above a list of results. */}
+      {searching && !birthdays && <AddFromSearch text={query.text} className="mb-3" />}
       <div className="rounded-2xl border border-dashed border-slate-800 px-6 py-14 text-center">
         <p className="text-sm text-slate-400">
           {birthdays
             ? 'Nobody in your book has a birthday recorded yet. Add one to a contact and they will show up here.'
             : `Nobody matches that. ${contacts.length} ${contacts.length === 1 ? 'person is' : 'people are'} in your book.`}
         </p>
-        {searching && !birthdays && <AddFromSearch text={query.text} className="mt-4" />}
       </div>
+      </>
     )
   }
 
   return (
     <>
+      {searching && !selecting && <AddFromSearch text={query.text} className="mb-3" />}
       {showRecent && !selecting && (
         <section aria-labelledby={recentId} className="mb-3">
           <div className="mb-1.5 flex items-center justify-between gap-3 px-1">
@@ -468,8 +474,6 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
         ))}
       </ul>
 
-      {searching && !selecting && <AddFromSearch text={query.text} className="mt-3" />}
-
       {/* The drawers are not selectable, so they step aside while selecting
           rather than sit there as cards a tap would unexpectedly open. */}
       {tidiedAway.length > 0 && !selecting && (
@@ -636,8 +640,9 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
 }
 
 /**
- * "Add Sam Okonkwo" — the last thing under the search results (owner's
- * request, 2026-10-03), so that looking somebody up and finding they are not
+ * "Add “Sam Okonkwo”" — the first thing over the search results (owner's
+ * request, 2026-10-03; moved from under them to over them, James 2026-10-23),
+ * so that looking somebody up and finding they are not
  * there is one tap from filing them, with what you typed already in the form.
  *
  * Shown under results as well as under none: searching "Sam" and finding Sam
@@ -647,6 +652,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
  * contact, which is right, because it is what was typed two seconds ago.
  */
 function AddFromSearch({ text, className = '' }: { text: string; className?: string }) {
+  const t = useT()
   const startWith = useBookStore((s) => s.startWith)
   const seed = searchSeed(text)
   if (!seed.value) return null
@@ -658,7 +664,9 @@ function AddFromSearch({ text, className = '' }: { text: string; className?: str
     >
       <span aria-hidden className="text-lg leading-none text-orange-400">＋</span>
       <span className="min-w-0 truncate">
-        Add <span className="font-semibold text-slate-100">“{seed.value}”</span>
+        {t('add_quoted_before')}
+        <span className="font-semibold text-slate-100">“{seed.value}”</span>
+        {t('add_quoted_after')}
       </span>
     </button>
   )

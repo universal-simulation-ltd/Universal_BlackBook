@@ -17,6 +17,13 @@ export const en = {
   contacts_title: 'Your book',
   add_contact: 'Add someone',
   from_my_contacts: 'From my contacts',
+  add_new: 'Add new',
+  add_new_contact: 'New contact',
+  add_from_file: 'From a spreadsheet or backup',
+  add_list: 'New list',
+  add_todo: 'New to-do',
+  add_quoted_before: 'Add ',
+  add_quoted_after: '',
   picking_hint: 'Waiting for the contact you pick. Closed it without choosing anybody? Tap again.',
 
   contact_back: 'Contacts',
