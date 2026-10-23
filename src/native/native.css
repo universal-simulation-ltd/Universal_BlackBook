@@ -143,7 +143,8 @@ html.bb-phone body {
 /* ── The phone kit (@unisim/sdk PhonePage / BottomSheet) in the book's look ──
    The kit draws the pages and sheets (native/layers.tsx); these are its
    tokens, read from the same palette as everything else, so Light is paper and
-   Dark the leather cover. Its own rules are all :where(), so these win. */
+   Dark the leather cover. Its own rules are all :where(), in a layer under
+   Tailwind's utilities (SDK 0.203.1), so these win. */
 .unisim-phone-layer {
   --uph-bg: var(--color-slate-950);
   --uph-surface: var(--color-slate-950);
