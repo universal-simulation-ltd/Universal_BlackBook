@@ -140,13 +140,27 @@ html.bb-phone body {
   100% { transform: scale(1); }
 }
 
+/* ── The phone kit (@unisim/sdk PhonePage / BottomSheet) in the book's look ──
+   The kit draws the pages and sheets (native/layers.tsx); these are its
+   tokens, read from the same palette as everything else, so Light is paper and
+   Dark the leather cover. Its own rules are all :where(), so these win. */
+.unisim-phone-layer {
+  --uph-bg: var(--color-slate-950);
+  --uph-surface: var(--color-slate-950);
+  --uph-sheet: var(--color-slate-900);
+  --uph-text: var(--color-slate-200);
+  --uph-muted: var(--color-slate-500);
+  --uph-line: var(--color-slate-800);
+  --uph-accent: var(--color-orange-400);
+  --uph-primary: var(--color-orange-600);
+  --uph-on-primary: #fff;
+  --uph-danger: var(--color-rose-600);
+  --uph-scrim: rgba(12, 10, 8, 0.42);
+  --uph-grip: var(--color-slate-700);
+}
+
 /* ── Pages ───────────────────────────────────────────────────────────────── */
 .bb-page {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  background: var(--color-slate-950);
   color: var(--color-slate-200);
   animation: bb-slide-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
@@ -154,55 +168,31 @@ html.bb-phone body {
   from { transform: translateX(36px); opacity: 0.4; }
   to { transform: translateX(0); opacity: 1; }
 }
-.bb-pagebar {
-  flex: none;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 4px;
+.bb-page .unisim-phone-bar-row {
   min-height: var(--bb-bar-h);
-  padding: env(safe-area-inset-top) max(8px, env(safe-area-inset-right)) 0 max(4px, env(safe-area-inset-left));
-  border-bottom: 1px solid var(--color-slate-800);
-  background: var(--color-slate-950);
+  padding: 0 max(8px, env(safe-area-inset-right)) 0 max(4px, env(safe-area-inset-left));
 }
-.bb-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 0;
-  min-height: 44px;
+.bb-page .unisim-phone-back {
   max-width: 40vw;
   padding: 0 8px 0 2px;
-  font-size: 16px;
-  color: var(--color-orange-400);
+  gap: 0;
 }
-.bb-back span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.bb-page .unisim-phone-back svg {
+  width: 24px;
+  height: 24px;
 }
-.bb-pagetitle {
+.bb-page .unisim-phone-title {
   font-family: var(--bb-serif);
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  text-align: center;
   font-size: 17px;
   font-weight: 700;
   color: var(--color-slate-100);
 }
-.bb-pageactions {
-  display: flex;
-  justify-content: flex-end;
+.bb-page .unisim-phone-actions {
   min-width: 44px;
+  justify-content: flex-end;
 }
 .bb-pagebody {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-  padding: 16px max(16px, env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 28px) max(16px, env(safe-area-inset-left));
+  padding: 16px max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left));
 }
 .bb-pagebody.bare {
   padding: 0;
@@ -211,29 +201,12 @@ html.bb-phone body {
 }
 
 /* ── Sheets ──────────────────────────────────────────────────────────────── */
-.bb-sheetwrap {
-  position: fixed;
-  inset: 0;
-}
-.bb-scrim {
-  position: absolute;
-  inset: 0;
-  background: rgba(12, 10, 8, 0.42);
-  animation: bb-fade 160ms ease-out;
-}
 .bb-sheet {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
   max-height: calc(100dvh - env(safe-area-inset-top) - 24px);
-  display: flex;
-  flex-direction: column;
-  border-radius: 22px 22px 0 0;
+  max-width: none;
   background: var(--color-slate-900);
   color: var(--color-slate-200);
   box-shadow: 0 -10px 30px rgba(20, 14, 8, 0.22);
-  padding-bottom: calc(env(safe-area-inset-bottom) + 14px);
   animation: bb-rise 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 @keyframes bb-fade {
@@ -244,32 +217,18 @@ html.bb-phone body {
   from { transform: translateY(48px); opacity: 0.4; }
   to { transform: translateY(0); opacity: 1; }
 }
-.bb-gripzone {
-  flex: none;
-  display: flex;
-  justify-content: center;
+.bb-sheet .unisim-phone-grip {
   padding: 6px 0 4px;
-  touch-action: none;
-  cursor: grab;
 }
-.bb-grip {
-  width: 40px;
-  height: 5px;
-  border-radius: 3px;
-  background: var(--color-slate-700);
-}
-.bb-sheettitle {
+.bb-sheet .unisim-phone-sheet-title {
   font-family: var(--bb-serif);
-  flex: none;
   padding: 2px 20px 8px;
   font-size: 19px;
   font-weight: 700;
   color: var(--color-slate-100);
 }
 .bb-sheetbody {
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  display: block;
   padding: 0 max(16px, env(safe-area-inset-right)) 4px max(16px, env(safe-area-inset-left));
 }
 .bb-sheetrow {
@@ -467,7 +426,6 @@ html.bb-phone body {
 @media (prefers-reduced-motion: reduce) {
   .bb-page,
   .bb-sheet,
-  .bb-scrim,
   .bb-toast,
   .bb-tab.flash {
     animation: none;
