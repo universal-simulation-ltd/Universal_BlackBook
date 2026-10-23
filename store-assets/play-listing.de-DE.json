@@ -1,0 +1,58 @@
+{
+  "language": "de-DE",
+  "details": {
+    "defaultLanguage": "en-GB",
+    "contactEmail": "inbox@unisim.co.uk",
+    "contactWebsite": "https://www.unisim.co.uk"
+  },
+  "listing": {
+    "title": "Universal BlackBook: Kontakte",
+    "shortDescription": "Privates Adressbuch: eigene Schlagwörter, jeder Geburtstag, eine Notiz pro Name.",
+    "fullDescription": [
+      "Ein kleines schwarzes Buch für die Menschen, mit denen du in Kontakt bleiben willst: ihre Nummern, ihre Geburtstage und das, was du dir über sie merken möchtest.",
+      "",
+      "Die meisten Adressbücher sind dafür gebaut, eine Telefonliste zu synchronisieren. BlackBook ist für die Notiz unter dem Namen gebaut: auf der Konferenz in Leeds kennengelernt, zwei Kinder, allergisch gegen Schalentiere. Sie steht direkt unter Name und Nummer, und du kannst sie auf der Seite der Person sofort ergänzen.",
+      "",
+      "Geburtstage, ohne zu nerven",
+      "• Eine Geburtstagsansicht, die nächsten zuerst, mit dem Alter, das sie bald werden.",
+      "• Das Jahr ist optional: „4. Juni, keine Ahnung, welches Jahr“ ist eine vollständige Antwort.",
+      "• Blende jeden aus dem Countdown aus, ohne das Datum zu verlieren.",
+      "• Keine Erinnerungen daran, wen du nicht angerufen hast. Ein Adressbuch, keine To-do-Liste.",
+      "",
+      "Abgelegt, wie du willst",
+      "• Deine eigenen Schlagwörter, in sieben Farben, so viele pro Person, wie passen. Tippe ein paar Buchstaben, und BlackBook findet das Schlagwort oder legt ein neues an.",
+      "• Durchsuche Namen, E-Mails, Nummern, Notizen und Geburtstage: Zieh oben in der Liste nach unten, und noch einmal für die Tastatur.",
+      "• Hefte die Menschen an, die du am häufigsten brauchst, blende die aus, die du selten brauchst, und wähle mehrere auf einmal aus.",
+      "• Ruf an, schreib eine Nachricht, eine E-Mail oder teile einen Kontakt, direkt von der Seite der Person.",
+      "• Füge jemanden aus den Kontakten deines Telefons hinzu oder importiere eine Tabelle.",
+      "",
+      "Neben deinen Leuten, wenn du willst",
+      "• Notizen: ein Titel und die Details, die neuesten zuerst.",
+      "• Aufgaben: was zu tun ist, mit Frist und deinen Schlagwörtern.",
+      "• E-Mail-Listen: Kopiere alle Adressen auf einmal oder exportiere die Liste.",
+      "Jede ist ein Schalter in „Diese App anpassen“, aus, bis du sie einschaltest.",
+      "",
+      "Privat von Grund auf",
+      "Dein Buch liegt auf deinem Telefon und funktioniert ganz ohne Konto. Sperre es mit einer PIN und bewahre eine Kopie in einer Sicherungsdatei auf, die du mit einem Passwort schützen kannst. Wenn du dasselbe Buch auf deinen anderen Geräten haben willst, melde dich mit einer Universal ID an: Es wird auf deinem Telefon mit einer Passphrase verschlüsselt, die nur du kennst, sodass die Kopie, die wir speichern, für uns unlesbar ist. Keine Werbung, kein Tracking, kein Verkauf von irgendetwas über die Menschen darin.",
+      "",
+      "Tagsüber Papier, nachts Leder: Hell, Dunkel oder das, was dein Telefon gerade macht. In acht Sprachen.",
+      "",
+      "Universal BlackBook ist Open Source (AGPL-3.0): github.com/universal-simulation-ltd/Universal_BlackBook",
+      "",
+      "Gebunden von James Markey MBE und dem UNI·SIM-Team."
+    ]
+  },
+  "images": {
+    "icon": "out/play/icon-512.png",
+    "featureGraphic": "out/de-DE/play/feature-graphic.png",
+    "phoneScreenshots": [
+      "out/de-DE/android/01-book.png",
+      "out/de-DE/android/02-person.png",
+      "out/de-DE/android/03-birthdays.png",
+      "out/de-DE/android/04-tags.png",
+      "out/de-DE/android/05-leather.png",
+      "out/de-DE/android/06-notes.png",
+      "out/de-DE/android/07-private.png"
+    ]
+  }
+}

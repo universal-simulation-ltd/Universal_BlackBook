@@ -1,0 +1,80 @@
+{
+  "01-book": {
+    "headline": [
+      "Les gens avec qui",
+      "*garder le contact*"
+    ],
+    "sub": "Un carnet d’adresses privé : leurs numéros, leurs anniversaires et ce que vous voulez retenir."
+  },
+  "02-person": {
+    "headline": [
+      "Tout sur eux,",
+      "*au même endroit*"
+    ],
+    "sub": "Relié par James Markey MBE\net l’équipe UNI·SIM"
+  },
+  "03-birthdays": {
+    "headline": [
+      "N’oubliez plus",
+      "*un anniversaire*"
+    ],
+    "caption": "Le plus proche en premier, avec l’âge qu’ils vont avoir",
+    "chips": [
+      "Aujourd’hui, demain, dans 3 jours",
+      "L’année est facultative",
+      "Masquez qui vous voulez"
+    ]
+  },
+  "04-tags": {
+    "headline": [
+      "Des étiquettes",
+      "*bien à vous*"
+    ],
+    "caption": "Tapez quelques lettres : il trouve l’étiquette, ou en crée une nouvelle",
+    "chips": [
+      "Une couleur au choix",
+      "Autant qu’il en tient",
+      "Filtrer par étiquette"
+    ]
+  },
+  "05-leather": {
+    "headline": [
+      "Papier le jour,",
+      "*cuir la nuit*"
+    ],
+    "caption": "Clair, Sombre, ou comme votre téléphone",
+    "chips": [
+      "Clair",
+      "Sombre",
+      "Comme mon appareil"
+    ]
+  },
+  "06-notes": {
+    "headline": [
+      "Des notes à côté",
+      "*de vos proches*"
+    ],
+    "caption": "Un titre et les détails, les plus récentes en premier, tirez vers le bas pour chercher",
+    "chips": [
+      "Notes",
+      "À faire",
+      "Listes de diffusion"
+    ]
+  },
+  "07-private": {
+    "headline": [
+      "À vous,",
+      "*et à nul autre*"
+    ],
+    "caption": "Aucun compte requis. Verrouillé par un PIN, gardé dans un fichier de sauvegarde, ou chiffré en ligne si vous vous connectez",
+    "chips": [
+      "Reste sur votre téléphone",
+      "Verrouillage PIN",
+      "Fichier de sauvegarde",
+      "Chiffré de bout en bout"
+    ]
+  },
+  "feature-graphic": {
+    "tagline": "Un carnet d’adresses privé pour les personnes qui comptent"
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "01-book": {
+    "headline": [
+      "Die Menschen, die",
+      "*dir wichtig sind*"
+    ],
+    "sub": "Ein privates Adressbuch: ihre Nummern, ihre Geburtstage und das, was du dir merken willst."
+  },
+  "02-person": {
+    "headline": [
+      "Alles über sie,",
+      "*an einem Ort*"
+    ],
+    "sub": "Gebunden von James Markey MBE\nund dem UNI·SIM-Team"
+  },
+  "03-birthdays": {
+    "headline": [
+      "Kein Geburtstag",
+      "*geht mehr unter*"
+    ],
+    "caption": "Die nächsten zuerst, mit dem Alter, das sie bald werden",
+    "chips": [
+      "Heute, morgen, in 3 Tagen",
+      "Das Jahr ist optional",
+      "Ausblenden, wen du willst"
+    ]
+  },
+  "04-tags": {
+    "headline": [
+      "Deine eigenen",
+      "*Schlagwörter*"
+    ],
+    "caption": "Tippe ein paar Buchstaben: Es findet das Schlagwort oder legt ein neues an",
+    "chips": [
+      "Jede Farbe",
+      "So viele, wie passen",
+      "Danach filtern"
+    ]
+  },
+  "05-leather": {
+    "headline": [
+      "Tagsüber Papier,",
+      "*nachts Leder*"
+    ],
+    "caption": "Hell, Dunkel oder das, was dein Telefon gerade macht",
+    "chips": [
+      "Hell",
+      "Dunkel",
+      "Wie mein Gerät"
+    ]
+  },
+  "06-notes": {
+    "headline": [
+      "Notizen neben",
+      "*deinen Leuten*"
+    ],
+    "caption": "Ein Titel und die Details, die neuesten zuerst, zum Suchen herunterziehen",
+    "chips": [
+      "Notizen",
+      "Aufgaben",
+      "E-Mail-Listen"
+    ]
+  },
+  "07-private": {
+    "headline": [
+      "Deins und",
+      "*niemandes sonst*"
+    ],
+    "caption": "Kein Konto nötig. Mit einer PIN gesperrt, in einer Sicherungsdatei aufbewahrt oder online verschlüsselt, wenn du dich anmeldest",
+    "chips": [
+      "Bleibt auf deinem Telefon",
+      "PIN-Sperre",
+      "Sicherungsdatei",
+      "Ende-zu-Ende-verschlüsselt"
+    ]
+  },
+  "feature-graphic": {
+    "tagline": "Ein privates Adressbuch für die Menschen, die dir wichtig sind"
+  }
+}

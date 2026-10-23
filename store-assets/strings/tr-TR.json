@@ -1,0 +1,80 @@
+{
+  "01-book": {
+    "headline": [
+      "Görüşmeye değer",
+      "*insanlar için*"
+    ],
+    "sub": "Özel bir adres defteri: numaraları, doğum günleri ve hatırlamak istediğin şey."
+  },
+  "02-person": {
+    "headline": [
+      "Onunla ilgili",
+      "*her şey bir arada*"
+    ],
+    "sub": "James Markey MBE ve\nUNI·SIM ekibi tarafından ciltlendi"
+  },
+  "03-birthdays": {
+    "headline": [
+      "Doğum günlerini",
+      "*hiç kaçırma*"
+    ],
+    "caption": "En yakını önce, girecekleri yaşla birlikte",
+    "chips": [
+      "Bugün, yarın, 3 gün sonra",
+      "Yıl isteğe bağlı",
+      "Dilediğini gizle"
+    ]
+  },
+  "04-tags": {
+    "headline": [
+      "Sana özel",
+      "*etiketler*"
+    ],
+    "caption": "Birkaç harf yaz: etiketi bulur ya da yenisini oluşturur",
+    "chips": [
+      "İstediğin renk",
+      "Sığdığı kadar",
+      "Etikete göre filtrele"
+    ]
+  },
+  "05-leather": {
+    "headline": [
+      "Gündüz kâğıt,",
+      "*gece deri*"
+    ],
+    "caption": "Açık, Koyu ya da telefonun ne yapıyorsa o",
+    "chips": [
+      "Açık",
+      "Koyu",
+      "Cihazıma uy"
+    ]
+  },
+  "06-notes": {
+    "headline": [
+      "Kişilerinin",
+      "*yanında notlar*"
+    ],
+    "caption": "Bir başlık ve ayrıntılar, en yenisi önce; aramak için aşağı çek",
+    "chips": [
+      "Notlar",
+      "Yapılacaklar",
+      "E-posta listeleri"
+    ]
+  },
+  "07-private": {
+    "headline": [
+      "Senin, başka",
+      "*kimsenin değil*"
+    ],
+    "caption": "Hesap gerekmez. PIN ile kilitli, bir yedek dosyasında saklı ya da giriş yaparsan çevrimiçi şifreli",
+    "chips": [
+      "Telefonunda kalır",
+      "PIN kilidi",
+      "Yedek dosyası",
+      "Uçtan uca şifreli"
+    ]
+  },
+  "feature-graphic": {
+    "tagline": "Görüşmeye değer insanlar için özel bir adres defteri"
+  }
+}

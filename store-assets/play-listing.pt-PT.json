@@ -1,0 +1,58 @@
+{
+  "language": "pt-PT",
+  "details": {
+    "defaultLanguage": "en-GB",
+    "contactEmail": "inbox@unisim.co.uk",
+    "contactWebsite": "https://www.unisim.co.uk"
+  },
+  "listing": {
+    "title": "Universal BlackBook: Contactos",
+    "shortDescription": "Uma agenda privada: etiquetas suas, cada aniversário, uma nota em cada nome.",
+    "fullDescription": [
+      "Uma pequena agenda preta para as pessoas com quem vale a pena manter contacto: os números, os aniversários e aquilo de que se quer lembrar sobre elas.",
+      "",
+      "A maioria das agendas é feita para sincronizar uma lista telefónica. O BlackBook é feito para a nota debaixo do nome: conhecemo-nos na conferência de Leeds, dois filhos, alérgico a marisco. Fica logo abaixo do nome e do número, e pode escrever nela diretamente a partir da página da pessoa.",
+      "",
+      "Aniversários, sem insistências",
+      "• Uma vista de aniversários, o mais próximo primeiro, com a idade que a pessoa está prestes a fazer.",
+      "• O ano é opcional: \"4 de junho, não faço ideia do ano\" é uma resposta completa.",
+      "• Oculte quem quiser da contagem decrescente sem perder a data.",
+      "• Nada de lembretes sobre quem não telefonou. Uma agenda, não uma lista de tarefas.",
+      "",
+      "Arrumado à sua maneira",
+      "• Etiquetas só suas, em sete cores, tantas por pessoa quantas couberem. Escreva algumas letras e o BlackBook encontra a etiqueta ou cria uma nova.",
+      "• Pesquise nomes, emails, números, notas e aniversários: puxe para baixo a partir do topo da lista, e outra vez para o teclado.",
+      "• Afixe as pessoas de que mais precisa, oculte as que raramente usa, selecione várias de uma vez.",
+      "• Ligue, envie uma mensagem, um email ou partilhe um contacto a partir da página da pessoa.",
+      "• Adicione alguém dos contactos do seu telemóvel ou importe uma folha de cálculo.",
+      "",
+      "Ao lado das suas pessoas, se as quiser",
+      "• Notas: um título e os detalhes, o mais recente primeiro.",
+      "• Tarefas: coisas a fazer, com prazo e as suas etiquetas.",
+      "• Listas de email: copie o endereço de todos de uma vez, ou exporte a lista.",
+      "Cada uma é um interruptor em Afinar esta app, desligado até o ligar.",
+      "",
+      "Privado por natureza",
+      "A sua agenda vive no seu telemóvel e funciona sem conta nenhuma. Bloqueie-a com um PIN e guarde uma cópia num ficheiro de cópia que pode proteger com palavra-passe. Se quiser a mesma agenda nos seus outros dispositivos, inicie sessão com um Universal ID: é cifrada no seu telemóvel com uma frase-passe que só o próprio conhece, por isso a cópia que guardamos é ilegível para nós. Sem anúncios, sem rastreio, sem vender nada sobre as pessoas que contém.",
+      "",
+      "Papel de dia, couro à noite: Claro, Escuro, ou o que o seu telemóvel estiver a fazer. Em oito idiomas.",
+      "",
+      "O Universal BlackBook é de código aberto (AGPL-3.0): github.com/universal-simulation-ltd/Universal_BlackBook",
+      "",
+      "Encadernado por James Markey MBE e a equipa UNI·SIM."
+    ]
+  },
+  "images": {
+    "icon": "out/play/icon-512.png",
+    "featureGraphic": "out/pt-PT/play/feature-graphic.png",
+    "phoneScreenshots": [
+      "out/pt-PT/android/01-book.png",
+      "out/pt-PT/android/02-person.png",
+      "out/pt-PT/android/03-birthdays.png",
+      "out/pt-PT/android/04-tags.png",
+      "out/pt-PT/android/05-leather.png",
+      "out/pt-PT/android/06-notes.png",
+      "out/pt-PT/android/07-private.png"
+    ]
+  }
+}

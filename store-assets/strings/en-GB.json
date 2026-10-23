@@ -1,0 +1,38 @@
+{
+  "01-book": {
+    "headline": ["The people worth", "*keeping up with*"],
+    "sub": "A private address book: their numbers, their birthdays and the thing you want to remember."
+  },
+  "02-person": {
+    "headline": ["Everything about", "*them, in one place*"],
+    "sub": "Bound by James Markey MBE\nand the UNI·SIM team"
+  },
+  "03-birthdays": {
+    "headline": ["Never miss", "*a birthday*"],
+    "caption": "Soonest first, with the age they are about to turn",
+    "chips": ["Today, tomorrow, in 3 days", "The year is optional", "Hide anyone"]
+  },
+  "04-tags": {
+    "headline": ["Tags of", "*your own*"],
+    "caption": "Type a few letters: it finds the tag, or makes a new one",
+    "chips": ["Any colour", "As many as fit", "Filter by them"]
+  },
+  "05-leather": {
+    "headline": ["Paper by day,", "*leather by night*"],
+    "caption": "Light, Dark, or whatever your phone is doing",
+    "chips": ["Light", "Dark", "Match my device"]
+  },
+  "06-notes": {
+    "headline": ["Notes beside", "*your people*"],
+    "caption": "A title and the details, newest first, pulled down to search",
+    "chips": ["Notes", "To-do", "Email lists"]
+  },
+  "07-private": {
+    "headline": ["Yours, and", "*nobody else's*"],
+    "caption": "No account needed. Locked with a PIN, kept in a backup file, or encrypted online if you sign in",
+    "chips": ["Stays on your phone", "PIN lock", "Backup file", "End-to-end encrypted"]
+  },
+  "feature-graphic": {
+    "tagline": "A private address book for the people worth keeping up with"
+  }
+}

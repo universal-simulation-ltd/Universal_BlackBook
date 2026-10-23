@@ -71,8 +71,20 @@ const NOTES = {
   'tr-TR': ['Yürüyüşe bayılır. İki çocuk, Tobi ve Ada.', 'Leeds konferansında tanıştık. Deniz ürünlerine alerjisi var.', '“Üsthikâye”yi önerdi.', 'Cuma günleri kahve.', 'Teyze. Mesaj değil, kart gönder.', 'Biz yokken kediyi besliyor.', 'Mayısta Kyoto’dan dönüyor.', 'Tesisatçı. Çok iyi, hemen doluyor.'],
 }
 
+// The Notes tab's own notes (not a contact's), newest first: [title, details].
+const PAGES = {
+  'en-GB': [['Gift ideas', 'Amara: a good walking map of the Lakes\nBen: the new Overstory paperback'], ['Wi-Fi at Mum’s', 'Network: Garden\nThe password is on the fridge'], ['Book club, March', 'Hana hosts. Bring the cake this time.']],
+  'de-DE': [['Geschenkideen', 'Amara: eine gute Wanderkarte vom Lake District\nBen: das neue Taschenbuch'], ['WLAN bei Mama', 'Netzwerk: Garten\nDas Passwort hängt am Kühlschrank'], ['Buchclub, März', 'Hana lädt ein. Diesmal bringe ich den Kuchen.']],
+  'fr-FR': [['Idées cadeaux', 'Amara : une bonne carte de randonnée\nBen : le nouveau livre de poche'], ['Wi-Fi chez maman', 'Réseau : Jardin\nLe mot de passe est sur le frigo'], ['Club de lecture, mars', 'Chez Hana. Cette fois, j’apporte le gâteau.']],
+  'es-ES': [['Ideas de regalo', 'Amara: un buen mapa de senderismo\nBen: el nuevo libro de bolsillo'], ['Wifi en casa de mamá', 'Red: Jardín\nLa contraseña está en la nevera'], ['Club de lectura, marzo', 'En casa de Hana. Esta vez llevo yo la tarta.']],
+  'it-IT': [['Idee regalo', 'Amara: una bella mappa per le escursioni\nBen: il nuovo tascabile'], ['Wi-Fi dalla mamma', 'Rete: Giardino\nLa password è sul frigo'], ['Club del libro, marzo', 'Da Hana. Questa volta porto io la torta.']],
+  'pt-BR': [['Ideias de presente', 'Amara: um bom mapa de trilhas\nBen: o novo livro de bolso'], ['Wi-Fi da mamãe', 'Rede: Jardim\nA senha está na geladeira'], ['Clube do livro, março', 'Na casa da Hana. Desta vez eu levo o bolo.']],
+  'pt-PT': [['Ideias de prendas', 'Amara: um bom mapa de caminhadas\nBen: o novo livro de bolso'], ['Wi-Fi em casa da mãe', 'Rede: Jardim\nA palavra-passe está no frigorífico'], ['Clube do livro, março', 'Em casa da Hana. Desta vez levo eu o bolo.']],
+  'tr-TR': [['Hediye fikirleri', 'Amara: iyi bir yürüyüş haritası\nBen: yeni cep kitabı'], ['Annemdeki Wi-Fi', 'Ağ: Bahçe\nŞifre buzdolabının üstünde'], ['Kitap kulübü, mart', 'Hana’da. Bu sefer pastayı ben getiriyorum.']],
+}
+
 /** Runs in the page: writes the book into IndexedDB. */
-async function seed({ tags, notes }) {
+async function seed({ tags, notes, pages }) {
   const db = await new Promise((res, rej) => {
     const r = indexedDB.open('blackbook', 1)
     r.onupgradeneeded = () => {
@@ -116,6 +128,10 @@ async function seed({ tags, notes }) {
     )
     tagRecs.forEach((g) => t.objectStore('categories').put(g))
     t.objectStore('sync').put(true, 'seed')
+    t.objectStore('sync').put(
+      pages.map(([title, details], i) => ({ id: `n${i}`, title, details, createdAt: now - (i + 1) * day, updatedAt: now - i * day * 2 - 3600e3 })),
+      'pages',
+    )
     t.oncomplete = res
     t.onerror = () => rej(t.error)
   })
@@ -155,14 +171,29 @@ const CAPTURES = {
   // Fine-tuning somebody.
   '04-fine-tune': {
     dark: false,
-    async run(page) {
+    async run(page, { tags }) {
+      const tag3 = tags[2]
       await openPerson(page, 'Ben Hartley')
       await page.waitForTimeout(500)
-      await page.locator('.bb-page .bb-pageactions button').last().click()
+      await page.locator('.bb-page .unisim-phone-actions button').last().click()
+      // The tags, collapsed: type the start of one and the box suggests it,
+      // with "Add new tag" beside it.
+      await page.waitForTimeout(500)
+      const box = page.locator('.bb-page input[role=combobox]').first()
+      await box.scrollIntoViewIfNeeded()
+      await box.fill(tag3.slice(0, 2))
+      await page.locator('.bb-page .unisim-phone-body').last().evaluate((b) => b.scrollBy(0, 400))
     },
   },
   // The black leather: the book in Dark.
   '05-dark': { dark: true, async run() {} },
+  // The Notes tab: notes of your own, newest first.
+  '07-notes': {
+    dark: false,
+    async run(page) {
+      await page.locator('.bb-tab').nth(1).click()
+    },
+  },
   // Tune this app, in Dark: Light / Dark / Match my device and the switches.
   '06-tune': {
     dark: true,
@@ -214,18 +245,20 @@ for (const locale of locales) {
           localStorage.setItem('unisim-blackbook-theme', dark ? 'dark' : 'light')
           // The first-run "Pull down to search" belongs to somebody's first minute.
           localStorage.setItem('blackbook.pullSearchLearnt', '1')
+          // The Notes tab on (Tune this app ▸ Notes), for 07-notes.
+          localStorage.setItem('blackbook.settings', JSON.stringify({ emailLists: false, todos: false, notes: true, shownFields: [] }))
         } catch { /* fails loudly below */ }
       }, { lang: LOCALES[locale], dark: capture.dark })
       const page = await ctx.newPage()
       const errors = []
       page.on('pageerror', (e) => errors.push(String(e)))
       await page.goto(`${ORIGIN}/index.html`)
-      await page.evaluate(seed, { tags: TAGS[locale], notes: NOTES[locale] })
+      await page.evaluate(seed, { tags: TAGS[locale], notes: NOTES[locale], pages: PAGES[locale] })
       await page.reload()
       await page.locator('.bb-tab').first().waitFor()
       await page.waitForTimeout(900)
       try {
-        await capture.run(page)
+        await capture.run(page, { tags: TAGS[locale] })
         await page.waitForTimeout(900)
       } catch (err) {
         console.error(`FAIL ${locale}/${dev.key}/${name}: ${err.message.split('\n')[0]}`)

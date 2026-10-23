@@ -1,0 +1,18 @@
+{
+  "app": "Universal BlackBook",
+  "icon": "../ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png",
+  "captures": "draw",
+  "layouts": "layouts.mjs",
+  "css": "store.css",
+  "featureGraphic": "book",
+  "devices": ["iphone", "ipad", "android"],
+  "screens": [
+    { "id": "01-book", "layout": "book-open", "raw": "01-book" },
+    { "id": "02-person", "layout": "book-close", "raw": "02-person" },
+    { "id": "03-birthdays", "layout": "book-page", "raw": "03-birthdays", "hot": 0 },
+    { "id": "04-tags", "layout": "book-leather", "raw": "04-fine-tune", "hot": 1 },
+    { "id": "05-leather", "layout": "book-page", "raw": "05-dark", "hot": 1 },
+    { "id": "06-notes", "layout": "book-leather", "raw": "07-notes", "hot": 0 },
+    { "id": "07-private", "layout": "book-page", "raw": "06-tune", "hot": 0 }
+  ]
+}

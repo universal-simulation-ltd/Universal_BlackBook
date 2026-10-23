@@ -1,0 +1,58 @@
+{
+  "language": "tr-TR",
+  "details": {
+    "defaultLanguage": "en-GB",
+    "contactEmail": "inbox@unisim.co.uk",
+    "contactWebsite": "https://www.unisim.co.uk"
+  },
+  "listing": {
+    "title": "Universal BlackBook: Kişiler",
+    "shortDescription": "Özel bir adres defteri: kendi etiketlerin, her doğum günü, her adın altında not.",
+    "fullDescription": [
+      "Görüşmeye değer insanlar için küçük bir kara defter: numaraları, doğum günleri ve onlar hakkında hatırlamak istediğin şey.",
+      "",
+      "Çoğu adres defteri bir telefon listesini eşitlemek için yapılır. BlackBook ise adın altındaki not için yapıldı: İzmir'deki konferansta tanıştık, iki çocuğu var, kabuklu deniz ürünlerine alerjisi var. Not, adın ve numaranın hemen altında durur; kişinin sayfasından doğrudan içine yazabilirsin.",
+      "",
+      "Doğum günleri, dırdır etmeden",
+      "• Bir doğum günleri görünümü: en yakını önce, girecekleri yaşla birlikte.",
+      "• Yıl isteğe bağlı: \"4 Haziran, yılı hiç bilmiyorum\" eksiksiz bir yanıttır.",
+      "• Tarihini kaybetmeden dilediğin kişiyi geri sayımdan gizle.",
+      "• Kimi aramadığına dair hatırlatma yok. Bir adres defteri, yapılacaklar listesi değil.",
+      "",
+      "Senin düzeninle",
+      "• Kendi etiketlerin, yedi renkte, bir kişiye sığdığı kadar. Birkaç harf yaz; BlackBook etiketi bulur ya da yenisini oluşturur.",
+      "• Adlarda, e-postalarda, numaralarda, notlarda ve doğum günlerinde ara: listenin üstünden aşağı çek, klavye için bir kez daha çek.",
+      "• En çok ihtiyaç duyduğun kişileri sabitle, nadiren baktıklarını gizle, birkaçını birden seç.",
+      "• Kişinin sayfasından ara, mesaj at, e-posta gönder ya da kişiyi paylaş.",
+      "• Telefonunun kendi kişilerinden birini ekle ya da bir tablo içe aktar.",
+      "",
+      "İstersen, kişilerinin yanında",
+      "• Notlar: bir başlık ve ayrıntılar, en yenisi önce.",
+      "• Yapılacaklar: son tarihi ve etiketlerinle yapılacak şeyler.",
+      "• E-posta listeleri: herkesin adresini tek seferde kopyala ya da listeyi dışa aktar.",
+      "Her biri Bu uygulamayı ayarla'da bir anahtar; sen açana kadar kapalı kalır.",
+      "",
+      "Tasarımı gereği özel",
+      "Defterin telefonunda yaşar ve hiç hesap olmadan çalışır. PIN ile kilitle ve bir kopyasını parolayla koruyabileceğin bir yedek dosyasında sakla. Aynı defteri diğer cihazlarında da istiyorsan Universal ID ile giriş yap: defter, yalnızca senin bildiğin bir parolayla telefonunda şifrelenir; bu yüzden sakladığımız kopyayı biz okuyamayız. Reklam yok, izleme yok, içindeki insanlarla ilgili hiçbir şeyin satışı yok.",
+      "",
+      "Gündüz kâğıt, gece deri: Açık, Koyu ya da telefonun ne yapıyorsa o. Sekiz dilde.",
+      "",
+      "Universal BlackBook açık kaynaktır (AGPL-3.0): github.com/universal-simulation-ltd/Universal_BlackBook",
+      "",
+      "James Markey MBE ve UNI·SIM ekibi tarafından ciltlendi."
+    ]
+  },
+  "images": {
+    "icon": "out/play/icon-512.png",
+    "featureGraphic": "out/tr-TR/play/feature-graphic.png",
+    "phoneScreenshots": [
+      "out/tr-TR/android/01-book.png",
+      "out/tr-TR/android/02-person.png",
+      "out/tr-TR/android/03-birthdays.png",
+      "out/tr-TR/android/04-tags.png",
+      "out/tr-TR/android/05-leather.png",
+      "out/tr-TR/android/06-notes.png",
+      "out/tr-TR/android/07-private.png"
+    ]
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "language": "fr-FR",
+  "details": {
+    "defaultLanguage": "en-GB",
+    "contactEmail": "inbox@unisim.co.uk",
+    "contactWebsite": "https://www.unisim.co.uk"
+  },
+  "listing": {
+    "title": "Universal BlackBook: Contacts",
+    "shortDescription": "Carnet d’adresses privé : vos étiquettes, chaque anniversaire, une note par nom.",
+    "fullDescription": [
+      "Un petit carnet noir pour les personnes qui comptent : leurs numéros, leurs anniversaires, et ce que vous voulez retenir d’elles.",
+      "",
+      "La plupart des carnets d’adresses sont faits pour synchroniser une liste de téléphone. BlackBook est fait pour la note sous le nom : rencontré au congrès de Leeds, deux enfants, allergique aux crustacés. Elle se trouve juste sous le nom et le numéro, et vous pouvez y écrire directement depuis la page de la personne.",
+      "",
+      "Les anniversaires, sans insister",
+      "• Une vue des anniversaires, le plus proche en premier, avec l’âge qu’ils vont avoir.",
+      "• L’année est facultative : « le 4 juin, aucune idée de l’année » est une réponse complète.",
+      "• Masquez qui vous voulez du décompte sans perdre sa date.",
+      "• Aucun rappel sur les gens que vous n’avez pas appelés. Un carnet d’adresses, pas une liste de choses à faire.",
+      "",
+      "Rangé à votre façon",
+      "• Vos propres étiquettes, en sept couleurs, autant par personne qu’il en tient. Tapez quelques lettres et BlackBook trouve l’étiquette, ou en crée une nouvelle.",
+      "• Cherchez noms, e-mails, numéros, notes et anniversaires : tirez vers le bas depuis le haut de la liste, puis encore pour le clavier.",
+      "• Épinglez les personnes dont vous avez le plus besoin, masquez celles qui vous servent rarement, sélectionnez-en plusieurs à la fois.",
+      "• Appelez, envoyez un message ou un e-mail, ou partagez un contact depuis sa page.",
+      "• Ajoutez quelqu’un depuis les contacts de votre téléphone, ou importez un tableur.",
+      "",
+      "À côté de vos proches, si vous le souhaitez",
+      "• Notes : un titre et les détails, les plus récentes en premier.",
+      "• À faire : les choses à faire, avec une échéance et vos étiquettes.",
+      "• Listes de diffusion : copiez l’adresse de tout le monde d’un coup, ou exportez la liste.",
+      "Chacun est un interrupteur dans Régler cette app, désactivé tant que vous ne l’activez pas.",
+      "",
+      "Privé par conception",
+      "Votre carnet vit sur votre téléphone et fonctionne sans aucun compte. Verrouillez-le avec un PIN, et gardez-en une copie dans un fichier de sauvegarde que vous pouvez protéger par un mot de passe. Si vous voulez le même carnet sur vos autres appareils, connectez-vous avec un Universal ID : il est chiffré sur votre téléphone avec une phrase secrète que vous seul connaissez, si bien que la copie que nous stockons nous est illisible. Pas de publicité, pas de pistage, rien de vendu sur les personnes qu’il contient.",
+      "",
+      "Papier le jour, cuir la nuit : Clair, Sombre, ou comme votre téléphone. En huit langues.",
+      "",
+      "Universal BlackBook est open source (AGPL-3.0) : github.com/universal-simulation-ltd/Universal_BlackBook",
+      "",
+      "Relié par James Markey MBE et l’équipe UNI·SIM."
+    ]
+  },
+  "images": {
+    "icon": "out/play/icon-512.png",
+    "featureGraphic": "out/fr-FR/play/feature-graphic.png",
+    "phoneScreenshots": [
+      "out/fr-FR/android/01-book.png",
+      "out/fr-FR/android/02-person.png",
+      "out/fr-FR/android/03-birthdays.png",
+      "out/fr-FR/android/04-tags.png",
+      "out/fr-FR/android/05-leather.png",
+      "out/fr-FR/android/06-notes.png",
+      "out/fr-FR/android/07-private.png"
+    ]
+  }
+}

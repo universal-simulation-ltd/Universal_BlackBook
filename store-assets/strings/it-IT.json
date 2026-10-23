@@ -1,0 +1,80 @@
+{
+  "01-book": {
+    "headline": [
+      "Le persone con cui",
+      "*restare in contatto*"
+    ],
+    "sub": "Una rubrica privata: i loro numeri, i loro compleanni e ciò che vuoi ricordare."
+  },
+  "02-person": {
+    "headline": [
+      "Tutto su di loro,",
+      "*in un solo posto*"
+    ],
+    "sub": "Rilegata da James Markey MBE\ne il team UNI·SIM"
+  },
+  "03-birthdays": {
+    "headline": [
+      "Non perdere",
+      "*mai un compleanno*"
+    ],
+    "caption": "Dal più vicino, con l’età che stanno per compiere",
+    "chips": [
+      "Oggi, domani, tra 3 giorni",
+      "L’anno è facoltativo",
+      "Nascondi chi vuoi"
+    ]
+  },
+  "04-tags": {
+    "headline": [
+      "Etichette",
+      "*tutte tue*"
+    ],
+    "caption": "Scrivi qualche lettera: trova l’etichetta o ne crea una nuova",
+    "chips": [
+      "Qualsiasi colore",
+      "Quante ne stanno",
+      "Filtra per etichetta"
+    ]
+  },
+  "05-leather": {
+    "headline": [
+      "Carta di giorno,",
+      "*pelle di notte*"
+    ],
+    "caption": "Chiaro, Scuro o come fa il tuo telefono",
+    "chips": [
+      "Chiaro",
+      "Scuro",
+      "Come il mio dispositivo"
+    ]
+  },
+  "06-notes": {
+    "headline": [
+      "Note accanto",
+      "*alle tue persone*"
+    ],
+    "caption": "Un titolo e i dettagli, dalla più recente, tira giù per cercare",
+    "chips": [
+      "Note",
+      "Da fare",
+      "Liste email"
+    ]
+  },
+  "07-private": {
+    "headline": [
+      "Tue, e di",
+      "*nessun altro*"
+    ],
+    "caption": "Nessun account necessario. Bloccata con un PIN, conservata in un file di backup o cifrata online se accedi",
+    "chips": [
+      "Resta sul tuo telefono",
+      "Blocco con PIN",
+      "File di backup",
+      "Cifratura end-to-end"
+    ]
+  },
+  "feature-graphic": {
+    "tagline": "Una rubrica privata per le persone con cui vale la pena restare in contatto"
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "01-book": {
+    "headline": [
+      "La gente que",
+      "*merece la pena*"
+    ],
+    "sub": "Una agenda privada: sus números, sus cumpleaños y eso que quieres recordar."
+  },
+  "02-person": {
+    "headline": [
+      "Todo sobre ellos,",
+      "*en un solo sitio*"
+    ],
+    "sub": "Encuadernado por James Markey MBE\ny el equipo de UNI·SIM"
+  },
+  "03-birthdays": {
+    "headline": [
+      "Ningún cumpleaños",
+      "*se te escapa*"
+    ],
+    "caption": "El más próximo primero, con la edad que están a punto de cumplir",
+    "chips": [
+      "Hoy, mañana, en 3 días",
+      "El año es opcional",
+      "Oculta a quien quieras"
+    ]
+  },
+  "04-tags": {
+    "headline": [
+      "Etiquetas",
+      "*a tu manera*"
+    ],
+    "caption": "Escribe unas letras: encuentra la etiqueta o crea una nueva",
+    "chips": [
+      "Cualquier color",
+      "Tantas como quepan",
+      "Filtra por ellas"
+    ]
+  },
+  "05-leather": {
+    "headline": [
+      "Papel de día,",
+      "*cuero de noche*"
+    ],
+    "caption": "Claro, Oscuro o lo que esté haciendo tu teléfono",
+    "chips": [
+      "Claro",
+      "Oscuro",
+      "Como mi dispositivo"
+    ]
+  },
+  "06-notes": {
+    "headline": [
+      "Notas junto a",
+      "*tu gente*"
+    ],
+    "caption": "Un título y los detalles, la más reciente primero; desliza hacia abajo para buscar",
+    "chips": [
+      "Notas",
+      "Tareas",
+      "Listas de correo"
+    ]
+  },
+  "07-private": {
+    "headline": [
+      "Tuya y de",
+      "*nadie más*"
+    ],
+    "caption": "Sin cuenta. Bloqueada con PIN, guardada en un archivo de copia o cifrada en línea si inicias sesión",
+    "chips": [
+      "Se queda en tu teléfono",
+      "Bloquear con PIN",
+      "Archivo de copia",
+      "Cifrado extremo a extremo"
+    ]
+  },
+  "feature-graphic": {
+    "tagline": "Una agenda privada para la gente que merece la pena"
+  }
+}
