@@ -4,11 +4,13 @@ import { useBookStore } from '../stores/bookStore'
 import { isList } from '../lib/lists'
 import { ListChip } from './ListChip'
 import { TagChip } from './TagChip'
-import { btnGhost, inputCls } from './ui'
+import { TagCombo } from './TagCombo'
 
 /**
- * The multi-select on the contact form. Tap a chip to toggle it; type a name
- * and press Enter to create one that doesn't exist yet.
+ * The multi-select on the contact form, collapsed (TagCombo, 2026-10-23): the
+ * chosen tags as chips, then a box — type to find one, or to make a new one
+ * with "Add new tag “x”" — and a chevron for the whole list. Tap a chip to
+ * toggle it.
  *
  * Chips rather than a `<select multiple>`: a native multi-select needs
  * ctrl-click to add a second value, which is undiscoverable on a desktop and
@@ -48,7 +50,6 @@ export function TagPicker({
   const tags = all.filter((t) => (listMode ? isList(t) : !isList(t)))
   const addTag = useBookStore((s) => s.addTag)
   const recolourTag = useBookStore((s) => s.recolourTag)
-  const [draft, setDraft] = useState('')
   const [colour, setColour] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -56,8 +57,8 @@ export function TagPicker({
     onChange(value.includes(id) ? value.filter((x) => x !== id) : [...value, id])
   }
 
-  const create = async () => {
-    const name = draft.trim()
+  const create = async (typed: string) => {
+    const name = typed.trim()
     if (!name || busy) return
     setBusy(true)
     try {
@@ -71,74 +72,50 @@ export function TagPicker({
       const isNew = !tags.some((t) => t.id === created.id)
       if (colour && isNew && !listMode) await recolourTag(created.id, colour)
       if (!value.includes(created.id)) onChange([...value, created.id])
-      setDraft('')
       setColour(null)
     } finally {
       setBusy(false)
     }
   }
 
-  return (
-    <div>
-      <div className="flex flex-wrap gap-1.5">
-        {tags.length === 0 && (
-          <p className="text-sm text-slate-500">
-            {listMode ? 'No lists yet — name one below.' : "No tags yet — name one below. They're entirely yours."}
-          </p>
-        )}
-        {tags.map((t) =>
-          listMode ? (
-            <ListChip key={t.id} name={t.name} selected={value.includes(t.id)} onClick={() => toggle(t.id)} />
-          ) : (
-            <TagChip
-              key={t.id}
-              name={t.name}
-              colour={t.colour}
-              selected={value.includes(t.id)}
-              onClick={() => toggle(t.id)}
-            />
-          ),
-        )}
-      </div>
-      <div className="mt-2.5 flex gap-2">
-        <input
-          className={inputCls}
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder={listMode ? 'New list…' : 'New tag…'}
-          aria-label={listMode ? 'New list name' : 'New tag name'}
-          onKeyDown={(e) => {
-            if (e.key !== 'Enter') return
-            // The picker lives inside the contact <form>. Without this, Enter
-            // submits the whole form and saves a half-filled contact instead
-            // of creating the tag the person was clearly in the middle of.
-            e.preventDefault()
-            void create()
-          }}
+  const swatches = (
+    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+      <span className="mr-0.5 text-xs text-slate-500">Colour</span>
+      {SWATCHES.map((s) => (
+        <button
+          key={s.key}
+          type="button"
+          aria-label={s.label}
+          aria-pressed={colour === s.key}
+          onClick={() => setColour(s.key)}
+          className={`h-5 w-5 rounded-full border-2 transition-transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+            colour === s.key ? 'border-slate-100' : 'border-transparent'
+          }`}
+          style={{ background: s.dot }}
         />
-        <button type="button" className={btnGhost} onClick={() => void create()} disabled={!draft.trim() || busy}>
-          Add
-        </button>
-      </div>
-      {/* Lists have no colour of their own to pick — see ListChip. */}
-      {draft.trim() && !listMode && (
-        <div className="mt-2 flex flex-wrap items-center gap-1.5">
-          <span className="mr-0.5 text-xs text-slate-500">Colour</span>
-          {SWATCHES.map((s) => (
-            <button
-              key={s.key}
-              type="button"
-              aria-label={s.label}
-              aria-pressed={colour === s.key}
-              onClick={() => setColour(s.key)}
-              className={`h-5 w-5 rounded-full border-2 transition-transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
-                colour === s.key ? 'border-slate-100' : 'border-transparent'
-              }`}
-              style={{ background: s.dot }}
-            />
-          ))}
-        </div>
-      )}
+      ))}
     </div>
+  )
+
+  return (
+    <TagCombo
+      options={tags}
+      isOn={(id) => value.includes(id)}
+      chip={(t) =>
+        listMode ? (
+          <ListChip name={t.name} selected={value.includes(t.id)} onClick={() => toggle(t.id)} />
+        ) : (
+          <TagChip name={t.name} colour={t.colour} selected={value.includes(t.id)} onClick={() => toggle(t.id)} />
+        )
+      }
+      suggestion={(t) => (listMode ? <ListChip name={t.name} /> : <TagChip name={t.name} colour={t.colour} />)}
+      onPick={(id) => onChange(value.includes(id) ? value : [...value, id])}
+      onCreate={create}
+      placeholder={listMode ? 'Find or add a list' : 'Find or add a tag'}
+      createLabel={listMode ? 'Add new list “{name}”' : 'Add new tag “{name}”'}
+      fullLabel={listMode ? 'Show all lists' : 'Show all tags'}
+      // Lists have no colour of their own to pick — see ListChip.
+      belowInput={(_, willCreate) => (willCreate && !listMode ? swatches : null)}
+    />
   )
 }

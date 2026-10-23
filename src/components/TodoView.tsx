@@ -8,6 +8,7 @@ import { useTodoStore, type TodoDraft } from '../stores/todoStore'
 import { Modal } from './Modal'
 import { TagChip } from './TagChip'
 import { TagPicker } from './TagPicker'
+import { TagCombo } from './TagCombo'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label, textareaCls } from './ui'
 import { autoFocusOK } from '../native/kit'
 import { phoneScreens } from '../native/shell'
@@ -69,22 +70,29 @@ export function TodoView() {
       </div>
 
       {usedTags.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filter by tag">
-          {usedTags.map((t) => (
-            <TagChip
-              key={t.id}
-              name={t.name}
-              colour={t.colour}
-              selected={activeFilter.includes(t.id)}
-              onClick={() =>
-                setTagFilter(
-                  activeFilter.includes(t.id) ? activeFilter.filter((x) => x !== t.id) : [...activeFilter, t.id],
-                )
-              }
-            />
-          ))}
+        <div role="group" aria-label="Filter by tag">
+          <TagCombo
+            options={usedTags}
+            isOn={(id) => activeFilter.includes(id)}
+            chip={(t) => (
+              <TagChip
+                name={t.name}
+                colour={t.colour}
+                selected={activeFilter.includes(t.id)}
+                onClick={() =>
+                  setTagFilter(
+                    activeFilter.includes(t.id) ? activeFilter.filter((x) => x !== t.id) : [...activeFilter, t.id],
+                  )
+                }
+              />
+            )}
+            suggestion={(t) => <TagChip name={t.name} colour={t.colour} />}
+            onPick={(id) => setTagFilter([...activeFilter, id])}
+            placeholder="Filter by tag"
+            fullLabel="Show all tags"
+          />
           {activeFilter.length > 0 && (
-            <button type="button" className={btnSubtle} onClick={() => setTagFilter([])}>
+            <button type="button" className={`${btnSubtle} mt-1.5`} onClick={() => setTagFilter([])}>
               Clear
             </button>
           )}

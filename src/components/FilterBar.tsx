@@ -14,6 +14,7 @@ import { isList } from '../lib/lists'
 import { useBookStore } from '../stores/bookStore'
 import { usePhoneKit } from '../native/kit'
 import { TagChip } from './TagChip'
+import { TagCombo } from './TagCombo'
 import { btnSubtle, inputCls, label } from './ui'
 
 // The orders offered as buttons. `birthday` is not among them on purpose — it
@@ -63,6 +64,8 @@ export function FilterBar({
   // Tags only. Lists are not tags and are not filtered by here (2026-09-18) —
   // they have the Lists tab, and runQuery ignores a list id left in a query.
   const tags = useMemo(() => allTags.filter((t) => !isList(t)), [allTags])
+  // "Untagged" is one more choice, last, found by name like the rest.
+  const filterOptions = useMemo(() => [...tags, { id: UNTAGGED, name: 'Untagged', colour: 'slate' }], [tags])
   const query = useBookStore((s) => s.query)
   const setQuery = useBookStore((s) => s.setQuery)
   const resetQuery = useBookStore((s) => s.resetQuery)
@@ -194,23 +197,18 @@ export function FilterBar({
             No tags yet. Add one while you're filling in a contact — they're entirely yours.
           </p>
         ) : (
-          <div className="flex flex-wrap gap-1.5">
-            {tags.map((t) => (
-              <TagChip
-                key={t.id}
-                name={t.name}
-                colour={t.colour}
-                {...chipState(t.id)}
-                onClick={() => toggleTag(t.id)}
-              />
-            ))}
-            <TagChip
-              name="Untagged"
-              colour="slate"
-              {...chipState(UNTAGGED)}
-              onClick={() => toggleTag(UNTAGGED)}
-            />
-          </div>
+          // Collapsed (2026-10-23): the tags in use as chips, a box to find
+          // another, the chevron for them all. No "Add new tag" here — a
+          // filter is no place to make one.
+          <TagCombo
+            options={filterOptions}
+            isOn={(id) => tagState(query, id) !== 'off'}
+            chip={(t) => <TagChip name={t.name} colour={t.colour} {...chipState(t.id)} onClick={() => toggleTag(t.id)} />}
+            suggestion={(t) => <TagChip name={t.name} colour={t.colour} />}
+            onPick={toggleTag}
+            placeholder="Find a tag"
+            fullLabel="Show all tags"
+          />
         )}
       </section>
 
