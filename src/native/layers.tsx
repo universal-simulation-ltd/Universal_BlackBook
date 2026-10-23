@@ -11,9 +11,12 @@
 //    dragged down, or a big swipe down anywhere on it closes it; a shorter
 //    pull focuses its text box.
 //
-// ⚠️ EVERY LAYER IS ALSO A HISTORY ENTRY, so Android's back gesture (Capacitor
-// goes `history.back()` while there is history, and leaves the app when there
-// is none) closes the top one, as does the browser's Back in development.
+// ⚠️ EVERY LAYER IS ALSO A HISTORY ENTRY, so Android's back gesture closes
+// the top one, as does the browser's Back in development. That is
+// @capacitor/app's default: with no `backButton` listener it goes
+// `history.back()` while the web view has history and leaves the app when it
+// has none. ⚠️ Without @capacitor/app installed, back simply leaves the app
+// from any page (seen on the emulator, 2026-10-22) — keep the dependency.
 // Kept by COUNTING, not by state objects: a layer pushes one entry as it
 // opens, and one closed by its own button takes one back off — batched, so a
 // delete that closes the form and the contact under it at once goes back two

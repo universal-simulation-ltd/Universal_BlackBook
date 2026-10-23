@@ -285,6 +285,34 @@ in **Tune this app ▸ Colour scheme**: Light, Dark, or Match my device. (It was
 dark-only until October 2026.) On the phone app the status bar follows the
 choice too.
 
+## The phone app
+
+The iPhone and Android app has screens of its own rather than the website in a
+frame (`src/native/`, loaded only in the app): the book's paper and black
+leather look with a red ribbon, a tab bar (Contacts, then Lists and To-do when
+you turn them on, then Tune), and its own icon.
+
+- **Everything opens the phone's way.** A person, the form, the panels, About
+  and the help articles are pages: back with the button, a swipe in from the
+  left edge, or Android's back. Filters, confirmations and choices are bottom
+  sheets: drag the grip or swipe down to close them. Dates use the phone's own
+  picker. Nothing opens as a website pop-up.
+- **A person's page leads with Call, Message, Email and Share** (the share
+  sheet gets their name and details, never the note).
+- **Pull down from the top of the list for search**, and again for the
+  keyboard. Tapping Contacts while you are on it does the same.
+- **Tune** holds every option: Light / Dark / Match my device, the language,
+  BlackBook's switches (all off to start), tags, backups, the PIN, Delete all
+  data, help, About and Reset to defaults. Double-tap a tab to make it the one
+  the app opens on.
+- Sign-in stays, but only inside Online backup; Apple and Google sign-in come
+  up in the phone's own sheet.
+
+`npm run dev` and add `?app` to the address to see the phone screens in a
+browser. `npm run cap:sync` builds them into the native projects (never a bare
+`cap sync`). The icon is drawn by `scripts/app-icon.mjs`, and the store
+screenshots are captured, in every language, by `store-assets/generate.mjs`.
+
 ## Developing
 
 ```sh

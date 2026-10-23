@@ -339,7 +339,9 @@ export function ContactView({ id }: { id: string }) {
           </button>
         }
       >
-        <kit.ContactActions contact={contact} />
+        <div className="mx-auto w-full max-w-2xl">
+          <kit.ContactActions contact={contact} />
+        </div>
         {details}
       </kit.Page>
     )

@@ -1,6 +1,8 @@
 PODS:
   - Capacitor (8.5.2):
     - CapacitorCordova
+  - CapacitorApp (8.1.2):
+    - Capacitor
   - CapacitorCommunityContacts (8.0.0):
     - Capacitor
   - CapacitorCordova (8.5.2)
@@ -15,6 +17,7 @@ PODS:
 
 DEPENDENCIES:
   - "Capacitor (from `../../node_modules/@capacitor/ios`)"
+  - "CapacitorApp (from `../../node_modules/@capacitor/app`)"
   - "CapacitorCommunityContacts (from `../../node_modules/@capacitor-community/contacts`)"
   - "CapacitorCordova (from `../../node_modules/@capacitor/ios`)"
   - "CapacitorFilesystem (from `../../node_modules/@capacitor/filesystem`)"
@@ -28,6 +31,8 @@ SPEC REPOS:
 EXTERNAL SOURCES:
   Capacitor:
     :path: "../../node_modules/@capacitor/ios"
+  CapacitorApp:
+    :path: "../../node_modules/@capacitor/app"
   CapacitorCommunityContacts:
     :path: "../../node_modules/@capacitor-community/contacts"
   CapacitorCordova:
@@ -41,6 +46,7 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   Capacitor: 89067779e14fb7ea56af07b4817f45d1f0c2a269
+  CapacitorApp: 7b7e43debe505bc61beedb83796aa1368c86078b
   CapacitorCommunityContacts: 87559fd3d6d829cc38bea834ea4d2242a0995ac2
   CapacitorCordova: 5bec5648cbd09a176ce34ce5e7b6cdabb2c8a327
   CapacitorFilesystem: b2bbd84bb91c177906c9dbc252864cb71ab9957b
@@ -48,6 +54,6 @@ SPEC CHECKSUMS:
   IONFilesystemLib: 21a63377696b2d8fab5632ecfb7d2ac67bddb68a
   UnisimSdk: 6d584035274bd7f42ac97d7c67ccd52973b021ae
 
-PODFILE CHECKSUM: d21140b2b3dc0f26c3237af50531d3300cae477a
+PODFILE CHECKSUM: adaf7f0664a1713f77c037bed2653ecf04dc1bd2
 
 COCOAPODS: 1.16.2
