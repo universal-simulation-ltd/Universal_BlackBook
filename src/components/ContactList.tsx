@@ -25,6 +25,7 @@ import { TagDot } from './TagChip'
 import { TagPicker } from './TagPicker'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, TuneGlyph } from './ui'
 import { currentT, useT } from '../i18n'
+import { usePhoneKit } from '../native/kit'
 
 // The glyphs the swipe actions carry. SVG and not emoji: 🗑 is one of the
 // codepoints with no glyph in iOS's system font (see Modal's CloseGlyph), and
@@ -468,6 +469,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                 }
                 dimmed={Boolean(c.hideFromList)}
                 onFineTune={() => edit(c.id)}
+                swipeHides
               />
             </SwipeRow>
             )}
@@ -523,6 +525,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                         hideLabel={{ on: 'list', hidden: true }}
                         dimmed
                         onFineTune={() => edit(c.id)}
+                        swipeHides
                       />
                     </SwipeRow>
                   </li>
@@ -588,6 +591,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                         hideLabel={{ on: 'birthdays', hidden: true }}
                         dimmed
                         onFineTune={() => edit(c.id)}
+                        swipeHides
                       />
                     </SwipeRow>
                   </li>
@@ -919,6 +923,7 @@ export function ContactRow({
   countdown,
   age,
   onToggleHidden,
+  swipeHides = false,
   hideLabel,
   dimmed,
   pressed,
@@ -933,6 +938,14 @@ export function ContactRow({
   age: number | null
   /** Hide this person from whichever list they are in, or put them back. */
   onToggleHidden?: () => void
+  /**
+   * The card sits in a SwipeRow whose right-swipe does the same hide/show
+   * (James, 2026-10-23: "on mobile doesn't need the hide icon on cards if you
+   * can swipe to hide"). On the phone the corner icon then goes; a
+   * screen-reader-only button keeps it reachable without the swipe, which
+   * VoiceOver and TalkBack cannot make. The website (no swipe) keeps the icon.
+   */
+  swipeHides?: boolean
   /**
    * What the hide control says. `on` names the list ("list", "birthdays list")
    * and `hidden` picks the direction — the same corner button means "hide" in
@@ -966,7 +979,9 @@ export function ContactRow({
   // left of it. Pinning is inside Fine-tune (James, 2026-10-11: a cleaner card).
   const tuneAt = onFineTune ? 'right-1' : ''
   const hideAt = onFineTune ? 'right-10' : 'right-1'
-  const icons = (onFineTune ? 1 : 0) + (onToggleHidden ? 1 : 0)
+  const kit = usePhoneKit()
+  const hideIcon = Boolean(onToggleHidden) && !(kit && swipeHides)
+  const icons = (onFineTune ? 1 : 0) + (hideIcon ? 1 : 0)
   const namePad = icons === 2 ? 'pr-[4.5rem]' : icons === 1 || pressed !== undefined ? 'pr-8' : ''
 
   return (
@@ -1098,9 +1113,13 @@ export function ContactRow({
                 ? t('row.show_list_title')
                 : t('row.hide_list_title')
           }
-          className={`absolute ${hideAt} top-1 inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
-            dimmed ? 'opacity-60' : ''
-          }`}
+          className={
+            hideIcon
+              ? `absolute ${hideAt} top-1 inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+                  dimmed ? 'opacity-60' : ''
+                }`
+              : 'sr-only'
+          }
         >
           {hideLabel?.hidden ? (
             <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden>
