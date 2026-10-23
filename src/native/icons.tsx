@@ -121,6 +121,16 @@ export function IconContactsBook() {
   )
 }
 
+/** Notes: a page with its lines, a corner turned down. */
+export function IconNote() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" {...stroke} aria-hidden>
+      <path d="M6 3.5h8.5L19 8v11a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 19V5A1.5 1.5 0 0 1 6 3.5Z" />
+      <path d="M14.5 3.5V8H19M8.5 12h7M8.5 15.5h7M8.5 9h3" />
+    </svg>
+  )
+}
+
 /** A new person: a head and shoulders with a small plus. */
 export function IconPerson() {
   return (

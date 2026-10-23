@@ -11,6 +11,7 @@ export const en = {
   tab_contacts: 'Contacts',
   tab_lists: 'Lists',
   tab_todos: 'To-do',
+  tab_notes: 'Notes',
   tab_tune: 'Tune',
   tab_tune_title: 'Tune this app',
 
@@ -22,6 +23,7 @@ export const en = {
   add_from_file: 'From a spreadsheet or backup',
   add_list: 'New list',
   add_todo: 'New to-do',
+  add_note: 'New note',
   add_quoted_before: 'Add ',
   add_quoted_after: '',
   picking_hint: 'Waiting for the contact you pick. Closed it without choosing anybody? Tap again.',

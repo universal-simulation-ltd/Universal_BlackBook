@@ -33,14 +33,16 @@ import { LockPanel } from '../components/Lock'
 import { SearchDrawer } from '../components/SearchDrawer'
 import { TagManager } from '../components/TagManager'
 import { TodoView } from '../components/TodoView'
+import { NotesView } from '../components/NotesView'
 import { useBookStore } from '../stores/bookStore'
 import { useTodoStore } from '../stores/todoStore'
+import { useNoteStore } from '../stores/noteStore'
 import { usePanelStore } from '../stores/panelStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { AboutContent } from './AboutScreen'
 import { ContactActions } from './ContactActions'
 import { useT, type Key } from './i18n'
-import { IconBook, IconContactsBook, IconFile, IconLists, IconPerson, IconPlus, IconTodo, IconTune, Ribbon } from './icons'
+import { IconBook, IconContactsBook, IconFile, IconLists, IconNote, IconPerson, IconPlus, IconTodo, IconTune, Ribbon } from './icons'
 import { PhoneKitContext, type PhoneKit } from './kit'
 import { ArticleBody, KnowledgeList, useArticles } from './KnowledgeScreen'
 import { Page, Sheet, SheetRow } from './layers'
@@ -52,8 +54,8 @@ import './native.css'
 
 type PhoneTab = Tab | 'tune'
 
-const TAB_LABEL: Record<PhoneTab, Key> = { contacts: 'tab_contacts', lists: 'tab_lists', todos: 'tab_todos', tune: 'tab_tune' }
-const TAB_ICON: Record<PhoneTab, () => JSX.Element> = { contacts: IconBook, lists: IconLists, todos: IconTodo, tune: IconTune }
+const TAB_LABEL: Record<PhoneTab, Key> = { contacts: 'tab_contacts', lists: 'tab_lists', todos: 'tab_todos', notes: 'tab_notes', tune: 'tab_tune' }
+const TAB_ICON: Record<PhoneTab, () => JSX.Element> = { contacts: IconBook, lists: IconLists, todos: IconTodo, notes: IconNote, tune: IconTune }
 
 function SignInPage({ onClose }: { onClose: () => void }) {
   const t = useT()
@@ -82,19 +84,21 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
   const closePanel = usePanelStore((s) => s.close)
   const emailLists = useSettingsStore((s) => s.emailLists)
   const todosOn = useSettingsStore((s) => s.todos)
+  const notesOn = useSettingsStore((s) => s.notes)
   const tuning = useSettingsStore((s) => s.tune !== null)
   const closeTune = useSettingsStore((s) => s.closeTune)
   const reopenParked = useBookStore((s) => s.reopenParked)
   const nav = useNativeNav()
 
-  const tabDefault = useDefaultView<Tab>('tab', 'contacts', { views: ['contacts', 'lists', 'todos'] })
+  const tabDefault = useDefaultView<Tab>('tab', 'contacts', { views: ['contacts', 'lists', 'todos', 'notes'] })
   const [tab, setTab] = useState<PhoneTab>(tabDefault.defaultView)
-  const tabs: PhoneTab[] = [...availableTabs(emailLists, todosOn), 'tune']
+  const tabs: PhoneTab[] = [...availableTabs(emailLists, todosOn, notesOn), 'tune']
   // A tab whose switch has since gone off opens on Contacts (the website's rule).
   const current: PhoneTab = tabs.includes(tab) ? tab : 'contacts'
   const { canPick, picking, pick } = useContactPicker()
   const newList = useBookStore((s) => s.newList)
   const editTodo = useTodoStore((s) => s.edit)
+  const editNote = useNoteStore((s) => s.edit)
   // The top bar's + (James, 2026-10-23): on Contacts it opens a sheet of the
   // ways to add somebody, so "From my contacts" is no longer a button of its
   // own on the page; on Lists and To-do there is one way, so + just does it.
@@ -115,7 +119,7 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
       // Contacts tapped while on it opens the search, keyboard up (Jukebox's
       // tab tap); the second tap of a double tap shuts it again. Sent inside
       // the tap, which iOS needs to raise the keyboard.
-      if (target === 'contacts') requestSearch(!double)
+      if (target === 'contacts' || target === 'notes') requestSearch(!double)
     }
     setTab(target)
   }
@@ -143,6 +147,11 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
             )}
             {current === 'todos' && (
               <button type="button" className="bb-iconbtn" aria-label={t('add_todo')} onClick={() => editTodo('new')}>
+                <IconPlus />
+              </button>
+            )}
+            {current === 'notes' && (
+              <button type="button" className="bb-iconbtn" aria-label={t('add_note')} onClick={() => editNote('new')}>
                 <IconPlus />
               </button>
             )}
@@ -178,6 +187,7 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
 
           {current === 'lists' && loaded && <ListsView />}
           {current === 'todos' && <TodoView />}
+          {current === 'notes' && <NotesView />}
           {current === 'tune' && (
             <>
               <h1 className="bb-h1">{t('tab_tune_title')}</h1>

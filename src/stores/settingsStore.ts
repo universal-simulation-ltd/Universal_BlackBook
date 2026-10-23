@@ -18,6 +18,8 @@ export interface Settings {
   emailLists: boolean
   /** The To-do tab beside Contacts (2026-09-27). */
   todos: boolean
+  /** The Notes tab beside Contacts (2026-10-23). */
+  notes: boolean
   /**
    * The optional fields a NEW contact's form shows straight away; the rest
    * wait under "More" (owner's request, 2026-09-29: "select which fields are
@@ -29,7 +31,7 @@ export interface Settings {
 }
 
 const KEY = 'blackbook.settings'
-const DEFAULTS: Settings = { emailLists: false, todos: false, shownFields: [] }
+const DEFAULTS: Settings = { emailLists: false, todos: false, notes: false, shownFields: [] }
 
 function load(): Settings {
   try {
@@ -37,6 +39,7 @@ function load(): Settings {
     return {
       emailLists: raw.emailLists === true,
       todos: raw.todos === true,
+      notes: raw.notes === true,
       // Kept in FORM_FIELDS order whatever order they were ticked in, and
       // anything unknown (a field since removed) dropped.
       shownFields: Array.isArray(raw.shownFields)
@@ -73,8 +76,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   set: (patch) => {
     set(patch)
     try {
-      const { emailLists, todos, shownFields } = get()
-      localStorage.setItem(KEY, JSON.stringify({ emailLists, todos, shownFields }))
+      const { emailLists, todos, notes, shownFields } = get()
+      localStorage.setItem(KEY, JSON.stringify({ emailLists, todos, notes, shownFields }))
     } catch {
       // See the note above: the switch still works until the app is closed.
     }

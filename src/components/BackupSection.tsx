@@ -6,6 +6,7 @@ import { mergeBackup, openBackup, packBackup, type BackupData } from '../lib/bac
 import { useBookStore } from '../stores/bookStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useTodoStore } from '../stores/todoStore'
+import { useNoteStore } from '../stores/noteStore'
 import { btnDanger, btnGhost, btnPrimary, checkboxCls, inputCls, label } from './ui'
 import { autoFocusOK } from '../native/kit'
 
@@ -35,6 +36,7 @@ export function BackupSection({ onDone }: { onDone: () => void }) {
   const tags = useBookStore((s) => s.tags)
   const restoreBook = useBookStore((s) => s.restoreBook)
   const todos = useTodoStore((s) => s.todos)
+  const pages = useNoteStore((s) => s.notes)
   const { language } = useLanguage()
 
   const [protect, setProtect] = useState(false)
@@ -57,14 +59,15 @@ export function BackupSection({ onDone }: { onDone: () => void }) {
     setSaved(null)
     setError(null)
     try {
-      await useTodoStore.getState().init()
+      await Promise.all([useTodoStore.getState().init(), useNoteStore.getState().init()])
       const settings = useSettingsStore.getState()
       const packed = await packBackup(
         {
           contacts: useBookStore.getState().contacts,
           tags: useBookStore.getState().tags,
           todos: useTodoStore.getState().todos,
-          settings: { emailLists: settings.emailLists, todos: settings.todos, shownFields: settings.shownFields },
+          pages: useNoteStore.getState().notes,
+          settings: { emailLists: settings.emailLists, todos: settings.todos, notes: settings.notes, shownFields: settings.shownFields },
           view: useBookStore.getState().defaultView,
         },
         {
@@ -122,25 +125,33 @@ export function BackupSection({ onDone }: { onDone: () => void }) {
   const apply = async (data: BackupData, mode: 'merge' | 'replace') => {
     setBusy(true)
     try {
-      await useTodoStore.getState().init()
+      await Promise.all([useTodoStore.getState().init(), useNoteStore.getState().init()])
       const settings = useSettingsStore.getState()
       if (mode === 'replace') {
         await useTodoStore.getState().replace(data.todos)
+        await useNoteStore.getState().replace(data.pages)
         if (data.settings) settings.set(data.settings)
         await restoreBook(
           { contacts: data.contacts, tags: data.tags, view: data.view },
-          `Opened the backup: ${plural(data.contacts.length, 'contact', 'contacts')} and ${plural(data.todos.length, 'to-do', 'to-dos')}.`,
+          `Opened the backup: ${plural(data.contacts.length, 'contact', 'contacts')}, ${plural(data.todos.length, 'to-do', 'to-dos')} and ${plural(data.pages.length, 'note', 'notes')}.`,
         )
       } else {
-        const here = { contacts: useBookStore.getState().contacts, tags: useBookStore.getState().tags, todos: useTodoStore.getState().todos }
+        const here = {
+          contacts: useBookStore.getState().contacts,
+          tags: useBookStore.getState().tags,
+          todos: useTodoStore.getState().todos,
+          pages: useNoteStore.getState().notes,
+        }
         const merged = mergeBackup(here, data)
         await useTodoStore.getState().replace(merged.todos)
+        await useNoteStore.getState().replace(merged.pages)
         // Switches the file had on are turned on here too (so its to-dos and
         // lists can be seen); none is ever turned off by adding.
         if (data.settings) {
           settings.set({
             emailLists: settings.emailLists || data.settings.emailLists,
             todos: settings.todos || data.settings.todos,
+            notes: settings.notes || data.settings.notes,
             shownFields: [...new Set([...settings.shownFields, ...data.settings.shownFields])],
           })
         }
@@ -160,7 +171,7 @@ export function BackupSection({ onDone }: { onDone: () => void }) {
   const fileSummary = (data: BackupData, exportedAt: string | null) => {
     const when = exportedAt ? new Date(exportedAt) : null
     const date = when && !Number.isNaN(when.getTime()) ? ` saved ${when.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''
-    return `This backup${date} holds ${plural(data.contacts.length, 'contact', 'contacts')}, ${plural(data.todos.length, 'to-do', 'to-dos')} and ${plural(data.tags.length, 'tag', 'tags')}.`
+    return `This backup${date} holds ${plural(data.contacts.length, 'contact', 'contacts')}, ${plural(data.todos.length, 'to-do', 'to-dos')}, ${plural(data.pages.length, 'note', 'notes')} and ${plural(data.tags.length, 'tag', 'tags')}.`
   }
 
   return (
@@ -171,7 +182,7 @@ export function BackupSection({ onDone }: { onDone: () => void }) {
     >
       <h3 className="text-sm font-semibold text-slate-100">Backup file</h3>
       <p className="text-sm text-slate-400">
-        Everything in BlackBook in one file: contacts with every field, tags and lists, to-dos and your
+        Everything in BlackBook in one file: contacts with every field, tags and lists, to-dos, notes and your
         Tune this app choices. Open it on any device to bring the book back. Nothing is sent anywhere.
       </p>
 
@@ -230,8 +241,8 @@ export function BackupSection({ onDone }: { onDone: () => void }) {
           {saving ? 'Saving…' : 'Save a backup'}
         </button>
         <p className="text-xs text-slate-500">
-          {plural(contacts.length, 'contact', 'contacts')}, {plural(todos.length, 'to-do', 'to-dos')} and{' '}
-          {plural(tags.length, 'tag', 'tags')}.
+          {plural(contacts.length, 'contact', 'contacts')}, {plural(todos.length, 'to-do', 'to-dos')},{' '}
+          {plural(pages.length, 'note', 'notes')} and {plural(tags.length, 'tag', 'tags')}.
         </p>
         {saved && (
           <p className="text-sm text-emerald-300" role="status">
@@ -322,8 +333,8 @@ export function BackupSection({ onDone }: { onDone: () => void }) {
         {step.kind === 'confirm-replace' && (
           <div className="space-y-2 rounded-xl border border-rose-900/60 bg-rose-950/30 px-3 py-2.5">
             <p className="text-sm text-rose-200">
-              This deletes the {plural(contacts.length, 'contact', 'contacts')}, {plural(todos.length, 'to-do', 'to-dos')}{' '}
-              and {plural(tags.length, 'tag', 'tags')} on this device and puts the backup's in their place.
+              This deletes the {plural(contacts.length, 'contact', 'contacts')}, {plural(todos.length, 'to-do', 'to-dos')},{' '}
+              {plural(pages.length, 'note', 'notes')} and {plural(tags.length, 'tag', 'tags')} on this device and puts the backup's in their place.
             </p>
             <div className="flex flex-wrap gap-2">
               <button type="button" className={btnDanger} disabled={busy} onClick={() => void apply(step.data, 'replace')}>

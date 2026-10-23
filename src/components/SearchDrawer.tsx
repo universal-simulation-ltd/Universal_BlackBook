@@ -160,6 +160,9 @@ function PhoneSearch({ onContacts }: { onContacts: boolean }) {
         onOpen={openDrawer}
         onScrolledAway={searching ? undefined : closeDrawer}
         onPullAgain={typeIntoSearch}
+        // Only while Contacts is the tab on screen: the Notes tab has a drawer
+        // of its own, and one pull must not open both.
+        pullable={onContacts}
         ignoreTouch={notAPull}
         containOverscroll
         innerClassName="pb-4"

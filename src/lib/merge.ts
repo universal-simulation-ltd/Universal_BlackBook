@@ -22,6 +22,7 @@ import { identityKeys } from './deviceContacts'
 import { fold } from './filter'
 import type { Contact, Tag } from './types'
 import type { Todo } from './todos'
+import type { Note } from './notes'
 
 export interface MergedBook {
   contacts: Contact[]
@@ -104,8 +105,8 @@ export function mergeBooks(
  * keeps this device's list (see `adopt`), so none of them can be lost.
  */
 export function unsyncedWork(
-  local: { contacts: Contact[]; todos: Todo[] },
-  online: { contacts?: Contact[]; todos?: Todo[] },
+  local: { contacts: Contact[]; todos: Todo[]; pages?: Note[] },
+  online: { contacts?: Contact[]; todos?: Todo[]; pages?: Note[] },
   since: number,
 ): number {
   const count = <T extends { id: string; updatedAt: number }>(mine: T[], theirs: T[]) => {
@@ -118,7 +119,8 @@ export function unsyncedWork(
   }
   return (
     count(local.contacts, Array.isArray(online.contacts) ? online.contacts : []) +
-    (Array.isArray(online.todos) ? count(local.todos, online.todos) : 0)
+    (Array.isArray(online.todos) ? count(local.todos, online.todos) : 0) +
+    (Array.isArray(online.pages) ? count(local.pages ?? [], online.pages) : 0)
   )
 }
 
@@ -135,10 +137,14 @@ export function unsyncedWork(
  */
 export function allOnline(
   meta: { rev: number; pushedAt: number; syncedAt?: number } | null,
-  local: { contacts: Contact[]; todos: Todo[] },
+  local: { contacts: Contact[]; todos: Todo[]; pages?: Note[] },
 ): boolean {
   if (!meta || meta.rev <= 0) return false
   const since = meta.syncedAt ?? meta.pushedAt
   if (!since) return false
-  return local.contacts.every((c) => c.updatedAt <= since) && local.todos.every((t) => t.updatedAt <= since)
+  return (
+    local.contacts.every((c) => c.updatedAt <= since) &&
+    local.todos.every((t) => t.updatedAt <= since) &&
+    (local.pages ?? []).every((n) => n.updatedAt <= since)
+  )
 }

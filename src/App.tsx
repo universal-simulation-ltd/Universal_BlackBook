@@ -25,6 +25,7 @@ import { DeleteAllData } from './components/DeleteAllData'
 import { ListsView } from './components/ListsView'
 import { SearchDrawer } from './components/SearchDrawer'
 import { TodoView } from './components/TodoView'
+import { NotesView } from './components/NotesView'
 import { LockPanel, LockScreen } from './components/Lock'
 import { btnPrimary } from './components/ui'
 import { allOnline } from './lib/merge'
@@ -34,6 +35,7 @@ import { useLockStore } from './stores/lockStore'
 import { useSettingsStore } from './stores/settingsStore'
 import { useSyncStore } from './stores/syncStore'
 import { useTodoStore } from './stores/todoStore'
+import { useNoteStore } from './stores/noteStore'
 import { usePanelStore } from './stores/panelStore'
 import { AddMenu, APP_ABOUT, availableTabs, LockLink, PREFERENCE_ROWS, REPO_URL, SyncStatus, TAB_NAMES, TABS, useContactPicker, type Tab } from './appParts'
 import { useEffectiveTheme, useThemeStore } from './stores/themeStore'
@@ -91,6 +93,7 @@ export default function App() {
   // back to Contacts.
   const emailLists = useSettingsStore((s) => s.emailLists)
   const todosOn = useSettingsStore((s) => s.todos)
+  const notesOn = useSettingsStore((s) => s.notes)
   // James, 2026-09-30: double-tap a tab to make it the one the app opens on
   // (the SDK's useDefaultView, lifted from Jukebox's library tabs). Stored per
   // device. A default of Lists or To-do whose switch has since gone off opens
@@ -99,10 +102,12 @@ export default function App() {
   const [tab, setTab] = useState<Tab>(tabDefault.defaultView)
   const onLists = emailLists && tab === 'lists'
   const onTodos = todosOn && tab === 'todos'
-  const offContacts = onLists || onTodos
-  const tabs = availableTabs(emailLists, todosOn)
+  const onNotes = notesOn && tab === 'notes'
+  const offContacts = onLists || onTodos || onNotes
+  const tabs = availableTabs(emailLists, todosOn, notesOn)
   const current = offContacts ? tab : 'contacts'
   const initTodos = useTodoStore((s) => s.init)
+  const initNotes = useNoteStore((s) => s.init)
   const { canPick, picking, pick } = useContactPicker()
   const lockStatus = useLockStore((s) => s.status)
   const initLock = useLockStore((s) => s.init)
@@ -121,7 +126,9 @@ export default function App() {
   // rather than the truth (see VaultPayload.todos).
   useEffect(() => {
     void initTodos()
-  }, [initTodos])
+    // The same for the Notes tab's notes, on or off.
+    void initNotes()
+  }, [initTodos, initNotes])
 
 
   // Stable, not an inline arrow: `openPanel` is a dependency of an effect in
@@ -258,9 +265,9 @@ export default function App() {
         {tabs.length > 1 && (
           <div
             role="tablist"
-            aria-label="Contacts, lists or to-do"
+            aria-label="Contacts, lists, to-do or notes"
             className={`mb-5 grid gap-1 rounded-lg border border-slate-800 bg-slate-900 p-1 ${
-              tabs.length === 3 ? 'grid-cols-3 sm:max-w-sm' : 'grid-cols-2 sm:max-w-xs'
+              tabs.length === 4 ? 'grid-cols-4 sm:max-w-md' : tabs.length === 3 ? 'grid-cols-3 sm:max-w-sm' : 'grid-cols-2 sm:max-w-xs'
             }`}
           >
             {tabs.map((t) => (
@@ -277,7 +284,7 @@ export default function App() {
                   // needs to raise the keyboard. The second tap of a double tap
                   // is making the tab the default, so it shuts it again. Only a
                   // phone listens (SearchDrawer); elsewhere the box is on show.
-                  if (t === 'contacts' && t === current) requestSearch(!double)
+                  if ((t === 'contacts' || t === 'notes') && t === current) requestSearch(!double)
                   setTab(t)
                 }}
                 // The default tab is orange: filled while you are on it, an
@@ -297,6 +304,7 @@ export default function App() {
 
         {onLists && loaded && <ListsView />}
         {onTodos && <TodoView />}
+        {onNotes && <NotesView />}
 
         {/* Hidden with a class, not unmounted, while Lists or To-do is showing,
             so the search, the Filters and the list are as they were left. */}
@@ -481,8 +489,8 @@ const SIGNED_OUT_NOTE = 'blackbook:signed-out-wipe'
 async function leaveDevice(seen: boolean, unsaved: boolean): Promise<void> {
   const meta = await loadSyncMeta()
   if (!seen && !meta) return
-  await Promise.all([useBookStore.getState().init(), useTodoStore.getState().init()])
-  const book = { contacts: useBookStore.getState().contacts, todos: useTodoStore.getState().todos }
+  await Promise.all([useBookStore.getState().init(), useTodoStore.getState().init(), useNoteStore.getState().init()])
+  const book = { contacts: useBookStore.getState().contacts, todos: useTodoStore.getState().todos, pages: useNoteStore.getState().notes }
   if (!unsaved && allOnline(meta, book)) {
     try {
       sessionStorage.setItem(SIGNED_OUT_NOTE, '1')
@@ -496,7 +504,7 @@ async function leaveDevice(seen: boolean, unsaved: boolean): Promise<void> {
   if (!seen) return
   // As before this change: a shared machine must not keep the key.
   await forgetVault()
-  if (book.contacts.length > 0 || book.todos.length > 0) {
+  if (book.contacts.length > 0 || book.todos.length > 0 || book.pages.length > 0) {
     useBookStore
       .getState()
       .setNotice(
@@ -531,6 +539,7 @@ function useCloudSync(openPanel: () => void) {
   const contacts = useBookStore((s) => s.contacts)
   const tags = useBookStore((s) => s.tags)
   const todos = useTodoStore((s) => s.todos)
+  const pages = useNoteStore((s) => s.notes)
   const loaded = useBookStore((s) => s.loaded)
   const hydrate = useSyncStore((s) => s.hydrate)
   const push = useSyncStore((s) => s.push)
@@ -590,7 +599,7 @@ function useCloudSync(openPanel: () => void) {
   // Only a CHANGE of book marks it unsynced — not this effect re-running
   // because sync turned on or the page loaded, which would show "Syncing…"
   // over a book that is already up there.
-  const lastBook = useRef<{ contacts: unknown; tags: unknown; todos: unknown } | null>(null)
+  const lastBook = useRef<{ contacts: unknown; tags: unknown; todos: unknown; pages: unknown } | null>(null)
   useEffect(() => {
     if (!loaded || state !== 'on') {
       lastBook.current = null
@@ -598,12 +607,15 @@ function useCloudSync(openPanel: () => void) {
     }
     const changed =
       lastBook.current !== null &&
-      (lastBook.current.contacts !== contacts || lastBook.current.tags !== tags || lastBook.current.todos !== todos)
-    lastBook.current = { contacts, tags, todos }
+      (lastBook.current.contacts !== contacts ||
+        lastBook.current.tags !== tags ||
+        lastBook.current.todos !== todos ||
+        lastBook.current.pages !== pages)
+    lastBook.current = { contacts, tags, todos, pages }
     if (changed) useSyncStore.getState().markDirty()
     const t = setTimeout(() => void push(supabase), AUTOSAVE_DELAY)
     return () => clearTimeout(t)
-  }, [contacts, tags, todos, loaded, state, push, supabase])
+  }, [contacts, tags, todos, pages, loaded, state, push, supabase])
 
   // A save that failed for want of a network is tried again, rather than
   // sitting there until somebody opens the panel and taps Save now (owner's

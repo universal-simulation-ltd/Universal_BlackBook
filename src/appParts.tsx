@@ -22,9 +22,9 @@ import { useT } from './native/i18n'
 export const REPO_URL = 'https://github.com/universal-simulation-ltd/Universal_BlackBook'
 
 /** The landing screen's tabs. Lists and To-do each need their App preference on. */
-export const TABS = ['contacts', 'lists', 'todos'] as const
+export const TABS = ['contacts', 'lists', 'todos', 'notes'] as const
 export type Tab = (typeof TABS)[number]
-export const TAB_NAMES: Record<Tab, string> = { contacts: 'Contacts', lists: 'Lists', todos: 'To-do' }
+export const TAB_NAMES: Record<Tab, string> = { contacts: 'Contacts', lists: 'Lists', todos: 'To-do', notes: 'Notes' }
 
 // "About this app" — handed to <UniversalAppsNavBar about>, which draws it at
 // the foot of "Tune this app" (SDK 0.161.0+) and opens its own AboutAppDialog.
@@ -187,9 +187,10 @@ export function useContactPicker() {
   return { canPick: where !== 'none', picking, pick: () => void pick() }
 }
 
-/** The tabs the landing screen shows, given App preferences ▸ Email lists and ▸ To-do. */
-export function availableTabs(emailLists: boolean, todos: boolean): Tab[] {
-  return TABS.filter((t) => t === 'contacts' || (t === 'lists' ? emailLists : todos))
+/** The tabs the landing screen shows, given Tune this app ▸ Email lists, ▸ To-do and ▸ Notes. */
+export function availableTabs(emailLists: boolean, todos: boolean, notes = false): Tab[] {
+  const on: Record<Tab, boolean> = { contacts: true, lists: emailLists, todos, notes }
+  return TABS.filter((t) => on[t])
 }
 
 /**
@@ -200,7 +201,8 @@ export function availableTabs(emailLists: boolean, todos: boolean): Tab[] {
 function OpensOnPreference() {
   const emailLists = useSettingsStore((s) => s.emailLists)
   const todos = useSettingsStore((s) => s.todos)
-  const tabs = availableTabs(emailLists, todos)
+  const notes = useSettingsStore((s) => s.notes)
+  const tabs = availableTabs(emailLists, todos, notes)
   if (tabs.length < 2) return null
   return (
     <DefaultViewSelect<Tab>

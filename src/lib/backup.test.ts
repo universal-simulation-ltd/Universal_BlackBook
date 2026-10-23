@@ -43,7 +43,10 @@ const source = (): BackupSource => ({
   ],
   tags: [tag('t1', 'Work'), tag('l1', 'Book club', { kind: 'list', tagIds: ['t1'] })],
   todos: [todo('d1', 'Ring Ada', { due: '2026-02-03', tagIds: ['t1'] }), todo('d2', 'Done one', { doneAt: T0 + 9 })],
-  settings: { emailLists: true, todos: true, shownFields: ['phone', 'email'] },
+  pages: [
+    { id: 'n1', title: 'Gift ideas', details: 'Ada: a fountain pen\nBob: tea', createdAt: T0, updatedAt: T0 + 3 },
+  ],
+  settings: { emailLists: true, todos: true, notes: true, shownFields: ['phone', 'email'] },
   view: { tagIds: ['t1'], hiddenTagIds: [], sort: 'recent' },
 })
 
@@ -57,7 +60,8 @@ describe('backup file', () => {
     expect(opened.data.contacts).toEqual(source().contacts)
     expect(opened.data.todos).toEqual(source().todos)
     expect(opened.data.tags).toEqual(source().tags)
-    expect(opened.data.settings).toEqual({ emailLists: true, todos: true, shownFields: ['email', 'phone'] })
+    expect(opened.data.pages).toEqual(source().pages)
+    expect(opened.data.settings).toEqual({ emailLists: true, todos: true, notes: true, shownFields: ['email', 'phone'] })
     expect(opened.data.view).toEqual(source().view)
   })
 
@@ -69,6 +73,32 @@ describe('backup file', () => {
     const opened = await openBackup(packed.text, 'correct horse')
     expect(opened.ok && opened.data.contacts.length).toBe(2)
   }, 20_000)
+
+  it('opens a schema-1 file (from before Notes) with no notes, and writes schema 2', async () => {
+    const old = JSON.stringify({
+      format: 'unisim-transfer',
+      version: 1,
+      product: 'blackbook',
+      kind: 'backup',
+      schema: 1,
+      data: { contacts: [contact('c1', 'Ada')], tags: [], todos: [], settings: { emailLists: false, todos: true, shownFields: [] } },
+    })
+    const opened = await openBackup(old)
+    expect(opened.ok).toBe(true)
+    if (!opened.ok) return
+    expect(opened.data.contacts).toHaveLength(1)
+    expect(opened.data.pages).toEqual([])
+    expect(opened.data.settings).toMatchObject({ todos: true, notes: false })
+    expect(JSON.parse((await packBackup(source())).text).schema).toBe(2)
+  })
+
+  it('drops a note with no id or with nothing in it', () => {
+    const data = parseBackup({
+      contacts: [],
+      pages: [{ id: 'n1', title: 'Fine' }, { id: 'n2', title: ' ', details: '' }, { title: 'No id' }, { id: 'n3', details: 'Text only' }],
+    })!
+    expect(data.pages.map((n) => n.id)).toEqual(['n1', 'n3'])
+  })
 
   it('refuses files that are not BlackBook backups', async () => {
     expect(await openBackup('not json')).toEqual({ ok: false, reason: 'not-a-transfer-file' })
@@ -106,7 +136,7 @@ describe('parseBackup (untrusted data)', () => {
     expect(data.todos).toHaveLength(1)
     expect(data.todos[0].due).toBeUndefined()
     expect(data.todos[0].doneAt).toBeUndefined()
-    expect(data.settings).toEqual({ emailLists: false, todos: true, shownFields: ['phone'] })
+    expect(data.settings).toEqual({ emailLists: false, todos: true, notes: false, shownFields: ['phone'] })
     expect(data.view).toBeNull()
   })
 
@@ -120,10 +150,11 @@ describe('mergeBackup (Add to what is here)', () => {
   it('opening the same backup twice adds nothing', () => {
     const src = source()
     const file = parseBackup(JSON.parse(JSON.stringify({ ...src })))!
-    const once = mergeBackup({ contacts: [], tags: [], todos: [] }, file)
+    const once = mergeBackup({ contacts: [], tags: [], todos: [], pages: [] }, file)
     const twice = mergeBackup(once, file)
     expect(twice.contacts).toHaveLength(2)
     expect(twice.todos).toHaveLength(2)
+    expect(twice.pages).toHaveLength(1)
     expect(twice.tags).toHaveLength(2)
     expect(twice.added).toBe(0)
   })
@@ -133,6 +164,7 @@ describe('mergeBackup (Add to what is here)', () => {
       contacts: [contact('c1', 'Ada', { notes: 'old' }), contact('x9', 'Bob')],
       tags: [tag('mine', 'Work')],
       todos: [todo('d1', 'Ring Ada', { due: '2026-02-03' }), todo('other-id', 'Done one')],
+      pages: [{ id: 'n1', title: 'Gift ideas', details: 'old', createdAt: T0, updatedAt: T0 }],
     }
     const file = parseBackup({
       ...source(),
@@ -144,5 +176,6 @@ describe('mergeBackup (Add to what is here)', () => {
     expect(m.todos.map((t) => t.title).sort()).toEqual(['Done one', 'Ring Ada'])
     expect(m.tags.filter((t) => t.name === 'Work')).toHaveLength(1)
     expect(m.tags.find((t) => t.kind === 'list')?.tagIds).toEqual(['mine'])
+    expect(m.pages).toEqual([source().pages[0]])
   })
 })

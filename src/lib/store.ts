@@ -16,6 +16,7 @@ import { isValidBirthday } from './birthday'
 import { SORT_KEYS, type SortKey, type View } from './filter'
 import { toLockRecord, type LockRecord } from './lock'
 import { toTodos, type Todo } from './todos'
+import { toNotes, type Note } from './notes'
 
 const DB_NAME = 'blackbook'
 const DB_VERSION = 1
@@ -232,6 +233,8 @@ export async function replaceAll(contacts: Contact[], tags: Tag[]): Promise<void
 //           a DB_VERSION bump. A to-do list is small enough that rewriting it
 //           whole on every tick costs nothing. Unlike 'view' and 'lock' it IS
 //           part of the vault — it is data, not a preference.
+//   'pages' the Notes tab's notes (lib/notes.ts), as ONE array, for the same
+//           reason as 'todos' — and, like it, part of the vault.
 //   'seed'  whether this device has ever been given its two starting tags. A
 //           marker and not a count, so deleting them is a decision that sticks.
 
@@ -302,6 +305,15 @@ export async function loadTodos(): Promise<Todo[]> {
 
 export async function saveTodos(todos: Todo[]): Promise<void> {
   await tx(SYNC, 'readwrite', (s) => s.put(todos, 'todos'))
+}
+
+/** The Notes tab's notes. Absent on a device that never had them: an empty list. */
+export async function loadPages(): Promise<Note[]> {
+  return toNotes(await tx<unknown>(SYNC, 'readonly', (s) => s.get('pages') as IDBRequest<unknown>))
+}
+
+export async function savePages(pages: Note[]): Promise<void> {
+  await tx(SYNC, 'readwrite', (s) => s.put(pages, 'pages'))
 }
 
 export async function loadDefaultView(): Promise<View | null> {
@@ -409,6 +421,7 @@ export async function wipeDevice(): Promise<void> {
   await tx(SYNC, 'readwrite', (s) => s.delete('seed'))
   // The to-do list is part of the book, and goes with it.
   await tx(SYNC, 'readwrite', (s) => s.delete('todos'))
+  await tx(SYNC, 'readwrite', (s) => s.delete('pages'))
 }
 
 /**

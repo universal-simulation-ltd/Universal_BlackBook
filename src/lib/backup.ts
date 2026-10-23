@@ -11,7 +11,12 @@
 // EVERYTHING the app keeps about the book, so a backup brings back exactly
 // what was there, which a CSV cannot (it has no to-dos and no lists' own tags).
 //
-//   { contacts, tags, todos, settings, view }
+//   { contacts, tags, todos, pages, settings, view }
+//
+// Schema 2 (2026-10-23) added `pages`, the Notes tab's notes (lib/notes.ts).
+// A schema-1 file opens unchanged, with no notes (`migrate`); a schema-2 file
+// in a build from before Notes is refused as made by a newer version rather
+// than opened with its notes silently left out.
 //
 // Not in it: the PIN (a door on one device, not part of the book), the seed
 // marker, the SDK's own preferences (language, default tab).
@@ -29,16 +34,18 @@ import { FORM_FIELDS, isFormField, type FormField } from './formFields'
 import { mergeBooks } from './merge'
 import { SWATCHES } from './palette'
 import { toTodo, mergeTodos, type Todo } from './todos'
+import { mergeNotes, type Note } from './notes'
 import type { Contact, Tag } from './types'
 
 export const BACKUP_PRODUCT = 'blackbook'
 export const BACKUP_KIND = 'backup'
-export const BACKUP_SCHEMA = 1
+export const BACKUP_SCHEMA = 2
 
 /** The app's own switches that travel with a backup (stores/settingsStore.ts). */
 export interface BackupSettings {
   emailLists: boolean
   todos: boolean
+  notes: boolean
   shownFields: FormField[]
 }
 
@@ -46,6 +53,7 @@ export interface BackupData {
   contacts: Contact[]
   tags: Tag[]
   todos: Todo[]
+  pages: Note[]
   settings: BackupSettings | null
   view: View | null
 }
@@ -57,6 +65,7 @@ export const LIMITS = {
   contacts: 20_000,
   tags: 2_000,
   todos: 20_000,
+  pages: 20_000,
   tagIdsPerRecord: 500,
   id: 100,
   name: 500,
@@ -68,6 +77,8 @@ export const LIMITS = {
   tagName: 100,
   todoTitle: 1_000,
   todoDetails: 20_000,
+  pageTitle: 1_000,
+  pageDetails: 100_000,
 } as const
 
 // ── Saving ───────────────────────────────────────────────────────────────────
@@ -76,6 +87,7 @@ export interface BackupSource {
   contacts: Contact[]
   tags: Tag[]
   todos: Todo[]
+  pages: Note[]
   settings: BackupSettings
   view: View
 }
@@ -86,7 +98,13 @@ export function backupData(src: BackupSource): BackupData {
     contacts: src.contacts.map((c) => ({ ...c, tagIds: [...c.tagIds] })),
     tags: src.tags.map((t) => ({ ...t, ...(t.tagIds ? { tagIds: [...t.tagIds] } : {}) })),
     todos: src.todos.map((t) => ({ ...t, tagIds: [...t.tagIds] })),
-    settings: { emailLists: src.settings.emailLists, todos: src.settings.todos, shownFields: [...src.settings.shownFields] },
+    pages: src.pages.map((n) => ({ ...n })),
+    settings: {
+      emailLists: src.settings.emailLists,
+      todos: src.settings.todos,
+      notes: src.settings.notes,
+      shownFields: [...src.settings.shownFields],
+    },
     view: { tagIds: [...src.view.tagIds], hiddenTagIds: [...src.view.hiddenTagIds], sort: src.view.sort },
   }
 }
@@ -121,7 +139,9 @@ export type OpenResult =
 export async function openBackup(input: Blob | string, password?: string): Promise<OpenResult> {
   const read = await readTransfer(input, {
     product: BACKUP_PRODUCT,
-    kinds: { [BACKUP_KIND]: { schema: BACKUP_SCHEMA } },
+    // Schema 1 is schema 2 without notes: nothing to change, `parseBackup`
+    // reads the missing `pages` as none.
+    kinds: { [BACKUP_KIND]: { schema: BACKUP_SCHEMA, migrate: (data) => data } },
     password: password || undefined,
   })
   if (!read.ok) return { ok: false, reason: read.reason }
@@ -246,12 +266,23 @@ function parseTodo(raw: unknown, known: Set<string>): Todo | null {
   }
 }
 
+function parseNote(raw: unknown): Note | null {
+  if (!isRecord(raw)) return null
+  const noteId = id(raw.id)
+  const title = str(raw.title, LIMITS.pageTitle)
+  const details = str(raw.details, LIMITS.pageDetails)
+  if (!noteId || !(title.trim() || details.trim())) return null
+  const createdAt = time(raw.createdAt, EARLIEST)
+  return { id: noteId, title, details, createdAt, updatedAt: time(raw.updatedAt, createdAt) }
+}
+
 function parseSettings(raw: unknown): BackupSettings | null {
   if (!isRecord(raw)) return null
   const shown = Array.isArray(raw.shownFields) ? raw.shownFields.slice(0, 50).filter(isFormField) : []
   return {
     emailLists: raw.emailLists === true,
     todos: raw.todos === true,
+    notes: raw.notes === true,
     shownFields: FORM_FIELDS.filter((f) => shown.includes(f)),
   }
 }
@@ -280,7 +311,8 @@ export function parseBackup(raw: unknown): BackupData | null {
   if (raw.contacts.length > LIMITS.contacts) return null
   const rawTags = Array.isArray(raw.tags) ? raw.tags : []
   const rawTodos = Array.isArray(raw.todos) ? raw.todos : []
-  if (rawTags.length > LIMITS.tags || rawTodos.length > LIMITS.todos) return null
+  const rawPages = Array.isArray(raw.pages) ? raw.pages : []
+  if (rawTags.length > LIMITS.tags || rawTodos.length > LIMITS.todos || rawPages.length > LIMITS.pages) return null
 
   const tags: Tag[] = []
   const tagIds = new Set<string>()
@@ -320,7 +352,17 @@ export function parseBackup(raw: unknown): BackupData | null {
     }
   }
 
-  return { contacts, tags, todos, settings: parseSettings(raw.settings), view: parseView(raw.view, tagIds) }
+  const pages: Note[] = []
+  const seenPages = new Set<string>()
+  for (const r of rawPages) {
+    const n = parseNote(r)
+    if (n && !seenPages.has(n.id)) {
+      pages.push(n)
+      seenPages.add(n.id)
+    }
+  }
+
+  return { contacts, tags, todos, pages, settings: parseSettings(raw.settings), view: parseView(raw.view, tagIds) }
 }
 
 // ── Merging ──────────────────────────────────────────────────────────────────
@@ -329,7 +371,8 @@ export interface MergedBackup {
   contacts: Contact[]
   tags: Tag[]
   todos: Todo[]
-  /** People and to-dos from the file that were not here. */
+  pages: Note[]
+  /** People, to-dos and notes from the file that were not here. */
   added: number
   /** Ones in both, where the file's copy was edited later. */
   updated: number
@@ -342,7 +385,10 @@ export interface MergedBackup {
  * a to-do with a new id but the same title, details and deadline as one here
  * is not added again either. So opening the same backup twice adds nothing.
  */
-export function mergeBackup(here: { contacts: Contact[]; tags: Tag[]; todos: Todo[] }, file: BackupData): MergedBackup {
+export function mergeBackup(
+  here: { contacts: Contact[]; tags: Tag[]; todos: Todo[]; pages: Note[] },
+  file: BackupData,
+): MergedBackup {
   const book = mergeBooks({ contacts: here.contacts, tags: here.tags }, { contacts: file.contacts, tags: file.tags })
   const sameTodo = (t: Todo) => `${t.title.trim()}\u0000${t.details.trim()}\u0000${t.due ?? ''}`
   const hereIds = new Set(here.todos.map((t) => t.id))
@@ -357,6 +403,21 @@ export function mergeBackup(here: { contacts: Contact[]; tags: Tag[]; todos: Tod
     if (was === undefined) todosAdded++
     else if (t.updatedAt > was) todosUpdated++
   }
+  // Notes the same way: a new id with the same title and text as one here is
+  // the same note.
+  const sameNote = (n: Note) => `${n.title.trim()}\u0000${n.details.trim()}`
+  const herePageIds = new Set(here.pages.map((n) => n.id))
+  const herePageKeys = new Set(here.pages.map(sameNote))
+  const pages = mergeNotes(
+    here.pages,
+    file.pages.filter((n) => herePageIds.has(n.id) || !herePageKeys.has(sameNote(n))),
+  )
+  const pagesBefore = new Map(here.pages.map((n) => [n.id, n.updatedAt]))
+  for (const n of pages) {
+    const was = pagesBefore.get(n.id)
+    if (was === undefined) todosAdded++
+    else if (n.updatedAt > was) todosUpdated++
+  }
   // A list from the file keeps pointing at its own tags where they were
   // folded into one of the same name here.
   const tags = book.remap.size
@@ -366,6 +427,7 @@ export function mergeBackup(here: { contacts: Contact[]; tags: Tag[]; todos: Tod
     contacts: book.contacts,
     tags,
     todos,
+    pages,
     added: book.added + todosAdded,
     updated: book.updated + todosUpdated,
   }

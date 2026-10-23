@@ -33,6 +33,8 @@ import {
 import { mergeBooks, unsyncedWork } from '../lib/merge'
 import { useBookStore } from './bookStore'
 import { useTodoStore } from './todoStore'
+import { useNoteStore } from './noteStore'
+import { mergeNotes, toNotes } from '../lib/notes'
 import { mergeTodos, toTodos } from '../lib/todos'
 
 /**
@@ -105,6 +107,7 @@ interface SyncStore {
 function bookPayload(): VaultPayload {
   const { contacts, tags } = useBookStore.getState()
   const todo = useTodoStore.getState()
+  const note = useNoteStore.getState()
   // `categories` is the deprecated mirror of `tags` — see VaultPayload for why
   // a stale PWA build reading this blob makes the duplication necessary.
   // `todos` only once the list has been read off the disk: an empty array
@@ -115,6 +118,7 @@ function bookPayload(): VaultPayload {
     tags,
     categories: tags,
     ...(todo.loaded && { todos: todo.todos }),
+    ...(note.loaded && { pages: note.notes }),
     savedAt: Date.now(),
   }
 }
@@ -133,6 +137,7 @@ async function adopt(payload: VaultPayload) {
   await useBookStore.getState().importBook(contacts, tags, 'replace', null)
   // Absent = the blob says nothing about to-dos (see VaultPayload): keep ours.
   if (Array.isArray(payload.todos)) await useTodoStore.getState().replace(toTodos(payload.todos))
+  if (Array.isArray(payload.pages)) await useNoteStore.getState().replace(toNotes(payload.pages))
 }
 
 /**
@@ -155,6 +160,8 @@ async function mergeIn(payload: VaultPayload) {
   await useTodoStore
     .getState()
     .replace(mergeTodos(toTodos(payload.todos), useTodoStore.getState().todos, merged.remap))
+  await useNoteStore.getState().init()
+  await useNoteStore.getState().replace(mergeNotes(toNotes(payload.pages), useNoteStore.getState().notes))
 }
 
 /**
@@ -287,10 +294,10 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       // `since === 0` is an unlock whose question was never answered: the
       // books are unrelated, so it is asked again, or adopted if this device
       // has nothing of its own — never pushed over the online copy.
-      await Promise.all([useBookStore.getState().init(), useTodoStore.getState().init()])
+      await Promise.all([useBookStore.getState().init(), useTodoStore.getState().init(), useNoteStore.getState().init()])
       const since = meta.syncedAt ?? meta.pushedAt
       const behind = meta.rev !== row.rev || since === 0
-      const book = { contacts: useBookStore.getState().contacts, todos: useTodoStore.getState().todos }
+      const book = { contacts: useBookStore.getState().contacts, todos: useTodoStore.getState().todos, pages: useNoteStore.getState().notes }
       const ask = behind && unsyncedWork(book, payload, since) > 0
       if (behind && !ask) await adopt(payload)
       // Work this device has that the online copy lacks is merged in, not
@@ -376,8 +383,8 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       }
       // To-dos count as local data too: a device holding only to-dos must be
       // asked, not have them replaced by the online list.
-      await Promise.all([useBookStore.getState().init(), useTodoStore.getState().init()])
-      const local = useBookStore.getState().contacts.length + useTodoStore.getState().todos.length
+      await Promise.all([useBookStore.getState().init(), useTodoStore.getState().init(), useNoteStore.getState().init()])
+      const local = useBookStore.getState().contacts.length + useTodoStore.getState().todos.length + useNoteStore.getState().notes.length
       const now = Date.now()
       const meta: SyncMeta = {
         userId,

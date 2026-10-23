@@ -137,6 +137,17 @@ go into the encrypted online backup and the backup file with the rest of the
 book (the CSV leaves them out). Turning the switch
 off hides the tab and keeps the list.
 
+## Notes
+
+Tune this app ▸ **Notes** adds a Notes tab beside Contacts: notes of your own,
+each a title and the details, newest edited first. Tap one to open it; it saves
+itself as you close it, and an empty new note is not kept. Search them from the
+box above the list (pulled down from the top on a phone, like the contacts').
+They travel with everything else: the online backup and the backup file
+(schema 2 since Notes; an older file opens with no notes, and a newer file in an
+older version of the app is refused rather than opened without its notes).
+Turning the tab off hides it and keeps the notes.
+
 ## Locking the app
 
 **🔓 Lock with PIN** (🔒 **Locked** once a PIN is set), beside the page title. Tap it to set a 4-digit PIN,

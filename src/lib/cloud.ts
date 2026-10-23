@@ -9,6 +9,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Contact, Tag } from './types'
 import type { Todo } from './todos'
+import type { Note } from './notes'
 
 export const TABLE = 'blackbook_vaults'
 
@@ -42,6 +43,13 @@ export interface VaultPayload {
    * would let either wipe them.
    */
   todos?: Todo[]
+  /**
+   * The Notes tab's notes (2026-10-23), named `pages` so they are never taken
+   * for a contact's `notes`. Absent means "says nothing about notes", exactly
+   * as `todos`: a build from before them pushes without it, and that must not
+   * wipe them.
+   */
+  pages?: Note[]
   /** Epoch ms the writing device stamped. Advisory — used only in messages. */
   savedAt: number
 }
