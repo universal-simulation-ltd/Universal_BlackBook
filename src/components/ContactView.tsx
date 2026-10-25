@@ -6,11 +6,11 @@ import { isList } from '../lib/lists'
 import type { Tag } from '../lib/types'
 import { useBookStore } from '../stores/bookStore'
 import { useEffectiveTheme } from '../stores/themeStore'
-import { usePhoneKit } from '../native/kit'
+import { autoFocusOK, usePhoneKit } from '../native/kit'
 import { CloseGlyph } from './Modal'
 import { ListChip } from './ListChip'
 import { TagChip } from './TagChip'
-import { btnGhost, btnPrimary, label } from './ui'
+import { btnGhost, btnPrimary, inputCls, label } from './ui'
 import { fieldLabel } from '../lib/formFields'
 import { useT } from '../i18n'
 
@@ -47,6 +47,10 @@ export function ContactView({ id }: { id: string }) {
   const edit = useBookStore((s) => s.edit)
   const addToContacts = useBookStore((s) => s.addToContacts)
   const setNotes = useBookStore((s) => s.setNotes)
+  const patchContact = useBookStore((s) => s.patchContact)
+  // Made a moment ago by New contact (bookStore.newContact): the name is typed
+  // here, at the top of the clean view, rather than in the full form.
+  const isFresh = useBookStore((s) => s.fresh === id)
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
   const kit = usePhoneKit()
@@ -142,6 +146,26 @@ export function ContactView({ id }: { id: string }) {
 
   const details = (
     <div className="mx-auto w-full max-w-2xl space-y-5">
+      {isFresh && (
+        <div>
+          <label htmlFor={`${titleId}-name`} className={label}>
+            {t('form.name')}
+          </label>
+          <input
+            id={`${titleId}-name`}
+            className={`${inputCls} text-lg font-semibold`}
+            value={contact.name}
+            placeholder={t('view.name_placeholder')}
+            autoComplete="off"
+            autoFocus={autoFocusOK()}
+            onChange={(e) => void patchContact(contact.id, { name: e.target.value })}
+            onBlur={(e) => {
+              const v = e.target.value.trim()
+              if (v !== e.target.value) void patchContact(contact.id, { name: v })
+            }}
+          />
+        </div>
+      )}
       {contact.listOnly && listChips.length > 0 && (
         // Somebody who came in on a list and is not in Contacts — say so,
         // and offer the one tap that makes them a contact.
@@ -308,8 +332,10 @@ export function ContactView({ id }: { id: string }) {
         )}
       </div>
 
-      {bare && (
-        <p className="text-sm text-slate-500">{t('view.bare')}</p>
+      {isFresh ? (
+        <p className="text-sm text-slate-500">{kit ? t('view.fresh_phone') : t('view.fresh_web')}</p>
+      ) : (
+        bare && <p className="text-sm text-slate-500">{t('view.bare')}</p>
       )}
     </div>
   )
@@ -320,7 +346,7 @@ export function ContactView({ id }: { id: string }) {
   if (kit) {
     return (
       <kit.Page
-        title={contact.name || t('c.unnamed')}
+        title={contact.name || (isFresh ? kit.t('add_new_contact') : t('c.unnamed'))}
         backLabel={kit.t('contact_back')}
         onBack={() => {
           flush()
@@ -371,7 +397,7 @@ export function ContactView({ id }: { id: string }) {
             directly over the fields it belongs to at every width. */}
         <div className="mx-auto flex w-full max-w-2xl items-center gap-3">
           <h2 id={titleId} className="min-w-0 flex-1 truncate text-base font-semibold text-slate-100">
-            {contact.name || t('c.unnamed')}
+            {contact.name || (isFresh ? t('add_new_contact') : t('c.unnamed'))}
           </h2>
           {/* The Edit button is FIRST of the two and the primary one: it is the
               thing this screen exists to offer that the list could not. Close is

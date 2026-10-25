@@ -111,6 +111,15 @@ import & export, so you can save a backup file first.
 > passphrase brings the book back. If it does not, only a backup file you saved
 > can.
 
+## New contact opens straight on the person
+
+**New contact** (the phone's + ▸ New contact, the website's Add new), **Add “…”**
+over search results, and **From my contacts** all make the person at once and
+open their clean view, not the full form (James, 2026-10-25): type the name at
+the top, add a number or an email from the buttons (Call / Message / ⋯), tap the
+note to write, and **Fine-tune** for tags, birthday and the rest. A new contact
+closed with nothing typed into it is not kept.
+
 ## Adding somebody lands you on their tags
 
 Save a new contact tagged Family and Work and the list switches to Family-or-Work,

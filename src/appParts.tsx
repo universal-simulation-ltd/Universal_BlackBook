@@ -169,7 +169,7 @@ export function SyncStatus({ onOpen }: { onOpen: () => void }) {
  * clears is the harmless version of the same bug.
  */
 export function useContactPicker() {
-  const startWith = useBookStore((s) => s.startWith)
+  const newContact = useBookStore((s) => s.newContact)
   const setNotice = useBookStore((s) => s.setNotice)
   const t = useT()
   // Read once: whether the device has contacts to offer cannot change while
@@ -184,7 +184,7 @@ export function useContactPicker() {
       const picked = await pickOneContact()
       // Null is the web picker's cancel, which is a decision and not a fault:
       // nothing is said about it.
-      if (picked) startWith({ ...picked })
+      if (picked) void newContact(picked)
     } catch (e) {
       setNotice(
         e instanceof ContactsPermissionError
@@ -194,7 +194,7 @@ export function useContactPicker() {
     } finally {
       setPicking(false)
     }
-  }, [startWith, setNotice, t])
+  }, [newContact, setNotice, t])
 
   return { canPick: where !== 'none', picking, pick: () => void pick() }
 }

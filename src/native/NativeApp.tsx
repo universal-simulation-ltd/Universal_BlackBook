@@ -76,7 +76,7 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
   const loaded = useBookStore((s) => s.loaded)
   const viewing = useBookStore((s) => s.viewing)
   const editing = useBookStore((s) => s.editing)
-  const edit = useBookStore((s) => s.edit)
+  const newContact = useBookStore((s) => s.newContact)
   const notice = useBookStore((s) => s.notice)
   const setNotice = useBookStore((s) => s.setNotice)
   const panel = usePanelStore((s) => s.panel)
@@ -261,7 +261,7 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
               icon={<IconPerson />}
               onClick={() => {
                 setAdding(false)
-                edit('new')
+                void newContact()
               }}
             >
               {t('add_new_contact')}

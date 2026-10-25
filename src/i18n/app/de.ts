@@ -472,4 +472,7 @@ export const appDe: Partial<Record<AppKey, string>> = {
   'lock.set_done': "PIN festgelegt. BlackBook fragt beim nächsten Start auf diesem Gerät danach.",
   'lock.off_done': "PIN-Sperre ausgeschaltet. BlackBook öffnet sich auf diesem Gerät ohne PIN.",
   'pref.opens_on_note': "Der Tab, den BlackBook beim Start zeigt. Ein Doppeltipp auf einen Tab wählt ihn auch.",
+  'view.name_placeholder': "Wer ist es?",
+  'view.fresh_phone': "Gib einen Namen ein und füge dann über die Knöpfe oben eine Nummer oder E-Mail hinzu. Mit Feinjustieren kommen Schlagwörter, ein Geburtstag und der Rest dazu. Ein leer gelassener neuer Kontakt wird nicht behalten.",
+  'view.fresh_web': "Gib einen Namen ein. Mit Feinjustieren kommen E-Mail, Nummer, Schlagwörter, Geburtstag und der Rest dazu. Ein leer gelassener neuer Kontakt wird nicht behalten.",
 }

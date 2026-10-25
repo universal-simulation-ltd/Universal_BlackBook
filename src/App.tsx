@@ -80,7 +80,7 @@ export default function App() {
   const loaded = useBookStore((s) => s.loaded)
   const editing = useBookStore((s) => s.editing)
   const viewing = useBookStore((s) => s.viewing)
-  const edit = useBookStore((s) => s.edit)
+  const newContact = useBookStore((s) => s.newContact)
   const notice = useBookStore((s) => s.notice)
   const setNotice = useBookStore((s) => s.setNotice)
   useEffect(() => {
@@ -329,9 +329,9 @@ export default function App() {
                   somebody are one Add new menu (James, 2026-10-23, the phone
                   app's + sheet); without them Add new is still one click. */}
               {canPick ? (
-                <AddMenu onNew={() => edit('new')} onPick={pick} />
+                <AddMenu onNew={() => void newContact()} onPick={pick} />
               ) : (
-                <button type="button" className={btnPrimary} onClick={() => edit('new')}>
+                <button type="button" className={btnPrimary} onClick={() => void newContact()}>
                   {tr('add_new')}
                 </button>
               )}

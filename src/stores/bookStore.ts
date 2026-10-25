@@ -72,6 +72,22 @@ interface BookState {
   prefill: ContactDraft | null
   /** Transient banner — import results, mostly. Cleared by the user. */
   notice: string | null
+  /**
+   * The contact just made by `newContact`, while its view is the one open:
+   * that view shows a Name box at the top, and closing it with nothing typed
+   * anywhere takes the empty contact away again.
+   */
+  fresh: string | null
+  /**
+   * A new contact, straight into its own clean view rather than the full form
+   * (James, 2026-10-25): the name typed at the top, the number and email
+   * added from Call / Message / More, the note tapped into, and Fine-tune for
+   * the rest. `seed` fills in what is already known — a search typed, a
+   * person picked from the phone's contacts.
+   */
+  newContact: (seed?: Partial<ContactDraft>) => Promise<string>
+  /** Change some fields of one contact, as typed in its view. */
+  patchContact: (id: string, patch: Partial<Omit<Contact, 'id' | 'createdAt' | 'updatedAt'>>) => Promise<void>
 
   init: () => Promise<void>
   setQuery: (patch: Partial<Query>) => void
@@ -174,6 +190,11 @@ export interface ContactDraft {
   notes: string
 }
 
+/** A contact with nothing typed into it at all (a `newContact` left as it came). */
+export function contactIsEmpty(c: Contact): boolean {
+  return draftIsEmpty(c)
+}
+
 /** Is there anything in this draft worth offering back? */
 export function draftIsEmpty(d: ContactDraft): boolean {
   return (
@@ -226,6 +247,7 @@ export const useBookStore = create<BookState>((set, get) => ({
   parked: null,
   listMode: false,
   notice: null,
+  fresh: null,
 
   init: async () => {
     if (get().loaded) return
@@ -282,7 +304,67 @@ export const useBookStore = create<BookState>((set, get) => ({
   // Opening somebody's card closes any form that was open on somebody else —
   // two dialogs about two different people, with the one underneath holding
   // unsaved edits, is a state nothing good comes of.
-  view: (id) => set((s) => ({ viewing: id, editing: id === null ? s.editing : null })),
+  view: (id) => {
+    const { fresh, viewing, contacts } = get()
+    // A contact made by `newContact` and closed with nothing in it was never
+    // really made: it goes, rather than leaving an "Unnamed" card behind.
+    if (fresh && fresh === viewing && id !== fresh) {
+      const c = contacts.find((x) => x.id === fresh)
+      if (c && contactIsEmpty(c)) void get().removeContact(c.id)
+    }
+    set((s) => ({ viewing: id, editing: id === null ? s.editing : null, fresh: id === s.fresh ? s.fresh : null }))
+  },
+
+  newContact: async (seed = {}) => {
+    requestPersistentStorage()
+    const now = Date.now()
+    const contact: Contact = {
+      id: newId(),
+      name: (seed.name ?? '').trim(),
+      email: (seed.email ?? '').trim(),
+      phone: (seed.phone ?? '').trim(),
+      company: seed.company?.trim() || undefined,
+      address: seed.address?.trim() || undefined,
+      tagIds: seed.tagIds ?? [],
+      birthdate: seed.birthdate,
+      notes: seed.notes ?? '',
+      createdAt: now,
+      updatedAt: now,
+    }
+    // Shown, whatever the list was filtered to: the search box is cleared and
+    // a tag filter that would hide an untagged newcomer is dropped (the same
+    // promise `saveContact` keeps for a new person).
+    set((s) => ({
+      contacts: [...s.contacts, contact],
+      viewing: contact.id,
+      editing: null,
+      fresh: contact.id,
+      query:
+        s.query.text || (s.query.tagIds.length > 0 && !s.query.tagIds.includes(UNTAGGED)) || s.query.hiddenTagIds.includes(UNTAGGED)
+          ? {
+              ...s.query,
+              text: '',
+              tagIds: s.query.tagIds.includes(UNTAGGED) ? s.query.tagIds : [],
+              hiddenTagIds: s.query.hiddenTagIds.filter((x) => x !== UNTAGGED),
+              sort: s.query.sort === 'birthday' && !contact.birthdate ? 'name' : s.query.sort,
+            }
+          : s.query.sort === 'birthday' && !contact.birthdate
+            ? { ...s.query, sort: 'name' }
+            : s.query,
+    }))
+    // Not written while it is empty: an empty record is only a promise to
+    // type something, and `patchContact` writes it the moment there is.
+    if (!contactIsEmpty(contact)) await putContact(contact)
+    return contact.id
+  },
+
+  patchContact: async (id, patch) => {
+    const existing = get().contacts.find((c) => c.id === id)
+    if (!existing) return
+    const next: Contact = { ...existing, ...patch, updatedAt: Date.now() }
+    set((s) => ({ contacts: s.contacts.map((c) => (c.id === id ? next : c)) }))
+    await putContact(next)
+  },
   // Closing or opening the form clears any prefill: it belongs to ONE opening
   // of the dialog, and a leftover would silently fill the next person's form
   // with the last one's details.

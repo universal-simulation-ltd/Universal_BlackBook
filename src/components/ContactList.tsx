@@ -15,7 +15,7 @@ import { toRecipients } from '../lib/emailList'
 import { isList, keptOffContacts, listIdsOf } from '../lib/lists'
 import type { Side } from '../lib/swipe'
 import type { Contact, Tag } from '../lib/types'
-import { blankDraft, useBookStore } from '../stores/bookStore'
+import { useBookStore } from '../stores/bookStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useSyncStore } from '../stores/syncStore'
 import { Modal } from './Modal'
@@ -122,6 +122,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
   const query = useBookStore((s) => s.query)
   const emailLists = useSettingsStore((s) => s.emailLists)
   const edit = useBookStore((s) => s.edit)
+  const newContact = useBookStore((s) => s.newContact)
   // Signed in, the book is (or is about to be) backed up online too, so
   // "it stays on this device" is only said to somebody signed out.
   const signedOut = useSyncStore((s) => s.state === 'signed-out')
@@ -248,7 +249,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
           </p>
         )}
         <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-          <button type="button" className={btnPrimary} onClick={() => edit('new')}>
+          <button type="button" className={btnPrimary} onClick={() => void newContact()}>
             {t('list.add_first')}
           </button>
           {onImport && (
@@ -658,13 +659,13 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
  */
 function AddFromSearch({ text, className = '' }: { text: string; className?: string }) {
   const t = useT()
-  const startWith = useBookStore((s) => s.startWith)
+  const newContact = useBookStore((s) => s.newContact)
   const seed = searchSeed(text)
   if (!seed.value) return null
   return (
     <button
       type="button"
-      onClick={() => startWith({ ...blankDraft(), [seed.field]: seed.value })}
+      onClick={() => void newContact({ [seed.field]: seed.value })}
       className={`flex w-full items-center gap-2 rounded-xl border border-dashed border-slate-700 px-4 py-3 text-left text-sm text-slate-300 transition-colors hover:border-orange-500/60 hover:bg-orange-500/10 hover:text-orange-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${className}`}
     >
       <span aria-hidden className="text-lg leading-none text-orange-400">＋</span>

@@ -472,4 +472,7 @@ export const appTr: Partial<Record<AppKey, string>> = {
   'lock.set_done': "PIN belirlendi. BlackBook bu cihazda bir sonraki başlatılışında soracak.",
   'lock.off_done': "PIN kilidi kapatıldı. BlackBook bu cihazda PIN olmadan açılır.",
   'pref.opens_on_note': "BlackBook'un başlarken gösterdiği sekme. Bir sekmeye iki kez dokunmak da onu seçer.",
+  'view.name_placeholder': "Kim?",
+  'view.fresh_phone': "Bir ad yazın, sonra yukarıdaki düğmelerden bir numara veya e-posta ekleyin. İnce ayar etiketleri, doğum gününü ve geri kalanını ekler. Boş bırakılan yeni bir kişi saklanmaz.",
+  'view.fresh_web': "Bir ad yazın. İnce ayar e-posta, numara, etiket, doğum günü ve geri kalanını ekler. Boş bırakılan yeni bir kişi saklanmaz.",
 }

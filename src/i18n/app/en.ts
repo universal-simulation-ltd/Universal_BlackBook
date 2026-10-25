@@ -535,6 +535,9 @@ export const appEn = {
   'lock.set_done': "PIN set. BlackBook will ask for it the next time it starts on this device.",
   'lock.off_done': "PIN lock turned off. BlackBook opens without a PIN on this device.",
   'pref.opens_on_note': "The tab BlackBook shows when it starts. Double-tapping a tab chooses it too.",
+  'view.name_placeholder': "Who is it?",
+  'view.fresh_phone': "Type a name, then add a number or an email from the buttons above. Fine-tune adds tags, a birthday and the rest. A new contact left empty is not kept.",
+  'view.fresh_web': "Type a name. Fine-tune adds an email, a number, tags, a birthday and the rest. A new contact left empty is not kept.",
 } as const
 
 export type AppKey = keyof typeof appEn

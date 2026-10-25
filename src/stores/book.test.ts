@@ -317,3 +317,39 @@ describe('a saved contact', () => {
     expect(c?.company).toBe('Analytical Engines')
   })
 })
+
+describe('New contact goes straight to its view (2026-10-25)', () => {
+  beforeEach(() => {
+    globalThis.indexedDB = new IDBFactory()
+  })
+
+  it('opens the new person, typed into their view, and keeps them once named', async () => {
+    const store = await reopen()
+    const id = await store.getState().newContact()
+    expect(store.getState().viewing).toBe(id)
+    expect(store.getState().fresh).toBe(id)
+    await store.getState().patchContact(id, { name: 'Zoe Quinn' })
+    store.getState().view(null)
+    const again = await reopen()
+    expect(again.getState().contacts.map((c) => c.name)).toContain('Zoe Quinn')
+  })
+
+  it('drops a new contact closed with nothing in it, and never wrote it', async () => {
+    const store = await reopen()
+    const before = store.getState().contacts.length
+    await store.getState().newContact()
+    store.getState().view(null)
+    await new Promise((r) => setTimeout(r, 10))
+    expect(store.getState().contacts.length).toBe(before)
+    const again = await reopen()
+    expect(again.getState().contacts.length).toBe(before)
+  })
+
+  it('a seed from search or the phone fills the fields', async () => {
+    const store = await reopen()
+    const id = await store.getState().newContact({ phone: '07700 900123', name: 'Ann' })
+    const c = store.getState().contacts.find((x) => x.id === id)!
+    expect(c.phone).toBe('07700 900123')
+    expect(c.name).toBe('Ann')
+  })
+})
