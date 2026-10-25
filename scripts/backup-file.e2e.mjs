@@ -187,7 +187,7 @@ try {
   await plainDl.saveAs(plainPath)
   const plain = JSON.parse(readFileSync(plainPath, 'utf8'))
   check(/^blackbook-backup-\d{4}-\d{2}-\d{2}\.json$/.test(plainDl.suggestedFilename()), `file name ${plainDl.suggestedFilename()}`)
-  check(plain.format === 'unisim-transfer' && plain.product === 'blackbook' && plain.kind === 'backup' && plain.schema === 2, 'envelope: blackbook / backup / schema 2')
+  check(plain.format === 'unisim-transfer' && plain.product === 'blackbook' && plain.kind === 'backup' && plain.schema === 3, 'envelope: blackbook / backup / schema 3')
   check(plain.data.contacts.length === 2 && plain.data.todos.length === 2 && plain.data.tags.length === 1, 'file holds 2 contacts, 2 to-dos, 1 tag')
   check(plain.data.contacts.find((c) => c.id === 'c-ada')?.address === '1 Lovelace Row\nLondon', 'every field is in the file (address included)')
   check(plain.data.settings?.todos === true, 'Tune this app choices are in the file')
