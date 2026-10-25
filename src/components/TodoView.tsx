@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type FormEvent, type ReactNode, type TouchEvent as ReactTouchEvent } from 'react'
-import { SwipeRow, type SwipeAction } from './SwipeRow'
+import { SwipeRow } from './SwipeRow'
+import { deleteSwipe, FocusActions, pinSwipe, UndoBar, useUndo } from './SwipeActions'
 import type { Side } from '../lib/swipe'
-import { usePhoneKit } from '../native/kit'
 import { todayParts } from '../lib/birthday'
 import { isList } from '../lib/lists'
 import { compareDone, compareOpen, daysUntil, dueLabel, matchesTodoTags, type Todo } from '../lib/todos'
@@ -14,7 +14,7 @@ import { TagPicker } from './TagPicker'
 import { TagCombo } from './TagCombo'
 import { AddTyped, ListSearch } from './ListSearch'
 import { matchesNote } from '../lib/notes'
-import { currentT, useT } from '../i18n'
+import { useT } from '../i18n'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label, textareaCls } from './ui'
 import { autoFocusOK } from '../native/kit'
 import { phoneScreens } from '../native/shell'
@@ -50,19 +50,10 @@ export function TodoView() {
   const [openRow, setOpenRow] = useState<{ id: string; side: Side } | null>(null)
   // Delete, with Undo for a few seconds (James, 2026-10-25): the swipe and
   // the row's own Delete both come here; the form's Delete still asks.
-  const [undo, setUndo] = useState<Todo | null>(null)
-  const undoTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const undo = useUndo<Todo>(restore)
   const removeWithUndo = (x: Todo) => {
-    setUndo(x)
-    clearTimeout(undoTimer.current)
-    undoTimer.current = setTimeout(() => setUndo(null), 6000)
+    undo.deleted(x)
     void remove(x.id)
-  }
-  const restoreUndo = async () => {
-    if (!undo) return
-    clearTimeout(undoTimer.current)
-    await restore(undo)
-    setUndo(null)
   }
   const { drag, dragStart, gripDown } = useTodoDrag((id, target, after) => void move(id, target, after))
   // Once per mount, as in ContactList: a tab left open over midnight keeps
@@ -163,11 +154,11 @@ export function TodoView() {
               <SwipeRow
                 open={openRow?.id === x.id ? openRow.side : null}
                 onOpenChange={(side) => setOpenRow(side ? { id: x.id, side } : null)}
-                left={pinAction(x, () => {
+                left={pinSwipe(Boolean(x.pinnedAt), x.title, () => {
                   setOpenRow(null)
                   void setPinned(x.id, !x.pinnedAt)
                 })}
-                right={deleteAction(x, () => {
+                right={deleteSwipe(x.title, () => {
                   setOpenRow(null)
                   removeWithUndo(x)
                 })}
@@ -196,7 +187,7 @@ export function TodoView() {
       <p id={hintId} className="sr-only">
         {t('todo.order_hint')}
       </p>
-      {undo && <UndoBar todo={undo} onUndo={() => void restoreUndo()} />}
+      {undo.item && <UndoBar title={undo.item.title} onUndo={() => void undo.undo()} />}
 
       {done.length > 0 && (
         <section className="border-t border-slate-800 pt-3">
@@ -361,39 +352,6 @@ function useTodoDrag(onDrop: (id: string, targetId: string, after: boolean) => v
   return { drag, dragStart, gripDown }
 }
 
-const PinIcon = (
-  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-    <path d="M9 3h6l-1 6 3 3H7l3-3-1-6ZM12 12v9" />
-  </svg>
-)
-const BinIcon = (
-  <svg viewBox="0 0 16 16" className="h-5 w-5" fill="currentColor" aria-hidden>
-    <path d="M6.5 1a1 1 0 0 0-1 1v.5H2.75a.75.75 0 0 0 0 1.5h10.5a.75.75 0 0 0 0-1.5H10.5V2a1 1 0 0 0-1-1h-3ZM4.5 5.5h7l-.6 8.1a1.5 1.5 0 0 1-1.5 1.4H6.6a1.5 1.5 0 0 1-1.5-1.4L4.5 5.5Z" />
-  </svg>
-)
-
-function pinAction(todo: Todo, onAction: () => void): SwipeAction {
-  const t = currentT()
-  return {
-    text: todo.pinnedAt ? t('todo.unpin') : t('todo.pin'),
-    label: todo.pinnedAt ? t('todo.unpin_label', { title: todo.title }) : t('todo.pin_label', { title: todo.title }),
-    icon: PinIcon,
-    tone: 'bg-orange-600 text-white focus-visible:ring-orange-200',
-    onAction,
-  }
-}
-
-function deleteAction(todo: Todo, onAction: () => void): SwipeAction {
-  const t = currentT()
-  return {
-    text: t('c.delete'),
-    label: t('todo.delete_label', { title: todo.title }),
-    icon: BinIcon,
-    tone: 'bg-rose-600 text-white focus-visible:ring-rose-200',
-    onAction,
-  }
-}
-
 /**
  * The swipe's and the drag's jobs as plain buttons: hidden until focused, so
  * VoiceOver, TalkBack and the keyboard reach Move up, Move down, Pin and
@@ -403,48 +361,18 @@ function RowActions({ todo, up, down, onDelete }: { todo: Todo; up: string | nul
   const t = useT()
   const move = useTodoStore((s) => s.move)
   const setPinned = useTodoStore((s) => s.setPinned)
-  const cls =
-    'sr-only focus:not-sr-only focus:absolute focus:bottom-1.5 focus:right-1.5 focus:z-10 focus:rounded-lg focus:bg-slate-800 focus:px-2.5 focus:py-1 focus:text-xs focus:font-semibold focus:text-slate-100 focus:outline-none focus:ring-2 focus:ring-orange-400'
   return (
-    <>
-      {up && (
-        <button type="button" className={cls} onClick={() => void move(todo.id, up, false)}>
-          {t('todo.move_up', { title: todo.title })}
-        </button>
-      )}
-      {down && (
-        <button type="button" className={cls} onClick={() => void move(todo.id, down, true)}>
-          {t('todo.move_down', { title: todo.title })}
-        </button>
-      )}
-      <button type="button" className={cls} onClick={() => void setPinned(todo.id, !todo.pinnedAt)}>
-        {todo.pinnedAt ? t('todo.unpin_label', { title: todo.title }) : t('todo.pin_label', { title: todo.title })}
-      </button>
-      <button type="button" className={cls} onClick={onDelete}>
-        {t('todo.delete_label', { title: todo.title })}
-      </button>
-    </>
-  )
-}
-
-/** "Deleted “Book dentist”. Undo" — for six seconds, at the foot of the screen. */
-function UndoBar({ todo, onUndo }: { todo: Todo; onUndo: () => void }) {
-  const t = useT()
-  const kit = usePhoneKit()
-  return (
-    <div
-      role="status"
-      className={
-        kit
-          ? 'bb-toast flex items-center gap-3 text-left'
-          : 'fixed bottom-5 left-1/2 z-50 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-3 rounded-2xl bg-slate-100 px-4 py-2.5 text-sm text-slate-950 shadow-xl'
-      }
-    >
-      <span className="min-w-0 truncate">{t('todo.deleted', { title: todo.title || t('c.untitled') })}</span>
-      <button type="button" onClick={onUndo} className="shrink-0 font-semibold text-orange-600 underline-offset-2 hover:underline">
-        {t('todo.undo')}
-      </button>
-    </div>
+    <FocusActions
+      actions={[
+        ...(up ? [{ label: t('todo.move_up', { title: todo.title }), onClick: () => void move(todo.id, up, false) }] : []),
+        ...(down ? [{ label: t('todo.move_down', { title: todo.title }), onClick: () => void move(todo.id, down, true) }] : []),
+        {
+          label: todo.pinnedAt ? t('todo.unpin_label', { title: todo.title }) : t('todo.pin_label', { title: todo.title }),
+          onClick: () => void setPinned(todo.id, !todo.pinnedAt),
+        },
+        { label: t('todo.delete_label', { title: todo.title }), onClick: onDelete },
+      ]}
+    />
   )
 }
 

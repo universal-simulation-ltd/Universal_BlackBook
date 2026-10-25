@@ -1,10 +1,18 @@
-import { useMemo } from 'react'
+import { useEffect, useId, useMemo, useRef, useState, type TouchEvent as ReactTouchEvent } from 'react'
+import { usePhoneLayer } from '@unisim/sdk'
+import { SwipeRow } from './SwipeRow'
+import { deleteSwipe, FocusActions, pinSwipe, UndoBar, useUndo } from './SwipeActions'
+import type { Side } from '../lib/swipe'
+import { Modal } from './Modal'
+import { copyText } from '../lib/clipboard'
+import { usePhoneKit } from '../native/kit'
+import { useNativeNav } from '../native/nav'
 import { useScrollHint } from '@unisim/sdk'
 import { showValue, type NoteTemplate } from '../lib/templates'
 import { AddTyped, ListSearch } from './ListSearch'
-import { compareNotes, matchesNote, preview, type Note } from '../lib/notes'
+import { compareNotes, matchesNote, noteText, preview, type Note } from '../lib/notes'
 import { useNoteStore } from '../stores/noteStore'
-import { btnPrimary } from './ui'
+import { btnDanger, btnGhost, btnPrimary, btnSubtle } from './ui'
 import { NoteImportButton } from './NoteImport'
 import { phoneScreens } from '../native/shell'
 import { useT } from '../i18n'
@@ -41,6 +49,142 @@ export function NotesView() {
   )
   const byTemplate = useMemo(() => new Map(templates.map((x) => [x.id, x])), [templates])
   const searching = query.trim() !== ''
+
+  // Swipe right to pin, left to delete with Undo — To-do's swipes
+  // (SwipeActions), James 2026-10-25.
+  const setPinned = useNoteStore((s) => s.setPinned)
+  const removeMany = useNoteStore((s) => s.removeMany)
+  const restoreMany = useNoteStore((s) => s.restoreMany)
+  const [openRow, setOpenRow] = useState<{ id: string; side: Side } | null>(null)
+  const undo = useUndo<Note[]>(restoreMany)
+  const removeWithUndo = (list: Note[]) => {
+    if (!list.length) return
+    undo.deleted(list)
+    void removeMany(list.map((n) => n.id))
+  }
+  const hintId = useId()
+
+  // Selection (James, 2026-10-25: "notes on long tap select the note"): hold
+  // a note to select it, then taps add or remove; Select above the list does
+  // the same without a hold, and on the website Shift-click selects a run.
+  const [selected, setSelected] = useState<Set<string> | null>(null)
+  const selecting = selected !== null
+  const picked = useMemo(() => (selected ? shown.filter((n) => selected.has(n.id)) : []), [selected, shown])
+  const [confirming, setConfirming] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const lastIndex = useRef<number | null>(null)
+  const toggle = (id: string, index: number, range: boolean) => {
+    setSelected((s) => {
+      const next = new Set(s)
+      if (range && lastIndex.current !== null) {
+        const [a, b] = [lastIndex.current, index].sort((x, y) => x - y)
+        for (const n of shown.slice(a, b + 1)) next.add(n.id)
+      } else if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+    lastIndex.current = index
+  }
+  const kit = usePhoneKit()
+  const say = useNativeNav((s) => s.say)
+  const copyPicked = async () => {
+    const ok = await copyText(picked.map((n) => noteText(n.title, n.details)).join('\n\n'))
+    if (kit) say(ok ? t('notes.copied') : t('export.copy_failed'))
+    setCopied(ok)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  // A hold of 0.45 s on a note selects it. Any movement first (a swipe
+  // sideways, a scroll) cancels the hold, so the three never fight: sideways
+  // is the swipe, up and down is the scroll, still is the selection.
+  const hold = useRef<{ timer: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null)
+  const held = useRef(false)
+  useEffect(() => {
+    const cancel = (e: TouchEvent) => {
+      // A held finger lifting: the click it may make is swallowed below, and
+      // if the browser makes none, the next real tap must not be.
+      if (e.type !== 'touchmove' && held.current) setTimeout(() => (held.current = false), 400)
+      const h = hold.current
+      if (!h) return
+      const t0 = e.touches[0]
+      if (e.type !== 'touchmove' || !t0 || Math.hypot(t0.clientX - h.x, t0.clientY - h.y) > 8) {
+        clearTimeout(h.timer)
+        hold.current = null
+      }
+    }
+    // The finger lifting also shows up as a pointerup (and some browsers send
+    // no touchend after a long press).
+    const up = () => {
+      if (held.current) setTimeout(() => (held.current = false), 400)
+    }
+    document.addEventListener('touchmove', cancel, { passive: true })
+    document.addEventListener('touchend', cancel)
+    document.addEventListener('touchcancel', cancel)
+    document.addEventListener('pointerup', up, true)
+    return () => {
+      document.removeEventListener('touchmove', cancel)
+      document.removeEventListener('touchend', cancel)
+      document.removeEventListener('touchcancel', cancel)
+      document.removeEventListener('pointerup', up, true)
+    }
+  }, [])
+  const holdStart = (id: string) => (e: ReactTouchEvent) => {
+    if (e.touches.length !== 1) return
+    const t0 = e.touches[0]
+    if (hold.current) clearTimeout(hold.current.timer)
+    hold.current = {
+      x: t0.clientX,
+      y: t0.clientY,
+      timer: setTimeout(() => {
+        hold.current = null
+        held.current = true
+        // The tap that ends the hold lands on whatever is now under the
+        // finger — the selection bar slides in where the note was — so it is
+        // swallowed wherever it lands, not just in the list.
+        const swallow = (ev: Event) => {
+          if (!held.current) return
+          held.current = false
+          ev.preventDefault()
+          ev.stopPropagation()
+        }
+        document.addEventListener('click', swallow, { capture: true, once: true })
+        setTimeout(() => document.removeEventListener('click', swallow, { capture: true }), 1500)
+        navigator.vibrate?.(12)
+        setOpenRow(null)
+        setSelected((s) => {
+          const next = new Set(s ?? [])
+          next.add(id)
+          return next
+        })
+      }, 450),
+    }
+  }
+  // The tap that ends a hold must not open the note (or untick it again).
+  // Leaving selection: Done, Android's back (a layer on the phone's stack),
+  // or a swipe in from the left edge, as a page goes back.
+  usePhoneLayer('page', () => setSelected(null), { open: selecting && Boolean(kit), lockScroll: false })
+  useEffect(() => {
+    if (!selecting || !kit) return
+    let start: { x: number; y: number } | null = null
+    const down = (e: TouchEvent) => {
+      const t0 = e.touches[0]
+      start = t0 && t0.clientX < 24 ? { x: t0.clientX, y: t0.clientY } : null
+    }
+    const move = (e: TouchEvent) => {
+      const t0 = e.touches[0]
+      if (!start || !t0) return
+      if (t0.clientX - start.x > 70 && Math.abs(t0.clientY - start.y) < 50) {
+        start = null
+        setSelected(null)
+      }
+    }
+    document.addEventListener('touchstart', down, { passive: true })
+    document.addEventListener('touchmove', move, { passive: true })
+    return () => {
+      document.removeEventListener('touchstart', down)
+      document.removeEventListener('touchmove', move)
+    }
+  }, [selecting, kit])
 
   return (
     <div className="space-y-4">
@@ -80,13 +224,106 @@ export function NotesView() {
           {searching ? t('notes.no_match') : t('tpl.filter_none')}
         </p>
       ) : (
-        <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
-          {shown.map((n) => (
-            <li key={n.id}>
-              <NoteRow note={n} template={n.templateId ? byTemplate.get(n.templateId) : undefined} onOpen={() => view(n.id)} />
-            </li>
-          ))}
-        </ul>
+        <>
+          {!selecting && shown.length > 0 && (
+            <div className="-mb-2 flex justify-end">
+              <button type="button" className={btnSubtle} onClick={() => setSelected(new Set())}>
+                {t('nsel.select')}
+              </button>
+            </div>
+          )}
+          {selecting && (
+            <NoteSelectBar
+              count={picked.length}
+              allPicked={picked.length === shown.length && shown.length > 0}
+              allPinned={picked.length > 0 && picked.every((n) => n.pinnedAt)}
+              onAll={() => setSelected(picked.length === shown.length ? new Set() : new Set(shown.map((n) => n.id)))}
+              onPin={(pin) => {
+                void setPinned(picked.map((n) => n.id), pin)
+                setSelected(null)
+              }}
+              onCopy={() => void copyPicked()}
+              onDelete={() => setConfirming(true)}
+              onDone={() => setSelected(null)}
+              copied={copied}
+            />
+          )}
+          <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3" aria-describedby={hintId}>
+            {shown.map((n, i) => {
+              const tpl = n.templateId ? byTemplate.get(n.templateId) : undefined
+              return (
+                <li key={n.id} className="bb-todo relative" onTouchStart={holdStart(n.id)}>
+                  {selecting ? (
+                    <NoteRow
+                      note={n}
+                      template={tpl}
+                      selected={selected.has(n.id)}
+                      onOpen={(e) => toggle(n.id, i, e?.shiftKey === true)}
+                    />
+                  ) : (
+                    <SwipeRow
+                      open={openRow?.id === n.id ? openRow.side : null}
+                      onOpenChange={(side) => setOpenRow(side ? { id: n.id, side } : null)}
+                      left={pinSwipe(Boolean(n.pinnedAt), n.title, () => {
+                        setOpenRow(null)
+                        void setPinned([n.id], !n.pinnedAt)
+                      })}
+                      right={deleteSwipe(n.title, () => {
+                        setOpenRow(null)
+                        removeWithUndo([n])
+                      })}
+                    >
+                      <div className="relative h-full">
+                        <NoteRow note={n} template={tpl} onOpen={() => view(n.id)} />
+                        <FocusActions
+                          actions={[
+                            { label: t('nsel.select_label', { title: n.title || t('c.untitled') }), onClick: () => setSelected(new Set([n.id])) },
+                            {
+                              label: n.pinnedAt ? t('todo.unpin_label', { title: n.title }) : t('todo.pin_label', { title: n.title }),
+                              onClick: () => void setPinned([n.id], !n.pinnedAt),
+                            },
+                            { label: t('todo.delete_label', { title: n.title }), onClick: () => removeWithUndo([n]) },
+                          ]}
+                        />
+                      </div>
+                    </SwipeRow>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+          <p id={hintId} className="sr-only">
+            {t('nsel.hint')}
+          </p>
+        </>
+      )}
+      {undo.item && (
+        <UndoBar
+          title={undo.item.length === 1 ? undo.item[0].title : ''}
+          text={undo.item.length === 1 ? undefined : t.plural('nsel.deleted', undo.item.length)}
+          onUndo={() => void undo.undo()}
+        />
+      )}
+      {confirming && (
+        <Modal phone="sheet" title={t('nsel.delete_title')} onClose={() => setConfirming(false)}>
+          <p className="text-sm text-slate-300">{t.plural('nsel.delete_body', picked.length)}</p>
+          <div className="mt-5 flex justify-end gap-2">
+            <button type="button" className={btnGhost} onClick={() => setConfirming(false)}>
+              {t('c.keep')}
+            </button>
+            <button
+              type="button"
+              className={btnDanger}
+              onClick={() => {
+                setConfirming(false)
+                removeWithUndo(picked)
+                setSelected(null)
+              }}
+            >
+              {t('c.delete')}
+            </button>
+          </div>
+        </Modal>
       )}
 
     </div>
@@ -126,7 +363,18 @@ function TemplateFilter({ templates, active, onPick }: { templates: NoteTemplate
   )
 }
 
-function NoteRow({ note, template, onOpen }: { note: Note; template?: NoteTemplate; onOpen: () => void }) {
+function NoteRow({
+  note,
+  template,
+  onOpen,
+  selected,
+}: {
+  note: Note
+  template?: NoteTemplate
+  onOpen: (e?: React.MouseEvent) => void
+  /** In selection mode: whether it is ticked (the card is the tick box). */
+  selected?: boolean
+}) {
   const t = useT()
   // A templated note shows its fields' values ("Middlemarch · George Eliot")
   // where a plain one shows its first line.
@@ -137,10 +385,35 @@ function NoteRow({ note, template, onOpen }: { note: Note; template?: NoteTempla
   return (
     <button
       type="button"
-      onClick={onOpen}
-      className="flex h-full w-full flex-col gap-1 rounded-xl border border-slate-800 bg-slate-900 p-3.5 text-left transition-colors hover:border-slate-700 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+      onClick={(e) => onOpen(e)}
+      {...(selected !== undefined ? { role: 'checkbox', 'aria-checked': selected } : {})}
+      className={`relative flex h-full w-full flex-col gap-1 rounded-xl border bg-slate-900 p-3.5 text-left transition-colors hover:border-slate-700 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+        selected ? 'border-orange-500 bg-orange-500/10' : 'border-slate-800'
+      } ${selected !== undefined ? 'pl-11' : ''}`}
     >
+      {selected !== undefined && (
+        <span
+          aria-hidden
+          className={`absolute left-3.5 top-3.5 flex h-5 w-5 items-center justify-center rounded-md border ${
+            selected ? 'border-orange-500 bg-orange-500 text-slate-950' : 'border-slate-500 bg-slate-950'
+          }`}
+        >
+          {selected && (
+            <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.25">
+              <path d="m3.5 8.5 3 3 6-7" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          )}
+        </span>
+      )}
       <p className="flex min-w-0 items-center gap-2">
+        {note.pinnedAt && (
+          <span className="shrink-0 text-orange-400" title={t('todo.pinned')}>
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M9 3h6l-1 6 3 3H7l3-3-1-6ZM12 12v9" />
+            </svg>
+            <span className="sr-only">{t('todo.pinned')}</span>
+          </span>
+        )}
         <span className="min-w-0 truncate font-semibold text-slate-100">{note.title || t('c.untitled')}</span>
         {template && (
           <span className="shrink-0 rounded-full border border-slate-700 px-2 py-0.5 text-[11px] font-medium text-slate-400">{template.name}</span>
@@ -148,5 +421,54 @@ function NoteRow({ note, template, onOpen }: { note: Note; template?: NoteTempla
       </p>
       {line && <p className="truncate text-sm text-slate-400">{line}</p>}
     </button>
+  )
+}
+
+/** Over the list while selecting: how many, then Pin / Unpin, Copy, Delete, Done. */
+function NoteSelectBar({
+  count,
+  allPicked,
+  allPinned,
+  onAll,
+  onPin,
+  onCopy,
+  onDelete,
+  onDone,
+  copied,
+}: {
+  count: number
+  allPicked: boolean
+  allPinned: boolean
+  onAll: () => void
+  onPin: (pin: boolean) => void
+  onCopy: () => void
+  onDelete: () => void
+  onDone: () => void
+  copied: boolean
+}) {
+  const t = useT()
+  const none = count === 0
+  const act = `${btnSubtle} disabled:cursor-not-allowed disabled:opacity-40`
+  return (
+    <div className="sticky top-0 z-30 -mx-1 flex flex-wrap items-center gap-x-1 gap-y-1 rounded-xl border border-slate-800 bg-slate-900 px-2 py-1.5">
+      <p className="mr-auto px-1 text-sm font-medium tabular-nums text-slate-200" aria-live="polite">
+        {t('sel.count', { count })}
+      </p>
+      <button type="button" className={act} onClick={onAll}>
+        {allPicked ? t('sel.none') : t('sel.all')}
+      </button>
+      <button type="button" className={act} onClick={() => onPin(!allPinned)} disabled={none}>
+        {allPinned ? t('todo.unpin') : t('todo.pin')}
+      </button>
+      <button type="button" className={act} onClick={onCopy} disabled={none}>
+        {copied ? t('notes.copied') : t('notes.copy')}
+      </button>
+      <button type="button" className={`${act} text-rose-300 hover:bg-rose-950 hover:text-rose-200`} onClick={onDelete} disabled={none}>
+        {t('c.delete')}
+      </button>
+      <button type="button" className={`${act} text-orange-300`} onClick={onDone}>
+        {t('c.done')}
+      </button>
+    </div>
   )
 }

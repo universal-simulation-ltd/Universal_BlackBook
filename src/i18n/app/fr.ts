@@ -609,4 +609,12 @@ export const appFr: Partial<Record<AppKey, string>> = {
   'pattern.stars': "Étoile",
   'pattern.rings': "Anneaux",
   'pattern.checks': "Damier",
+  'nsel.select': "Sélectionner",
+  'nsel.select_label': "Sélectionner « {title} »",
+  'nsel.hint': "Maintiens une note pour la sélectionner. Balaie à droite pour épingler, à gauche pour supprimer.",
+  'nsel.delete_title': "Supprimer des notes",
+  'nsel.delete_body_one': "Supprimer {count} note ? Tu peux annuler pendant quelques secondes.",
+  'nsel.delete_body_other': "Supprimer {count} notes ? Tu peux annuler pendant quelques secondes.",
+  'nsel.deleted_one': "{count} note supprimée.",
+  'nsel.deleted_other': "{count} notes supprimées.",
 }

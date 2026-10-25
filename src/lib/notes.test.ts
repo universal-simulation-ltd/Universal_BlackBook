@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mapsUrl, matchesNote, parseCoords, toContactIds, toNote, toPlace } from './notes'
+import { compareNotes, mapsUrl, matchesNote, parseCoords, toContactIds, toNote, toPlace, type Note } from './notes'
 import { parseBackup } from './backup'
 
 describe('note links and places (2026-10-25)', () => {
@@ -36,5 +36,19 @@ describe('note links and places (2026-10-25)', () => {
 
   it('search finds a note by its place', () => {
     expect(matchesNote({ id: 'n', title: 'Dinner', details: '', place: { name: 'The Crown' }, createdAt: 0, updatedAt: 0 }, 'crown')).toBe(true)
+  })
+
+  it('pinned notes come first, the latest pin first, then newest edited', () => {
+    const n = (id: string, p: Partial<Note>): Note => ({ id, title: id, details: '', createdAt: 1, updatedAt: 1, ...p })
+    const list = [n('a', { updatedAt: 9 }), n('b', { pinnedAt: 5 }), n('c', { updatedAt: 20 }), n('d', { pinnedAt: 7 })]
+    expect([...list].sort(compareNotes).map((x) => x.id)).toEqual(['d', 'b', 'c', 'a'])
+  })
+
+  it('a pin survives storage and a backup file, and a bad one is dropped', () => {
+    expect(toNote({ id: 'n1', title: 'T', pinnedAt: 42 })!.pinnedAt).toBe(42)
+    expect(toNote({ id: 'n1', title: 'T', pinnedAt: 'x' })).not.toHaveProperty('pinnedAt')
+    const data = parseBackup({ contacts: [], pages: [{ id: 'n1', title: 'T', pinnedAt: Date.UTC(2026, 0, 1) }, { id: 'n2', title: 'U', pinnedAt: -5 }] })!
+    expect(data.pages[0].pinnedAt).toBe(Date.UTC(2026, 0, 1))
+    expect(data.pages[1]).not.toHaveProperty('pinnedAt')
   })
 })

@@ -196,6 +196,22 @@ Hiding the tab keeps the notes. To-do and Notes on, Email lists off, are the
 defaults since 2026-10-23; the tick boxes say "Hide …" so they still start unticked,
 and a device that never touched the old switches gets the new defaults.
 
+### Pinning, deleting and selecting notes
+
+The Notes list has To-do's swipes (James, 2026-10-25; the same code,
+`src/components/SwipeActions.tsx`): swipe a note right to **Pin** it (pinned notes
+sit at the top, latest pin first, with a pin mark; swipe again to Unpin) and
+left to **Delete** it, with **Undo** for six seconds. **Hold** a note to select it;
+further taps add or remove notes, and a bar offers Select all, **Pin / Unpin**,
+**Copy** (each note's title and text, a blank line between) and **Delete** (one
+confirmation, then Undo). Done, Android's back or a swipe in from the left edge
+leaves selection. A sideways move is the swipe, an up-and-down move the scroll,
+a still finger the hold, so the three never fight. On the website, **Select**
+above the list does the same and Shift-click selects a run; on every row,
+Select, Pin and Delete are buttons for VoiceOver, TalkBack and the keyboard. It
+works within the template filter and search, pinned first. A pin is part of the
+note: the online copy and the backup file (schema 3; older files have none).
+
 ### A note's own view
 
 Tapping a note opens it the way a contact opens (James, 2026-10-25): the title

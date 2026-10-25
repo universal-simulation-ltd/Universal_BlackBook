@@ -40,6 +40,12 @@ interface NoteState {
   setQuery: (query: string) => void
   save: (draft: NoteDraft) => Promise<void>
   remove: (id: string) => Promise<void>
+  /** Pin these notes to the top of the list, or unpin them. */
+  setPinned: (ids: string[], pinned: boolean) => Promise<void>
+  /** Delete several at once (selection, swipe). */
+  removeMany: (ids: string[]) => Promise<void>
+  /** Undo a delete: the notes as they were. */
+  restoreMany: (notes: Note[]) => Promise<void>
   /** Change some fields of one note (its reminders, links, place) without the page. */
   patch: (id: string, patch: Partial<Omit<Note, 'id' | 'createdAt' | 'updatedAt'>>) => Promise<void>
   /** The vault's or a backup file's copy (or a merge of it) becomes this device's. */
@@ -136,6 +142,35 @@ export const useNoteStore = create<NoteState>((set, get) => {
       }
       await commit(existing ? get().notes.map((n) => (n.id === note.id ? note : n)) : [...get().notes, note])
       if (!existing) set({ viewing: note.id })
+    },
+
+    setPinned: async (ids, pinned) => {
+      const now = Date.now()
+      const pick = new Set(ids)
+      await commit(
+        get().notes.map((n) => {
+          if (!pick.has(n.id) || Boolean(n.pinnedAt) === pinned) return n
+          const { pinnedAt: _p, ...rest } = n
+          void _p
+          return { ...rest, ...(pinned ? { pinnedAt: now } : {}), updatedAt: now }
+        }),
+      )
+    },
+
+    removeMany: async (ids) => {
+      const gone = new Set(ids)
+      set((s) => ({
+        editing: s.editing && gone.has(s.editing) ? null : s.editing,
+        viewing: s.viewing && gone.has(s.viewing) ? null : s.viewing,
+      }))
+      await commit(get().notes.filter((n) => !gone.has(n.id)))
+    },
+
+    restoreMany: async (notes) => {
+      const here = new Set(get().notes.map((n) => n.id))
+      // As they were, edit time and all, so each goes back to its place.
+      const back = notes.filter((n) => !here.has(n.id))
+      if (back.length) await commit([...get().notes, ...back])
     },
 
     patch: async (id, patch) => {

@@ -672,6 +672,14 @@ export const appEn = {
   'pattern.stars': "Star",
   'pattern.rings': "Rings",
   'pattern.checks': "Checks",
+  'nsel.select': "Select",
+  'nsel.select_label': "Select “{title}”",
+  'nsel.hint': "Hold a note to select it. Swipe right to pin, left to delete.",
+  'nsel.delete_title': "Delete notes",
+  'nsel.delete_body_one': "Delete {count} note? You can undo it for a few seconds.",
+  'nsel.delete_body_other': "Delete {count} notes? You can undo it for a few seconds.",
+  'nsel.deleted_one': "Deleted {count} note.",
+  'nsel.deleted_other': "Deleted {count} notes.",
 } as const
 
 export type AppKey = keyof typeof appEn

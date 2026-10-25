@@ -313,6 +313,7 @@ function parseNote(raw: unknown): Note | null {
     ...(place ? { place } : {}),
     ...(templateId ? { templateId } : {}),
     ...(fields ? { fields } : {}),
+    ...(optTime(raw.pinnedAt) ? { pinnedAt: optTime(raw.pinnedAt) } : {}),
     createdAt,
     updatedAt: time(raw.updatedAt, createdAt),
   }

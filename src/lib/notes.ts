@@ -89,6 +89,8 @@ export interface Note {
   contactIds?: string[]
   /** "Link to location" (2026-10-25): a place, opened in the phone's own maps. */
   place?: Place
+  /** Pinned to the top of the Notes list (swipe right, 2026-10-25): when. Absent = not pinned. */
+  pinnedAt?: number
   /** The template it was made from (lib/templates.ts), if any. */
   templateId?: string
   /** That template's fields, filled in: field id → the value as typed. */
@@ -113,6 +115,7 @@ export function toNote(raw: unknown): Note | null {
     ...(toContactIds(r.contactIds) ? { contactIds: toContactIds(r.contactIds) } : {}),
     ...(toPlace(r.place) ? { place: toPlace(r.place) } : {}),
     ...(typeof r.templateId === 'string' && LINK_ID.test(r.templateId) ? { templateId: r.templateId } : {}),
+    ...(typeof r.pinnedAt === 'number' && Number.isFinite(r.pinnedAt) ? { pinnedAt: r.pinnedAt } : {}),
     ...(toFieldValues(r.fields) ? { fields: toFieldValues(r.fields) } : {}),
     createdAt: typeof r.createdAt === 'number' ? r.createdAt : Date.now(),
     updatedAt: typeof r.updatedAt === 'number' ? r.updatedAt : Date.now(),
@@ -123,8 +126,10 @@ export function toNotes(raw: unknown): Note[] {
   return Array.isArray(raw) ? raw.map(toNote).filter((n): n is Note => n !== null) : []
 }
 
-/** Newest edited first. */
+/** Pinned first (the latest pin first), then newest edited first. */
 export function compareNotes(a: Note, b: Note): number {
+  if (Boolean(a.pinnedAt) !== Boolean(b.pinnedAt)) return a.pinnedAt ? -1 : 1
+  if (a.pinnedAt && b.pinnedAt && a.pinnedAt !== b.pinnedAt) return b.pinnedAt - a.pinnedAt
   return b.updatedAt - a.updatedAt || b.createdAt - a.createdAt
 }
 

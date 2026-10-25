@@ -609,4 +609,12 @@ export const appDe: Partial<Record<AppKey, string>> = {
   'pattern.stars': "Stern",
   'pattern.rings': "Ringe",
   'pattern.checks': "Karos",
+  'nsel.select': "Auswählen",
+  'nsel.select_label': "„{title}“ auswählen",
+  'nsel.hint': "Halte eine Notiz gedrückt, um sie auszuwählen. Nach rechts wischen heftet an, nach links löscht.",
+  'nsel.delete_title': "Notizen löschen",
+  'nsel.delete_body_one': "{count} Notiz löschen? Ein paar Sekunden lang lässt es sich rückgängig machen.",
+  'nsel.delete_body_other': "{count} Notizen löschen? Ein paar Sekunden lang lässt es sich rückgängig machen.",
+  'nsel.deleted_one': "{count} Notiz gelöscht.",
+  'nsel.deleted_other': "{count} Notizen gelöscht.",
 }

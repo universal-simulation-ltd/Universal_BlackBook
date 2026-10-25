@@ -609,4 +609,12 @@ export const appTr: Partial<Record<AppKey, string>> = {
   'pattern.stars': "Yıldız",
   'pattern.rings': "Halkalar",
   'pattern.checks': "Damalı",
+  'nsel.select': "Seç",
+  'nsel.select_label': "“{title}” seç",
+  'nsel.hint': "Seçmek için bir nota basılı tutun. Sabitlemek için sağa, silmek için sola kaydırın.",
+  'nsel.delete_title': "Notları sil",
+  'nsel.delete_body_one': "{count} not silinsin mi? Birkaç saniye geri alabilirsiniz.",
+  'nsel.delete_body_other': "{count} not silinsin mi? Birkaç saniye geri alabilirsiniz.",
+  'nsel.deleted_one': "{count} not silindi.",
+  'nsel.deleted_other': "{count} not silindi.",
 }

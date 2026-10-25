@@ -367,3 +367,30 @@ describe('New contact goes straight to its view (2026-10-25)', () => {
     expect(c.name).toBe('Ann')
   })
 })
+
+describe('notes: pin, delete several, undo (2026-10-25)', () => {
+  beforeEach(() => {
+    globalThis.indexedDB = new IDBFactory()
+  })
+
+  it('pins, deletes and puts back, on disk', async () => {
+    vi.resetModules()
+    const { useNoteStore } = await import('./noteStore')
+    const s = useNoteStore.getState()
+    await s.init()
+    await useNoteStore.getState().addMany([{ title: 'One', details: '' }, { title: 'Two', details: '' }])
+    const [one, two] = useNoteStore.getState().notes
+    await useNoteStore.getState().setPinned([two.id], true)
+    expect(useNoteStore.getState().notes.find((n) => n.id === two.id)!.pinnedAt).toBeTypeOf('number')
+    const gone = useNoteStore.getState().notes.filter((n) => n.id === one.id || n.id === two.id)
+    await useNoteStore.getState().removeMany([one.id, two.id])
+    expect(useNoteStore.getState().notes.some((n) => n.id === one.id)).toBe(false)
+    await useNoteStore.getState().restoreMany(gone)
+    vi.resetModules()
+    const again = (await import('./noteStore')).useNoteStore
+    await again.getState().init()
+    const back = again.getState().notes.find((n) => n.id === two.id)!
+    expect(back.pinnedAt).toBeTypeOf('number')
+    expect(again.getState().notes.some((n) => n.id === one.id)).toBe(true)
+  })
+})
