@@ -5,6 +5,8 @@ import { useNoteStore } from '../stores/noteStore'
 import { usePanelStore } from '../stores/panelStore'
 import { useT, type Key } from '../i18n'
 import { Modal } from './Modal'
+import { actionSwipe, deleteSwipe, removeSwipe, SwipeGroup, SwipeItem, UndoBar, useUndo } from './SwipeActions'
+import type { Note } from '../lib/notes'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label } from './ui'
 
 const FIELD_TYPE_KEY: Record<FieldType, Key> = {
@@ -26,6 +28,15 @@ export function TemplateManager({ onClose }: { onClose: () => void }) {
   const notes = useNoteStore((s) => s.notes)
   const [open, setOpen] = useState<string | null>(null)
   const editing = open === 'new' ? null : templates.find((x) => x.id === open)
+  const removeTemplate = useNoteStore((s) => s.removeTemplate)
+  const restoreTemplate = useNoteStore((s) => s.restoreTemplate)
+  // Swipe left to delete, with Undo: deleting moves the template's fields
+  // into its notes' text, and Undo puts the notes back as they were.
+  const undo = useUndo<{ template: NoteTemplate; notes: Note[] }>(restoreTemplate)
+  const remove = async (tpl: NoteTemplate) => {
+    const snap = await removeTemplate(tpl.id)
+    if (snap) undo.deleted(snap)
+  }
   return (
     <>
       <Modal title={t('tpl.manage')} onClose={onClose} backLabel={t('tpl.back')}>
@@ -33,11 +44,18 @@ export function TemplateManager({ onClose }: { onClose: () => void }) {
         {templates.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-slate-800 px-6 py-8 text-center text-sm text-slate-400">{t('tpl.none')}</p>
         ) : (
+          <SwipeGroup>
           <ul className="space-y-2">
             {templates.map((tpl) => {
               const count = notes.filter((n) => n.templateId === tpl.id).length
               return (
                 <li key={tpl.id}>
+                  <SwipeItem
+                    id={tpl.id}
+                    left={actionSwipe('edit', t('tpl.edit'), t('tpl.edit_label', { name: tpl.name }), () => setOpen(tpl.id))}
+                    right={deleteSwipe(tpl.name, () => void remove(tpl))}
+                    focus={[{ label: t('todo.delete_label', { title: tpl.name }), onClick: () => void remove(tpl) }]}
+                  >
                   <button
                     type="button"
                     onClick={() => setOpen(tpl.id)}
@@ -49,10 +67,19 @@ export function TemplateManager({ onClose }: { onClose: () => void }) {
                     </span>
                     <span className="text-xs text-slate-500">{t.plural('tpl.notes', count)}</span>
                   </button>
+                  </SwipeItem>
                 </li>
               )
             })}
           </ul>
+          </SwipeGroup>
+        )}
+        {undo.item && (
+          <UndoBar
+            title=""
+            text={undo.item.notes.length ? t.plural('tpl.deleted_moved', undo.item.notes.length, { name: undo.item.template.name }) : t('tpl.deleted', { name: undo.item.template.name })}
+            onUndo={() => void undo.undo()}
+          />
         )}
         <div className="mt-4 flex justify-end">
           <button type="button" className={btnPrimary} onClick={() => setOpen('new')}>
@@ -77,6 +104,16 @@ function TemplateForm({ template, onClose }: { template: NoteTemplate | null; on
   )
   const [confirming, setConfirming] = useState(false)
   const ok = name.trim() !== ''
+  // A field swiped away comes back with Undo, in its place (until Save).
+  const fieldUndo = useUndo<{ field: TemplateField; at: number }>(async ({ field, at }) =>
+    setFields((fs) => (fs.some((f) => f.id === field.id) ? fs : [...fs.slice(0, at), field, ...fs.slice(at)])),
+  )
+  const removeField = (i: number) => {
+    const f = fields[i]
+    if (!f) return
+    fieldUndo.deleted({ field: f, at: i })
+    setFields((fs) => fs.filter((_, j) => j !== i))
+  }
   const set = (i: number, p: Partial<TemplateField>) => setFields((fs) => fs.map((f, j) => (j === i ? { ...f, ...p } : f)))
   const move = (i: number, by: number) =>
     setFields((fs) => {
@@ -120,9 +157,16 @@ function TemplateForm({ template, onClose }: { template: NoteTemplate | null; on
         </div>
         <fieldset>
           <legend className={label}>{t('tpl.fields')}</legend>
+          <SwipeGroup>
           <ul className="space-y-3">
             {fields.map((f, i) => (
-              <li key={f.id} className="rounded-xl border border-slate-800 bg-slate-900 p-3">
+              <li key={f.id}>
+              <SwipeItem
+                id={f.id}
+                left={i > 0 ? actionSwipe('up', t('tpl.up'), t('tpl.move_up', { name: f.label || String(i + 1) }), () => move(i, -1)) : undefined}
+                right={removeSwipe('leave', t('tpl.remove'), t('tpl.remove_field', { name: f.label || String(i + 1) }), () => removeField(i))}
+              >
+              <div className="rounded-xl border border-slate-800 bg-slate-900 p-3">
                 <div className="flex items-center gap-2">
                   <input
                     className={`${inputCls} min-w-0 flex-1`}
@@ -142,7 +186,7 @@ function TemplateForm({ template, onClose }: { template: NoteTemplate | null; on
                     type="button"
                     className={`${btnSubtle} px-2`}
                     aria-label={t('tpl.remove_field', { name: f.label || String(i + 1) })}
-                    onClick={() => setFields((fs) => fs.filter((_, j) => j !== i))}
+                    onClick={() => removeField(i)}
                   >
                     <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
                       <path d="m4 4 8 8M12 4l-8 8" strokeLinecap="round" />
@@ -166,9 +210,15 @@ function TemplateForm({ template, onClose }: { template: NoteTemplate | null; on
                     </button>
                   ))}
                 </div>
+              </div>
+              </SwipeItem>
               </li>
             ))}
           </ul>
+          </SwipeGroup>
+          {fieldUndo.item && (
+            <UndoBar title="" text={t('tpl.field_removed', { name: fieldUndo.item.field.label || '…' })} onUndo={() => void fieldUndo.undo()} />
+          )}
           {fields.length < TEMPLATE_LIMITS.fields && (
             <button type="button" className={`${btnGhost} mt-3`} onClick={() => setFields((fs) => [...fs, { id: newId(), label: '', type: 'text' }])}>
               {t('tpl.add_field')}

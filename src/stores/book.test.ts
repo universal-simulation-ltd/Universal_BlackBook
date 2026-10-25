@@ -394,3 +394,54 @@ describe('notes: pin, delete several, undo (2026-10-25)', () => {
     expect(again.getState().notes.some((n) => n.id === one.id)).toBe(true)
   })
 })
+
+describe('swipe-to-delete undo (2026-10-25)', () => {
+  beforeEach(() => {
+    globalThis.indexedDB = new IDBFactory()
+  })
+
+  it('a deleted tag comes back on everyone and every to-do that had it', async () => {
+    await seedDisk({ contacts: [someone({ tagIds: ['t1'] })], tags: [{ id: 't1', name: 'Family', colour: 'amber', pattern: 'dots' }] })
+    const store = await reopen()
+    const { useTodoStore } = await import('./todoStore')
+    await useTodoStore.getState().init()
+    await useTodoStore.getState().replace([{ id: 'd1', title: 'Call', details: '', tagIds: ['t1'], createdAt: 1, updatedAt: 1 }])
+    const snap = await store.getState().removeTag('t1')
+    expect(store.getState().contacts[0].tagIds).toEqual([])
+    expect(useTodoStore.getState().todos[0].tagIds).toEqual([])
+    await store.getState().restoreTag(snap!)
+    expect(store.getState().tags.find((t) => t.id === 't1')).toMatchObject({ name: 'Family', pattern: 'dots' })
+    expect(store.getState().contacts[0].tagIds).toEqual(['t1'])
+    expect(useTodoStore.getState().todos[0].tagIds).toEqual(['t1'])
+    const again = await reopen()
+    expect(again.getState().contacts[0].tagIds).toEqual(['t1'])
+  })
+
+  it('a swiped-away contact comes back, on disk', async () => {
+    await seedDisk({ contacts: [someone()] })
+    const store = await reopen()
+    const c = store.getState().contacts[0]
+    await store.getState().removeContact(c.id)
+    await store.getState().restoreContacts([c])
+    const again = await reopen()
+    expect(again.getState().contacts.map((x) => x.id)).toEqual([c.id])
+  })
+
+  it('a deleted template comes back with its notes as they were', async () => {
+    vi.resetModules()
+    const { useNoteStore } = await import('./noteStore')
+    await useNoteStore.getState().init()
+    const book = useNoteStore.getState().templates.find((t) => t.id === 'tpl-book')!
+    await useNoteStore.getState().save({ title: 'Emma', details: 'Good.', templateId: book.id, fields: { 'f-author': 'Austen' } })
+    const snap = await useNoteStore.getState().removeTemplate(book.id)
+    const moved = useNoteStore.getState().notes.find((n) => n.title === 'Emma')!
+    expect(moved.templateId).toBeUndefined()
+    expect(moved.details).toContain('Austen')
+    await useNoteStore.getState().restoreTemplate(snap!)
+    const back = useNoteStore.getState().notes.find((n) => n.title === 'Emma')!
+    expect(back.templateId).toBe(book.id)
+    expect(back.fields).toEqual({ 'f-author': 'Austen' })
+    expect(back.details).toBe('Good.')
+    expect(useNoteStore.getState().templates.some((t) => t.id === book.id)).toBe(true)
+  })
+})

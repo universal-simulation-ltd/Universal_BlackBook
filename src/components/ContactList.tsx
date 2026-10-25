@@ -20,6 +20,7 @@ import { useSettingsStore } from '../stores/settingsStore'
 import { useSyncStore } from '../stores/syncStore'
 import { Modal } from './Modal'
 import { SwipeRow, type SwipeAction } from './SwipeRow'
+import { FocusActions, UndoBar, useUndo } from './SwipeActions'
 import { ListChip } from './ListChip'
 import { TagDot } from './TagChip'
 import { TagPicker } from './TagPicker'
@@ -136,6 +137,14 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
   const [openRow, setOpenRow] = useState<{ id: string; side: Side } | null>(null)
   /** The contact whose deletion is being confirmed. */
   const [pending, setPending] = useState<Contact | null>(null)
+  // A swipe's Delete goes at once, with Undo (BRANDING.md ▸ "A deletable row
+  // swipes", 2026-10-25); the form's Delete and the bulk Delete still ask.
+  const restoreContacts = useBookStore((s) => s.restoreContacts)
+  const undoDelete = useUndo<Contact[]>(restoreContacts)
+  const removeWithUndo = (list: Contact[]) => {
+    undoDelete.deleted(list)
+    for (const c of list) void removeContact(c.id)
+  }
   /** Is the "hidden from this list" drawer open? Never persisted — it is a
       management view, and it should be shut again the next time you come
       looking for whose birthday is next. */
@@ -421,7 +430,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
             <SwipeRow
               open={openRow?.id === c.id ? openRow.side : null}
               onOpenChange={(side) => setOpenRow(side ? { id: c.id, side } : null)}
-              right={deleteAction(c, () => setPending(c))}
+              right={deleteAction(c, () => removeWithUndo([c]))}
               // Swipe RIGHT to hide, and only where hiding means something.
               // In every other view the row has no left action at all, which
               // makes that direction a wall rather than a gesture that opens
@@ -472,6 +481,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                 onFineTune={() => edit(c.id)}
                 swipeHides
               />
+              <FocusActions actions={[{ label: t('swipe.delete_label', { name: who(c) }), onClick: () => removeWithUndo([c]) }]} />
             </SwipeRow>
             )}
           </li>
@@ -510,7 +520,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                     <SwipeRow
                       open={openRow?.id === c.id ? openRow.side : null}
                       onOpenChange={(side) => setOpenRow(side ? { id: c.id, side } : null)}
-                      right={deleteAction(c, () => setPending(c))}
+                      right={deleteAction(c, () => removeWithUndo([c]))}
                       left={showInListAction(c, () => {
                         void setListHidden(c.id, false)
                         setOpenRow(null)
@@ -569,7 +579,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                     <SwipeRow
                       open={openRow?.id === c.id ? openRow.side : null}
                       onOpenChange={(side) => setOpenRow(side ? { id: c.id, side } : null)}
-                      right={deleteAction(c, () => setPending(c))}
+                      right={deleteAction(c, () => removeWithUndo([c]))}
                       // The same gesture, the opposite action: in this drawer
                       // a right-swipe puts somebody back rather than taking
                       // them out. One direction, one meaning — "the thing that
@@ -630,6 +640,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
         />
       )}
 
+      {undoDelete.item && <UndoBar title={undoDelete.item[0]?.name || ''} onUndo={() => void undoDelete.undo()} />}
       {pending && (
         <ConfirmDelete
           contact={pending}

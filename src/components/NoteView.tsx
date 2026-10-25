@@ -16,6 +16,8 @@ import { askForNotifications } from '../native/notify'
 import { phoneScreens } from '../native/shell'
 import { useT } from '../i18n'
 import { CloseGlyph, Modal } from './Modal'
+import { actionSwipe, pinSwipe, removeSwipe, SwipeGroup, SwipeItem, UndoBar, useUndo } from './SwipeActions'
+import type { Contact } from '../lib/types'
 import { ReminderEditor, ReminderList } from './Reminders'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label, textareaCls } from './ui'
 
@@ -252,29 +254,14 @@ function NoteView({ id }: { id: string }) {
         </div>
       )}
 
-      {people.length > 0 && (
-        <div>
-          <span className={label}>{t('nlink.contacts_label')}</span>
-          <div className="flex flex-wrap gap-1.5">
-            {people.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => {
-                  flush()
-                  viewContact(c.id)
-                }}
-                className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-sm text-slate-100 hover:border-orange-400/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
-              >
-                <span className="text-orange-400">
-                  <PersonGlyph small />
-                </span>
-                <span className="truncate">{c.name || t('c.unnamed')}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      <LinkedPeople
+        note={note}
+        people={people}
+        onOpen={(cid) => {
+          flush()
+          viewContact(cid)
+        }}
+      />
 
       {note.place && <PlaceBlock place={note.place} />}
 
@@ -334,13 +321,7 @@ function NoteView({ id }: { id: string }) {
         )}
       </div>
 
-      <ReminderList
-        reminders={note.reminders}
-        onRemove={(rid) => {
-          const left = (note.reminders ?? []).filter((r) => r.id !== rid)
-          void patch(note.id, { reminders: left.length ? left : undefined })
-        }}
-      />
+      <ReminderList reminders={note.reminders} onChange={(next) => void patch(note.id, { reminders: next })} />
     </div>
   )
 
@@ -732,32 +713,135 @@ function NoteForm({ id }: { id: string }) {
   )
 }
 
-/** On a contact's view: the notes linked to them. Nothing when there are none. */
+/**
+ * On a contact's view: the notes linked to them. Swipe left to unlink (with
+ * Undo), right to pin or unpin the note. Nothing when there are none.
+ */
 export function LinkedNotes({ contactId }: { contactId: string }) {
   const t = useT()
   const notes = useNoteStore((s) => s.notes)
   const view = useNoteStore((s) => s.view)
+  const patch = useNoteStore((s) => s.patch)
+  const setPinned = useNoteStore((s) => s.setPinned)
   const linked = notes.filter((n) => n.contactIds?.includes(contactId))
-  if (linked.length === 0) return null
+  const setLink = (noteId: string, on: boolean) => {
+    const n = useNoteStore.getState().notes.find((x) => x.id === noteId)
+    if (!n) return
+    const ids = new Set(n.contactIds ?? [])
+    if (on) ids.add(contactId)
+    else ids.delete(contactId)
+    void patch(noteId, { contactIds: ids.size ? [...ids] : undefined })
+  }
+  const undo = useUndo<Note>(async (n) => setLink(n.id, true))
+  if (linked.length === 0 && !undo.item) return null
   return (
     <div>
-      <span className={label}>{t('nlink.linked_notes')}</span>
-      <ul className="space-y-2">
-        {linked.map((n) => (
-          <li key={n.id}>
-            <button
-              type="button"
-              onClick={() => view(n.id)}
-              className="flex w-full items-center gap-3 rounded-xl border border-slate-800 bg-slate-900 px-3 py-2.5 text-left hover:border-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
-            >
-              <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 text-orange-400" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5" />
-              </svg>
-              <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-100">{n.title || t('c.untitled')}</span>
-            </button>
-          </li>
-        ))}
-      </ul>
+      {linked.length > 0 && <span className={label}>{t('nlink.linked_notes')}</span>}
+      <SwipeGroup>
+        <ul className="space-y-2">
+          {linked.map((n) => {
+            const name = n.title || t('c.untitled')
+            const unlink = () => {
+              undo.deleted(n)
+              setLink(n.id, false)
+            }
+            const pin = () => void setPinned([n.id], !n.pinnedAt)
+            return (
+              <li key={n.id}>
+                <SwipeItem
+                  id={n.id}
+                  left={pinSwipe(Boolean(n.pinnedAt), name, pin)}
+                  right={removeSwipe('unlink', t('nlink.unlink'), t('nlink.unlink_label', { name }), unlink)}
+                  focus={[
+                    { label: n.pinnedAt ? t('todo.unpin_label', { title: name }) : t('todo.pin_label', { title: name }), onClick: pin },
+                    { label: t('nlink.unlink_label', { name }), onClick: unlink },
+                  ]}
+                >
+                  <button
+                    type="button"
+                    onClick={() => view(n.id)}
+                    className="flex w-full items-center gap-3 rounded-xl border border-slate-800 bg-slate-900 px-3 py-2.5 text-left hover:border-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+                  >
+                    <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 text-orange-400" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <path d="M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5" />
+                    </svg>
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-100">{name}</span>
+                  </button>
+                </SwipeItem>
+              </li>
+            )
+          })}
+        </ul>
+      </SwipeGroup>
+      {undo.item && <UndoBar title="" text={t('nlink.unlinked', { name: undo.item.title || t('c.untitled') })} onUndo={() => void undo.undo()} />}
+    </div>
+  )
+}
+
+/**
+ * A note's linked people, as rows (they used to be chips): tap to open the
+ * person; swipe left to unlink (with Undo), right to call them (or email them
+ * when there is no number).
+ */
+function LinkedPeople({ note, people, onOpen }: { note: Note; people: Contact[]; onOpen: (id: string) => void }) {
+  const t = useT()
+  const patch = useNoteStore((s) => s.patch)
+  const setLink = (cid: string, on: boolean) => {
+    const n = useNoteStore.getState().notes.find((x) => x.id === note.id)
+    if (!n) return
+    const ids = new Set(n.contactIds ?? [])
+    if (on) ids.add(cid)
+    else ids.delete(cid)
+    void patch(note.id, { contactIds: ids.size ? [...ids] : undefined })
+  }
+  const undo = useUndo<Contact>(async (c) => setLink(c.id, true))
+  if (people.length === 0 && !undo.item) return null
+  return (
+    <div>
+      {people.length > 0 && <span className={label}>{t('nlink.contacts_label')}</span>}
+      <SwipeGroup>
+        <ul className="space-y-2">
+          {people.map((c) => {
+            const name = c.name || t('c.unnamed')
+            const unlink = () => {
+              undo.deleted(c)
+              setLink(c.id, false)
+            }
+            const phone = c.phone.replace(/[^\d+]/g, '')
+            const email = c.email.trim()
+            const reach = phone
+              ? actionSwipe('call', t('action_call'), t('nlink.call_label', { name }), () => (window.location.href = `tel:${phone}`))
+              : email
+                ? actionSwipe('mail', t('action_email'), t('nlink.email_label', { name }), () => (window.location.href = `mailto:${email}`))
+                : undefined
+            return (
+              <li key={c.id}>
+                <SwipeItem
+                  id={c.id}
+                  left={reach}
+                  right={removeSwipe('unlink', t('nlink.unlink'), t('nlink.unlink_person', { name }), unlink)}
+                  focus={[{ label: t('nlink.unlink_person', { name }), onClick: unlink }]}
+                >
+                  <button
+                    type="button"
+                    onClick={() => onOpen(c.id)}
+                    className="flex w-full items-center gap-3 rounded-xl border border-slate-800 bg-slate-900 px-3 py-2.5 text-left hover:border-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+                  >
+                    <span className="text-orange-400">
+                      <PersonGlyph />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium text-slate-100">{name}</span>
+                      {(c.company || c.email || c.phone) && <span className="block truncate text-xs text-slate-500">{c.company || c.phone || c.email}</span>}
+                    </span>
+                  </button>
+                </SwipeItem>
+              </li>
+            )
+          })}
+        </ul>
+      </SwipeGroup>
+      {undo.item && <UndoBar title="" text={t('nlink.unlinked', { name: undo.item.name || t('c.unnamed') })} onUndo={() => void undo.undo()} />}
     </div>
   )
 }

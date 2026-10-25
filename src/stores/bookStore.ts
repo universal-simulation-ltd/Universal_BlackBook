@@ -162,7 +162,12 @@ interface BookState {
   recolourTag: (id: string, colour: string) => Promise<void>
   /** A tag's pattern (lib/patterns.ts), or undefined for the plain dot. */
   setTagPattern: (id: string, pattern: Pattern | undefined) => Promise<void>
-  removeTag: (id: string) => Promise<void>
+  /** Delete a tag (or list). Resolves to what Undo needs to put it back. */
+  removeTag: (id: string) => Promise<TagUndo | null>
+  /** Undo a tag's delete: the tag, and on everyone and everything that had it. */
+  restoreTag: (undo: TagUndo) => Promise<void>
+  /** Undo a delete: these contacts back as they were. */
+  restoreContacts: (contacts: Contact[]) => Promise<void>
   importBook: (contacts: Contact[], tags: Tag[], mode: 'merge' | 'replace', notice: string | null) => Promise<void>
   /**
    * A backup file opened (lib/backup.ts): this whole book, already merged or
@@ -177,6 +182,14 @@ interface BookState {
    */
   saveEmailList: (listName: string, rows: ListRow[], listTagIds?: string[]) => Promise<void>
   setNotice: (notice: string | null) => void
+}
+
+/** Everything a deleted tag was on, so Undo can put it back (swipe to delete, 2026-10-25). */
+export interface TagUndo {
+  tag: Tag
+  contactIds: string[]
+  todoIds: string[]
+  listIds: string[]
 }
 
 export interface ContactDraft {
@@ -642,7 +655,49 @@ export const useBookStore = create<BookState>((set, get) => ({
     await putContact(next)
   },
 
+  restoreContacts: async (back) => {
+    const here = new Set(get().contacts.map((c) => c.id))
+    const add = back.filter((c) => !here.has(c.id))
+    if (!add.length) return
+    set((s) => ({ contacts: [...s.contacts, ...add] }))
+    await Promise.all(add.map(putContact))
+  },
+
+  restoreTag: async ({ tag, contactIds, todoIds, listIds }) => {
+    if (get().tags.some((t) => t.id === tag.id)) return
+    const now = Date.now()
+    const onContacts = new Set(contactIds)
+    const onLists = new Set(listIds)
+    const changed: Contact[] = []
+    set((s) => ({
+      tags: [...s.tags.map((t) => (onLists.has(t.id) ? { ...t, tagIds: [...new Set([...(t.tagIds ?? []), tag.id])] } : t)), tag],
+      contacts: s.contacts.map((c) => {
+        if (!onContacts.has(c.id) || c.tagIds.includes(tag.id)) return c
+        const next = { ...c, tagIds: [...c.tagIds, tag.id], updatedAt: now }
+        changed.push(next)
+        return next
+      }),
+    }))
+    await putTag(tag)
+    await Promise.all(get().tags.filter((t) => onLists.has(t.id)).map(putTag))
+    await Promise.all(changed.map(putContact))
+    if (todoIds.length) {
+      const todos = useTodoStore.getState()
+      const on = new Set(todoIds)
+      await todos.replace(todos.todos.map((x) => (on.has(x.id) && !x.tagIds.includes(tag.id) ? { ...x, tagIds: [...x.tagIds, tag.id], updatedAt: now } : x)))
+    }
+  },
+
   removeTag: async (id) => {
+    const gone = get().tags.find((t) => t.id === id)
+    const undo: TagUndo | null = gone
+      ? {
+          tag: gone,
+          contactIds: get().contacts.filter((c) => c.tagIds.includes(id)).map((c) => c.id),
+          todoIds: useTodoStore.getState().todos.filter((x) => x.tagIds.includes(id)).map((x) => x.id),
+          listIds: get().tags.filter((t) => t.tagIds?.includes(id)).map((t) => t.id),
+        }
+      : null
     // Deleting a tag must not delete the people carrying it. Every contact is
     // stripped of the id, and each stripped contact is rewritten — a dangling
     // id would render as nothing anyway, but it would come back to life the
@@ -690,6 +745,7 @@ export const useBookStore = create<BookState>((set, get) => ({
         return updated ? putContact(updated) : Promise.resolve()
       }),
     )
+    return undo
   },
 
   importBook: async (contacts, tags, mode, notice) => {

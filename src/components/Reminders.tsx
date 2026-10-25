@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components -- the hook that gathers reminders lives beside the components that draw them */
-import { useEffect, useId, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { actionSwipe, deleteSwipe, SwipeGroup, SwipeItem, UndoBar, useUndo } from './SwipeActions'
 import { newId } from '../lib/id'
 import {
   defaultAt,
@@ -23,25 +24,27 @@ import { btnGhost, btnPrimary, btnSubtle, inputCls, label, radioCls } from './ui
 const REPEAT_KEY: Record<Repeat, Key> = { once: 'rem.once', monthly: 'rem.monthly', yearly: 'rem.yearly' }
 
 /** "Add notification": a label, a date and time, and how often. */
-export function ReminderEditor({ onSave, onClose }: { onSave: (r: Reminder) => void; onClose: () => void }) {
+export function ReminderEditor({ onSave, onClose, initial }: { onSave: (r: Reminder) => void; onClose: () => void; initial?: Reminder }) {
   const t = useT()
   const kit = usePhoneKit()
   const ids = useId()
-  const start = defaultAt()
-  const [text, setText] = useState('')
+  const start = initial?.at ?? defaultAt()
+  const [text, setText] = useState(initial?.label ?? '')
   const [date, setDate] = useState(start.slice(0, 10))
   const [time, setTime] = useState(start.slice(11))
-  const [repeat, setRepeat] = useState<Repeat>('once')
+  const [repeat, setRepeat] = useState<Repeat>(initial?.repeat ?? 'once')
   const at = `${date}T${time}`
   const ok = isValidAt(at)
   return (
-    <Modal phone="sheet" title={t('rem.add')} onClose={onClose}>
+    <Modal phone="sheet" title={initial ? t('rem.edit') : t('rem.add')} onClose={onClose}>
       <form
         className="space-y-4"
         onSubmit={(e) => {
           e.preventDefault()
           if (!ok) return
-          onSave({ id: newId(), label: text.trim(), at, repeat, createdAt: Date.now() })
+          // Edited: the same reminder, counting from now (so a time moved
+          // into the past is not suddenly due).
+          onSave({ id: initial?.id ?? newId(), label: text.trim(), at, repeat, createdAt: Date.now() })
         }}
       >
         <div>
@@ -123,37 +126,75 @@ export function reminderLine(r: Reminder, t: ReturnType<typeof useT>, now = Date
   return r.repeat === 'once' ? when : `${when} · ${t(REPEAT_KEY[r.repeat])}`
 }
 
-/** A record's reminders, each with a remove button. Nothing at all when there are none. */
-export function ReminderList({ reminders, onRemove }: { reminders?: Reminder[]; onRemove: (id: string) => void }) {
+/**
+ * A record's reminders. Swipe left to delete (with Undo), right to edit; the
+ * ✕ and the focus buttons do the same without a swipe. Nothing at all when
+ * there are none.
+ */
+export function ReminderList({ reminders, onChange }: { reminders?: Reminder[]; onChange: (next: Reminder[] | undefined) => void }) {
   const t = useT()
-  if (!reminders?.length) return null
-  const sorted = [...reminders].sort((a, b) => (nextOccurrence(a, Date.now()) ?? Infinity) - (nextOccurrence(b, Date.now()) ?? Infinity))
+  const [editing, setEditing] = useState<Reminder | null>(null)
+  const latest = useRef(reminders ?? [])
+  latest.current = reminders ?? []
+  const set = (next: Reminder[]) => onChange(next.length ? next : undefined)
+  const undo = useUndo<Reminder>(async (r) => set([...latest.current.filter((x) => x.id !== r.id), r]))
+  const remove = (r: Reminder) => {
+    undo.deleted(r)
+    set(latest.current.filter((x) => x.id !== r.id))
+  }
+  if (!reminders?.length && !undo.item) return null
+  const sorted = [...(reminders ?? [])].sort((a, b) => (nextOccurrence(a, Date.now()) ?? Infinity) - (nextOccurrence(b, Date.now()) ?? Infinity))
   return (
     <div>
-      <span className={label}>{t('rem.section')}</span>
-      <ul className="space-y-2">
-        {sorted.map((r) => (
-          <li key={r.id} className="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-900 px-3 py-2.5">
-            <svg viewBox="0 0 24 24" className="mt-0.5 h-5 w-5 shrink-0 text-orange-400" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15L6 16ZM10 20.5a2 2 0 0 0 4 0" />
-            </svg>
-            <div className="min-w-0 flex-1">
-              <p className="break-words text-sm font-medium text-slate-100">{r.label || t('rem.untitled')}</p>
-              <p className="text-xs text-slate-400">{reminderLine(r, t)}</p>
-            </div>
-            <button
-              type="button"
-              className="-my-1 -mr-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
-              aria-label={t('rem.remove', { label: r.label || t('rem.untitled') })}
-              onClick={() => onRemove(r.id)}
-            >
-              <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
-                <path d="m4 4 8 8M12 4l-8 8" strokeLinecap="round" />
-              </svg>
-            </button>
-          </li>
-        ))}
-      </ul>
+      {sorted.length > 0 && <span className={label}>{t('rem.section')}</span>}
+      <SwipeGroup>
+        <ul className="space-y-2">
+          {sorted.map((r) => {
+            const name = r.label || t('rem.untitled')
+            return (
+              <li key={r.id}>
+                <SwipeItem
+                  id={r.id}
+                  left={actionSwipe('edit', t('rem.edit_short'), t('rem.edit_label', { label: name }), () => setEditing(r))}
+                  right={deleteSwipe(name, () => remove(r))}
+                  focus={[{ label: t('rem.edit_label', { label: name }), onClick: () => setEditing(r) }]}
+                >
+                  <div className="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-900 px-3 py-2.5">
+                    <svg viewBox="0 0 24 24" className="mt-0.5 h-5 w-5 shrink-0 text-orange-400" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15L6 16ZM10 20.5a2 2 0 0 0 4 0" />
+                    </svg>
+                    <div className="min-w-0 flex-1">
+                      <p className="break-words text-sm font-medium text-slate-100">{name}</p>
+                      <p className="text-xs text-slate-400">{reminderLine(r, t)}</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="-my-1 -mr-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+                      aria-label={t('rem.remove', { label: name })}
+                      onClick={() => remove(r)}
+                    >
+                      <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
+                        <path d="m4 4 8 8M12 4l-8 8" strokeLinecap="round" />
+                      </svg>
+                    </button>
+                  </div>
+                </SwipeItem>
+              </li>
+            )
+          })}
+        </ul>
+      </SwipeGroup>
+      {undo.item && <UndoBar title={undo.item.label || t('rem.untitled')} onUndo={() => void undo.undo()} />}
+      {editing && (
+        <ReminderEditor
+          initial={editing}
+          onClose={() => setEditing(null)}
+          onSave={(r) => {
+            setEditing(null)
+            set(latest.current.map((x) => (x.id === r.id ? r : x)))
+          }}
+        />
+      )}
     </div>
   )
 }

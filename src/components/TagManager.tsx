@@ -6,6 +6,8 @@ import { TagMark } from './TagMark'
 import { useBookStore } from '../stores/bookStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { Modal } from './Modal'
+import { actionSwipe, deleteSwipe, SwipeGroup, SwipeItem, UndoBar, useUndo } from './SwipeActions'
+import type { TagUndo } from '../stores/bookStore'
 import { useT, type Key } from '../i18n'
 import { btnGhost, btnPrimary, btnSubtle, checkboxCls, inputCls } from './ui'
 
@@ -29,7 +31,15 @@ export function TagManager({ onClose }: { onClose: () => void }) {
   const emailLists = useSettingsStore((s) => s.emailLists)
 
   const [draft, setDraft] = useState('')
-  const [confirming, setConfirming] = useState<string | null>(null)
+  const restoreTag = useBookStore((s) => s.restoreTag)
+  // Delete (the swipe, or the button) takes the tag off everyone at once and
+  // offers Undo, which puts it back on them all (James, 2026-10-25).
+  const undo = useUndo<TagUndo>(restoreTag)
+  const remove = async (id: string) => {
+    const snap = await removeTag(id)
+    if (snap) undo.deleted(snap)
+  }
+  const rename = (id: string) => document.getElementById(`tm-name-${id}`)?.focus()
 
   // One pass over the contacts rather than a `filter` per tag — with a few
   // hundred contacts and a dozen tags the quadratic version is the difference
@@ -79,14 +89,22 @@ export function TagManager({ onClose }: { onClose: () => void }) {
             {t('tm.none')}
           </p>
         ) : (
+          <SwipeGroup>
           <ul className="divide-y divide-slate-800">
             {sorted.map((c) => {
               const count = counts.get(c.id) ?? 0
               return (
-                <li key={c.id} className="py-3">
+                <li key={c.id}>
+                  <SwipeItem
+                    id={c.id}
+                    left={actionSwipe('edit', t('tm.rename_short'), t('tm.rename', { name: c.name }), () => rename(c.id))}
+                    right={deleteSwipe(c.name, () => void remove(c.id))}
+                  >
+                  <div className="bg-slate-900 py-3">
                   <div className="flex flex-wrap items-center gap-2">
                     <TagMark colour={swatch(c.colour).dot} pattern={c.pattern} className="h-4 w-4 shrink-0" />
                     <input
+                      id={`tm-name-${c.id}`}
                       className={`${inputCls} flex-1`}
                       value={c.name}
                       aria-label={t('tm.rename', { name: c.name })}
@@ -95,38 +113,15 @@ export function TagManager({ onClose }: { onClose: () => void }) {
                     <span className="shrink-0 text-xs text-slate-500 tabular-nums">
                       {t.plural('c.contacts', count)}
                     </span>
-                    {confirming === c.id ? (
-                      <span className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          className={btnSubtle}
-                          onClick={() => {
-                            void removeTag(c.id)
-                            setConfirming(null)
-                          }}
-                        >
-                          <span className="text-rose-300">{t('c.delete')}</span>
-                        </button>
-                        <button type="button" className={btnSubtle} onClick={() => setConfirming(null)}>
-                          {t('c.cancel')}
-                        </button>
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        className={btnSubtle}
-                        onClick={() => setConfirming(c.id)}
-                        aria-label={t('swipe.delete_label', { name: c.name })}
-                      >
-                        {t('c.delete')}
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      className={btnSubtle}
+                      onClick={() => void remove(c.id)}
+                      aria-label={t('swipe.delete_label', { name: c.name })}
+                    >
+                      {t('c.delete')}
+                    </button>
                   </div>
-                  {confirming === c.id && count > 0 && (
-                    <p className="mt-1.5 text-xs text-slate-400">
-                      {t.plural('tm.stay', count)}
-                    </p>
-                  )}
                   {/* Tag → list. Only with Email lists on, and it is how a list
                       made before lists were their own kind (as a plain tag)
                       becomes one — after which it leaves this panel for the
@@ -176,10 +171,20 @@ export function TagManager({ onClose }: { onClose: () => void }) {
                       </button>
                     ))}
                   </div>
+                  </div>
+                  </SwipeItem>
                 </li>
               )
             })}
           </ul>
+          </SwipeGroup>
+        )}
+        {undo.item && (
+          <UndoBar
+            title=""
+            text={undo.item.contactIds.length ? t.plural('tm.deleted_on', undo.item.contactIds.length, { name: undo.item.tag.name }) : t('tm.deleted', { name: undo.item.tag.name })}
+            onUndo={() => void undo.undo()}
+          />
         )}
 
         <div className="flex justify-end border-t border-slate-800 pt-4">

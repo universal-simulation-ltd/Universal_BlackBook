@@ -196,6 +196,34 @@ Hiding the tab keeps the notes. To-do and Notes on, Email lists off, are the
 defaults since 2026-10-23; the tick boxes say "Hide …" so they still start unticked,
 and a device that never touched the old switches gets the new defaults.
 
+### Every deletable list swipes (suite rule, 2026-10-25)
+
+BRANDING.md ▸ "A deletable row swipes": every list whose items can be deleted
+swipes LEFT to delete (with **Undo**, six seconds) and RIGHT for its own second
+action, with the same jobs as buttons on focus for VoiceOver, TalkBack and the
+keyboard. All of it is `src/components/SwipeActions.tsx` (`SwipeGroup`,
+`SwipeItem`, `useUndo`, `UndoBar`, `FocusActions`).
+
+| List | Swipe left | Swipe right |
+|---|---|---|
+| Contacts (and the hidden-people / hidden-birthdays drawers) | Delete, with Undo (was: a confirm) | Hide / Show (as before) |
+| To-do (open) | Delete, with Undo | Pin / Unpin |
+| To-do (done) | Delete, with Undo | Not done |
+| Notes | Delete, with Undo | Pin / Unpin (hold to select) |
+| Lists (Email lists) | Delete the list (people stay), with Undo | Copy its email addresses |
+| A list's people | Take off the list, with Undo | Email them |
+| Tune ▸ Tags | Delete, with Undo (puts it back on everyone) | Rename |
+| Tune ▸ Note templates | Delete, with Undo (puts the notes' fields back) | Edit |
+| A template's fields | Remove, with Undo | Move up |
+| A contact's or note's notifications | Delete, with Undo | Edit |
+| A contact's linked notes | Unlink, with Undo | Pin / Unpin the note |
+| A note's linked people (now rows, not chips) | Unlink, with Undo | Call (or Email) |
+| Notes ▸ Import preview | Leave out, with Undo | (none) |
+
+The confirmations that stay are the ones a person reaches on purpose: Delete
+in a contact's or note's form, a list's own Delete (which can take its people
+with it), and the bulk Delete of a selection.
+
 ### Pinning, deleting and selecting notes
 
 The Notes list has To-do's swipes (James, 2026-10-25; the same code,

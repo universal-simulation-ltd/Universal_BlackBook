@@ -343,13 +343,7 @@ export function ContactView({ id }: { id: string }) {
 
       <LinkedNotes contactId={contact.id} />
 
-      <ReminderList
-        reminders={contact.reminders}
-        onRemove={(rid) => {
-          const left = (contact.reminders ?? []).filter((r) => r.id !== rid)
-          void patchContact(contact.id, { reminders: left.length ? left : undefined })
-        }}
-      />
+      <ReminderList reminders={contact.reminders} onChange={(next) => void patchContact(contact.id, { reminders: next })} />
 
       {isFresh ? (
         <p className="text-sm text-slate-500">{kit ? t('view.fresh_phone') : t('view.fresh_web')}</p>

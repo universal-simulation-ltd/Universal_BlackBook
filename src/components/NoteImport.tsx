@@ -6,6 +6,7 @@ import { useNativeNav } from '../native/nav'
 import { useBookStore } from '../stores/bookStore'
 import { useT, type Key } from '../i18n'
 import { Modal } from './Modal'
+import { removeSwipe, SwipeGroup, SwipeItem, UndoBar, useUndo } from './SwipeActions'
 import { btnGhost, btnPrimary, btnSubtle } from './ui'
 
 const REASON: Record<ImportResult['skipped'][number]['reason'], Key> = {
@@ -28,6 +29,13 @@ export function NoteImportButton() {
   const input = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const [found, setFound] = useState<ImportResult | null>(null)
+  // Swipe a found note left to leave it out of the import (with Undo).
+  const [left, setLeft] = useState<Set<number>>(new Set())
+  const leaveUndo = useUndo<number>(async (i) => setLeft((s) => new Set([...s].filter((x) => x !== i))))
+  const leaveOut = (i: number) => {
+    leaveUndo.deleted(i)
+    setLeft((s) => new Set(s).add(i))
+  }
   const addMany = useNoteStore((s) => s.addMany)
   const say = useNativeNav((s) => s.say)
   const setNotice = useBookStore((s) => s.setNotice)
@@ -37,6 +45,7 @@ export function NoteImportButton() {
     if (!files?.length) return
     setBusy(true)
     try {
+      setLeft(new Set())
       setFound(await importFiles([...files]))
     } finally {
       setBusy(false)
@@ -46,7 +55,7 @@ export function NoteImportButton() {
 
   const add = async () => {
     if (!found) return
-    const n = await addMany(found.notes)
+    const n = await addMany(found.notes.filter((_, i) => !left.has(i)))
     setFound(null)
     const message = t.plural('imp.added', n)
     if (kit) say(message)
@@ -72,18 +81,33 @@ export function NoteImportButton() {
         <Modal phone="sheet" title={t('imp.title')} onClose={() => setFound(null)}>
           {found.notes.length > 0 ? (
             <>
-              <p className="text-sm text-slate-300">{t.plural('imp.found', found.notes.length)}</p>
+              <p className="text-sm text-slate-300">{t.plural('imp.found', found.notes.length - left.size)}</p>
+              <SwipeGroup>
               <ul className="mt-3 max-h-[40vh] space-y-1 overflow-y-auto rounded-xl border border-slate-800 bg-slate-900 p-2">
-                {found.notes.slice(0, 100).map((n, i) => (
-                  <li key={i} className="min-w-0 px-1.5 py-1">
+                {found.notes.slice(0, 100).map((n, i) =>
+                  left.has(i) ? null : (
+                  <li key={i} className="min-w-0">
+                    <SwipeItem
+                      id={String(i)}
+                      right={removeSwipe('leave', t('imp.leave'), t('imp.leave_label', { title: n.title || t('c.untitled') }), () => leaveOut(i))}
+                      focus={[{ label: t('imp.leave_label', { title: n.title || t('c.untitled') }), onClick: () => leaveOut(i) }]}
+                    >
+                    <div className="bg-slate-900 px-1.5 py-1">
                     <p className="truncate text-sm font-medium text-slate-100">{n.title || t('c.untitled')}</p>
                     <p className="truncate text-xs text-slate-500">
                       {n.createdAt ? `${new Date(n.createdAt).toLocaleDateString(t.locale)} · ` : ''}
                       {n.file}
                     </p>
+                    </div>
+                    </SwipeItem>
                   </li>
-                ))}
+                  ),
+                )}
               </ul>
+              </SwipeGroup>
+              {leaveUndo.item !== null && (
+                <UndoBar title="" text={t('imp.left_out', { title: found.notes[leaveUndo.item]?.title || t('c.untitled') })} onUndo={() => void leaveUndo.undo()} />
+              )}
             </>
           ) : (
             <p className="text-sm text-slate-300">{t('imp.none')}</p>
@@ -121,9 +145,9 @@ export function NoteImportButton() {
               <button type="button" className={btnGhost} onClick={() => setFound(null)}>
                 {t('c.cancel')}
               </button>
-              {found.notes.length > 0 && (
+              {found.notes.length - left.size > 0 && (
                 <button type="button" className={btnPrimary} onClick={() => void add()}>
-                  {t.plural('imp.add', found.notes.length)}
+                  {t.plural('imp.add', found.notes.length - left.size)}
                 </button>
               )}
             </div>

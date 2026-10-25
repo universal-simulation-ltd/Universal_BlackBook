@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type FormEvent, type ReactNode, type TouchEvent as ReactTouchEvent } from 'react'
 import { SwipeRow } from './SwipeRow'
-import { deleteSwipe, FocusActions, pinSwipe, UndoBar, useUndo } from './SwipeActions'
+import { actionSwipe, deleteSwipe, FocusActions, pinSwipe, SwipeGroup, SwipeItem, UndoBar, useUndo } from './SwipeActions'
 import type { Side } from '../lib/swipe'
 import { todayParts } from '../lib/birthday'
 import { isList } from '../lib/lists'
@@ -44,6 +44,7 @@ export function TodoView() {
   const doneId = useId()
   const hintId = useId()
   const setPinned = useTodoStore((s) => s.setPinned)
+  const setDone = useTodoStore((s) => s.setDone)
   const move = useTodoStore((s) => s.move)
   const remove = useTodoStore((s) => s.remove)
   const restore = useTodoStore((s) => s.restore)
@@ -216,13 +217,24 @@ export function TodoView() {
             )}
           </div>
           {showDone && (
+            <SwipeGroup>
             <ul id={doneId} className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
-              {done.map((t) => (
-                <li key={t.id}>
-                  <TodoRow todo={t} byId={byId} today={today} />
+              {done.map((x) => (
+                <li key={x.id}>
+                  {/* Done ones swipe too: left deletes (with Undo), right
+                      puts it back on the list. */}
+                  <SwipeItem
+                    id={x.id}
+                    left={actionSwipe('undone', t('todo.not_done'), t('todo.mark_undone', { title: x.title }), () => void setDone(x.id, false))}
+                    right={deleteSwipe(x.title, () => removeWithUndo(x))}
+                    focus={[{ label: t('todo.delete_label', { title: x.title }), onClick: () => removeWithUndo(x) }]}
+                  >
+                    <TodoRow todo={x} byId={byId} today={today} />
+                  </SwipeItem>
                 </li>
               ))}
             </ul>
+            </SwipeGroup>
           )}
         </section>
       )}

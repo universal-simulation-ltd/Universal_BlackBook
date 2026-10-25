@@ -65,7 +65,9 @@ interface NoteState {
   newNote: () => void
   stopChoosing: () => void
   saveTemplate: (template: NoteTemplate) => Promise<void>
-  removeTemplate: (id: string) => Promise<void>
+  /** Delete a template; resolves to what Undo needs (the template and the notes as they were). */
+  removeTemplate: (id: string) => Promise<{ template: NoteTemplate; notes: Note[] } | null>
+  restoreTemplate: (undo: { template: NoteTemplate; notes: Note[] }) => Promise<void>
   replaceTemplates: (templates: NoteTemplate[]) => Promise<void>
 }
 
@@ -203,12 +205,25 @@ export const useNoteStore = create<NoteState>((set, get) => {
 
     removeTemplate: async (id) => {
       const tpl = get().templates.find((t) => t.id === id)
-      if (!tpl) return
+      if (!tpl) return null
       const changed = new Map(retireFields(get().notes, tpl, tpl.fields.map((f) => f.id), true).map((n) => [n.id, n]))
+      const before = get().notes.filter((n) => changed.has(n.id))
       if (changed.size) await commit(get().notes.map((n) => changed.get(n.id) ?? n))
       const templates = get().templates.filter((t) => t.id !== id)
       set((s) => ({ templates, templateFilter: s.templateFilter === id ? null : s.templateFilter }))
       await saveTemplates(templates)
+      return { template: tpl, notes: before }
+    },
+
+    restoreTemplate: async ({ template, notes }) => {
+      if (!get().templates.some((t) => t.id === template.id)) {
+        const templates = [...get().templates, template]
+        set({ templates })
+        await saveTemplates(templates)
+      }
+      // The notes as they were before their fields were moved into their text.
+      const back = new Map(notes.map((n) => [n.id, { ...n, updatedAt: Date.now() }]))
+      if (back.size) await commit(get().notes.map((n) => back.get(n.id) ?? n))
     },
 
     replaceTemplates: async (templates) => {
