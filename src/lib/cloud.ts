@@ -50,6 +50,12 @@ export interface VaultPayload {
    * wipe them.
    */
   pages?: Note[]
+  /**
+   * The book's shape, as the backup file's schema (lib/backup.ts): 3 since
+   * 2026-10-25 (reminders, links, templates, to-do order, tag patterns, all
+   * optional fields). Advisory: absent on older blobs, which read as they are.
+   */
+  schema?: number
   /** Epoch ms the writing device stamped. Advisory — used only in messages. */
   savedAt: number
 }

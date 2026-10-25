@@ -31,6 +31,8 @@ interface NoteState {
   setQuery: (query: string) => void
   save: (draft: NoteDraft) => Promise<void>
   remove: (id: string) => Promise<void>
+  /** Change some fields of one note (its reminders, links, place) without the page. */
+  patch: (id: string, patch: Partial<Omit<Note, 'id' | 'createdAt' | 'updatedAt'>>) => Promise<void>
   /** The vault's or a backup file's copy (or a merge of it) becomes this device's. */
   replace: (notes: Note[]) => Promise<void>
 }
@@ -68,7 +70,10 @@ export const useNoteStore = create<NoteState>((set, get) => {
       set({ editing: null })
       // Nothing changed: no new "edited" time, so the order stays put.
       if (existing && existing.title === title && existing.details === details) return
+      // `...existing` first: what the page does not edit (reminders, links,
+      // place) stays as it was.
       const note: Note = {
+        ...existing,
         id: existing?.id ?? newId(),
         title,
         details,
@@ -76,6 +81,13 @@ export const useNoteStore = create<NoteState>((set, get) => {
         updatedAt: now,
       }
       await commit(existing ? get().notes.map((n) => (n.id === note.id ? note : n)) : [...get().notes, note])
+    },
+
+    patch: async (id, patch) => {
+      const existing = get().notes.find((n) => n.id === id)
+      if (!existing) return
+      const note: Note = { ...existing, ...patch, updatedAt: Date.now() }
+      await commit(get().notes.map((n) => (n.id === id ? note : n)))
     },
 
     remove: async (id) => {

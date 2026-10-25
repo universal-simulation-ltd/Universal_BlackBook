@@ -36,6 +36,7 @@ import { useBookStore } from './bookStore'
 import { useTodoStore } from './todoStore'
 import { useNoteStore } from './noteStore'
 import { mergeNotes, toNotes } from '../lib/notes'
+import { BACKUP_SCHEMA } from '../lib/backup'
 import { mergeTodos, toTodos } from '../lib/todos'
 
 /**
@@ -115,6 +116,7 @@ function bookPayload(): VaultPayload {
   // before then would overwrite the online list with nothing.
   return {
     version: VAULT_VERSION,
+    schema: BACKUP_SCHEMA,
     contacts,
     tags,
     categories: tags,

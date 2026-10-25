@@ -13,6 +13,13 @@
 //
 //   { contacts, tags, todos, pages, settings, view }
 //
+// Schema 3 (2026-10-25) adds, all optional: reminders on contacts and notes,
+// a contact's link to a phone contact, a note's linked contacts, place,
+// template and field values, the note templates themselves (`templates`), a
+// to-do's pin and hand-made order, and a tag's pattern. A schema-1 or -2 file
+// opens unchanged (none of them); a schema-3 file in an older build is
+// refused as made by a newer version, so nothing is silently dropped.
+//
 // Schema 2 (2026-10-23) added `pages`, the Notes tab's notes (lib/notes.ts).
 // A schema-1 file opens unchanged, with no notes (`migrate`); a schema-2 file
 // in a build from before Notes is refused as made by a newer version rather
@@ -34,12 +41,13 @@ import { FORM_FIELDS, isFormField, type FormField } from './formFields'
 import { mergeBooks } from './merge'
 import { SWATCHES } from './palette'
 import { toTodo, mergeTodos, type Todo } from './todos'
+import { toReminders } from './reminders'
 import { mergeNotes, type Note } from './notes'
 import type { Contact, Tag } from './types'
 
 export const BACKUP_PRODUCT = 'blackbook'
 export const BACKUP_KIND = 'backup'
-export const BACKUP_SCHEMA = 2
+export const BACKUP_SCHEMA = 3
 
 /** The app's own switches that travel with a backup (stores/settingsStore.ts). */
 export interface BackupSettings {
@@ -142,7 +150,8 @@ export async function openBackup(input: Blob | string, password?: string): Promi
     // Schema 1 is schema 2 without notes: `parseBackup` reads the missing
     // `pages` as none. Its `todos: false` was the old default (off), which
     // since 2026-10-23 is on, so it reads as unset; `true` stays true.
-    kinds: { [BACKUP_KIND]: { schema: BACKUP_SCHEMA, migrate: (data) => fromSchema1(data) } },
+    // Schema 2 → 3 adds only optional fields, so a schema-2 file is read as is.
+    kinds: { [BACKUP_KIND]: { schema: BACKUP_SCHEMA, migrate: (data, from) => (from <= 1 ? fromSchema1(data) : data) } },
     password: password || undefined,
   })
   if (!read.ok) return { ok: false, reason: read.reason }
@@ -247,6 +256,7 @@ function parseContact(raw: unknown, known: Set<string>): Contact | null {
     pinnedAt: optTime(raw.pinnedAt),
     listOnly: raw.listOnly === true ? true : undefined,
     notes,
+    ...(toReminders(raw.reminders) ? { reminders: toReminders(raw.reminders) } : {}),
     createdAt,
     updatedAt: time(raw.updatedAt, createdAt),
   }
@@ -279,7 +289,8 @@ function parseNote(raw: unknown): Note | null {
   const details = str(raw.details, LIMITS.pageDetails)
   if (!noteId || !(title.trim() || details.trim())) return null
   const createdAt = time(raw.createdAt, EARLIEST)
-  return { id: noteId, title, details, createdAt, updatedAt: time(raw.updatedAt, createdAt) }
+  const reminders = toReminders(raw.reminders)
+  return { id: noteId, title, details, ...(reminders ? { reminders } : {}), createdAt, updatedAt: time(raw.updatedAt, createdAt) }
 }
 
 function parseSettings(raw: unknown): BackupSettings | null {

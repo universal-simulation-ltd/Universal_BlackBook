@@ -8,12 +8,16 @@
 // backup file (lib/backup.ts, schema 2) — under the name `pages` so they can
 // never be mistaken for the `notes` field every contact carries.
 
+import { toReminders, type Reminder } from './reminders'
+
 export interface Note {
   id: string
   /** What it is about. The only required field. */
   title: string
   /** The note itself, free text. */
   details: string
+  /** "Add notification" on a note (2026-10-25), the contacts' engine (lib/reminders.ts). */
+  reminders?: Reminder[]
   createdAt: number
   updatedAt: number
 }
@@ -30,6 +34,7 @@ export function toNote(raw: unknown): Note | null {
     id: r.id,
     title: typeof r.title === 'string' ? r.title : '',
     details: typeof r.details === 'string' ? r.details : '',
+    ...(toReminders(r.reminders) ? { reminders: toReminders(r.reminders) } : {}),
     createdAt: typeof r.createdAt === 'number' ? r.createdAt : Date.now(),
     updatedAt: typeof r.updatedAt === 'number' ? r.updatedAt : Date.now(),
   }

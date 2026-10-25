@@ -1,3 +1,4 @@
+import type { Reminder } from './reminders'
 // The whole domain, in one file. A BlackBook is a list of people, a list of
 // tags, and nothing else — there is no server, no account and no sync, so
 // these types are also the complete on-disk schema (see lib/store.ts).
@@ -125,6 +126,12 @@ export interface Contact {
    */
   listOnly?: boolean
   notes: string
+  /**
+   * "Add notification" (James, 2026-10-25): reminders about this person, once
+   * or every month or year (lib/reminders.ts). Absent on every earlier record
+   * and on everyone without one.
+   */
+  reminders?: Reminder[]
   createdAt: number
   updatedAt: number
 }

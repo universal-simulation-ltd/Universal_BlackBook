@@ -27,6 +27,7 @@ import { SearchDrawer } from './components/SearchDrawer'
 import { TodoView } from './components/TodoView'
 import { NotesView } from './components/NotesView'
 import { LockPanel, LockScreen } from './components/Lock'
+import { DueReminders } from './components/Reminders'
 import { btnPrimary } from './components/ui'
 import { allOnline } from './lib/merge'
 import { forgetVault, loadSyncMeta } from './lib/store'
@@ -265,6 +266,8 @@ export default function App() {
             </button>
           </div>
         )}
+
+        <DueReminders />
 
         {tabs.length > 1 && (
           <div

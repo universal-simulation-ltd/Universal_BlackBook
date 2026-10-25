@@ -401,6 +401,10 @@ export const useBookStore = create<BookState>((set, get) => ({
     const now = Date.now()
     const existing = draft.id ? get().contacts.find((c) => c.id === draft.id) : undefined
     const contact: Contact = {
+      // Everything the form has no control for (reminders, the phone-contact
+      // link — set from the view, 2026-10-25) stays as it was; the fields
+      // below are the form's and overwrite.
+      ...existing,
       id: existing?.id ?? newId(),
       name: draft.name.trim(),
       email: draft.email.trim(),

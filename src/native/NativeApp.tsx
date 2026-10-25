@@ -50,6 +50,8 @@ import { useNativeNav } from './nav'
 import { SignInContent } from './SignInScreen'
 import { PhoneLinkified } from './PhoneLinks'
 import { TuneContent } from './TuneScreen'
+import { DueReminders, useAllReminders } from '../components/Reminders'
+import { onNotificationTap, scheduleReminders } from './notify'
 import './native.css'
 
 type PhoneTab = Tab | 'tune'
@@ -104,6 +106,27 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
   // own on the page; on Lists and To-do there is one way, so + just does it.
   const [adding, setAdding] = useState(false)
   const articles = useArticles()
+
+  // Reminders → the phone's own notifications (native/notify.ts): rebuilt a
+  // moment after any change, and again whenever the app comes to the front.
+  const reminders = useAllReminders()
+  const notifyDetails = useSettingsStore((s) => s.notifyDetails)
+  useEffect(() => {
+    const run = () => void scheduleReminders(reminders, notifyDetails, t)
+    const timer = window.setTimeout(run, 800)
+    const onVisible = () => document.visibilityState === 'visible' && run()
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      window.clearTimeout(timer)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [reminders, notifyDetails, t])
+  const viewContact = useBookStore((s) => s.view)
+  const openNote = useNoteStore((s) => s.edit)
+  useEffect(
+    () => onNotificationTap((kind, id) => (kind === 'contact' ? viewContact(id) : openNote(id))),
+    [viewContact, openNote],
+  )
 
   // Every tab opens at its top.
   const lastTab = useRef(current)
@@ -169,6 +192,8 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
               </button>
             </div>
           )}
+
+          <DueReminders />
 
           {/* Hidden with a class, not unmounted, while another tab shows, so
               the search, the Filters and the list are as they were left. */}

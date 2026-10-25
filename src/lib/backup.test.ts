@@ -74,7 +74,7 @@ describe('backup file', () => {
     expect(opened.ok && opened.data.contacts.length).toBe(2)
   }, 20_000)
 
-  it('opens a schema-1 file (from before Notes) with no notes, and writes schema 2', async () => {
+  it('opens a schema-1 file (from before Notes) with no notes, and writes schema 3', async () => {
     const old = JSON.stringify({
       format: 'unisim-transfer',
       version: 1,
@@ -90,7 +90,7 @@ describe('backup file', () => {
     expect(opened.data.pages).toEqual([])
     // Schema 1's To-do switch was opt-in; on is the default now, and Notes is new.
     expect(opened.data.settings).toMatchObject({ todos: true, notes: true })
-    expect(JSON.parse((await packBackup(source())).text).schema).toBe(2)
+    expect(JSON.parse((await packBackup(source())).text).schema).toBe(3)
   })
 
   it('drops a note with no id or with nothing in it', () => {
@@ -178,5 +178,50 @@ describe('mergeBackup (Add to what is here)', () => {
     expect(m.tags.filter((t) => t.name === 'Work')).toHaveLength(1)
     expect(m.tags.find((t) => t.kind === 'list')?.tagIds).toEqual(['mine'])
     expect(m.pages).toEqual([source().pages[0]])
+  })
+
+  it('opens a schema-2 file (from before reminders) as it is', async () => {
+    const old = JSON.stringify({
+      format: 'unisim-transfer',
+      version: 1,
+      product: 'blackbook',
+      kind: 'backup',
+      schema: 2,
+      data: { contacts: [contact('c1', 'Ada')], tags: [], todos: [], pages: [{ id: 'n1', title: 'Hi', details: '' }], settings: { emailLists: false, todos: false, notes: true, shownFields: [] } },
+    })
+    const opened = await openBackup(old)
+    expect(opened.ok).toBe(true)
+    if (!opened.ok) return
+    expect(opened.data.contacts[0].reminders).toBeUndefined()
+    expect(opened.data.pages).toHaveLength(1)
+    // Schema 2's switches are read as written (the 1→2 migration is not run).
+    expect(opened.data.settings).toMatchObject({ todos: false, notes: true })
+  })
+
+  it('carries reminders on contacts and notes through a file, and tames bad ones', async () => {
+    const good = { id: 'r1', label: 'Anniversary', at: '2026-06-03T09:00', repeat: 'yearly', createdAt: T0 }
+    const src = source()
+    src.contacts[0] = { ...src.contacts[0], reminders: [good as never] }
+    src.pages = [{ id: 'n1', title: 'Note', details: '', reminders: [good as never], createdAt: T0, updatedAt: T0 }]
+    const opened = await openBackup((await packBackup(src)).text)
+    expect(opened.ok).toBe(true)
+    if (!opened.ok) return
+    expect(opened.data.contacts.find((c) => c.id === 'c1')!.reminders).toEqual([good])
+    expect(opened.data.pages[0].reminders).toEqual([good])
+    const hostile = parseBackup({
+      contacts: [
+        contact('c9', 'Eve', {
+          reminders: [
+            { id: 'ok', label: 'x'.repeat(5000), at: '2026-02-29T09:00', repeat: 'once', createdAt: 1 },
+            { id: 'bad id!', label: '', at: '2026-01-01T09:00', repeat: 'once', createdAt: 1 },
+            { id: 'r2', label: '', at: '2026-02-28T25:00', repeat: 'weekly', createdAt: 1 },
+            { id: 'r3', label: 'Kept', at: '2028-02-29T09:00', repeat: 'hourly', createdAt: 1 },
+          ] as never,
+        }),
+      ],
+    })!
+    const rs = hostile.contacts[0].reminders!
+    expect(rs.map((r) => r.id)).toEqual(['r3'])
+    expect(rs[0].repeat).toBe('once')
   })
 })

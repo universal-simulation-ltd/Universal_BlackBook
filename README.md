@@ -136,6 +136,31 @@ typing, and just opening somebody never brings the keyboard up. The note saves
 as you type, so you can close the person straight away. **Fine-tune** (beside Close)
 opens the full form for everything else.
 
+## Notifications (reminders)
+
+On a contact's view, **⋯ ▸ Add notification**: a few words ("Anniversary"), a
+date and a time, and **Once**, **Every month** or **Every year** (James,
+2026-10-25). The person's view lists their notifications, each with its next
+time and an ✕ to remove it. Notes have the same (see Notes).
+
+- **The phone app** schedules them as the phone's own notifications
+  (`@capacitor/local-notifications`, nothing sent to any server): asked for
+  permission the first time you add one, rebuilt whenever one changes and
+  whenever the app comes to the front (a repeating one is scheduled a few
+  occurrences ahead: 6 months, 2 years). Tapping one opens the person. **What a
+  notification says is private by default:** "BlackBook · You have a
+  reminder". Tune ▸ **Show names in notifications** (off to start) puts the
+  name and the words on it. On Android a notification may arrive a few minutes
+  late: the exact-alarm permission is removed, as Play keeps it for alarm apps.
+- **The website** cannot notify, so a reminder that has gone off shows at the
+  top of the app while it is open, with **Open** and **Done** (the phone shows
+  the same, for anything that went off while notifications were off).
+- A monthly one on the 31st falls on the last day of a shorter month; a yearly
+  one on 29 February on the 28th. Only times after you made it count, so an
+  anniversary added in July for June waits for next June.
+- They are part of the contact: in the online copy and the backup file
+  (schema 3).
+
 ## To-do
 
 A **To-do** tab sits beside Contacts from the start (Tune this app ▸ **Hide the To-do tab** puts it away): a name,

@@ -17,6 +17,7 @@ import { SORT_KEYS, type SortKey, type View } from './filter'
 import { toLockRecord, type LockRecord } from './lock'
 import { toTodos, type Todo } from './todos'
 import { toNotes, type Note } from './notes'
+import { toReminders } from './reminders'
 
 const DB_NAME = 'blackbook'
 const DB_VERSION = 1
@@ -130,6 +131,9 @@ function toContact(raw: unknown): Contact | null {
           ? r.updatedAt
           : undefined,
     notes: typeof r.notes === 'string' ? r.notes : '',
+    // Added 2026-10-25 (lib/reminders.ts). Kept through this reader, which
+    // drops every field it does not name.
+    ...(toReminders(r.reminders) ? { reminders: toReminders(r.reminders) } : {}),
     createdAt: typeof r.createdAt === 'number' ? r.createdAt : Date.now(),
     updatedAt: typeof r.updatedAt === 'number' ? r.updatedAt : Date.now(),
   }

@@ -8,7 +8,11 @@ import { useBookStore } from '../stores/bookStore'
 import { useEffectiveTheme } from '../stores/themeStore'
 import { autoFocusOK, usePhoneKit } from '../native/kit'
 import { CloseGlyph } from './Modal'
-import { ContactMore } from './ContactMore'
+import { BellGlyph, ContactMore, MoreRow } from './ContactMore'
+import { ReminderEditor, ReminderList } from './Reminders'
+import { formatWhen, nextOccurrence } from '../lib/reminders'
+import { useNativeNav } from '../native/nav'
+import { askForNotifications } from '../native/notify'
 import { ListChip } from './ListChip'
 import { TagChip } from './TagChip'
 import { btnGhost, btnPrimary, inputCls, label } from './ui'
@@ -53,6 +57,8 @@ export function ContactView({ id }: { id: string }) {
   // here, at the top of the clean view, rather than in the full form.
   const isFresh = useBookStore((s) => s.fresh === id)
   const [more, setMore] = useState(false)
+  const [remind, setRemind] = useState(false)
+  const say = useNativeNav((s) => s.say)
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
   const kit = usePhoneKit()
@@ -334,6 +340,14 @@ export function ContactView({ id }: { id: string }) {
         )}
       </div>
 
+      <ReminderList
+        reminders={contact.reminders}
+        onRemove={(rid) => {
+          const left = (contact.reminders ?? []).filter((r) => r.id !== rid)
+          void patchContact(contact.id, { reminders: left.length ? left : undefined })
+        }}
+      />
+
       {isFresh ? (
         <p className="text-sm text-slate-500">{kit ? t('view.fresh_phone') : t('view.fresh_web')}</p>
       ) : (
@@ -371,7 +385,38 @@ export function ContactView({ id }: { id: string }) {
           <kit.ContactActions contact={contact} onMore={() => setMore(true)} />
         </div>
         {details}
-        {more && <ContactMore contact={contact} onClose={() => setMore(false)} />}
+        {more && (
+          <ContactMore
+            contact={contact}
+            onClose={() => setMore(false)}
+            extraRows={(closeMore) => (
+              <MoreRow
+                icon={<BellGlyph />}
+                onClick={() => {
+                  closeMore()
+                  setRemind(true)
+                }}
+              >
+                {t('rem.add')}
+              </MoreRow>
+            )}
+          />
+        )}
+        {remind && (
+          <ReminderEditor
+            onClose={() => setRemind(false)}
+            onSave={(r) => {
+              setRemind(false)
+              void patchContact(contact.id, { reminders: [...(contact.reminders ?? []), r] })
+              if (kit) {
+                void askForNotifications().then((ok) => {
+                  const next = nextOccurrence(r, Date.now())
+                  say(ok ? t('rem.set', { when: next ? formatWhen(next, t.locale) : '' }) : t('rem.denied'))
+                })
+              }
+            }}
+          />
+        )}
       </kit.Page>
     )
   }
@@ -461,7 +506,38 @@ export function ContactView({ id }: { id: string }) {
       >
         {details}
       </div>
-      {more && <ContactMore contact={contact} onClose={() => setMore(false)} />}
+      {more && (
+          <ContactMore
+            contact={contact}
+            onClose={() => setMore(false)}
+            extraRows={(closeMore) => (
+              <MoreRow
+                icon={<BellGlyph />}
+                onClick={() => {
+                  closeMore()
+                  setRemind(true)
+                }}
+              >
+                {t('rem.add')}
+              </MoreRow>
+            )}
+          />
+        )}
+        {remind && (
+          <ReminderEditor
+            onClose={() => setRemind(false)}
+            onSave={(r) => {
+              setRemind(false)
+              void patchContact(contact.id, { reminders: [...(contact.reminders ?? []), r] })
+              if (kit) {
+                void askForNotifications().then((ok) => {
+                  const next = nextOccurrence(r, Date.now())
+                  say(ok ? t('rem.set', { when: next ? formatWhen(next, t.locale) : '' }) : t('rem.denied'))
+                })
+              }
+            }}
+          />
+        )}
     </dialog>
   )
 }

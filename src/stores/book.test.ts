@@ -345,6 +345,20 @@ describe('New contact goes straight to its view (2026-10-25)', () => {
     expect(again.getState().contacts.length).toBe(before)
   })
 
+  it('keeps a contact’s reminders on disk, and through a save from the form', async () => {
+    const store = await reopen()
+    const id = await store.getState().newContact({ name: 'Ann' })
+    const rem = { id: 'r1', label: 'Anniversary', at: '2026-06-03T09:00', repeat: 'yearly' as const, createdAt: 5 }
+    await store.getState().patchContact(id, { reminders: [rem] })
+    const c = store.getState().contacts.find((x) => x.id === id)!
+    await store.getState().saveContact({ id, name: 'Ann B', email: '', phone: '', tagIds: [], notes: '' })
+    const again = await reopen()
+    const back = again.getState().contacts.find((x) => x.id === id)!
+    expect(back.name).toBe('Ann B')
+    expect(back.reminders).toEqual([rem])
+    expect(c.reminders).toEqual([rem])
+  })
+
   it('a seed from search or the phone fills the fields', async () => {
     const store = await reopen()
     const id = await store.getState().newContact({ phone: '07700 900123', name: 'Ann' })

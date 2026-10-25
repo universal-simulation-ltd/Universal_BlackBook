@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components -- the sheet and its small helpers live together */
 import { useId, useState, type ReactNode } from 'react'
 import type { Contact } from '../lib/types'
 import { useBookStore } from '../stores/bookStore'
