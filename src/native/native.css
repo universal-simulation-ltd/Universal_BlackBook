@@ -176,7 +176,7 @@ html.bb-phone body {
   padding: 0 max(8px, env(safe-area-inset-right)) 0 max(4px, env(safe-area-inset-left));
 }
 .bb-page .unisim-phone-back {
-  max-width: 40vw;
+  max-width: 36vw;
   padding: 0 8px 0 2px;
   gap: 0;
 }
@@ -185,6 +185,12 @@ html.bb-phone body {
   height: 24px;
 }
 .bb-page .unisim-phone-title {
+  /* Kept clear of the back button and the actions by layers.tsx (useBarFit),
+     which sets left/right from what is really there: centred when there is
+     room on both sides, else in the room between them. The SDK's fixed 96px
+     let a long title run under "‹ Notes". */
+  left: var(--bb-title-left, 96px);
+  right: var(--bb-title-right, 96px);
   font-family: var(--bb-serif);
   font-size: 17px;
   font-weight: 700;

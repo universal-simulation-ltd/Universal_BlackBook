@@ -19,7 +19,7 @@
 // @capacitor/app installed, back simply leaves the app from any page (seen on
 // the emulator, 2026-10-22) — keep the dependency.
 
-import type { ReactNode } from 'react'
+import { useLayoutEffect, useRef, type ReactNode, type RefObject } from 'react'
 import { BottomSheet, configurePhoneLayers, PhonePage, useAnyPhoneLayerOpen } from '@unisim/sdk'
 import type { PhonePageProps, PhoneSheetProps } from './kit'
 
@@ -29,7 +29,45 @@ configurePhoneLayers({ baseZ: 60 })
 /** Is any page or sheet open over the tabs? */
 export const useAnyLayerOpen = useAnyPhoneLayerOpen
 
+/** The narrowest a centred title may be before it moves into the room between the buttons. */
+const MIN_CENTRED_TITLE = 140
+
+/**
+ * Keep a page's title clear of its back button and its actions (James,
+ * 2026-10-25: "the title often overlaps the back link"). The SDK centres the
+ * title between fixed 96px gutters, which a back label like "‹ Notizen" or a
+ * Fine-tune button runs past. This measures the two ends of the bar and sets
+ * the title's left and right: the same on both sides (so it stays centred)
+ * when that leaves it room, else the room actually between the two. It then
+ * truncates with an ellipsis. Run after every render (labels change with the
+ * language and the actions with the page) and on every resize.
+ */
+function useBarFit(marker: RefObject<HTMLSpanElement | null>) {
+  useLayoutEffect(() => {
+    const row = marker.current?.closest('.unisim-phone-page')?.querySelector<HTMLElement>('.unisim-phone-bar-row')
+    if (!row) return
+    const fit = () => {
+      const box = row.getBoundingClientRect()
+      const back = row.querySelector('.unisim-phone-back')?.getBoundingClientRect()
+      const acts = row.querySelector('.unisim-phone-actions')?.getBoundingClientRect()
+      const left = (back ? back.right - box.left : 0) + 8
+      const right = (acts ? box.right - acts.left : 0) + 8
+      const side = Math.max(left, right)
+      const centred = box.width - 2 * side >= MIN_CENTRED_TITLE
+      row.style.setProperty('--bb-title-left', `${Math.round(centred ? side : left)}px`)
+      row.style.setProperty('--bb-title-right', `${Math.round(centred ? side : right)}px`)
+    }
+    fit()
+    const ro = new ResizeObserver(fit)
+    ro.observe(row)
+    row.querySelectorAll('.unisim-phone-back, .unisim-phone-actions').forEach((el) => ro.observe(el))
+    return () => ro.disconnect()
+  })
+}
+
 export function Page({ title, onBack, backLabel, actions, children, bare = false }: PhonePageProps) {
+  const marker = useRef<HTMLSpanElement>(null)
+  useBarFit(marker)
   return (
     <PhonePage
       title={title}
@@ -39,6 +77,7 @@ export function Page({ title, onBack, backLabel, actions, children, bare = false
       className="bb-page"
       bodyClassName={bare ? 'bb-pagebody bare' : 'bb-pagebody'}
     >
+      <span ref={marker} hidden />
       {children}
     </PhonePage>
   )
