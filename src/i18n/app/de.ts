@@ -652,4 +652,13 @@ export const appDe: Partial<Record<AppKey, string>> = {
   'pref.tab_hidden': "ausgeblendet",
   'pref.tab_up': "{name} nach vorn",
   'pref.tab_down': "{name} nach hinten",
+  'todo.mark_done_short': "Erledigt",
+  'sel.deleted_one': "{count} Eintrag gelöscht.",
+  'sel.deleted_other': "{count} Einträge gelöscht.",
+  'sel.unlinked_one': "{count} gelöst.",
+  'sel.unlinked_other': "{count} gelöst.",
+  'sel.taken_off_one': "{count} Person von {list} genommen.",
+  'sel.taken_off_other': "{count} Personen von {list} genommen.",
+  'sel.left_out_one': "{count} Notiz weggelassen.",
+  'sel.left_out_other': "{count} Notizen weggelassen.",
 }

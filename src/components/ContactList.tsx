@@ -20,7 +20,7 @@ import { useSettingsStore } from '../stores/settingsStore'
 import { useSyncStore } from '../stores/syncStore'
 import { Modal } from './Modal'
 import { SwipeRow, type SwipeAction } from './SwipeRow'
-import { FocusActions, UndoBar, useUndo } from './SwipeActions'
+import { FocusActions, UndoBar, useHold, useLeaveSelection, useUndo } from './SwipeActions'
 import { ListChip } from './ListChip'
 import { TagDot } from './TagChip'
 import { TagPicker } from './TagPicker'
@@ -158,6 +158,10 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
    */
   const [selected, setSelected] = useState<Set<string> | null>(null)
   const selecting = selected !== null
+  // Hold a card to select it (James, 2026-10-25), and the phone's ways out.
+  const phoneKit = usePhoneKit()
+  const holdCard = useHold((id) => setSelected((s) => new Set([...(s ?? []), id])))
+  useLeaveSelection(selecting, Boolean(phoneKit), () => setSelected(null))
   const [bulk, setBulk] = useState<'delete' | 'tag' | null>(null)
   const tidiedId = useId()
   const hiddenBirthdaysId = useId()
@@ -416,7 +420,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
       )}
       <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
         {visible.map((c) => (
-          <li key={c.id}>
+          <li key={c.id} className="bb-todo" onTouchStart={selecting ? undefined : holdCard(c.id)}>
             {selecting ? (
               <SelectableRow
                 contact={c}
@@ -481,7 +485,12 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                 onFineTune={() => edit(c.id)}
                 swipeHides
               />
-              <FocusActions actions={[{ label: t('swipe.delete_label', { name: who(c) }), onClick: () => removeWithUndo([c]) }]} />
+              <FocusActions
+                actions={[
+                  { label: t('nsel.select_label', { title: who(c) }), onClick: () => setSelected(new Set([c.id])) },
+                  { label: t('swipe.delete_label', { name: who(c) }), onClick: () => removeWithUndo([c]) },
+                ]}
+              />
             </SwipeRow>
             )}
           </li>

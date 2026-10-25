@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components -- the hook that gathers reminders lives beside the components that draw them */
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
-import { actionSwipe, deleteSwipe, SwipeGroup, SwipeItem, UndoBar, useUndo } from './SwipeActions'
+import { actionSwipe, deleteSwipe, SelectBar, SwipeGroup, SwipeItem, UndoBar, useHoldSelect, useUndo } from './SwipeActions'
 import { newId } from '../lib/id'
 import {
   defaultAt,
@@ -137,16 +137,25 @@ export function ReminderList({ reminders, onChange }: { reminders?: Reminder[]; 
   const latest = useRef(reminders ?? [])
   latest.current = reminders ?? []
   const set = (next: Reminder[]) => onChange(next.length ? next : undefined)
-  const undo = useUndo<Reminder>(async (r) => set([...latest.current.filter((x) => x.id !== r.id), r]))
-  const remove = (r: Reminder) => {
-    undo.deleted(r)
-    set(latest.current.filter((x) => x.id !== r.id))
+  const undo = useUndo<Reminder[]>(async (rs) => set([...latest.current.filter((x) => !rs.some((r) => r.id === x.id)), ...rs]))
+  const removeMany = (rs: Reminder[]) => {
+    if (!rs.length) return
+    undo.deleted(rs)
+    set(latest.current.filter((x) => !rs.some((r) => r.id === x.id)))
   }
-  if (!reminders?.length && !undo.item) return null
+  const remove = (r: Reminder) => removeMany([r])
   const sorted = [...(reminders ?? [])].sort((a, b) => (nextOccurrence(a, Date.now()) ?? Infinity) - (nextOccurrence(b, Date.now()) ?? Infinity))
+  const kit = usePhoneKit()
+  const sel = useHoldSelect(sorted.map((r) => r.id), Boolean(kit))
+  if (!reminders?.length && !undo.item) return null
   return (
     <div>
       {sorted.length > 0 && <span className={label}>{t('rem.section')}</span>}
+      <SelectBar
+        select={sel}
+        total={sorted.length}
+        actions={[{ label: t('c.delete'), danger: true, onClick: (ids) => removeMany(sorted.filter((r) => ids.includes(r.id))) }]}
+      />
       <SwipeGroup>
         <ul className="space-y-2">
           {sorted.map((r) => {
@@ -155,6 +164,8 @@ export function ReminderList({ reminders, onChange }: { reminders?: Reminder[]; 
               <li key={r.id}>
                 <SwipeItem
                   id={r.id}
+                  select={sel}
+                  name={name}
                   left={actionSwipe('edit', t('rem.edit_short'), t('rem.edit_label', { label: name }), () => setEditing(r))}
                   right={deleteSwipe(name, () => remove(r))}
                   focus={[{ label: t('rem.edit_label', { label: name }), onClick: () => setEditing(r) }]}
@@ -184,7 +195,13 @@ export function ReminderList({ reminders, onChange }: { reminders?: Reminder[]; 
           })}
         </ul>
       </SwipeGroup>
-      {undo.item && <UndoBar title={undo.item.label || t('rem.untitled')} onUndo={() => void undo.undo()} />}
+      {undo.item && (
+        <UndoBar
+          title={undo.item.length === 1 ? undo.item[0].label || t('rem.untitled') : ''}
+          text={undo.item.length === 1 ? undefined : t.plural('sel.deleted', undo.item.length)}
+          onUndo={() => void undo.undo()}
+        />
+      )}
       {editing && (
         <ReminderEditor
           initial={editing}

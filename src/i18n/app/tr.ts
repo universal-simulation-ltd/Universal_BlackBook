@@ -652,4 +652,13 @@ export const appTr: Partial<Record<AppKey, string>> = {
   'pref.tab_hidden': "gizli",
   'pref.tab_up': "{name} öne al",
   'pref.tab_down': "{name} geriye al",
+  'todo.mark_done_short': "Yapıldı",
+  'sel.deleted_one': "{count} öğe silindi.",
+  'sel.deleted_other': "{count} öğe silindi.",
+  'sel.unlinked_one': "{count} bağ kaldırıldı.",
+  'sel.unlinked_other': "{count} bağ kaldırıldı.",
+  'sel.taken_off_one': "{count} kişi {list} listesinden çıkarıldı.",
+  'sel.taken_off_other': "{count} kişi {list} listesinden çıkarıldı.",
+  'sel.left_out_one': "{count} not dışarıda bırakıldı.",
+  'sel.left_out_other': "{count} not dışarıda bırakıldı.",
 }

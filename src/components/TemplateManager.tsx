@@ -5,7 +5,8 @@ import { useNoteStore } from '../stores/noteStore'
 import { usePanelStore } from '../stores/panelStore'
 import { useT, type Key } from '../i18n'
 import { Modal } from './Modal'
-import { actionSwipe, deleteSwipe, removeSwipe, SwipeGroup, SwipeItem, UndoBar, useUndo } from './SwipeActions'
+import { actionSwipe, deleteSwipe, removeSwipe, SelectBar, SwipeGroup, SwipeItem, UndoBar, useHoldSelect, useUndo } from './SwipeActions'
+import { usePhoneKit } from '../native/kit'
 import type { Note } from '../lib/notes'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label } from './ui'
 
@@ -32,11 +33,20 @@ export function TemplateManager({ onClose }: { onClose: () => void }) {
   const restoreTemplate = useNoteStore((s) => s.restoreTemplate)
   // Swipe left to delete, with Undo: deleting moves the template's fields
   // into its notes' text, and Undo puts the notes back as they were.
-  const undo = useUndo<{ template: NoteTemplate; notes: Note[] }>(restoreTemplate)
-  const remove = async (tpl: NoteTemplate) => {
-    const snap = await removeTemplate(tpl.id)
-    if (snap) undo.deleted(snap)
+  const undo = useUndo<{ template: NoteTemplate; notes: Note[] }[]>(async (snaps) => {
+    for (const s of snaps) await restoreTemplate(s)
+  })
+  const removeMany = async (ids: string[]) => {
+    const snaps: { template: NoteTemplate; notes: Note[] }[] = []
+    for (const id of ids) {
+      const snap = await removeTemplate(id)
+      if (snap) snaps.push(snap)
+    }
+    if (snaps.length) undo.deleted(snaps)
   }
+  const remove = (tpl: NoteTemplate) => removeMany([tpl.id])
+  const kit = usePhoneKit()
+  const sel = useHoldSelect(templates.map((x) => x.id), Boolean(kit))
   return (
     <>
       <Modal title={t('tpl.manage')} onClose={onClose} backLabel={t('tpl.back')}>
@@ -45,6 +55,7 @@ export function TemplateManager({ onClose }: { onClose: () => void }) {
           <p className="rounded-2xl border border-dashed border-slate-800 px-6 py-8 text-center text-sm text-slate-400">{t('tpl.none')}</p>
         ) : (
           <SwipeGroup>
+          <SelectBar select={sel} total={templates.length} actions={[{ label: t('c.delete'), danger: true, onClick: (ids) => void removeMany(ids) }]} />
           <ul className="space-y-2">
             {templates.map((tpl) => {
               const count = notes.filter((n) => n.templateId === tpl.id).length
@@ -52,6 +63,8 @@ export function TemplateManager({ onClose }: { onClose: () => void }) {
                 <li key={tpl.id}>
                   <SwipeItem
                     id={tpl.id}
+                    select={sel}
+                    name={tpl.name}
                     left={actionSwipe('edit', t('tpl.edit'), t('tpl.edit_label', { name: tpl.name }), () => setOpen(tpl.id))}
                     right={deleteSwipe(tpl.name, () => void remove(tpl))}
                     focus={[{ label: t('todo.delete_label', { title: tpl.name }), onClick: () => void remove(tpl) }]}
@@ -77,7 +90,13 @@ export function TemplateManager({ onClose }: { onClose: () => void }) {
         {undo.item && (
           <UndoBar
             title=""
-            text={undo.item.notes.length ? t.plural('tpl.deleted_moved', undo.item.notes.length, { name: undo.item.template.name }) : t('tpl.deleted', { name: undo.item.template.name })}
+            text={
+              undo.item.length > 1
+                ? t.plural('sel.deleted', undo.item.length)
+                : undo.item[0].notes.length
+                  ? t.plural('tpl.deleted_moved', undo.item[0].notes.length, { name: undo.item[0].template.name })
+                  : t('tpl.deleted', { name: undo.item[0].template.name })
+            }
             onUndo={() => void undo.undo()}
           />
         )}
@@ -105,15 +124,22 @@ function TemplateForm({ template, onClose }: { template: NoteTemplate | null; on
   const [confirming, setConfirming] = useState(false)
   const ok = name.trim() !== ''
   // A field swiped away comes back with Undo, in its place (until Save).
-  const fieldUndo = useUndo<{ field: TemplateField; at: number }>(async ({ field, at }) =>
-    setFields((fs) => (fs.some((f) => f.id === field.id) ? fs : [...fs.slice(0, at), field, ...fs.slice(at)])),
+  const fieldUndo = useUndo<{ field: TemplateField; at: number }[]>(async (gone) =>
+    setFields((fs) => {
+      const next = [...fs]
+      for (const { field, at } of [...gone].sort((a, b) => a.at - b.at)) if (!next.some((f) => f.id === field.id)) next.splice(at, 0, field)
+      return next
+    }),
   )
-  const removeField = (i: number) => {
-    const f = fields[i]
-    if (!f) return
-    fieldUndo.deleted({ field: f, at: i })
-    setFields((fs) => fs.filter((_, j) => j !== i))
+  const removeFields = (ids: string[]) => {
+    const gone = fields.map((field, at) => ({ field, at })).filter((x) => ids.includes(x.field.id))
+    if (!gone.length) return
+    fieldUndo.deleted(gone)
+    setFields((fs) => fs.filter((f) => !ids.includes(f.id)))
   }
+  const removeField = (i: number) => fields[i] && removeFields([fields[i].id])
+  const kit = usePhoneKit()
+  const fieldSel = useHoldSelect(fields.map((f) => f.id), Boolean(kit))
   const set = (i: number, p: Partial<TemplateField>) => setFields((fs) => fs.map((f, j) => (j === i ? { ...f, ...p } : f)))
   const move = (i: number, by: number) =>
     setFields((fs) => {
@@ -158,11 +184,14 @@ function TemplateForm({ template, onClose }: { template: NoteTemplate | null; on
         <fieldset>
           <legend className={label}>{t('tpl.fields')}</legend>
           <SwipeGroup>
+          <SelectBar select={fieldSel} total={fields.length} actions={[{ label: t('tpl.remove'), danger: true, onClick: removeFields }]} />
           <ul className="space-y-3">
             {fields.map((f, i) => (
               <li key={f.id}>
               <SwipeItem
                 id={f.id}
+                select={fieldSel}
+                name={f.label || String(i + 1)}
                 left={i > 0 ? actionSwipe('up', t('tpl.up'), t('tpl.move_up', { name: f.label || String(i + 1) }), () => move(i, -1)) : undefined}
                 right={removeSwipe('leave', t('tpl.remove'), t('tpl.remove_field', { name: f.label || String(i + 1) }), () => removeField(i))}
               >
@@ -217,7 +246,11 @@ function TemplateForm({ template, onClose }: { template: NoteTemplate | null; on
           </ul>
           </SwipeGroup>
           {fieldUndo.item && (
-            <UndoBar title="" text={t('tpl.field_removed', { name: fieldUndo.item.field.label || '…' })} onUndo={() => void fieldUndo.undo()} />
+            <UndoBar
+              title=""
+              text={fieldUndo.item.length === 1 ? t('tpl.field_removed', { name: fieldUndo.item[0].field.label || '…' }) : t.plural('sel.deleted', fieldUndo.item.length)}
+              onUndo={() => void fieldUndo.undo()}
+            />
           )}
           {fields.length < TEMPLATE_LIMITS.fields && (
             <button type="button" className={`${btnGhost} mt-3`} onClick={() => setFields((fs) => [...fs, { id: newId(), label: '', type: 'text' }])}>

@@ -652,4 +652,13 @@ export const appIt: Partial<Record<AppKey, string>> = {
   'pref.tab_hidden': "nascosta",
   'pref.tab_up': "Sposta {name} prima",
   'pref.tab_down': "Sposta {name} dopo",
+  'todo.mark_done_short': "Fatto",
+  'sel.deleted_one': "Eliminato {count} elemento.",
+  'sel.deleted_other': "Eliminati {count} elementi.",
+  'sel.unlinked_one': "{count} scollegato.",
+  'sel.unlinked_other': "{count} scollegati.",
+  'sel.taken_off_one': "Tolta {count} persona da {list}.",
+  'sel.taken_off_other': "Tolte {count} persone da {list}.",
+  'sel.left_out_one': "Esclusa {count} nota.",
+  'sel.left_out_other': "Escluse {count} note.",
 }

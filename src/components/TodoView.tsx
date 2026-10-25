@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type FormEvent, type ReactNode, type TouchEvent as ReactTouchEvent } from 'react'
 import { SwipeRow } from './SwipeRow'
-import { actionSwipe, deleteSwipe, FocusActions, pinSwipe, SwipeGroup, SwipeItem, UndoBar, useUndo } from './SwipeActions'
+import { actionSwipe, deleteSwipe, FocusActions, pinSwipe, SelectBar, SwipeGroup, SwipeItem, UndoBar, useHoldSelect, useUndo } from './SwipeActions'
+import { usePhoneKit } from '../native/kit'
 import type { Side } from '../lib/swipe'
 import { todayParts } from '../lib/birthday'
 import { isList } from '../lib/lists'
@@ -51,12 +52,21 @@ export function TodoView() {
   const [openRow, setOpenRow] = useState<{ id: string; side: Side } | null>(null)
   // Delete, with Undo for a few seconds (James, 2026-10-25): the swipe and
   // the row's own Delete both come here; the form's Delete still asks.
-  const undo = useUndo<Todo>(restore)
-  const removeWithUndo = (x: Todo) => {
-    undo.deleted(x)
-    void remove(x.id)
+  const undo = useUndo<Todo[]>(async (xs) => {
+    for (const x of xs) await restore(x)
+  })
+  const removeManyWithUndo = (xs: Todo[]) => {
+    if (!xs.length) return
+    undo.deleted(xs)
+    for (const x of xs) void remove(x.id)
   }
-  const { drag, dragStart, gripDown } = useTodoDrag((id, target, after) => void move(id, target, after))
+  const removeWithUndo = (x: Todo) => removeManyWithUndo([x])
+
+  const { drag, dragStart, gripDown } = useTodoDrag(
+    (id, target, after) => void move(id, target, after),
+    // Held and let go without moving: that selects (James, 2026-10-25).
+    (id) => openSel.start(id),
+  )
   // Once per mount, as in ContactList: a tab left open over midnight keeps
   // yesterday's "Due today" until it is reopened.
   const today = useMemo(() => todayParts(), [])
@@ -85,6 +95,10 @@ export function TodoView() {
         .sort(compareDone),
     [todos, activeFilter, query],
   )
+
+  const kit = usePhoneKit()
+  const openSel = useHoldSelect(open.map((x) => x.id), Boolean(kit))
+  const doneSel = useHoldSelect(done.map((x) => x.id), Boolean(kit))
 
   return (
     <div className="space-y-4">
@@ -144,6 +158,16 @@ export function TodoView() {
           {query.trim() ? t('todo.no_match') : activeFilter.length > 0 ? t('todo.none_tagged') : t('todo.all_done')}
         </p>
       ) : (
+        <>
+        <SelectBar
+          select={openSel}
+          total={open.length}
+          actions={[
+            { label: t('todo.pin'), onClick: (ids) => ids.forEach((id) => void setPinned(id, true)) },
+            { label: t('todo.mark_done_short'), onClick: (ids) => ids.forEach((id) => void setDone(id, true)) },
+            { label: t('c.delete'), danger: true, onClick: (ids) => removeManyWithUndo(open.filter((x) => ids.includes(x.id))) },
+          ]}
+        />
         <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3" aria-describedby={hintId}>
           {open.map((x, i) => (
             <li
@@ -152,6 +176,11 @@ export function TodoView() {
               className={`bb-todo relative ${dropClass(drag, x.id)}`}
               style={drag?.id === x.id ? { transform: `translateY(${drag.dy}px)`, zIndex: 40 } : undefined}
             >
+              {openSel.selecting ? (
+                <SwipeItem id={x.id} select={openSel} name={x.title}>
+                  <TodoRow todo={x} byId={byId} today={today} />
+                </SwipeItem>
+              ) : (
               <SwipeRow
                 open={openRow?.id === x.id ? openRow.side : null}
                 onOpenChange={(side) => setOpenRow(side ? { id: x.id, side } : null)}
@@ -177,18 +206,27 @@ export function TodoView() {
                       up={i > 0 ? open[i - 1].id : null}
                       down={i < open.length - 1 ? open[i + 1].id : null}
                       onDelete={() => removeWithUndo(x)}
+                      onSelect={() => openSel.start(x.id)}
                     />
                   }
                 />
               </SwipeRow>
+              )}
             </li>
           ))}
         </ul>
+        </>
       )}
       <p id={hintId} className="sr-only">
         {t('todo.order_hint')}
       </p>
-      {undo.item && <UndoBar title={undo.item.title} onUndo={() => void undo.undo()} />}
+      {undo.item && (
+        <UndoBar
+          title={undo.item.length === 1 ? undo.item[0].title : ''}
+          text={undo.item.length === 1 ? undefined : t.plural('sel.deleted', undo.item.length)}
+          onUndo={() => void undo.undo()}
+        />
+      )}
 
       {done.length > 0 && (
         <section className="border-t border-slate-800 pt-3">
@@ -218,6 +256,16 @@ export function TodoView() {
           </div>
           {showDone && (
             <SwipeGroup>
+            <div className="mt-2">
+              <SelectBar
+                select={doneSel}
+                total={done.length}
+                actions={[
+                  { label: t('todo.not_done'), onClick: (ids) => ids.forEach((id) => void setDone(id, false)) },
+                  { label: t('c.delete'), danger: true, onClick: (ids) => removeManyWithUndo(done.filter((x) => ids.includes(x.id))) },
+                ]}
+              />
+            </div>
             <ul id={doneId} className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
               {done.map((x) => (
                 <li key={x.id}>
@@ -225,6 +273,8 @@ export function TodoView() {
                       puts it back on the list. */}
                   <SwipeItem
                     id={x.id}
+                    select={doneSel}
+                    name={x.title}
                     left={actionSwipe('undone', t('todo.not_done'), t('todo.mark_undone', { title: x.title }), () => void setDone(x.id, false))}
                     right={deleteSwipe(x.title, () => removeWithUndo(x))}
                     focus={[{ label: t('todo.delete_label', { title: x.title }), onClick: () => removeWithUndo(x) }]}
@@ -262,13 +312,16 @@ function dropClass(drag: Drag | null, id: string): string {
  * syncs and goes in the backup file. Move up / Move down on each row (for
  * VoiceOver, TalkBack and the keyboard, Alt+↑ / Alt+↓) do the same.
  */
-function useTodoDrag(onDrop: (id: string, targetId: string, after: boolean) => void) {
+function useTodoDrag(onDrop: (id: string, targetId: string, after: boolean) => void, onHold?: (id: string) => void) {
   const [drag, setDrag] = useState<Drag | null>(null)
   const st = useRef<{ id: string; x0: number; y0: number; active: boolean; timer?: ReturnType<typeof setTimeout> } | null>(null)
   const dragRef = useRef<Drag | null>(null)
   dragRef.current = drag
   const dropRef = useRef(onDrop)
   dropRef.current = onDrop
+  const holdRef = useRef(onHold)
+  holdRef.current = onHold
+  const moved = useRef(false)
 
   const targetAt = (x: number, y: number, id: string): Drag['target'] => {
     for (const el of document.querySelectorAll<HTMLElement>('li[data-todo]')) {
@@ -298,7 +351,9 @@ function useTodoDrag(onDrop: (id: string, targetId: string, after: boolean) => v
       document.addEventListener('click', swallow, { capture: true, once: true })
       setTimeout(() => document.removeEventListener('click', swallow, { capture: true }), 400)
     }
-    if (d?.target) dropRef.current(d.id, d.target.id, d.target.after)
+    if (d?.target && moved.current) dropRef.current(d.id, d.target.id, d.target.after)
+    else if (d && wasActive && !moved.current) holdRef.current?.(d.id)
+    moved.current = false
   }, [])
 
   useEffect(() => {
@@ -317,6 +372,7 @@ function useTodoDrag(onDrop: (id: string, targetId: string, after: boolean) => v
       // not told (capture on the document, ahead of React's listeners).
       e.preventDefault()
       e.stopPropagation()
+      if (Math.abs(t.clientY - s.y0) > 6 || Math.abs(t.clientX - s.x0) > 6) moved.current = true
       setDrag({ id: s.id, dy: t.clientY - s.y0, target: targetAt(t.clientX, t.clientY, s.id) })
     }
     const end = (e: TouchEvent) => {
@@ -351,7 +407,10 @@ function useTodoDrag(onDrop: (id: string, targetId: string, after: boolean) => v
     const y0 = e.clientY
     st.current = { id, x0: e.clientX, y0, active: true }
     setDrag({ id, dy: 0, target: null })
-    const onMove = (m: PointerEvent) => setDrag({ id, dy: m.clientY - y0, target: targetAt(m.clientX, m.clientY, id) })
+    const onMove = (m: PointerEvent) => {
+      moved.current = true
+      setDrag({ id, dy: m.clientY - y0, target: targetAt(m.clientX, m.clientY, id) })
+    }
     const onUp = () => {
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
@@ -369,13 +428,14 @@ function useTodoDrag(onDrop: (id: string, targetId: string, after: boolean) => v
  * VoiceOver, TalkBack and the keyboard reach Move up, Move down, Pin and
  * Delete without a gesture.
  */
-function RowActions({ todo, up, down, onDelete }: { todo: Todo; up: string | null; down: string | null; onDelete: () => void }) {
+function RowActions({ todo, up, down, onDelete, onSelect }: { todo: Todo; up: string | null; down: string | null; onDelete: () => void; onSelect: () => void }) {
   const t = useT()
   const move = useTodoStore((s) => s.move)
   const setPinned = useTodoStore((s) => s.setPinned)
   return (
     <FocusActions
       actions={[
+        { label: t('nsel.select_label', { title: todo.title }), onClick: onSelect },
         ...(up ? [{ label: t('todo.move_up', { title: todo.title }), onClick: () => void move(todo.id, up, false) }] : []),
         ...(down ? [{ label: t('todo.move_down', { title: todo.title }), onClick: () => void move(todo.id, down, true) }] : []),
         {

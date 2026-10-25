@@ -6,7 +6,7 @@ import { useNativeNav } from '../native/nav'
 import { useBookStore } from '../stores/bookStore'
 import { useT, type Key } from '../i18n'
 import { Modal } from './Modal'
-import { removeSwipe, SwipeGroup, SwipeItem, UndoBar, useUndo } from './SwipeActions'
+import { removeSwipe, SelectBar, SwipeGroup, SwipeItem, UndoBar, useHoldSelect, useUndo } from './SwipeActions'
 import { btnGhost, btnPrimary, btnSubtle } from './ui'
 
 const REASON: Record<ImportResult['skipped'][number]['reason'], Key> = {
@@ -31,11 +31,15 @@ export function NoteImportButton() {
   const [found, setFound] = useState<ImportResult | null>(null)
   // Swipe a found note left to leave it out of the import (with Undo).
   const [left, setLeft] = useState<Set<number>>(new Set())
-  const leaveUndo = useUndo<number>(async (i) => setLeft((s) => new Set([...s].filter((x) => x !== i))))
-  const leaveOut = (i: number) => {
-    leaveUndo.deleted(i)
-    setLeft((s) => new Set(s).add(i))
+  const leaveUndo = useUndo<number[]>(async (is) => setLeft((s) => new Set([...s].filter((x) => !is.includes(x)))))
+  const leaveOutMany = (is: number[]) => {
+    if (!is.length) return
+    leaveUndo.deleted(is)
+    setLeft((s) => new Set([...s, ...is]))
   }
+  const leaveOut = (i: number) => leaveOutMany([i])
+  const shownIdx = found ? found.notes.slice(0, 100).map((_, i) => i).filter((i) => !left.has(i)) : []
+  const sel = useHoldSelect(shownIdx.map(String), Boolean(kit))
   const addMany = useNoteStore((s) => s.addMany)
   const say = useNativeNav((s) => s.say)
   const setNotice = useBookStore((s) => s.setNotice)
@@ -83,12 +87,17 @@ export function NoteImportButton() {
             <>
               <p className="text-sm text-slate-300">{t.plural('imp.found', found.notes.length - left.size)}</p>
               <SwipeGroup>
+              <div className="mt-3">
+                <SelectBar select={sel} total={shownIdx.length} actions={[{ label: t('imp.leave'), danger: true, onClick: (ids) => leaveOutMany(ids.map(Number)) }]} />
+              </div>
               <ul className="mt-3 max-h-[40vh] space-y-1 overflow-y-auto rounded-xl border border-slate-800 bg-slate-900 p-2">
                 {found.notes.slice(0, 100).map((n, i) =>
                   left.has(i) ? null : (
                   <li key={i} className="min-w-0">
                     <SwipeItem
                       id={String(i)}
+                      select={sel}
+                      name={n.title || t('c.untitled')}
                       right={removeSwipe('leave', t('imp.leave'), t('imp.leave_label', { title: n.title || t('c.untitled') }), () => leaveOut(i))}
                       focus={[{ label: t('imp.leave_label', { title: n.title || t('c.untitled') }), onClick: () => leaveOut(i) }]}
                     >
@@ -106,7 +115,15 @@ export function NoteImportButton() {
               </ul>
               </SwipeGroup>
               {leaveUndo.item !== null && (
-                <UndoBar title="" text={t('imp.left_out', { title: found.notes[leaveUndo.item]?.title || t('c.untitled') })} onUndo={() => void leaveUndo.undo()} />
+                <UndoBar
+                  title=""
+                  text={
+                    leaveUndo.item.length === 1
+                      ? t('imp.left_out', { title: found.notes[leaveUndo.item[0]]?.title || t('c.untitled') })
+                      : t.plural('sel.left_out', leaveUndo.item.length)
+                  }
+                  onUndo={() => void leaveUndo.undo()}
+                />
               )}
             </>
           ) : (

@@ -652,4 +652,13 @@ export const appPtPT: Partial<Record<AppKey, string>> = {
   'pref.tab_hidden': "oculto",
   'pref.tab_up': "Mover {name} para antes",
   'pref.tab_down': "Mover {name} para depois",
+  'todo.mark_done_short': "Feito",
+  'sel.deleted_one': "{count} item eliminado.",
+  'sel.deleted_other': "{count} itens eliminados.",
+  'sel.unlinked_one': "{count} desligado.",
+  'sel.unlinked_other': "{count} desligados.",
+  'sel.taken_off_one': "{count} pessoa retirada de {list}.",
+  'sel.taken_off_other': "{count} pessoas retiradas de {list}.",
+  'sel.left_out_one': "{count} nota deixada de fora.",
+  'sel.left_out_other': "{count} notas deixadas de fora.",
 }

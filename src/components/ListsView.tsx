@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { actionSwipe, deleteSwipe, removeSwipe, SwipeGroup, SwipeItem, UndoBar, useUndo } from './SwipeActions'
+import { actionSwipe, deleteSwipe, removeSwipe, SelectBar, SwipeGroup, SwipeItem, UndoBar, useHoldSelect, useUndo } from './SwipeActions'
 import type { TagUndo } from '../stores/bookStore'
 import { toRecipients } from '../lib/emailList'
 import { copyText } from '../lib/clipboard'
@@ -35,15 +35,23 @@ import { AddTyped, ListSearch } from './ListSearch'
  */
 export function ListsView() {
   const t = useT()
+  const kitForSel = usePhoneKit()
   const removeTag = useBookStore((s) => s.removeTag)
   const restoreTag = useBookStore((s) => s.restoreTag)
   // Swipe left: the list goes (its people stay in the book), with Undo.
   // Swipe right: copy its email addresses.
-  const undo = useUndo<TagUndo>(restoreTag)
-  const removeList = async (id: string) => {
-    const snap = await removeTag(id)
-    if (snap) undo.deleted(snap)
+  const undo = useUndo<TagUndo[]>(async (snaps) => {
+    for (const s of snaps) await restoreTag(s)
+  })
+  const removeLists = async (ids: string[]) => {
+    const snaps: TagUndo[] = []
+    for (const id of ids) {
+      const snap = await removeTag(id)
+      if (snap) snaps.push(snap)
+    }
+    if (snaps.length) undo.deleted(snaps)
   }
+  const removeList = (id: string) => removeLists([id])
   const kit = usePhoneKit()
   const say = useNativeNav((s) => s.say)
   const copyEmails = async (people: Contact[]) => {
@@ -67,6 +75,8 @@ export function ListsView() {
         .map((t) => ({ tag: t, people: contacts.filter((c) => c.tagIds.includes(t.id)) })),
     [tags, contacts, t, query],
   )
+  const sel = useHoldSelect(lists.map((l) => l.tag.id), Boolean(kitForSel))
+
 
   const byId = useMemo(() => new Map(tags.map((t) => [t.id, t])), [tags])
 
@@ -105,11 +115,24 @@ export function ListsView() {
         </div>
       ) : (
         <SwipeGroup>
+        <SelectBar
+          select={sel}
+          total={lists.length}
+          actions={[
+            {
+              label: t('lists.copy_short'),
+              onClick: (ids) => void copyEmails([...new Map(lists.filter((l) => ids.includes(l.tag.id)).flatMap((l) => l.people).map((c) => [c.id, c])).values()]),
+            },
+            { label: t('c.delete'), danger: true, onClick: (ids) => void removeLists(ids) },
+          ]}
+        />
         <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
           {lists.map(({ tag, people }) => (
             <li key={tag.id}>
             <SwipeItem
               id={tag.id}
+              select={sel}
+              name={tag.name}
               left={
                 people.length
                   ? actionSwipe('copy', t('lists.copy_short'), t('lists.copy_label', { name: tag.name }), () => void copyEmails(people))
@@ -138,7 +161,13 @@ export function ListsView() {
         </ul>
         </SwipeGroup>
       )}
-      {undo.item && <UndoBar title={undo.item.tag.name} onUndo={() => void undo.undo()} />}
+      {undo.item && (
+        <UndoBar
+          title={undo.item.length === 1 ? undo.item[0].tag.name : ''}
+          text={undo.item.length === 1 ? undefined : t.plural('sel.deleted', undo.item.length)}
+          onUndo={() => void undo.undo()}
+        />
+      )}
     </div>
   )
 }
@@ -164,6 +193,7 @@ function ListPage({ list, onBack }: { list: Tag; onBack: () => void }) {
   const t = useT()
   const contacts = useBookStore((s) => s.contacts)
   const tags = useBookStore((s) => s.tags)
+  const memberKitEarly = usePhoneKit()
   const newList = useBookStore((s) => s.newList)
   const openContact = useBookStore((s) => s.view)
   const edit = useBookStore((s) => s.edit)
@@ -172,14 +202,19 @@ function ListPage({ list, onBack }: { list: Tag; onBack: () => void }) {
   const removeContact = useBookStore((s) => s.removeContact)
   const patchContact = useBookStore((s) => s.patchContact)
   // Off this list (they stay in the book), with Undo.
-  const memberUndo = useUndo<Contact>(async (c) => {
-    const now = useBookStore.getState().contacts.find((x) => x.id === c.id)
-    if (now && !now.tagIds.includes(list.id)) await patchContact(c.id, { tagIds: [...now.tagIds, list.id], listOnly: c.listOnly })
+  const memberUndo = useUndo<Contact[]>(async (cs) => {
+    for (const c of cs) {
+      const now = useBookStore.getState().contacts.find((x) => x.id === c.id)
+      if (now && !now.tagIds.includes(list.id)) await patchContact(c.id, { tagIds: [...now.tagIds, list.id], listOnly: c.listOnly })
+    }
   })
-  const takeOff = (c: Contact) => {
-    memberUndo.deleted(c)
-    void patchContact(c.id, { tagIds: c.tagIds.filter((x) => x !== list.id) })
+  const takeOffMany = (cs: Contact[]) => {
+    if (!cs.length) return
+    memberUndo.deleted(cs)
+    for (const c of cs) void patchContact(c.id, { tagIds: c.tagIds.filter((x) => x !== list.id) })
   }
+  const takeOff = (c: Contact) => takeOffMany([c])
+
   const [renaming, setRenaming] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const revealConfirmRef = useRevealOnOpen()
@@ -187,6 +222,7 @@ function ListPage({ list, onBack }: { list: Tag; onBack: () => void }) {
   const today = useMemo(() => todayParts(), [])
   const byId = useMemo(() => new Map(tags.map((t) => [t.id, t])), [tags])
   const people = useMemo(() => membersOf(contacts, list.id), [contacts, list.id])
+  const memberSel = useHoldSelect(people.map((c) => c.id), Boolean(memberKitEarly))
   // Deleting the list leaves these people on no list at all — which would
   // drop them into Contacts. So the delete offers to take them with it.
   const onlyHere = useMemo(() => {
@@ -278,11 +314,18 @@ function ListPage({ list, onBack }: { list: Tag; onBack: () => void }) {
         </div>
       ) : (
         <SwipeGroup>
+        <SelectBar
+          select={memberSel}
+          total={people.length}
+          actions={[{ label: t('lists.take_off'), danger: true, onClick: (ids) => takeOffMany(people.filter((c) => ids.includes(c.id))) }]}
+        />
         <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
           {people.map((c) => (
             <li key={c.id}>
               <SwipeItem
                 id={c.id}
+                select={memberSel}
+                name={c.name || t('c.unnamed')}
                 left={c.email.trim() ? actionSwipe('mail', t('action_email'), t('nlink.email_label', { name: c.name || t('c.unnamed') }), () => (window.location.href = `mailto:${c.email.trim()}`)) : undefined}
                 right={removeSwipe('leave', t('lists.take_off'), t('lists.take_off_label', { name: c.name || t('c.unnamed'), list: list.name }), () => takeOff(c))}
                 focus={[{ label: t('lists.take_off_label', { name: c.name || t('c.unnamed'), list: list.name }), onClick: () => takeOff(c) }]}
@@ -302,7 +345,15 @@ function ListPage({ list, onBack }: { list: Tag; onBack: () => void }) {
         </SwipeGroup>
       )}
       {memberUndo.item && (
-        <UndoBar title="" text={t('lists.taken_off', { name: memberUndo.item.name || t('c.unnamed'), list: list.name })} onUndo={() => void memberUndo.undo()} />
+        <UndoBar
+          title=""
+          text={
+            memberUndo.item.length === 1
+              ? t('lists.taken_off', { name: memberUndo.item[0].name || t('c.unnamed'), list: list.name })
+              : t.plural('sel.taken_off', memberUndo.item.length, { list: list.name })
+          }
+          onUndo={() => void memberUndo.undo()}
+        />
       )}
     </div>
   )

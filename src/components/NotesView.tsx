@@ -1,7 +1,6 @@
-import { useEffect, useId, useMemo, useRef, useState, type TouchEvent as ReactTouchEvent } from 'react'
-import { usePhoneLayer } from '@unisim/sdk'
+import { useId, useMemo, useRef, useState } from 'react'
 import { SwipeRow } from './SwipeRow'
-import { deleteSwipe, FocusActions, pinSwipe, UndoBar, useUndo } from './SwipeActions'
+import { deleteSwipe, FocusActions, pinSwipe, UndoBar, useHold, useLeaveSelection, useUndo } from './SwipeActions'
 import type { Side } from '../lib/swipe'
 import { Modal } from './Modal'
 import { copyText } from '../lib/clipboard'
@@ -94,97 +93,12 @@ export function NotesView() {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  // A hold of 0.45 s on a note selects it. Any movement first (a swipe
-  // sideways, a scroll) cancels the hold, so the three never fight: sideways
-  // is the swipe, up and down is the scroll, still is the selection.
-  const hold = useRef<{ timer: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null)
-  const held = useRef(false)
-  useEffect(() => {
-    const cancel = (e: TouchEvent) => {
-      // A held finger lifting: the click it may make is swallowed below, and
-      // if the browser makes none, the next real tap must not be.
-      if (e.type !== 'touchmove' && held.current) setTimeout(() => (held.current = false), 400)
-      const h = hold.current
-      if (!h) return
-      const t0 = e.touches[0]
-      if (e.type !== 'touchmove' || !t0 || Math.hypot(t0.clientX - h.x, t0.clientY - h.y) > 8) {
-        clearTimeout(h.timer)
-        hold.current = null
-      }
-    }
-    // The finger lifting also shows up as a pointerup (and some browsers send
-    // no touchend after a long press).
-    const up = () => {
-      if (held.current) setTimeout(() => (held.current = false), 400)
-    }
-    document.addEventListener('touchmove', cancel, { passive: true })
-    document.addEventListener('touchend', cancel)
-    document.addEventListener('touchcancel', cancel)
-    document.addEventListener('pointerup', up, true)
-    return () => {
-      document.removeEventListener('touchmove', cancel)
-      document.removeEventListener('touchend', cancel)
-      document.removeEventListener('touchcancel', cancel)
-      document.removeEventListener('pointerup', up, true)
-    }
-  }, [])
-  const holdStart = (id: string) => (e: ReactTouchEvent) => {
-    if (e.touches.length !== 1) return
-    const t0 = e.touches[0]
-    if (hold.current) clearTimeout(hold.current.timer)
-    hold.current = {
-      x: t0.clientX,
-      y: t0.clientY,
-      timer: setTimeout(() => {
-        hold.current = null
-        held.current = true
-        // The tap that ends the hold lands on whatever is now under the
-        // finger — the selection bar slides in where the note was — so it is
-        // swallowed wherever it lands, not just in the list.
-        const swallow = (ev: Event) => {
-          if (!held.current) return
-          held.current = false
-          ev.preventDefault()
-          ev.stopPropagation()
-        }
-        document.addEventListener('click', swallow, { capture: true, once: true })
-        setTimeout(() => document.removeEventListener('click', swallow, { capture: true }), 1500)
-        navigator.vibrate?.(12)
-        setOpenRow(null)
-        setSelected((s) => {
-          const next = new Set(s ?? [])
-          next.add(id)
-          return next
-        })
-      }, 450),
-    }
-  }
-  // The tap that ends a hold must not open the note (or untick it again).
-  // Leaving selection: Done, Android's back (a layer on the phone's stack),
-  // or a swipe in from the left edge, as a page goes back.
-  usePhoneLayer('page', () => setSelected(null), { open: selecting && Boolean(kit), lockScroll: false })
-  useEffect(() => {
-    if (!selecting || !kit) return
-    let start: { x: number; y: number } | null = null
-    const down = (e: TouchEvent) => {
-      const t0 = e.touches[0]
-      start = t0 && t0.clientX < 24 ? { x: t0.clientX, y: t0.clientY } : null
-    }
-    const move = (e: TouchEvent) => {
-      const t0 = e.touches[0]
-      if (!start || !t0) return
-      if (t0.clientX - start.x > 70 && Math.abs(t0.clientY - start.y) < 50) {
-        start = null
-        setSelected(null)
-      }
-    }
-    document.addEventListener('touchstart', down, { passive: true })
-    document.addEventListener('touchmove', move, { passive: true })
-    return () => {
-      document.removeEventListener('touchstart', down)
-      document.removeEventListener('touchmove', move)
-    }
-  }, [selecting, kit])
+  // A hold selects (SwipeActions ▸ useHold), and the phone's ways out.
+  const holdStart = useHold((id) => {
+    setOpenRow(null)
+    setSelected((s) => new Set([...(s ?? []), id]))
+  })
+  useLeaveSelection(selecting, Boolean(kit), () => setSelected(null))
 
   return (
     <div className="space-y-4">

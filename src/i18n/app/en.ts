@@ -715,6 +715,15 @@ export const appEn = {
   'pref.tab_hidden': "hidden",
   'pref.tab_up': "Move {name} earlier",
   'pref.tab_down': "Move {name} later",
+  'todo.mark_done_short': "Done",
+  'sel.deleted_one': "Deleted {count} item.",
+  'sel.deleted_other': "Deleted {count} items.",
+  'sel.unlinked_one': "Unlinked {count}.",
+  'sel.unlinked_other': "Unlinked {count}.",
+  'sel.taken_off_one': "Took {count} person off {list}.",
+  'sel.taken_off_other': "Took {count} people off {list}.",
+  'sel.left_out_one': "Left out {count} note.",
+  'sel.left_out_other': "Left out {count} notes.",
 } as const
 
 export type AppKey = keyof typeof appEn

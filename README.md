@@ -220,6 +220,18 @@ keyboard. All of it is `src/components/SwipeActions.tsx` (`SwipeGroup`,
 | A note's linked people (now rows, not chips) | Unlink, with Undo | Call (or Email) |
 | Notes ▸ Import preview | Leave out, with Undo | (none) |
 
+**Hold to select** (same day): in every one of these lists a still finger for
+half a second selects the row and opens a bar with "N selected", Select all and
+the list's bulk actions (Contacts: Tag, Hide/Show, Delete; To-do: Pin, Done,
+Delete; done To-dos: Not done, Delete; Notes: Pin/Unpin, Copy, Delete; Lists:
+Copy emails, Delete; a list's people: Take off; Tags, Note templates and
+notifications: Delete; template fields: Remove; linked notes: Pin, Unlink;
+linked people: Unlink; import preview: Leave out). Done, Android's back or a
+swipe in from the left edge leaves. In To-do a hold that moves drags instead.
+Every row has a Select button on focus, and Shift-click ticks a run on the
+website. `useHold`, `useHoldSelect`, `useLeaveSelection` and `SelectBar` in
+`SwipeActions.tsx`.
+
 The confirmations that stay are the ones a person reaches on purpose: Delete
 in a contact's or note's form, a list's own Delete (which can take its people
 with it), and the bulk Delete of a selection.

@@ -6,7 +6,8 @@ import { TagMark } from './TagMark'
 import { useBookStore } from '../stores/bookStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { Modal } from './Modal'
-import { actionSwipe, deleteSwipe, SwipeGroup, SwipeItem, UndoBar, useUndo } from './SwipeActions'
+import { actionSwipe, deleteSwipe, SelectBar, SwipeGroup, SwipeItem, UndoBar, useHoldSelect, useUndo } from './SwipeActions'
+import { usePhoneKit } from '../native/kit'
 import type { TagUndo } from '../stores/bookStore'
 import { useT, type Key } from '../i18n'
 import { btnGhost, btnPrimary, btnSubtle, checkboxCls, inputCls } from './ui'
@@ -34,11 +35,18 @@ export function TagManager({ onClose }: { onClose: () => void }) {
   const restoreTag = useBookStore((s) => s.restoreTag)
   // Delete (the swipe, or the button) takes the tag off everyone at once and
   // offers Undo, which puts it back on them all (James, 2026-10-25).
-  const undo = useUndo<TagUndo>(restoreTag)
-  const remove = async (id: string) => {
-    const snap = await removeTag(id)
-    if (snap) undo.deleted(snap)
+  const undo = useUndo<TagUndo[]>(async (snaps) => {
+    for (const s of snaps) await restoreTag(s)
+  })
+  const removeMany = async (ids: string[]) => {
+    const snaps: TagUndo[] = []
+    for (const id of ids) {
+      const snap = await removeTag(id)
+      if (snap) snaps.push(snap)
+    }
+    if (snaps.length) undo.deleted(snaps)
   }
+  const remove = (id: string) => removeMany([id])
   const rename = (id: string) => document.getElementById(`tm-name-${id}`)?.focus()
 
   // One pass over the contacts rather than a `filter` per tag — with a few
@@ -52,11 +60,13 @@ export function TagManager({ onClose }: { onClose: () => void }) {
 
   // Tags only (2026-09-18: lists must not "pollute the tags lists"). A list is
   // renamed and deleted from its own page on the Lists tab.
+  const kit = usePhoneKit()
   const sorted = useMemo(
     () =>
       tags.filter((t) => !isList(t)).sort((a, b) => a.name.localeCompare(b.name, t.locale, { sensitivity: 'base' })),
     [tags, t],
   )
+  const sel = useHoldSelect(sorted.map((x) => x.id), Boolean(kit))
 
   return (
     <Modal title={t('field.tags')} onClose={onClose} wide>
@@ -90,6 +100,7 @@ export function TagManager({ onClose }: { onClose: () => void }) {
           </p>
         ) : (
           <SwipeGroup>
+          <SelectBar select={sel} total={sorted.length} actions={[{ label: t('c.delete'), danger: true, onClick: (ids) => void removeMany(ids) }]} />
           <ul className="divide-y divide-slate-800">
             {sorted.map((c) => {
               const count = counts.get(c.id) ?? 0
@@ -97,6 +108,8 @@ export function TagManager({ onClose }: { onClose: () => void }) {
                 <li key={c.id}>
                   <SwipeItem
                     id={c.id}
+                    select={sel}
+                    name={c.name}
                     left={actionSwipe('edit', t('tm.rename_short'), t('tm.rename', { name: c.name }), () => rename(c.id))}
                     right={deleteSwipe(c.name, () => void remove(c.id))}
                   >
@@ -182,7 +195,13 @@ export function TagManager({ onClose }: { onClose: () => void }) {
         {undo.item && (
           <UndoBar
             title=""
-            text={undo.item.contactIds.length ? t.plural('tm.deleted_on', undo.item.contactIds.length, { name: undo.item.tag.name }) : t('tm.deleted', { name: undo.item.tag.name })}
+            text={
+              undo.item.length > 1
+                ? t.plural('sel.deleted', undo.item.length)
+                : undo.item[0].contactIds.length
+                  ? t.plural('tm.deleted_on', undo.item[0].contactIds.length, { name: undo.item[0].tag.name })
+                  : t('tm.deleted', { name: undo.item[0].tag.name })
+            }
             onUndo={() => void undo.undo()}
           />
         )}

@@ -652,4 +652,13 @@ export const appFr: Partial<Record<AppKey, string>> = {
   'pref.tab_hidden': "masqué",
   'pref.tab_up': "Avancer {name}",
   'pref.tab_down': "Reculer {name}",
+  'todo.mark_done_short': "Fait",
+  'sel.deleted_one': "{count} élément supprimé.",
+  'sel.deleted_other': "{count} éléments supprimés.",
+  'sel.unlinked_one': "{count} délié.",
+  'sel.unlinked_other': "{count} déliés.",
+  'sel.taken_off_one': "{count} personne retirée de {list}.",
+  'sel.taken_off_other': "{count} personnes retirées de {list}.",
+  'sel.left_out_one': "{count} note écartée.",
+  'sel.left_out_other': "{count} notes écartées.",
 }

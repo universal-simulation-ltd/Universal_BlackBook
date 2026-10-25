@@ -16,7 +16,7 @@ import { askForNotifications } from '../native/notify'
 import { phoneScreens } from '../native/shell'
 import { useT } from '../i18n'
 import { CloseGlyph, Modal } from './Modal'
-import { actionSwipe, pinSwipe, removeSwipe, SwipeGroup, SwipeItem, UndoBar, useUndo } from './SwipeActions'
+import { actionSwipe, pinSwipe, removeSwipe, SelectBar, SwipeGroup, SwipeItem, UndoBar, useHoldSelect, useUndo } from './SwipeActions'
 import type { Contact } from '../lib/types'
 import { ReminderEditor, ReminderList } from './Reminders'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label, textareaCls } from './ui'
@@ -732,17 +732,35 @@ export function LinkedNotes({ contactId }: { contactId: string }) {
     else ids.delete(contactId)
     void patch(noteId, { contactIds: ids.size ? [...ids] : undefined })
   }
-  const undo = useUndo<Note>(async (n) => setLink(n.id, true))
+  const undo = useUndo<Note[]>(async (ns) => ns.forEach((n) => setLink(n.id, true)))
+  const kit = usePhoneKit()
+  const sel = useHoldSelect(linked.map((n) => n.id), Boolean(kit))
   if (linked.length === 0 && !undo.item) return null
   return (
     <div>
       {linked.length > 0 && <span className={label}>{t('nlink.linked_notes')}</span>}
+      <SelectBar
+        select={sel}
+        total={linked.length}
+        actions={[
+          { label: t('todo.pin'), onClick: (ids) => void setPinned(ids, true) },
+          {
+            label: t('nlink.unlink'),
+            danger: true,
+            onClick: (ids) => {
+              const ns = linked.filter((n) => ids.includes(n.id))
+              undo.deleted(ns)
+              ns.forEach((n) => setLink(n.id, false))
+            },
+          },
+        ]}
+      />
       <SwipeGroup>
         <ul className="space-y-2">
           {linked.map((n) => {
             const name = n.title || t('c.untitled')
             const unlink = () => {
-              undo.deleted(n)
+              undo.deleted([n])
               setLink(n.id, false)
             }
             const pin = () => void setPinned([n.id], !n.pinnedAt)
@@ -750,6 +768,8 @@ export function LinkedNotes({ contactId }: { contactId: string }) {
               <li key={n.id}>
                 <SwipeItem
                   id={n.id}
+                  select={sel}
+                  name={name}
                   left={pinSwipe(Boolean(n.pinnedAt), name, pin)}
                   right={removeSwipe('unlink', t('nlink.unlink'), t('nlink.unlink_label', { name }), unlink)}
                   focus={[
@@ -773,7 +793,13 @@ export function LinkedNotes({ contactId }: { contactId: string }) {
           })}
         </ul>
       </SwipeGroup>
-      {undo.item && <UndoBar title="" text={t('nlink.unlinked', { name: undo.item.title || t('c.untitled') })} onUndo={() => void undo.undo()} />}
+      {undo.item && (
+        <UndoBar
+          title=""
+          text={undo.item.length === 1 ? t('nlink.unlinked', { name: undo.item[0].title || t('c.untitled') }) : t.plural('sel.unlinked', undo.item.length)}
+          onUndo={() => void undo.undo()}
+        />
+      )}
     </div>
   )
 }
@@ -794,17 +820,34 @@ function LinkedPeople({ note, people, onOpen }: { note: Note; people: Contact[];
     else ids.delete(cid)
     void patch(note.id, { contactIds: ids.size ? [...ids] : undefined })
   }
-  const undo = useUndo<Contact>(async (c) => setLink(c.id, true))
+  const undo = useUndo<Contact[]>(async (cs) => cs.forEach((c) => setLink(c.id, true)))
+  const kit = usePhoneKit()
+  const sel = useHoldSelect(people.map((c) => c.id), Boolean(kit))
   if (people.length === 0 && !undo.item) return null
   return (
     <div>
       {people.length > 0 && <span className={label}>{t('nlink.contacts_label')}</span>}
+      <SelectBar
+        select={sel}
+        total={people.length}
+        actions={[
+          {
+            label: t('nlink.unlink'),
+            danger: true,
+            onClick: (ids) => {
+              const cs = people.filter((c) => ids.includes(c.id))
+              undo.deleted(cs)
+              cs.forEach((c) => setLink(c.id, false))
+            },
+          },
+        ]}
+      />
       <SwipeGroup>
         <ul className="space-y-2">
           {people.map((c) => {
             const name = c.name || t('c.unnamed')
             const unlink = () => {
-              undo.deleted(c)
+              undo.deleted([c])
               setLink(c.id, false)
             }
             const phone = c.phone.replace(/[^\d+]/g, '')
@@ -818,6 +861,8 @@ function LinkedPeople({ note, people, onOpen }: { note: Note; people: Contact[];
               <li key={c.id}>
                 <SwipeItem
                   id={c.id}
+                  select={sel}
+                  name={name}
                   left={reach}
                   right={removeSwipe('unlink', t('nlink.unlink'), t('nlink.unlink_person', { name }), unlink)}
                   focus={[{ label: t('nlink.unlink_person', { name }), onClick: unlink }]}
@@ -841,7 +886,13 @@ function LinkedPeople({ note, people, onOpen }: { note: Note; people: Contact[];
           })}
         </ul>
       </SwipeGroup>
-      {undo.item && <UndoBar title="" text={t('nlink.unlinked', { name: undo.item.name || t('c.unnamed') })} onUndo={() => void undo.undo()} />}
+      {undo.item && (
+        <UndoBar
+          title=""
+          text={undo.item.length === 1 ? t('nlink.unlinked', { name: undo.item[0].name || t('c.unnamed') }) : t.plural('sel.unlinked', undo.item.length)}
+          onUndo={() => void undo.undo()}
+        />
+      )}
     </div>
   )
 }
