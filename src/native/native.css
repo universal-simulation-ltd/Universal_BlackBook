@@ -120,6 +120,20 @@ html.bb-phone body {
   color: var(--color-slate-500);
   touch-action: manipulation;
 }
+.bb-tab {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+/* Held to be moved (NativeApp: hold a tab and drag). */
+.bb-tab.lifted {
+  transform: translateY(-6px) scale(1.08);
+  color: var(--color-orange-400);
+  background: var(--color-slate-800);
+  border-radius: 12px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+  transition: transform 120ms ease-out;
+}
 .bb-tab[aria-current='page'] {
   color: var(--color-orange-400);
 }

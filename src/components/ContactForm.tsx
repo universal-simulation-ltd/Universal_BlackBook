@@ -485,6 +485,10 @@ export function ContactForm({ id }: { id: string }) {
             type="button"
             className={`${btnSubtle} flex items-center gap-1.5`}
             onClick={() => {
+              // On the website the person's full-screen view is a <dialog>
+              // in the top layer, which would sit over the SDK's Tune this
+              // app; it steps aside (the phone stacks pages and keeps it).
+              if (!kit) useBookStore.getState().view(null)
               park(id, draft)
               openTune('fields')
             }}

@@ -647,4 +647,9 @@ export const appPtBR: Partial<Record<AppKey, string>> = {
   'tpl.field_removed': "Campo “{name}” removido.",
   'tpl.remove': "Remover",
   'tpl.up': "Subir",
+  'pref.tab_order': "Ordem das abas",
+  'pref.tab_order_note': "Arraste pelas alças ou use as setas. No celular você também pode segurar uma aba e arrastá-la pela barra. Ajustar fica por último.",
+  'pref.tab_hidden': "oculta",
+  'pref.tab_up': "Mover {name} para antes",
+  'pref.tab_down': "Mover {name} para depois",
 }

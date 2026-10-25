@@ -647,4 +647,9 @@ export const appIt: Partial<Record<AppKey, string>> = {
   'tpl.field_removed': "Campo «{name}» rimosso.",
   'tpl.remove': "Rimuovi",
   'tpl.up': "Sposta su",
+  'pref.tab_order': "Ordine delle schede",
+  'pref.tab_order_note': "Trascina le maniglie o usa le frecce. Sul telefono puoi anche tenere premuta una scheda e spostarla nella barra. Regola resta in fondo.",
+  'pref.tab_hidden': "nascosta",
+  'pref.tab_up': "Sposta {name} prima",
+  'pref.tab_down': "Sposta {name} dopo",
 }

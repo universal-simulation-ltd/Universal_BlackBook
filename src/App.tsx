@@ -111,7 +111,8 @@ export default function App() {
   const onTodos = todosOn && tab === 'todos'
   const onNotes = notesOn && tab === 'notes'
   const offContacts = onLists || onTodos || onNotes
-  const tabs = availableTabs(emailLists, todosOn, notesOn)
+  const tabOrder = useSettingsStore((s) => s.tabOrder)
+  const tabs = availableTabs(emailLists, todosOn, notesOn, tabOrder)
   const current = offContacts ? tab : 'contacts'
   const initTodos = useTodoStore((s) => s.init)
   const initNotes = useNoteStore((s) => s.init)

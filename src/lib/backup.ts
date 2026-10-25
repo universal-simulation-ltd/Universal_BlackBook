@@ -43,6 +43,7 @@ import { SWATCHES } from './palette'
 import { toTodo, mergeTodos, type Todo } from './todos'
 import { toReminders } from './reminders'
 import { isPattern } from './patterns'
+import { normaliseOrder, type Tab } from './tabs'
 import { mergeNotes, toContactIds, toPlace, type Note } from './notes'
 import { mergeTemplates, toFieldValues, toTemplates, TEMPLATE_LIMITS, type NoteTemplate } from './templates'
 import { toPhoneLink, type Contact, type Tag } from './types'
@@ -57,6 +58,8 @@ export interface BackupSettings {
   todos: boolean
   notes: boolean
   shownFields: FormField[]
+  /** The tabs' order (2026-10-25). Absent in an older file, which leaves this device's. */
+  tabOrder?: Tab[]
 }
 
 export interface BackupData {
@@ -118,6 +121,7 @@ export function backupData(src: BackupSource): BackupData {
       todos: src.settings.todos,
       notes: src.settings.notes,
       shownFields: [...src.settings.shownFields],
+      ...(src.settings.tabOrder ? { tabOrder: [...src.settings.tabOrder] } : {}),
     },
     view: { tagIds: [...src.view.tagIds], hiddenTagIds: [...src.view.hiddenTagIds], sort: src.view.sort },
   }
@@ -328,6 +332,7 @@ function parseSettings(raw: unknown): BackupSettings | null {
     todos: raw.todos !== false,
     notes: raw.notes !== false,
     shownFields: FORM_FIELDS.filter((f) => shown.includes(f)),
+    ...(Array.isArray(raw.tabOrder) ? { tabOrder: normaliseOrder(raw.tabOrder) } : {}),
   }
 }
 

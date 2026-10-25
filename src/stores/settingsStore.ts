@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { FORM_FIELDS, isFormField, type FormField } from '../lib/formFields'
+import { normaliseOrder, TABS, type Tab } from '../lib/tabs'
 
 /**
  * The app's own switches, shown in the SDK's ⚙ menu ▸ App preferences
@@ -35,13 +36,19 @@ export interface Settings {
    * reminder": nothing private shows to whoever glances at the phone.
    */
   notifyDetails: boolean
+  /**
+   * The tabs' order (hold a tab and drag, or Tune this app ▸ Tab order;
+   * 2026-10-25). Every tab is in it, shown or hidden, so a tab turned back on
+   * returns to its place. Tune is always last and not in here.
+   */
+  tabOrder: Tab[]
 }
 
 const KEY = 'blackbook.settings'
 // To-do and Notes are ON by default, Email lists off (James, 2026-10-23: "have
 // all active as default except email lists"). Their tick boxes are worded as
 // opt-outs ("Hide the To-do tab"), so every box still starts unticked.
-const DEFAULTS: Settings = { emailLists: false, todos: true, notes: true, shownFields: [], notifyDetails: false }
+const DEFAULTS: Settings = { emailLists: false, todos: true, notes: true, shownFields: [], notifyDetails: false, tabOrder: [...TABS] }
 /**
  * The stored shape's version. 1 (no `v`) wrote every switch whenever any one
  * changed, so a stored `false` for To-do or Notes cannot be told from "never
@@ -63,6 +70,7 @@ function load(): Settings {
         ? FORM_FIELDS.filter((f) => raw.shownFields!.filter(isFormField).includes(f))
         : [],
       notifyDetails: raw.notifyDetails === true,
+      tabOrder: normaliseOrder(raw.tabOrder),
     }
   } catch {
     return DEFAULTS
@@ -94,8 +102,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   set: (patch) => {
     set(patch)
     try {
-      const { emailLists, todos, notes, shownFields, notifyDetails } = get()
-      localStorage.setItem(KEY, JSON.stringify({ v: VERSION, emailLists, todos, notes, shownFields, notifyDetails }))
+      const { emailLists, todos, notes, shownFields, notifyDetails, tabOrder } = get()
+      localStorage.setItem(KEY, JSON.stringify({ v: VERSION, emailLists, todos, notes, shownFields, notifyDetails, tabOrder }))
     } catch {
       // See the note above: the switch still works until the app is closed.
     }
@@ -110,7 +118,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   openTune: (focus) => set({ tune: { focus: focus ?? null } }),
   closeTune: () => set({ tune: null }),
   reset: () => {
-    set({ ...DEFAULTS })
+    set({ ...DEFAULTS, tabOrder: [...TABS] })
     try {
       localStorage.removeItem(KEY)
     } catch {

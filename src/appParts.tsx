@@ -9,6 +9,7 @@ import credits from './generated/credits.json'
 import { EmailListsPreference } from './components/EmailListsPreference'
 import { FormFieldsPreference } from './components/FormFieldsPreference'
 import { TemplatesPreference } from './components/TemplateManager'
+import { TabOrderPreference } from './components/TabOrderPreference'
 import { phoneScreens } from './native/shell'
 import { contactsAvailability, ContactsPermissionError, pickOneContact } from './lib/deviceContacts'
 import { useBookStore } from './stores/bookStore'
@@ -23,9 +24,9 @@ import { DICTS, en as EN, useT, type Key, type Translator } from './i18n'
 
 export const REPO_URL = 'https://github.com/universal-simulation-ltd/Universal_BlackBook'
 
-/** The landing screen's tabs. Lists and To-do each need their App preference on. */
-export const TABS = ['contacts', 'lists', 'todos', 'notes'] as const
-export type Tab = (typeof TABS)[number]
+/** The landing screen's tabs (lib/tabs.ts). Lists, To-do and Notes each follow their switch. */
+export { TABS, type Tab } from './lib/tabs'
+import { TABS, type Tab } from './lib/tabs'
 const TAB_KEYS: Record<Tab, Key> = { contacts: 'tab_contacts', lists: 'tab_lists', todos: 'tab_todos', notes: 'tab_notes' }
 /** A tab's name, in the language on screen. */
 export const tabName = (t: Translator, tab: Tab) => t(TAB_KEYS[tab])
@@ -38,6 +39,7 @@ export const PREFERENCE_ROWS = (
   <>
     <EmailListsPreference />
     <OpensOnPreference />
+    <TabOrderPreference />
     <FormFieldsPreference />
     {/* The phone has its own row in Tune ▸ Your book. */}
     {!phoneScreens() && <TemplatesPreference />}
@@ -204,9 +206,9 @@ export function useContactPicker() {
 }
 
 /** The tabs the landing screen shows, given Tune this app ▸ Email lists, ▸ To-do and ▸ Notes. */
-export function availableTabs(emailLists: boolean, todos: boolean, notes = false): Tab[] {
+export function availableTabs(emailLists: boolean, todos: boolean, notes = false, order: readonly Tab[] = TABS): Tab[] {
   const on: Record<Tab, boolean> = { contacts: true, lists: emailLists, todos, notes }
-  return TABS.filter((t) => on[t])
+  return order.filter((t) => on[t])
 }
 
 /**
@@ -218,8 +220,9 @@ function OpensOnPreference() {
   const emailLists = useSettingsStore((s) => s.emailLists)
   const todos = useSettingsStore((s) => s.todos)
   const notes = useSettingsStore((s) => s.notes)
+  const order = useSettingsStore((s) => s.tabOrder)
   const t = useT()
-  const tabs = availableTabs(emailLists, todos, notes)
+  const tabs = availableTabs(emailLists, todos, notes, order)
   // The same stored default the double tap writes (useDefaultView), shown as
   // the app's own choice rows rather than the SDK's dropdown (James,
   // 2026-10-25: "the dropdown doesn't fit the style"): exactly one is on, and

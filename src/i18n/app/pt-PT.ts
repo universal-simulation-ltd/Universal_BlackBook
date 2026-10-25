@@ -647,4 +647,9 @@ export const appPtPT: Partial<Record<AppKey, string>> = {
   'tpl.field_removed': "Campo “{name}” removido.",
   'tpl.remove': "Remover",
   'tpl.up': "Subir",
+  'pref.tab_order': "Ordem dos separadores",
+  'pref.tab_order_note': "Arraste pelas pegas ou use as setas. No telemóvel também pode manter premido um separador e arrastá-lo pela barra. Ajustar fica em último.",
+  'pref.tab_hidden': "oculto",
+  'pref.tab_up': "Mover {name} para antes",
+  'pref.tab_down': "Mover {name} para depois",
 }

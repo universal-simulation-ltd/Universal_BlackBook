@@ -20,6 +20,7 @@
 // clears it.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { withShownOrder } from '../lib/tabs'
 import { requestSearch, useDefaultView } from '@unisim/sdk'
 import { availableTabs, LockLink, SyncStatus, useContactPicker, type Tab } from '../appParts'
 import { CloudPanel } from '../components/CloudPanel'
@@ -96,7 +97,90 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
 
   const tabDefault = useDefaultView<Tab>('tab', 'contacts', { views: ['contacts', 'lists', 'todos', 'notes'] })
   const [tab, setTab] = useState<PhoneTab>(tabDefault.defaultView)
-  const tabs: PhoneTab[] = [...availableTabs(emailLists, todosOn, notesOn), 'tune']
+  const tabOrder = useSettingsStore((s) => s.tabOrder)
+  const setSettings = useSettingsStore((s) => s.set)
+  const shownTabs = availableTabs(emailLists, todosOn, notesOn, tabOrder)
+  // Hold a tab and drag it (James, 2026-10-25). While one is held the bar
+  // shows the order it would drop into; Tune stays last.
+  const [dragTabs, setDragTabs] = useState<{ tab: Tab; order: Tab[] } | null>(null)
+  const tabs: PhoneTab[] = [...(dragTabs?.order ?? shownTabs), 'tune']
+  const navRef = useRef<HTMLElement>(null)
+  const tabHold = useRef<{ tab: Tab; x0: number; y0: number; active: boolean; timer: ReturnType<typeof setTimeout> } | null>(null)
+  const dragRef = useRef(dragTabs)
+  dragRef.current = dragTabs
+  const shownRef = useRef(shownTabs)
+  shownRef.current = shownTabs
+  const orderRef = useRef(tabOrder)
+  orderRef.current = tabOrder
+  const holdTab = (tab: Tab) => (e: React.TouchEvent) => {
+    if (e.touches.length !== 1 || shownRef.current.length < 2) return
+    const t0 = e.touches[0]
+    const h = {
+      tab,
+      x0: t0.clientX,
+      y0: t0.clientY,
+      active: false,
+      timer: setTimeout(() => {
+        h.active = true
+        navigator.vibrate?.(12)
+        setDragTabs({ tab, order: shownRef.current })
+      }, 500),
+    }
+    if (tabHold.current) clearTimeout(tabHold.current.timer)
+    tabHold.current = h
+  }
+  useEffect(() => {
+    const move = (e: TouchEvent) => {
+      const h = tabHold.current
+      if (!h) return
+      const t0 = e.touches[0]
+      if (!h.active) {
+        if (t0 && Math.hypot(t0.clientX - h.x0, t0.clientY - h.y0) > 10) {
+          clearTimeout(h.timer)
+          tabHold.current = null
+        }
+        return
+      }
+      e.preventDefault()
+      // Which slot the finger is over, among the tabs that can move.
+      const slots = [...(navRef.current?.querySelectorAll<HTMLElement>('[data-tab]') ?? [])].filter((el) => el.dataset.tab !== 'tune')
+      const at = slots.findIndex((el) => {
+        const r = el.getBoundingClientRect()
+        return t0.clientX >= r.left && t0.clientX <= r.right
+      })
+      const d = dragRef.current
+      if (!d || at < 0) return
+      const next = d.order.filter((x) => x !== d.tab)
+      next.splice(Math.min(at, next.length), 0, d.tab)
+      if (next.join() !== d.order.join()) setDragTabs({ tab: d.tab, order: next })
+    }
+    const end = () => {
+      const h = tabHold.current
+      tabHold.current = null
+      if (!h) return
+      clearTimeout(h.timer)
+      if (!h.active) return
+      // The lift is not a tap: the click it ends with must not switch tabs
+      // or count toward a double tap.
+      const swallow = (ev: Event) => {
+        ev.preventDefault()
+        ev.stopPropagation()
+      }
+      document.addEventListener('click', swallow, { capture: true, once: true })
+      setTimeout(() => document.removeEventListener('click', swallow, { capture: true }), 600)
+      const d = dragRef.current
+      setDragTabs(null)
+      if (d && d.order.join() !== shownRef.current.join()) setSettings({ tabOrder: withShownOrder(orderRef.current, d.order) })
+    }
+    document.addEventListener('touchmove', move, { passive: false, capture: true })
+    document.addEventListener('touchend', end, true)
+    document.addEventListener('touchcancel', end, true)
+    return () => {
+      document.removeEventListener('touchmove', move, { capture: true })
+      document.removeEventListener('touchend', end, true)
+      document.removeEventListener('touchcancel', end, true)
+    }
+  }, [setSettings])
   // A tab whose switch has since gone off opens on Contacts (the website's rule).
   const current: PhoneTab = tabs.includes(tab) ? tab : 'contacts'
   const { canPick, picking, pick } = useContactPicker()
@@ -223,7 +307,7 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
           )}
         </main>
 
-        <nav className="bb-tabs" aria-label={t('tabs_label')}>
+        <nav ref={navRef} className="bb-tabs" aria-label={t('tabs_label')}>
           {tabs.map((target) => {
             const Icon = TAB_ICON[target]
             const props = target === 'tune' ? {} : tabDefault.buttonProps(target as Tab, t(TAB_LABEL[target]))
@@ -231,9 +315,12 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
               <button
                 key={target}
                 type="button"
-                className="bb-tab"
+                data-tab={target}
+                className={`bb-tab${dragTabs?.tab === target ? ' lifted' : ''}`}
                 aria-current={current === target ? 'page' : undefined}
                 {...props}
+                onTouchStart={target === 'tune' ? undefined : holdTab(target as Tab)}
+                onContextMenu={(e) => e.preventDefault()}
                 onClick={() => tapTab(target)}
               >
                 <Icon />

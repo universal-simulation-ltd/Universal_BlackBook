@@ -476,6 +476,14 @@ you turn them on, then Tune), and its own icon.
   BlackBook's switches (all off to start), tags, backups, the PIN, Delete all
   data, help, About and Reset to defaults. Double-tap a tab to make it the one
   the app opens on.
+- **Your own tab order** (2026-10-25): hold a tab for half a second and drag it
+  along the bar; a quick tap still switches and a double tap still makes it the
+  one the app opens on (the hold is never a tap). **Tune** stays last, as the
+  way to every setting. Tune this app ▸ **Tab order** does the same with grips
+  and ↑ ↓ buttons, on the website too. Hidden tabs keep their place for when
+  they come back; Reset to defaults restores the order. The order is a device
+  setting (like the other switches it goes in the backup file, not the online
+  copy).
 - Sign-in stays, but only inside Online backup; Apple and Google sign-in come
   up in the phone's own sheet.
 

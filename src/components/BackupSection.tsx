@@ -76,7 +76,7 @@ export function BackupSection({ onDone }: { onDone: () => void }) {
           todos: useTodoStore.getState().todos,
           pages: useNoteStore.getState().notes,
           templates: useNoteStore.getState().templates,
-          settings: { emailLists: settings.emailLists, todos: settings.todos, notes: settings.notes, shownFields: settings.shownFields },
+          settings: { emailLists: settings.emailLists, todos: settings.todos, notes: settings.notes, shownFields: settings.shownFields, tabOrder: settings.tabOrder },
           view: useBookStore.getState().defaultView,
         },
         {

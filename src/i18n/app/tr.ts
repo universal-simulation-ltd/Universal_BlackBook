@@ -647,4 +647,9 @@ export const appTr: Partial<Record<AppKey, string>> = {
   'tpl.field_removed': "“{name}” alanı kaldırıldı.",
   'tpl.remove': "Kaldır",
   'tpl.up': "Yukarı",
+  'pref.tab_order': "Sekme sırası",
+  'pref.tab_order_note': "Tutamaçları sürükleyin veya okları kullanın. Telefonda bir sekmeye basılı tutup çubukta da sürükleyebilirsiniz. Ayarla en sonda kalır.",
+  'pref.tab_hidden': "gizli",
+  'pref.tab_up': "{name} öne al",
+  'pref.tab_down': "{name} geriye al",
 }

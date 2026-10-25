@@ -647,4 +647,9 @@ export const appFr: Partial<Record<AppKey, string>> = {
   'tpl.field_removed': "Champ « {name} » retiré.",
   'tpl.remove': "Retirer",
   'tpl.up': "Monter",
+  'pref.tab_order': "Ordre des onglets",
+  'pref.tab_order_note': "Fais glisser les poignées ou utilise les flèches. Sur le téléphone, tu peux aussi maintenir un onglet et le déplacer dans la barre. Réglages reste en dernier.",
+  'pref.tab_hidden': "masqué",
+  'pref.tab_up': "Avancer {name}",
+  'pref.tab_down': "Reculer {name}",
 }
