@@ -1,10 +1,12 @@
-import { useId, useMemo, useState } from 'react'
+import { useId, useMemo, useRef, useState } from 'react'
 import { AddTyped, ListSearch } from './ListSearch'
-import { compareNotes, matchesNote, preview, type Note } from '../lib/notes'
+import { compareNotes, matchesNote, noteText, preview, type Note } from '../lib/notes'
 import { useNoteStore } from '../stores/noteStore'
 import { Modal } from './Modal'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label, textareaCls } from './ui'
-import { autoFocusOK } from '../native/kit'
+import { autoFocusOK, usePhoneKit } from '../native/kit'
+import { useNativeNav } from '../native/nav'
+import { copyText } from '../lib/clipboard'
 import { phoneScreens } from '../native/shell'
 import { useT } from '../i18n'
 
@@ -97,6 +99,51 @@ function NoteRow({ note, onOpen }: { note: Note; onOpen: () => void }) {
  * a note is somewhere you write, and asking "Save?" on the way out of one is
  * the app doubting what you just did. A new note left empty is not kept.
  */
+/**
+ * Copy the note to the clipboard. The phone says so in its toast (a status
+ * line screen readers announce); the website turns the button to "Copied"
+ * for a moment, with the same words in a live region.
+ */
+function CopyNote({ title, details }: { title: string; details: string }) {
+  const t = useT()
+  const kit = usePhoneKit()
+  const say = useNativeNav((s) => s.say)
+  const [said, setSaid] = useState<string | null>(null)
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const text = noteText(title, details)
+  const copy = async () => {
+    const ok = await copyText(text)
+    const message = ok ? t('notes.copied') : t('export.copy_failed')
+    if (kit) say(message)
+    else {
+      setSaid(message)
+      clearTimeout(timer.current)
+      timer.current = setTimeout(() => setSaid(null), 2000)
+    }
+  }
+  return (
+    <>
+      <button
+        type="button"
+        className={`${btnSubtle} mb-1.5 flex items-center gap-1.5`}
+        onClick={() => void copy()}
+        disabled={!text}
+      >
+        <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+          <rect x="5.5" y="5.5" width="8" height="8" rx="1.6" />
+          <path d="M10.5 3.5V3a1.5 1.5 0 0 0-1.5-1.5H4A1.5 1.5 0 0 0 2.5 3v5A1.5 1.5 0 0 0 4 9.5h.5" strokeLinecap="round" />
+        </svg>
+        {said ?? t('notes.copy')}
+      </button>
+      {!kit && (
+        <span className="sr-only" role="status" aria-live="polite">
+          {said ?? ''}
+        </span>
+      )}
+    </>
+  )
+}
+
 function NotePage({ id }: { id: string }) {
   const t = useT()
   const existing = useNoteStore((s) => (id === 'new' ? undefined : s.notes.find((n) => n.id === id)))
@@ -133,9 +180,14 @@ function NotePage({ id }: { id: string }) {
           />
         </div>
         <div>
-          <label htmlFor={detailsId} className={label}>
-            {t('todo.details')}
-          </label>
+          {/* Copy sits beside the note (James, 2026-10-25), as Full screen
+              does on a contact's notes: the label and the button share a row. */}
+          <div className="flex items-center justify-between gap-2">
+            <label htmlFor={detailsId} className={label}>
+              {t('todo.details')}
+            </label>
+            <CopyNote title={title} details={details} />
+          </div>
           <textarea
             id={detailsId}
             className={textareaCls}

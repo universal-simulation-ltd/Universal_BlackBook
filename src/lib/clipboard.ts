@@ -1,3 +1,5 @@
+import { Capacitor } from '@capacitor/core'
+import { Clipboard } from '@capacitor/clipboard'
 /**
  * Put text on the clipboard. Resolves true when it got there.
  *
@@ -6,6 +8,19 @@
  * context it trusts. Both need to run inside the tap that asked for the copy.
  */
 export async function copyText(text: string): Promise<boolean> {
+  // The phone app: the system clipboard through @capacitor/clipboard, which
+  // does not depend on the web view allowing navigator.clipboard (WKWebView
+  // can refuse it outside a gesture it recognises). Imported statically: a
+  // dynamic import of a Capacitor plugin never settles inside the web view
+  // (landmines: BlackBook's contacts picker, 2026-08-30).
+  if (Capacitor.isNativePlatform()) {
+    try {
+      await Clipboard.write({ string: text })
+      return true
+    } catch {
+      // Fall through to the web ways.
+    }
+  }
   try {
     await navigator.clipboard.writeText(text)
     return true

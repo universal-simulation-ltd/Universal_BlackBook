@@ -530,6 +530,8 @@ export const appEn = {
   'todo.no_match': "No to-do has that in it.",
   'lists.search': "Search lists",
   'lists.no_match': "No list is called that.",
+  'notes.copy': "Copy",
+  'notes.copied': "Copied",
 } as const
 
 export type AppKey = keyof typeof appEn

@@ -77,3 +77,10 @@ export function mergeNotes(online: Note[], local: Note[]): Note[] {
   }
   return out
 }
+
+/** A note as plain text for the clipboard: the title, a blank line, the details. */
+export function noteText(title: string, details: string): string {
+  const head = title.trim()
+  const body = details.replace(/\s+$/, '')
+  return head && body.trim() ? `${head}\n\n${body}` : head || body
+}

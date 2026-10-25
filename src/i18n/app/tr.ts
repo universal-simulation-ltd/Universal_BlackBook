@@ -467,4 +467,6 @@ export const appTr: Partial<Record<AppKey, string>> = {
   'todo.no_match': "Bunu içeren bir yapılacak yok.",
   'lists.search': "Listelerde ara",
   'lists.no_match': "Bu adda bir liste yok.",
+  'notes.copy': "Kopyala",
+  'notes.copied': "Kopyalandı",
 }

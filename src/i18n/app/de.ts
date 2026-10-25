@@ -467,4 +467,6 @@ export const appDe: Partial<Record<AppKey, string>> = {
   'todo.no_match': "Keine Aufgabe enthält das.",
   'lists.search': "Listen durchsuchen",
   'lists.no_match': "Keine Liste heißt so.",
+  'notes.copy': "Kopieren",
+  'notes.copied': "Kopiert",
 }
