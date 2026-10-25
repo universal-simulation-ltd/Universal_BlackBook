@@ -669,4 +669,7 @@ export const appTr: Partial<Record<AppKey, string>> = {
   'loc.province': "İl",
   'loc.region': "Bölge",
   'loc.country': "Ülke",
+  'pref.fill_location': "Yeni not ve kişilere mevcut konumumu doldur",
+  'pref.fill_location_note': "Cihaza nerede olduğunu sorar, BlackBook’un kendi listesinde en yakın yerleşimi cihazda bulur ve Şehir, Bölge ve Ülke’yi doldurur. Hiçbir şey gönderilmez ve konum saklanmaz.",
+  'pref.fill_location_refused': "BlackBook için konuma izin verilmiyor, bu yüzden kapalı kalıyor. Cihaz ayarlarından izin verebilirsiniz.",
 }

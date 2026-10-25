@@ -327,6 +327,16 @@ builds them into `public/geo/`: **2.2 MB as files (cities.tsv 2.1 MB), about
 1.1 MB compressed**, fetched from the app's own files only when a location form
 (or the map) opens — never in the main bundle, never from anyone else.
 
+**Fill in my current location** (Tune this app, off to start): a new note's
+location and a new contact's address start at the town the device is nearest
+to. The device is asked for its position once (coarse: `@capacitor/geolocation`
+on the phone, `navigator.geolocation` on the website; permission is asked only
+when the setting is ticked, and a refusal unticks it), the nearest town is found
+in the bundled list on the device, City / County / Country are filled in, and
+the position is forgotten. Nothing is sent anywhere and no coordinates are
+stored. iOS: `NSLocationWhenInUseUsageDescription` in 8 languages
+(`ios/App/App/*.lproj/InfoPlist.strings`); Android: `ACCESS_COARSE_LOCATION` only.
+
 ## Locking the app
 
 **🔓 Lock with PIN** (🔒 **PIN lock on** once a PIN is set), beside the page title, and

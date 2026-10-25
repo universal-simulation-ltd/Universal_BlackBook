@@ -669,4 +669,7 @@ export const appPtBR: Partial<Record<AppKey, string>> = {
   'loc.province': "Província",
   'loc.region': "Região",
   'loc.country': "País",
+  'pref.fill_location': "Preencher minha localização atual em notas e contatos novos",
+  'pref.fill_location_note': "Pergunta ao aparelho onde ele está, procura no próprio aparelho a cidade mais próxima na lista do BlackBook e preenche Cidade, Região e País. Nada é enviado e a posição não é guardada.",
+  'pref.fill_location_refused': "A localização não está permitida para o BlackBook, então isto fica desligado. Você pode permitir nos ajustes do aparelho.",
 }

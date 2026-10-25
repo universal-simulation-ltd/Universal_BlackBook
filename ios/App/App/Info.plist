@@ -2,6 +2,17 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>de</string>
+		<string>es</string>
+		<string>fr</string>
+		<string>it</string>
+		<string>pt-BR</string>
+		<string>pt-PT</string>
+		<string>tr</string>
+	</array>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
@@ -34,6 +45,8 @@
 	     "Import my phone contacts" does. This app only ever READS, and only
 	     the name, numbers, emails, birthday and postal address. Keep the
 	     wording in step with PRIVACY.md and PrivacyInfo.xcprivacy. -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>BlackBook uses your location only when you turn on “Fill in my current location”: to find the nearest town in its own list, on this phone. The position is not stored or sent anywhere.</string>
 	<key>NSContactsUsageDescription</key>
 	<string>BlackBook reads your contacts only when you ask: to fill in someone you pick, or to import your phone's contacts into your book. They are read on this phone and never changed. Nothing is uploaded, except inside your end-to-end encrypted online copy if you turn it on.</string>
 	<!-- ⚠️ THE APP DOES NOT LAUNCH WITHOUT THIS once it is built against the

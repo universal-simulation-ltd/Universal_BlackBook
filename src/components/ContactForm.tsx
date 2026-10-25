@@ -10,7 +10,7 @@ import { EmailListForm } from './EmailListForm'
 import { TagPicker } from './TagPicker'
 import { PhoneContactLink } from './PhoneContactLink'
 import { LocationFields } from './LocationFields'
-import { newLocation } from './currentLocation'
+import { newLocation, useCurrentLocation } from './currentLocation'
 import { Modal } from './Modal'
 import { ExpandGlyph, NotesFullscreen } from './NotesFullscreen'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label, PinGlyph, textareaCls } from './ui'
@@ -170,6 +170,12 @@ export function ContactForm({ id }: { id: string }) {
   const pinnedBelow = pinned.filter((k) => !ABOVE_NOTES.includes(k))
 
   const patch = (p: Partial<ContactDraft>) => setDraft((d) => ({ ...d, ...p }))
+  // A new contact's address starts at the nearest town, with Tune this app ▸
+  // Fill in my current location on (useCurrentLocation does nothing off).
+  const [isNew] = useState(() => useBookStore.getState().fresh === id)
+  useCurrentLocation(isNew && !draft.location && !draft.address?.trim(), (here) =>
+    setDraft((d) => (d.location || d.address?.trim() ? d : { ...d, location: { ...newLocation(), ...here } })),
+  )
   const valid = Boolean(draft.name.trim())
 
   /**

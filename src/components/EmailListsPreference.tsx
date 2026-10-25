@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { useSettingsStore } from '../stores/settingsStore'
+import { askForLocation } from './currentLocation'
 import { checkboxCls } from './ui'
 import { useT } from '../i18n'
 import { phoneScreens } from '../native/shell'
@@ -19,6 +21,8 @@ export function EmailListsPreference() {
   const notes = useSettingsStore((s) => s.notes)
   const set = useSettingsStore((s) => s.set)
   const notifyDetails = useSettingsStore((s) => s.notifyDetails)
+  const fillLocation = useSettingsStore((s) => s.fillLocation)
+  const [locationRefused, setLocationRefused] = useState(false)
 
   return (
     <>
@@ -58,6 +62,32 @@ export function EmailListsPreference() {
       <span>
         {t('pref.notes')}
         <span className="mt-0.5 block text-xs text-slate-400">{t('pref.notes_note')}</span>
+      </span>
+    </label>
+    {/* Asks for the device's position the moment it is ticked (and only
+        then); a refusal unticks it again and says why. */}
+    <label className="flex items-start gap-3 py-1 text-sm text-slate-200">
+      <input
+        type="checkbox"
+        className={`${checkboxCls} mt-0.5`}
+        checked={fillLocation}
+        onChange={(e) => {
+          const on = e.target.checked
+          setLocationRefused(false)
+          set({ fillLocation: on })
+          if (on)
+            void askForLocation().then((ok) => {
+              if (!ok) {
+                set({ fillLocation: false })
+                setLocationRefused(true)
+              }
+            })
+        }}
+      />
+      <span>
+        {t('pref.fill_location')}
+        <span className="mt-0.5 block text-xs text-slate-400">{t('pref.fill_location_note')}</span>
+        {locationRefused && <span className="mt-0.5 block text-xs text-rose-300">{t('pref.fill_location_refused')}</span>}
       </span>
     </label>
     {/* Phone notifications are the phone app's: the website shows due

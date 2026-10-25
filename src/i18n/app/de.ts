@@ -669,4 +669,7 @@ export const appDe: Partial<Record<AppKey, string>> = {
   'loc.province': "Provinz",
   'loc.region': "Region",
   'loc.country': "Land",
+  'pref.fill_location': "Meinen aktuellen Ort für neue Notizen und Kontakte eintragen",
+  'pref.fill_location_note': "Fragt das Gerät, wo es ist, sucht auf dem Gerät den nächsten Ort in BlackBooks eigener Liste und trägt Stadt, Region und Land ein. Nichts wird gesendet, und die Position wird nicht gespeichert.",
+  'pref.fill_location_refused': "Standort ist für BlackBook nicht erlaubt, deshalb bleibt das aus. Du kannst ihn in den Einstellungen des Geräts erlauben.",
 }

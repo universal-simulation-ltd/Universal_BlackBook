@@ -42,13 +42,18 @@ export interface Settings {
    * returns to its place. Tune is always last and not in here.
    */
   tabOrder: Tab[]
+  /**
+   * New notes' and contacts' locations start at the nearest town to where the
+   * device is (2026-10-25), worked out on the device. Off to start.
+   */
+  fillLocation: boolean
 }
 
 const KEY = 'blackbook.settings'
 // To-do and Notes are ON by default, Email lists off (James, 2026-10-23: "have
 // all active as default except email lists"). Their tick boxes are worded as
 // opt-outs ("Hide the To-do tab"), so every box still starts unticked.
-const DEFAULTS: Settings = { emailLists: false, todos: true, notes: true, shownFields: [], notifyDetails: false, tabOrder: [...TABS] }
+const DEFAULTS: Settings = { emailLists: false, todos: true, notes: true, shownFields: [], notifyDetails: false, tabOrder: [...TABS], fillLocation: false }
 /**
  * The stored shape's version. 1 (no `v`) wrote every switch whenever any one
  * changed, so a stored `false` for To-do or Notes cannot be told from "never
@@ -71,6 +76,7 @@ function load(): Settings {
         : [],
       notifyDetails: raw.notifyDetails === true,
       tabOrder: normaliseOrder(raw.tabOrder),
+      fillLocation: raw.fillLocation === true,
     }
   } catch {
     return DEFAULTS
@@ -102,8 +108,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   set: (patch) => {
     set(patch)
     try {
-      const { emailLists, todos, notes, shownFields, notifyDetails, tabOrder } = get()
-      localStorage.setItem(KEY, JSON.stringify({ v: VERSION, emailLists, todos, notes, shownFields, notifyDetails, tabOrder }))
+      const { emailLists, todos, notes, shownFields, notifyDetails, tabOrder, fillLocation } = get()
+      localStorage.setItem(KEY, JSON.stringify({ v: VERSION, emailLists, todos, notes, shownFields, notifyDetails, tabOrder, fillLocation }))
     } catch {
       // See the note above: the switch still works until the app is closed.
     }

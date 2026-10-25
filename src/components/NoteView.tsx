@@ -534,7 +534,9 @@ function LocationEditor({ note, onClose }: { note: Note; onClose: () => void }) 
   const t = useT()
   const patch = useNoteStore((s) => s.patch)
   const [loc, setLoc] = useState<Location>(() => note.location ?? newLocation())
-  useCurrentLocation(!note.location, (here) => setLoc((l) => ({ ...l, ...here })))
+  // A note made in the last hour counts as new for "Fill in my current location".
+  const [isNew] = useState(() => !note.location && Date.now() - note.createdAt < 60 * 60_000)
+  useCurrentLocation(isNew, (here) => setLoc((l) => ({ ...l, ...here })))
   const ok = hasLocation(loc)
   return (
     <Modal phone="sheet" title={t('nlink.location')} onClose={onClose}>

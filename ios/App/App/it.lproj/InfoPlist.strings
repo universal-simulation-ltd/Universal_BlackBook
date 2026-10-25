@@ -1,0 +1,2 @@
+/* Shown when BlackBook asks for location (Tune this app ▸ Fill in my current location). */
+"NSLocationWhenInUseUsageDescription" = "BlackBook usa la tua posizione solo se attivi «Inserisci la mia posizione attuale»: per trovare su questo telefono la località più vicina nel suo elenco. La posizione non viene salvata né inviata.";

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B1AC6B00C000000000000202 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = B1AC6B00C000000000000201 /* InfoPlist.strings */; };
 		2FAD9763203C412B000D30F8 /* config.xml in Resources */ = {isa = PBXBuildFile; fileRef = 2FAD9762203C412B000D30F8 /* config.xml */; };
 		50379B232058CBB4000EE86E /* capacitor.config.json in Resources */ = {isa = PBXBuildFile; fileRef = 50379B222058CBB4000EE86E /* capacitor.config.json */; };
 		504EC3081FED79650016851F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 504EC3071FED79650016851F /* AppDelegate.swift */; };
@@ -38,6 +39,14 @@
 		AF277DCFFFF123FFC6DF26C7 /* Pods_App.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_App.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		AF51FD2D460BCFE21FA515B2 /* Pods-App.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App.release.xcconfig"; path = "Pods/Target Support Files/Pods-App/Pods-App.release.xcconfig"; sourceTree = "<group>"; };
 		FC68EB0AF532CFC21C3344DD /* Pods-App.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App.debug.xcconfig"; path = "Pods/Target Support Files/Pods-App/Pods-App.debug.xcconfig"; sourceTree = "<group>"; };
+		B1AC6B00C000000000000100 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = "en.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		B1AC6B00C000000000000101 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = "de.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		B1AC6B00C000000000000102 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = "es.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		B1AC6B00C000000000000103 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = "fr.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		B1AC6B00C000000000000104 /* it */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = it; path = "it.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		B1AC6B00C000000000000105 /* pt-BR */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "pt-BR"; path = "pt-BR.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		B1AC6B00C000000000000106 /* pt-PT */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "pt-PT"; path = "pt-PT.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		B1AC6B00C000000000000107 /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = "tr.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -86,6 +95,7 @@
 				C0DE5CE1E000000000000001 /* SceneDelegate.swift */,
 				B1AC6B00C000000000000001 /* BlackBookViewController.swift */,
 				B1AC6B00C000000000000003 /* PhoneContactPlugin.swift */,
+				B1AC6B00C000000000000201 /* InfoPlist.strings */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
 				504EC30E1FED79650016851F /* Assets.xcassets */,
 				504EC3101FED79650016851F /* LaunchScreen.storyboard */,
@@ -151,6 +161,13 @@
 			knownRegions = (
 				en,
 				Base,
+				de,
+				es,
+				fr,
+				it,
+				"pt-BR",
+				"pt-PT",
+				tr,
 			);
 			mainGroup = 504EC2FB1FED79650016851F;
 			packageReferences = (
@@ -169,6 +186,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B1AC6B00C000000000000202 /* InfoPlist.strings in Resources */,
 				504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */,
 				50B271D11FEDC1A000F3C39B /* public in Resources */,
 				504EC30F1FED79650016851F /* Assets.xcassets in Resources */,
@@ -232,6 +250,22 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXVariantGroup section */
+		B1AC6B00C000000000000201 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				B1AC6B00C000000000000100 /* en */,
+				B1AC6B00C000000000000101 /* de */,
+				B1AC6B00C000000000000102 /* es */,
+				B1AC6B00C000000000000103 /* fr */,
+				B1AC6B00C000000000000104 /* it */,
+				B1AC6B00C000000000000105 /* pt-BR */,
+				B1AC6B00C000000000000106 /* pt-PT */,
+				B1AC6B00C000000000000107 /* tr */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+
 		504EC30B1FED79650016851F /* Main.storyboard */ = {
 			isa = PBXVariantGroup;
 			children = (

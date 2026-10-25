@@ -2,7 +2,7 @@
   "app": "universal-blackbook",
   "appVersion": "0.1.0",
   "generated": "2026-10-25",
-  "noticesCount": 22,
+  "noticesCount": 23,
   "ships": [
     {
       "name": "@capacitor-community/contacts",

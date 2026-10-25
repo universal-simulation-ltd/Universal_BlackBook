@@ -53,4 +53,8 @@
          apps, so they are removed and a reminder may arrive a few minutes
          late on Android (inexact, allowed while the phone idles). -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:node="remove" />
+    <!-- "Fill in my current location" (Tune this app, off to start): the
+         town is enough, so coarse location only, asked for when the setting
+         is turned on. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 </manifest>

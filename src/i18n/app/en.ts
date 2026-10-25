@@ -732,6 +732,9 @@ export const appEn = {
   'loc.province': "Province",
   'loc.region': "Region",
   'loc.country': "Country",
+  'pref.fill_location': "Fill in my current location for new notes and contacts",
+  'pref.fill_location_note': "Asks the device where it is, finds the nearest town in BlackBook's own list on the device, and fills in City, County and Country. Nothing is sent anywhere and the position is not kept.",
+  'pref.fill_location_refused': "Location is not allowed for BlackBook, so this stays off. You can allow it in the device's settings.",
 } as const
 
 export type AppKey = keyof typeof appEn
