@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Capacitor } from '@capacitor/core'
 import { LinkifiedText } from '@unisim/sdk'
 import { copyText } from '../lib/clipboard'
@@ -213,28 +213,28 @@ function NoteView({ id }: { id: string }) {
     edit(note.id)
   }
 
-  const actions: { key: string; label: string; icon: ReactNode; onClick: () => void }[] = [
-    { key: 'contacts', label: t('nlink.contact'), icon: <PersonGlyph />, onClick: () => setSheet('contacts') },
-    { key: 'place', label: t('nlink.location'), icon: <PinMapGlyph />, onClick: () => setSheet('place') },
-    { key: 'remind', label: t('rem.add'), icon: <BellGlyph />, onClick: () => setSheet('remind') },
-    { key: 'copy', label: copied ?? t('notes.copy'), icon: <CopyGlyph />, onClick: () => void copy() },
+  // One large emoji each (James, 2026-10-25), the words as the accessible
+  // name and the tooltip. All four have a glyph in iOS's and Android's
+  // system emoji fonts.
+  const actions: { key: string; label: string; emoji: string; onClick: () => void }[] = [
+    { key: 'contacts', label: t('nlink.contact'), emoji: '\u{1F464}', onClick: () => setSheet('contacts') },
+    { key: 'place', label: t('nlink.location'), emoji: '\u{1F4CD}', onClick: () => setSheet('place') },
+    { key: 'remind', label: t('rem.add'), emoji: '\u{1F514}', onClick: () => setSheet('remind') },
+    { key: 'copy', label: t('notes.copy'), emoji: '\u{1F4CB}', onClick: () => void copy() },
   ]
 
-  const actionRow = kit ? (
-    <div className="bb-actions bb-actions-wrap mb-5" role="group" aria-label={t('nlink.actions')}>
+  const actionRow = (
+    <div className="mb-5 grid grid-cols-4 gap-2" role="group" aria-label={t('nlink.actions')}>
       {actions.map((a) => (
-        <button key={a.key} type="button" className="bb-action" onClick={a.onClick}>
-          {a.icon}
-          <span>{a.label}</span>
-        </button>
-      ))}
-    </div>
-  ) : (
-    <div className="mb-5 flex flex-wrap gap-2" role="group" aria-label={t('nlink.actions')}>
-      {actions.map((a) => (
-        <button key={a.key} type="button" className={`${btnGhost} inline-flex items-center gap-1.5`} onClick={a.onClick}>
-          <span className="text-orange-400">{a.icon}</span>
-          {a.label}
+        <button
+          key={a.key}
+          type="button"
+          aria-label={a.label}
+          title={a.label}
+          onClick={a.onClick}
+          className="flex min-h-[56px] items-center justify-center rounded-2xl border border-slate-800 bg-slate-900 text-[28px] leading-none transition-colors hover:border-slate-700 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+        >
+          <span aria-hidden>{a.emoji}</span>
         </button>
       ))}
       <span className="sr-only" role="status" aria-live="polite">
@@ -868,11 +868,6 @@ const PinMapGlyph = ({ small }: { small?: boolean }) => (
     <circle cx="12" cy="10" r="2.4" />
   </svg>
 )
-const BellGlyph = () => (
-  <svg {...g()}>
-    <path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15L6 16ZM10 20.5a2 2 0 0 0 4 0" />
-  </svg>
-)
 const NoteGlyph = () => (
   <svg {...g()}>
     <path d="M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5" />
@@ -882,11 +877,5 @@ const TemplateGlyph = () => (
   <svg {...g()}>
     <rect x="4" y="4" width="16" height="16" rx="2.5" />
     <path d="M8 9h8M8 13h3M13 13h3M8 17h3M13 17h3" />
-  </svg>
-)
-const CopyGlyph = () => (
-  <svg {...g()}>
-    <rect x="8.5" y="8.5" width="11" height="11" rx="2.2" />
-    <path d="M15.5 8.5V6a2 2 0 0 0-2-2h-7.5a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h2.5" />
   </svg>
 )
