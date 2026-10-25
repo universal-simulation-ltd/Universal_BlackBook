@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { compareOpen, daysUntil, dueLabel, mergeTodos, toTodo, toTodos, type Todo } from './todos'
+import { compareOpen, daysUntil, dueLabel, mergeTodos, moveTodo, toTodo, toTodos, type Todo } from './todos'
+import { parseBackup } from './backup'
 
 const today = { year: 2026, month: 9, day: 27 }
 const todo = (over: Partial<Todo> = {}): Todo => ({
@@ -66,5 +67,43 @@ describe('merging two devices', () => {
       ['c', 'Book the MOT'],
     ])
     expect(merged[2].tagIds).toEqual(['online-fam'])
+  })
+})
+
+const td = (id: string, p: Partial<Todo> = {}): Todo => ({ id, title: id, details: '', tagIds: [], createdAt: 1, updatedAt: 1, ...p })
+const order = (list: Todo[]) => [...list].sort(compareOpen).map((t) => t.id)
+
+describe('to-do order and pins (2026-10-25)', () => {
+  it('pinned first, then never-dragged ones by deadline, then the hand-made order', () => {
+    const list = [
+      td('a', { rank: 1 }),
+      td('b', { rank: 0 }),
+      td('c', { due: '2026-11-01' }),
+      td('d', { pinnedAt: 5 }),
+      td('e', { pinnedAt: 9 }),
+    ]
+    expect(order(list)).toEqual(['e', 'd', 'c', 'b', 'a'])
+  })
+
+  it('moving one numbers its group afresh and leaves the other group alone', () => {
+    const list = [td('a'), td('b', { createdAt: 2 }), td('c', { createdAt: 3 }), td('p', { pinnedAt: 4 })]
+    // Shown: p | c b a (newest first). Drag a above c.
+    const changed = moveTodo(list, 'a', 'c', false, 50)
+    const next = list.map((t) => changed.find((x) => x.id === t.id) ?? t)
+    expect(order(next)).toEqual(['p', 'a', 'c', 'b'])
+    expect(changed.every((t) => t.updatedAt === 50)).toBe(true)
+    expect(changed.some((t) => t.id === 'p')).toBe(false)
+    // Into the pinned group it cannot go: it lands at the top of its own.
+    const again = moveTodo(next, 'b', 'p', false, 60)
+    const after = next.map((t) => again.find((x) => x.id === t.id) ?? t)
+    expect(order(after)).toEqual(['p', 'b', 'a', 'c'])
+    expect(moveTodo(next, 'a', 'a', true)).toEqual([])
+  })
+
+  it('pin and order survive storage and a backup file', () => {
+    expect(toTodo({ id: 'x', title: 'X', pinnedAt: 7, rank: 2 })).toMatchObject({ pinnedAt: 7, rank: 2 })
+    expect(toTodo({ id: 'x', title: 'X', pinnedAt: 'no', rank: NaN })).not.toHaveProperty('rank')
+    const data = parseBackup({ contacts: [], todos: [{ id: 't1', title: 'T', pinnedAt: Date.UTC(2026, 0, 1), rank: 3 }] })!
+    expect(data.todos[0]).toMatchObject({ pinnedAt: Date.UTC(2026, 0, 1), rank: 3 })
   })
 })

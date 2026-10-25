@@ -241,3 +241,46 @@ input:-webkit-autofill:focus {
 dialog::backdrop {
   background: color-mix(in srgb, var(--color-slate-950) 80%, transparent);
 }
+
+/* To-do: tap, hold and drag (TodoView ▸ useTodoDrag). The row under the
+   finger shows an orange line where the dragged one will land; a held row is
+   never a text selection or iOS's callout. */
+.bb-todo {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+.bb-drop-before::before,
+.bb-drop-after::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--color-orange-500);
+  z-index: 30;
+}
+.bb-drop-before::before {
+  top: -5px;
+}
+.bb-drop-after::after {
+  bottom: -5px;
+}
+.bb-drop-left::before,
+.bb-drop-right::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--color-orange-500);
+  z-index: 30;
+}
+.bb-drop-left::before {
+  left: -5px;
+}
+.bb-drop-right::after {
+  right: -5px;
+}

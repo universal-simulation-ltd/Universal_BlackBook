@@ -20,6 +20,18 @@ export interface Todo {
   tagIds: string[]
   /** Epoch ms it was ticked off; absent while it is still to do. */
   doneAt?: number
+  /**
+   * Pinned to the top of the list (swipe, 2026-10-25): when. Pinned ones stay
+   * above the rest, the latest pin first. Absent = not pinned.
+   */
+  pinnedAt?: number
+  /**
+   * Its place in an order of your own (tap, hold and drag, 2026-10-25). Lower
+   * comes first. Absent on every to-do that has never been dragged: those keep
+   * the deadline order and sit above the ones you have arranged, so a new one
+   * shows at the top.
+   */
+  rank?: number
   createdAt: number
   updatedAt: number
 }
@@ -46,6 +58,8 @@ export function toTodo(raw: unknown): Todo | null {
     due: toDue(r.due),
     tagIds: Array.isArray(r.tagIds) ? r.tagIds.filter((v): v is string => typeof v === 'string') : [],
     doneAt: typeof r.doneAt === 'number' ? r.doneAt : undefined,
+    ...(typeof r.pinnedAt === 'number' && Number.isFinite(r.pinnedAt) ? { pinnedAt: r.pinnedAt } : {}),
+    ...(typeof r.rank === 'number' && Number.isFinite(r.rank) ? { rank: r.rank } : {}),
     createdAt: typeof r.createdAt === 'number' ? r.createdAt : Date.now(),
     updatedAt: typeof r.updatedAt === 'number' ? r.updatedAt : Date.now(),
   }
@@ -91,10 +105,41 @@ export function dueLabel(due: string, today: Today): string {
  * deadline after them, newest first. `YYYY-MM-DD` sorts as a string.
  */
 export function compareOpen(a: Todo, b: Todo): number {
+  // Pinned first, the latest pin first; then a hand-made order where there is
+  // one (never-dragged ones above it); then the deadline rule.
+  if (Boolean(a.pinnedAt) !== Boolean(b.pinnedAt)) return a.pinnedAt ? -1 : 1
+  const ra = a.rank !== undefined
+  const rb = b.rank !== undefined
+  if (ra && rb) return a.rank! - b.rank! || b.createdAt - a.createdAt
+  if (ra !== rb) return ra ? 1 : -1
+  if (a.pinnedAt && b.pinnedAt && a.pinnedAt !== b.pinnedAt) return b.pinnedAt - a.pinnedAt
   if (a.due && b.due) return a.due.localeCompare(b.due) || b.createdAt - a.createdAt
   if (a.due) return -1
   if (b.due) return 1
   return b.createdAt - a.createdAt
+}
+
+/**
+ * Move one open to-do to just before (or after) another, in the order the list
+ * shows, and number that group (pinned, or not) afresh. Returns the to-dos
+ * whose rank changed, ready to save. Only within a group: a pinned one dragged
+ * among the others stays pinned, and lands at that end.
+ */
+export function moveTodo(todos: Todo[], id: string, targetId: string, after: boolean, now = Date.now()): Todo[] {
+  const moving = todos.find((t) => t.id === id)
+  const target = todos.find((t) => t.id === targetId)
+  if (!moving || !target || moving.doneAt || id === targetId) return []
+  const pinned = Boolean(moving.pinnedAt)
+  const group = todos.filter((t) => !t.doneAt && Boolean(t.pinnedAt) === pinned).sort(compareOpen)
+  const order = group.filter((t) => t.id !== id)
+  let at = Boolean(target.pinnedAt) === pinned ? order.findIndex((t) => t.id === targetId) + (after ? 1 : 0) : pinned ? order.length : 0
+  if (at < 0) at = 0
+  order.splice(at, 0, moving)
+  const changed: Todo[] = []
+  order.forEach((t, i) => {
+    if (t.rank !== i) changed.push({ ...t, rank: i, updatedAt: now })
+  })
+  return changed
 }
 
 /** Done ones, most recently finished first. */

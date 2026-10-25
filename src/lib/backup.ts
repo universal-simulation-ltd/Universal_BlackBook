@@ -283,6 +283,8 @@ function parseTodo(raw: unknown, known: Set<string>): Todo | null {
     due: base?.due,
     tagIds: ids(raw.tagIds, known),
     doneAt: optTime(raw.doneAt),
+    ...(optTime(raw.pinnedAt) ? { pinnedAt: optTime(raw.pinnedAt) } : {}),
+    ...(typeof raw.rank === 'number' && Number.isFinite(raw.rank) && Math.abs(raw.rank) <= 1e6 ? { rank: Math.round(raw.rank) } : {}),
     createdAt,
     updatedAt: time(raw.updatedAt, createdAt),
   }

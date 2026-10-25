@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { newId } from '../lib/id'
 import { loadTodos, saveTodos } from '../lib/store'
-import type { Todo } from '../lib/todos'
+import { moveTodo, type Todo } from '../lib/todos'
 
 /** What the To-do form hands back. */
 export interface TodoDraft {
@@ -38,6 +38,12 @@ interface TodoState {
   setDone: (id: string, done: boolean) => Promise<void>
   remove: (id: string) => Promise<void>
   clearDone: () => Promise<void>
+  /** Pin to the top, or unpin. */
+  setPinned: (id: string, pinned: boolean) => Promise<void>
+  /** Drag (or Move up / down): put it just before or after another. */
+  move: (id: string, targetId: string, after: boolean) => Promise<void>
+  /** Undo a delete: the to-do as it was. */
+  restore: (todo: Todo) => Promise<void>
   /** A tag was deleted: nothing may go on pointing at it. */
   dropTag: (tagId: string) => Promise<void>
   /** The vault's or a backup file's copy (or a merge of it) becomes this device's. */
@@ -80,6 +86,8 @@ export const useTodoStore = create<TodoState>((set, get) => {
         due: draft.due || undefined,
         tagIds: draft.tagIds,
         doneAt: existing?.doneAt,
+        ...(existing?.pinnedAt ? { pinnedAt: existing.pinnedAt } : {}),
+        ...(existing?.rank !== undefined ? { rank: existing.rank } : {}),
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,
       }
@@ -102,6 +110,30 @@ export const useTodoStore = create<TodoState>((set, get) => {
     remove: async (id) => {
       set((s) => ({ editing: s.editing === id ? null : s.editing }))
       await commit(get().todos.filter((t) => t.id !== id))
+    },
+
+    setPinned: async (id, pinned) => {
+      const now = Date.now()
+      await commit(
+        get().todos.map((t) => {
+          if (t.id !== id) return t
+          // A rank belongs to the group it was made in; changing group starts afresh.
+          const { rank: _rank, pinnedAt: _p, ...rest } = t
+          void _rank
+          void _p
+          return { ...rest, ...(pinned ? { pinnedAt: now } : {}), updatedAt: now }
+        }),
+      )
+    },
+
+    move: async (id, targetId, after) => {
+      const changed = new Map(moveTodo(get().todos, id, targetId, after).map((t) => [t.id, t]))
+      if (changed.size) await commit(get().todos.map((t) => changed.get(t.id) ?? t))
+    },
+
+    restore: async (todo) => {
+      if (get().todos.some((t) => t.id === todo.id)) return
+      await commit([...get().todos, { ...todo, updatedAt: Date.now() }])
     },
 
     clearDone: async () => {

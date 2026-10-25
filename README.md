@@ -172,6 +172,16 @@ book (the CSV leaves them out). Hiding the tab keeps the list. Search it from th
 down on a phone); what you type is offered as "Add “…”", a new to-do with that
 title.
 
+**Your own order, pins and swipes** (James, 2026-10-25). Tap and hold a to-do
+and drag it to a new place (on the website, drag the ⋮⋮ grip at its edge); the
+order is saved on the to-dos, so it syncs and goes in the backup file. Swipe a
+to-do right to **Pin** it (pinned ones stay at the top) and left to **Delete** it,
+with **Undo** for six seconds. To-dos you have never dragged keep the deadline
+order and sit above the ones you have arranged, so a new one shows at the top.
+Every gesture has a button too, for VoiceOver, TalkBack and the keyboard: Move
+up, Move down, Pin and Delete on each row (shown when focused), and Alt+↑ /
+Alt+↓ on the website.
+
 ## Notes
 
 A **Notes** tab sits beside Contacts from the start (Tune this app ▸ **Hide the Notes tab** puts it away): notes of your own,

@@ -654,6 +654,17 @@ export const appEn = {
   'imp.add_other': "Add {count} notes",
   'imp.added_one': "Added {count} note.",
   'imp.added_other': "Added {count} notes.",
+  'todo.order_hint': "Hold a to-do and drag it to change the order, or use Move up and Move down. Swipe right to pin, left to delete.",
+  'todo.pin': "Pin",
+  'todo.unpin': "Unpin",
+  'todo.pinned': "Pinned",
+  'todo.pin_label': "Pin “{title}” to the top",
+  'todo.unpin_label': "Unpin “{title}”",
+  'todo.delete_label': "Delete “{title}”",
+  'todo.move_up': "Move “{title}” up",
+  'todo.move_down': "Move “{title}” down",
+  'todo.deleted': "Deleted “{title}”.",
+  'todo.undo': "Undo",
 } as const
 
 export type AppKey = keyof typeof appEn
