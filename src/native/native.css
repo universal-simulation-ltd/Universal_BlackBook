@@ -387,6 +387,13 @@ html.bb-phone body {
 .bb-action[aria-disabled='true'] {
   opacity: 0.4;
 }
+.bb-action > span {
+  text-align: center;
+  line-height: 1.2;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+  overflow-wrap: break-word;
+}
 .bb-action.muted {
   opacity: 0.55;
 }

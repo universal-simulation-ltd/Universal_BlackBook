@@ -186,6 +186,24 @@ Hiding the tab keeps the notes. To-do and Notes on, Email lists off, are the
 defaults since 2026-10-23; the tick boxes say "Hide …" so they still start unticked,
 and a device that never touched the old switches gets the new defaults.
 
+### A note's own view
+
+Tapping a note opens it the way a contact opens (James, 2026-10-25): the title
+in the bar with **Fine-tune** (the form: title, text, Delete), then a row of
+**Link to contact**, **Link to location**, **Add notification** and **Copy**,
+then what the note holds. The text is tapped into, as on a contact.
+
+- **Link to contact** ticks people in the book; they show as chips that open the
+  person, and the person's view lists its **Linked notes**.
+- **Link to location** is a place name, an address and, if you have them,
+  coordinates (`51.5007, -0.1246`). **Open in Maps** hands it to the phone's own
+  maps (Apple Maps on an iPhone, the `geo:` handler on Android) or
+  OpenStreetMap on the website. No map service of our own.
+- **Add notification** is the contacts' reminders (see Notifications).
+- A new note opens on its view once its form is closed.
+
+All of it is part of the note: in the online copy and the backup file (schema 3).
+
 ## Locking the app
 
 **🔓 Lock with PIN** (🔒 **PIN lock on** once a PIN is set), beside the page title, and

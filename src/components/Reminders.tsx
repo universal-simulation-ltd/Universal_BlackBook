@@ -223,7 +223,7 @@ export function DueReminders() {
   const now = useMinute()
   const ack = useAckReminder()
   const view = useBookStore((s) => s.view)
-  const viewNote = useNoteStore((s) => s.edit)
+  const viewNote = useNoteStore((s) => s.view)
   const due = all.filter((e) => isDue(e.reminder, now))
   if (due.length === 0) return null
   return (

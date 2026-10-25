@@ -10,6 +10,7 @@ import { autoFocusOK, usePhoneKit } from '../native/kit'
 import { CloseGlyph } from './Modal'
 import { BellGlyph, ContactMore, MoreRow } from './ContactMore'
 import { ReminderEditor, ReminderList } from './Reminders'
+import { LinkedNotes } from './NoteView'
 import { formatWhen, nextOccurrence } from '../lib/reminders'
 import { useNativeNav } from '../native/nav'
 import { askForNotifications } from '../native/notify'
@@ -339,6 +340,8 @@ export function ContactView({ id }: { id: string }) {
           </div>
         )}
       </div>
+
+      <LinkedNotes contactId={contact.id} />
 
       <ReminderList
         reminders={contact.reminders}

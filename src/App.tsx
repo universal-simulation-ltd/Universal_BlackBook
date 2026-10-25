@@ -28,6 +28,7 @@ import { TodoView } from './components/TodoView'
 import { NotesView } from './components/NotesView'
 import { LockPanel, LockScreen } from './components/Lock'
 import { DueReminders } from './components/Reminders'
+import { NoteLayers } from './components/NoteView'
 import { btnPrimary } from './components/ui'
 import { allOnline } from './lib/merge'
 import { forgetVault, loadSyncMeta } from './lib/store'
@@ -421,6 +422,7 @@ export default function App() {
           been driven in the deployed app. */}
       {viewing && <ContactView key={`view-${viewing}`} id={viewing} />}
       {editing && <ContactForm key={`form-${editing}`} id={editing} />}
+      <NoteLayers />
       <TuneThisApp />
       {panel === 'tags' && <TagManager onClose={closePanel} />}
       {panel === 'io' && <ImportExport onClose={closePanel} />}

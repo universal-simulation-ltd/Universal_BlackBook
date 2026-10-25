@@ -51,6 +51,7 @@ import { SignInContent } from './SignInScreen'
 import { PhoneLinkified } from './PhoneLinks'
 import { TuneContent } from './TuneScreen'
 import { DueReminders, useAllReminders } from '../components/Reminders'
+import { NoteLayers } from '../components/NoteView'
 import { onNotificationTap, scheduleReminders } from './notify'
 import './native.css'
 
@@ -122,7 +123,7 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
     }
   }, [reminders, notifyDetails, t])
   const viewContact = useBookStore((s) => s.view)
-  const openNote = useNoteStore((s) => s.edit)
+  const openNote = useNoteStore((s) => s.view)
   useEffect(
     () => onNotificationTap((kind, id) => (kind === 'contact' ? viewContact(id) : openNote(id))),
     [viewContact, openNote],
@@ -246,6 +247,7 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
             form, so saving or backing out of the form lands on the person. */}
         {viewing && <ContactView key={`view-${viewing}`} id={viewing} />}
         {editing && <ContactForm key={`form-${editing}`} id={editing} />}
+        <NoteLayers />
         {panel === 'tags' && <TagManager onClose={closePanel} />}
         {panel === 'io' && <ImportExport onClose={closePanel} />}
         {panel === 'cloud' && <CloudPanel onClose={closePanel} />}

@@ -42,7 +42,7 @@ import { mergeBooks } from './merge'
 import { SWATCHES } from './palette'
 import { toTodo, mergeTodos, type Todo } from './todos'
 import { toReminders } from './reminders'
-import { mergeNotes, type Note } from './notes'
+import { mergeNotes, toContactIds, toPlace, type Note } from './notes'
 import { toPhoneLink, type Contact, type Tag } from './types'
 
 export const BACKUP_PRODUCT = 'blackbook'
@@ -291,7 +291,18 @@ function parseNote(raw: unknown): Note | null {
   if (!noteId || !(title.trim() || details.trim())) return null
   const createdAt = time(raw.createdAt, EARLIEST)
   const reminders = toReminders(raw.reminders)
-  return { id: noteId, title, details, ...(reminders ? { reminders } : {}), createdAt, updatedAt: time(raw.updatedAt, createdAt) }
+  const contactIds = toContactIds(raw.contactIds)
+  const place = toPlace(raw.place)
+  return {
+    id: noteId,
+    title,
+    details,
+    ...(reminders ? { reminders } : {}),
+    ...(contactIds ? { contactIds } : {}),
+    ...(place ? { place } : {}),
+    createdAt,
+    updatedAt: time(raw.updatedAt, createdAt),
+  }
 }
 
 function parseSettings(raw: unknown): BackupSettings | null {

@@ -581,6 +581,22 @@ export const appEn = {
   'link.gone': "That contact is no longer on this phone. Unlink it, or link another.",
   'link.no_id': "The phone did not say which contact that was, so it cannot be linked.",
   'link.web_only': "Open it from the phone app on the phone it was linked on.",
+  'nlink.contact': "Link to contact",
+  'nlink.location': "Link to location",
+  'nlink.actions': "Note actions",
+  'nlink.contacts_label': "Linked contacts",
+  'nlink.location_label': "Location",
+  'nlink.open_maps': "Open in Maps",
+  'nlink.search': "Find someone",
+  'nlink.none': "Nobody in your book matches that.",
+  'nlink.linked_notes': "Linked notes",
+  'place.name': "Place",
+  'place.name_placeholder': "The Crown, Mum’s, the office",
+  'place.address': "Address",
+  'place.coords': "Coordinates (optional)",
+  'place.coords_bad': "Write them as latitude, longitude, like 51.5007, -0.1246.",
+  'place.remove': "Remove location",
+  'notes.fine_tune': "Fine-tune note",
 } as const
 
 export type AppKey = keyof typeof appEn

@@ -18,7 +18,9 @@ export interface NoteDraft {
 interface NoteState {
   notes: Note[]
   loaded: boolean
-  /** 'new', a note's id, or null — the note page is open on it. */
+  /** A note's id, or null — its clean view is open (2026-10-25). */
+  viewing: string | null
+  /** 'new', a note's id, or null — the note's form (Fine-tune) is open on it. */
   editing: string | null
   /** What the Notes tab's search box holds. Never remembered. */
   query: string
@@ -26,6 +28,8 @@ interface NoteState {
   prefillTitle: string | null
   init: () => Promise<void>
   edit: (id: string | null) => void
+  /** Open a note's view, or close it with null. */
+  view: (id: string | null) => void
   /** A new note, its title already in it. */
   startNote: (title: string) => void
   setQuery: (query: string) => void
@@ -46,6 +50,7 @@ export const useNoteStore = create<NoteState>((set, get) => {
   return {
     notes: [],
     loaded: false,
+    viewing: null,
     editing: null,
     query: '',
     prefillTitle: null,
@@ -59,6 +64,7 @@ export const useNoteStore = create<NoteState>((set, get) => {
     },
 
     edit: (editing) => set({ editing, prefillTitle: null }),
+    view: (viewing) => set((s) => ({ viewing, editing: viewing === null ? s.editing : s.editing === 'new' ? null : s.editing })),
     startNote: (title) => set({ editing: 'new', prefillTitle: title }),
     setQuery: (query) => set({ query }),
 
@@ -67,6 +73,8 @@ export const useNoteStore = create<NoteState>((set, get) => {
       const existing = draft.id ? get().notes.find((n) => n.id === draft.id) : undefined
       const title = draft.title.trim()
       const details = draft.details.replace(/\s+$/, '')
+      // A new note lands on its own view, as a new contact does; an edited
+      // one goes back to the view it was fine-tuned from.
       set({ editing: null })
       // Nothing changed: no new "edited" time, so the order stays put.
       if (existing && existing.title === title && existing.details === details) return
@@ -81,6 +89,7 @@ export const useNoteStore = create<NoteState>((set, get) => {
         updatedAt: now,
       }
       await commit(existing ? get().notes.map((n) => (n.id === note.id ? note : n)) : [...get().notes, note])
+      if (!existing) set({ viewing: note.id })
     },
 
     patch: async (id, patch) => {
@@ -91,12 +100,12 @@ export const useNoteStore = create<NoteState>((set, get) => {
     },
 
     remove: async (id) => {
-      set((s) => ({ editing: s.editing === id ? null : s.editing }))
+      set((s) => ({ editing: s.editing === id ? null : s.editing, viewing: s.viewing === id ? null : s.viewing }))
       await commit(get().notes.filter((n) => n.id !== id))
     },
 
     replace: async (notes) => {
-      set({ editing: null, loaded: true })
+      set({ editing: null, viewing: null, loaded: true })
       await commit(notes)
     },
   }
