@@ -475,4 +475,9 @@ export const appEs: Partial<Record<AppKey, string>> = {
   'view.name_placeholder': "¿Quién es?",
   'view.fresh_phone': "Escribe un nombre y añade un número o un correo con los botones de arriba. Afinar añade etiquetas, un cumpleaños y lo demás. Un contacto nuevo que se deja vacío no se guarda.",
   'view.fresh_web': "Escribe un nombre. Afinar añade un correo, un número, etiquetas, un cumpleaños y lo demás. Un contacto nuevo que se deja vacío no se guarda.",
+  'more.label': "Más",
+  'more.email': "Enviar correo",
+  'more.add_email': "Añadir correo electrónico",
+  'more.pin': "Fijar en Últimos añadidos",
+  'more.unpin': "Quitar de Últimos añadidos",
 }

@@ -93,4 +93,5 @@ export const es: Dict = {
   kb_intro: "Respuestas breves a las preguntas habituales: dónde se guarda tu agenda, qué hacen las copias y cómo se mueven los archivos.",
   kb_sources: "Fuentes",
   tune_pin_row: "Bloqueo con PIN",
+  action_more: "Más",
 }

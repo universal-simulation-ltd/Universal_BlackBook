@@ -325,8 +325,10 @@ you turn them on, then Tune), and its own icon.
   left edge, or Android's back. Filters, confirmations and choices are bottom
   sheets: drag the grip or swipe down to close them. Dates use the phone's own
   picker. Nothing opens as a website pop-up.
-- **A person's page leads with Call, Message, Email and Share** (the share
-  sheet gets their name and details, never the note).
+- **A person's page leads with Call, Message, Share and ⋯** (the share
+  sheet gets their name and details, never the note). ⋯ is a sheet of the
+  rest: Email (or Add email address), pin to Last added, hide from the list or
+  the birthdays, Delete. The website has the same ⋯ beside Fine-tune.
 - **Pull down from the top of the list for search**, and again for the
   keyboard. Tapping Contacts while you are on it does the same.
 - **Tune** holds every option: Light / Dark / Match my device, the language,

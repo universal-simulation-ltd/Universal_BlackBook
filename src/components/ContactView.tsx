@@ -8,6 +8,7 @@ import { useBookStore } from '../stores/bookStore'
 import { useEffectiveTheme } from '../stores/themeStore'
 import { autoFocusOK, usePhoneKit } from '../native/kit'
 import { CloseGlyph } from './Modal'
+import { ContactMore } from './ContactMore'
 import { ListChip } from './ListChip'
 import { TagChip } from './TagChip'
 import { btnGhost, btnPrimary, inputCls, label } from './ui'
@@ -51,6 +52,7 @@ export function ContactView({ id }: { id: string }) {
   // Made a moment ago by New contact (bookStore.newContact): the name is typed
   // here, at the top of the clean view, rather than in the full form.
   const isFresh = useBookStore((s) => s.fresh === id)
+  const [more, setMore] = useState(false)
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
   const kit = usePhoneKit()
@@ -366,9 +368,10 @@ export function ContactView({ id }: { id: string }) {
         }
       >
         <div className="mx-auto w-full max-w-2xl">
-          <kit.ContactActions contact={contact} />
+          <kit.ContactActions contact={contact} onMore={() => setMore(true)} />
         </div>
         {details}
+        {more && <ContactMore contact={contact} onClose={() => setMore(false)} />}
       </kit.Page>
     )
   }
@@ -418,6 +421,20 @@ export function ContactView({ id }: { id: string }) {
           </button>
           <button
             type="button"
+            onClick={() => setMore(true)}
+            aria-label={t('more.label')}
+            aria-haspopup="dialog"
+            title={t('more.label')}
+            className="shrink-0 rounded-md px-2 py-1 text-slate-300 hover:bg-slate-800 hover:text-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+          >
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden>
+              <circle cx="5.5" cy="12" r="1.9" />
+              <circle cx="12" cy="12" r="1.9" />
+              <circle cx="18.5" cy="12" r="1.9" />
+            </svg>
+          </button>
+          <button
+            type="button"
             onClick={() => {
               flush()
               close(null)
@@ -444,6 +461,7 @@ export function ContactView({ id }: { id: string }) {
       >
         {details}
       </div>
+      {more && <ContactMore contact={contact} onClose={() => setMore(false)} />}
     </dialog>
   )
 }

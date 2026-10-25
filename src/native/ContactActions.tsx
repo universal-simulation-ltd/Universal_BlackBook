@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components -- hooks and helpers live beside the components that use them; hot reload of these few files is not worth splitting them */
-// Call · Message · Email · Share, across the top of a contact's page — the
+// Call · Message · Share · More, across the top of a contact's page — the
 // phone doing what a phone does with a person (store-listings §7: native
 // things first). Each hands straight to the phone's own app or sheet: the
 // dialler, Messages, Mail, and the system share sheet with the person as text.
@@ -10,7 +10,7 @@ import { Capacitor } from '@capacitor/core'
 import type { Contact } from '../lib/types'
 import { formatBirthday } from '../lib/birthday'
 import { useT } from '../i18n'
-import { IconMail, IconMessage, IconPhone, IconShare } from './icons'
+import { IconMessage, IconMore, IconPhone, IconShare } from './icons'
 import { useNativeNav } from './nav'
 
 /** The digits a dialler wants, from the number exactly as typed (see Contact.phone). */
@@ -24,11 +24,10 @@ export function contactText(c: Contact): string {
     .join('\n')
 }
 
-export function ContactActions({ contact }: { contact: Contact }) {
+export function ContactActions({ contact, onMore }: { contact: Contact; onMore: () => void }) {
   const t = useT()
   const say = useNativeNav((s) => s.say)
   const phone = contact.phone.trim()
-  const email = contact.email.trim()
 
   const share = async () => {
     const text = contactText(contact)
@@ -59,11 +58,13 @@ export function ContactActions({ contact }: { contact: Contact }) {
       <ActionButton label={t('action_message')} disabled={!phone} onClick={() => go(`sms:${dial(phone)}`)}>
         <IconMessage />
       </ActionButton>
-      <ActionButton label={t('action_email')} disabled={!email} onClick={() => go(`mailto:${email}`)}>
-        <IconMail />
-      </ActionButton>
       <ActionButton label={t('action_share')} onClick={() => void share()}>
         <IconShare />
+      </ActionButton>
+      {/* Email moved into ⋯ with the other secondary actions (James,
+          2026-10-25); the row keeps four buttons. */}
+      <ActionButton label={t('action_more')} onClick={onMore}>
+        <IconMore />
       </ActionButton>
     </div>
   )

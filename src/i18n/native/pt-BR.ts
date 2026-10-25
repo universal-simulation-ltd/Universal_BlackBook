@@ -93,4 +93,5 @@ export const ptBR: Dict = {
   kb_intro: "Respostas curtas às perguntas comuns: onde sua agenda é guardada, o que os backups fazem e como os arquivos se movem.",
   kb_sources: "Fontes",
   tune_pin_row: "Bloqueio por PIN",
+  action_more: "Mais",
 }

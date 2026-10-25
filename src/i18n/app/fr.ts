@@ -475,4 +475,9 @@ export const appFr: Partial<Record<AppKey, string>> = {
   'view.name_placeholder': "Qui est-ce ?",
   'view.fresh_phone': "Tape un nom, puis ajoute un numéro ou un e-mail avec les boutons ci-dessus. Peaufiner ajoute des étiquettes, un anniversaire et le reste. Un nouveau contact laissé vide n’est pas gardé.",
   'view.fresh_web': "Tape un nom. Peaufiner ajoute un e-mail, un numéro, des étiquettes, un anniversaire et le reste. Un nouveau contact laissé vide n’est pas gardé.",
+  'more.label': "Plus",
+  'more.email': "Envoyer un e-mail",
+  'more.add_email': "Ajouter une adresse e-mail",
+  'more.pin': "Épingler dans Derniers ajouts",
+  'more.unpin': "Désépingler de Derniers ajouts",
 }

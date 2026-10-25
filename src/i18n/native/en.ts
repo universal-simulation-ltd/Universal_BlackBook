@@ -105,6 +105,7 @@ export const en = {
   kb_sources: 'Sources',
 
   tune_pin_row: "PIN lock",
+  action_more: "More",
 } as const
 
 export type Key = keyof typeof en

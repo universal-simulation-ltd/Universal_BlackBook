@@ -93,4 +93,5 @@ export const ptPT: Dict = {
   kb_intro: "Respostas curtas às perguntas habituais: onde a agenda é guardada, o que fazem as cópias e como os ficheiros se movem.",
   kb_sources: "Fontes",
   tune_pin_row: "Bloqueio por PIN",
+  action_more: "Mais",
 }

@@ -538,6 +538,11 @@ export const appEn = {
   'view.name_placeholder': "Who is it?",
   'view.fresh_phone': "Type a name, then add a number or an email from the buttons above. Fine-tune adds tags, a birthday and the rest. A new contact left empty is not kept.",
   'view.fresh_web': "Type a name. Fine-tune adds an email, a number, tags, a birthday and the rest. A new contact left empty is not kept.",
+  'more.label': "More",
+  'more.email': "Email",
+  'more.add_email': "Add email address",
+  'more.pin': "Pin to Last added",
+  'more.unpin': "Unpin from Last added",
 } as const
 
 export type AppKey = keyof typeof appEn

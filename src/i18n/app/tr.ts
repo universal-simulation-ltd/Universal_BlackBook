@@ -475,4 +475,9 @@ export const appTr: Partial<Record<AppKey, string>> = {
   'view.name_placeholder': "Kim?",
   'view.fresh_phone': "Bir ad yazın, sonra yukarıdaki düğmelerden bir numara veya e-posta ekleyin. İnce ayar etiketleri, doğum gününü ve geri kalanını ekler. Boş bırakılan yeni bir kişi saklanmaz.",
   'view.fresh_web': "Bir ad yazın. İnce ayar e-posta, numara, etiket, doğum günü ve geri kalanını ekler. Boş bırakılan yeni bir kişi saklanmaz.",
+  'more.label': "Daha fazla",
+  'more.email': "E-posta gönder",
+  'more.add_email': "E-posta adresi ekle",
+  'more.pin': "Son eklenenlere sabitle",
+  'more.unpin': "Son eklenenlerden sabitlemeyi kaldır",
 }

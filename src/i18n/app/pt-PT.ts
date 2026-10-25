@@ -475,4 +475,9 @@ export const appPtPT: Partial<Record<AppKey, string>> = {
   'view.name_placeholder': "Quem é?",
   'view.fresh_phone': "Escreva um nome e depois adicione um número ou um e-mail com os botões acima. Afinar adiciona etiquetas, um aniversário e o resto. Um contacto novo deixado vazio não é guardado.",
   'view.fresh_web': "Escreva um nome. Afinar adiciona um e-mail, um número, etiquetas, um aniversário e o resto. Um contacto novo deixado vazio não é guardado.",
+  'more.label': "Mais",
+  'more.email': "Enviar e-mail",
+  'more.add_email': "Adicionar e-mail",
+  'more.pin': "Afixar em Últimos adicionados",
+  'more.unpin': "Desafixar de Últimos adicionados",
 }

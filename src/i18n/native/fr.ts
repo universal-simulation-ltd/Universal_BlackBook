@@ -93,4 +93,5 @@ export const fr: Dict = {
   kb_intro: "Des réponses courtes aux questions qu’on se pose : où votre carnet est gardé, ce que font les sauvegardes et comment les fichiers voyagent.",
   kb_sources: "Sources",
   tune_pin_row: "Verrou par PIN",
+  action_more: "Plus",
 }

@@ -475,4 +475,9 @@ export const appIt: Partial<Record<AppKey, string>> = {
   'view.name_placeholder': "Chi è?",
   'view.fresh_phone': "Scrivi un nome, poi aggiungi un numero o un’email con i pulsanti in alto. Perfeziona aggiunge tag, un compleanno e il resto. Un nuovo contatto lasciato vuoto non viene tenuto.",
   'view.fresh_web': "Scrivi un nome. Perfeziona aggiunge email, numero, tag, compleanno e il resto. Un nuovo contatto lasciato vuoto non viene tenuto.",
+  'more.label': "Altro",
+  'more.email': "Invia email",
+  'more.add_email': "Aggiungi indirizzo email",
+  'more.pin': "Fissa in Aggiunti di recente",
+  'more.unpin': "Togli da Aggiunti di recente",
 }

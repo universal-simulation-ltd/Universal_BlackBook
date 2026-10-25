@@ -93,4 +93,5 @@ export const de: Dict = {
   kb_intro: "Kurze Antworten auf die Fragen, die man sich stellt: wo dein Buch aufbewahrt wird, was die Sicherungen tun und wie die Dateien umziehen.",
   kb_sources: "Quellen",
   tune_pin_row: "PIN-Sperre",
+  action_more: "Mehr",
 }

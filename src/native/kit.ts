@@ -45,8 +45,8 @@ export interface PhoneKit {
   Sheet: ComponentType<PhoneSheetProps>
   /** Sign in as a page (Online backup's way in), in place of the SDK's dialog. */
   SignIn: ComponentType<{ onClose: () => void }>
-  /** Call · Message · Email · Share, at the top of a contact's page. */
-  ContactActions: ComponentType<{ contact: Contact }>
+  /** Call · Message · Share · More, at the top of a contact's page. */
+  ContactActions: ComponentType<{ contact: Contact; onMore: () => void }>
   /** A note's links, guarded, with the warning as a sheet (the SDK's is a dialog). */
   Linkified: ComponentType<{ text: string; linkClassName?: string }>
   /** A translated string from the phone screens' own dictionary. */

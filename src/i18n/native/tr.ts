@@ -93,4 +93,5 @@ export const tr: Dict = {
   kb_intro: "Sık sorulan sorulara kısa yanıtlar: defterin nerede tutulur, yedekler ne yapar ve dosyalar nasıl taşınır.",
   kb_sources: "Kaynaklar",
   tune_pin_row: "PIN kilidi",
+  action_more: "Daha fazla",
 }

@@ -475,4 +475,9 @@ export const appDe: Partial<Record<AppKey, string>> = {
   'view.name_placeholder': "Wer ist es?",
   'view.fresh_phone': "Gib einen Namen ein und füge dann über die Knöpfe oben eine Nummer oder E-Mail hinzu. Mit Feinjustieren kommen Schlagwörter, ein Geburtstag und der Rest dazu. Ein leer gelassener neuer Kontakt wird nicht behalten.",
   'view.fresh_web': "Gib einen Namen ein. Mit Feinjustieren kommen E-Mail, Nummer, Schlagwörter, Geburtstag und der Rest dazu. Ein leer gelassener neuer Kontakt wird nicht behalten.",
+  'more.label': "Mehr",
+  'more.email': "E-Mail schreiben",
+  'more.add_email': "E-Mail-Adresse hinzufügen",
+  'more.pin': "An „Zuletzt hinzugefügt“ anheften",
+  'more.unpin': "Von „Zuletzt hinzugefügt“ lösen",
 }

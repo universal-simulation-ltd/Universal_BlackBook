@@ -103,6 +103,16 @@ export function IconMail() {
   )
 }
 
+export function IconMore() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" fill="currentColor" aria-hidden>
+      <circle cx="5.5" cy="12" r="1.9" />
+      <circle cx="12" cy="12" r="1.9" />
+      <circle cx="18.5" cy="12" r="1.9" />
+    </svg>
+  )
+}
+
 export function IconShare() {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5" {...stroke} aria-hidden>

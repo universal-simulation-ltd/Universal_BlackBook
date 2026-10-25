@@ -93,4 +93,5 @@ export const it: Dict = {
   kb_intro: "Risposte brevi alle domande che ci si fa: dove è conservata la rubrica, che cosa fanno i backup e come si spostano i file.",
   kb_sources: "Fonti",
   tune_pin_row: "Blocco con PIN",
+  action_more: "Altro",
 }
