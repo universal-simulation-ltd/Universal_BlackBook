@@ -64,7 +64,7 @@ export function NotesView() {
           {t('notes.no_match')}
         </p>
       ) : (
-        <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
           {shown.map((n) => (
             <li key={n.id}>
               <NoteRow note={n} onOpen={() => edit(n.id)} />

@@ -18,6 +18,8 @@ html.bb-phone body {
 
 .bb-app {
   min-height: 100dvh;
+  overflow-x: clip;
+  overflow-wrap: break-word;
   color: var(--color-slate-200);
   background: var(--color-slate-950);
 }
@@ -193,6 +195,10 @@ html.bb-phone body {
   justify-content: flex-end;
 }
 .bb-pagebody {
+  /* Nothing on a page scrolls sideways: a long link or a pasted run with no
+     spaces wraps instead (James, 2026-10-25). */
+  overflow-x: hidden;
+  overflow-wrap: break-word;
   padding: 16px max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left));
 }
 .bb-pagebody.bare {

@@ -82,7 +82,7 @@ export function ListsView() {
           </p>
         </div>
       ) : (
-        <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
           {lists.map(({ tag, people }) => (
             <li
               key={tag.id}
@@ -232,7 +232,7 @@ function ListPage({ list, onBack }: { list: Tag; onBack: () => void }) {
           <p className="text-sm text-slate-400">{t('lists.empty')}</p>
         </div>
       ) : (
-        <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
           {people.map((c) => (
             <li key={c.id}>
               <ContactRow

@@ -126,7 +126,7 @@ export function TodoView() {
           {query.trim() ? t('todo.no_match') : activeFilter.length > 0 ? t('todo.none_tagged') : t('todo.all_done')}
         </p>
       ) : (
-        <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
           {open.map((t) => (
             <li key={t.id}>
               <TodoRow todo={t} byId={byId} today={today} />
@@ -162,7 +162,7 @@ export function TodoView() {
             )}
           </div>
           {showDone && (
-            <ul id={doneId} className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            <ul id={doneId} className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
               {done.map((t) => (
                 <li key={t.id}>
                   <TodoRow todo={t} byId={byId} today={today} />
@@ -200,7 +200,7 @@ function TodoRow({ todo, byId, today }: { todo: Todo; byId: Map<string, Tag>; to
         <p className={`font-semibold text-slate-100 ${done ? 'line-through decoration-slate-500' : ''}`}>
           {todo.title || t('c.untitled')}
         </p>
-        {todo.details && <p className="line-clamp-2 whitespace-pre-wrap text-sm text-slate-400">{todo.details}</p>}
+        {todo.details && <p className="line-clamp-2 whitespace-pre-wrap break-words text-sm text-slate-400">{todo.details}</p>}
         {todo.due && !done && (
           <p
             className={`text-sm font-medium tabular-nums ${

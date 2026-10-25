@@ -311,7 +311,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
               two at sm, three at xl — so a wide screen is not one card and
               two empty columns. The extras are hidden by breakpoint rather
               than measured, so the row never reflows after first paint. */}
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {topCards.map((c, i) => (
               <div key={c.id} className={i === 1 ? 'hidden sm:block' : i === 2 ? 'hidden xl:block' : undefined}>
                 <p className="mb-1 px-1 text-xs text-slate-500">{c.pinnedAt !== undefined ? t('list.pinned') : addedWhen(c.createdAt)}</p>
@@ -404,7 +404,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
           onDone={() => setSelected(null)}
         />
       )}
-      <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+      <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
         {visible.map((c) => (
           <li key={c.id}>
             {selecting ? (
@@ -503,7 +503,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
               <p className="mb-2 mt-1 px-1.5 text-xs text-slate-600">
                 {t('list.hidden_note')}
               </p>
-              <ul id={tidiedId} className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+              <ul id={tidiedId} className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
                 {tidiedAway.map((c) => (
                   <li key={c.id}>
                     <SwipeRow
@@ -562,7 +562,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
               <p className="mb-2 mt-1 px-1.5 text-xs text-slate-600">
                 {t('list.hidden_birthdays_note')}
               </p>
-              <ul id={hiddenBirthdaysId} className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+              <ul id={hiddenBirthdaysId} className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
                 {hidden.map((c) => (
                   <li key={c.id}>
                     <SwipeRow
@@ -1084,7 +1084,7 @@ export function ContactRow({
           // `line-clamp-2` and not a JS truncation: clamping in JS needs a
           // character count, and a character count is wrong at every width the
           // card is actually rendered at.
-          <p className="line-clamp-2 whitespace-pre-wrap text-sm text-slate-500">{contact.notes}</p>
+          <p className="line-clamp-2 whitespace-pre-wrap break-words text-sm text-slate-500">{contact.notes}</p>
         )}
       </button>
 
