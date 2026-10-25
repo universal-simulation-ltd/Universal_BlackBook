@@ -1,13 +1,18 @@
 import { create } from 'zustand'
 import { newId } from '../lib/id'
 import type { Note } from '../lib/notes'
-import { loadPages, savePages } from '../lib/store'
+import { loadPages, loadTemplates, loadTemplatesSeeded, markTemplatesSeeded, savePages, saveTemplates } from '../lib/store'
+import { bookTemplate, retireFields, type NoteTemplate } from '../lib/templates'
+import { currentT } from '../i18n'
 
 /** What the note page hands back. */
 export interface NoteDraft {
   id?: string
   title: string
   details: string
+  /** A new note's template; an existing note keeps its own. */
+  templateId?: string
+  fields?: Record<string, string>
 }
 
 /**
@@ -39,6 +44,21 @@ interface NoteState {
   patch: (id: string, patch: Partial<Omit<Note, 'id' | 'createdAt' | 'updatedAt'>>) => Promise<void>
   /** The vault's or a backup file's copy (or a merge of it) becomes this device's. */
   replace: (notes: Note[]) => Promise<void>
+  /** Note templates (lib/templates.ts) — the book's, synced and in backups. */
+  templates: NoteTemplate[]
+  /** The Notes tab's filter: a template id, or null for all. Never remembered. */
+  templateFilter: string | null
+  setTemplateFilter: (id: string | null) => void
+  /** A new note from a template ('new' with this template). */
+  newTemplate: string | null
+  startFrom: (templateId: string | null) => void
+  /** + / Add new on the Notes tab: the choice of template first when there are any. */
+  choosing: boolean
+  newNote: () => void
+  stopChoosing: () => void
+  saveTemplate: (template: NoteTemplate) => Promise<void>
+  removeTemplate: (id: string) => Promise<void>
+  replaceTemplates: (templates: NoteTemplate[]) => Promise<void>
 }
 
 export const useNoteStore = create<NoteState>((set, get) => {
@@ -52,18 +72,38 @@ export const useNoteStore = create<NoteState>((set, get) => {
     loaded: false,
     viewing: null,
     editing: null,
+    templates: [],
+    templateFilter: null,
+    newTemplate: null,
+    choosing: false,
     query: '',
     prefillTitle: null,
 
     init: async () => {
       if (get().loaded) return
-      const notes = await loadPages()
+      const [notes, stored, seeded] = await Promise.all([loadPages(), loadTemplates(), loadTemplatesSeeded()])
       // A vault adopted while that read was in flight is newer than it.
       if (get().loaded) return
-      set({ notes, loaded: true })
+      // The example "Book" template, once per device (James, 2026-10-25:
+      // "ship one example template the user can delete"). Its id is fixed,
+      // so two devices that each made it end up with one.
+      let templates = stored
+      if (!seeded) {
+        await markTemplatesSeeded()
+        if (!templates.some((t) => t.id === 'tpl-book')) {
+          const t = currentT()
+          templates = [...templates, bookTemplate({ name: t('tpl.book'), title: t('tpl.book_title'), author: t('tpl.book_author'), read: t('tpl.book_read') })]
+          await saveTemplates(templates)
+        }
+      }
+      set({ notes, templates, loaded: true })
     },
 
-    edit: (editing) => set({ editing, prefillTitle: null }),
+    edit: (editing) => set({ editing, prefillTitle: null, newTemplate: null }),
+    startFrom: (newTemplate) => set({ editing: 'new', prefillTitle: null, newTemplate, choosing: false }),
+    newNote: () => (get().templates.length ? set({ choosing: true }) : get().edit('new')),
+    stopChoosing: () => set({ choosing: false }),
+    setTemplateFilter: (templateFilter) => set({ templateFilter }),
     view: (viewing) => set((s) => ({ viewing, editing: viewing === null ? s.editing : s.editing === 'new' ? null : s.editing })),
     startNote: (title) => set({ editing: 'new', prefillTitle: title }),
     setQuery: (query) => set({ query }),
@@ -73,11 +113,13 @@ export const useNoteStore = create<NoteState>((set, get) => {
       const existing = draft.id ? get().notes.find((n) => n.id === draft.id) : undefined
       const title = draft.title.trim()
       const details = draft.details.replace(/\s+$/, '')
+      const fields = Object.fromEntries(Object.entries(draft.fields ?? {}).filter(([, v]) => v.trim()))
+      const sameFields = JSON.stringify(existing?.fields ?? {}) === JSON.stringify(fields)
       // A new note lands on its own view, as a new contact does; an edited
       // one goes back to the view it was fine-tuned from.
       set({ editing: null })
       // Nothing changed: no new "edited" time, so the order stays put.
-      if (existing && existing.title === title && existing.details === details) return
+      if (existing && existing.title === title && existing.details === details && sameFields) return
       // `...existing` first: what the page does not edit (reminders, links,
       // place) stays as it was.
       const note: Note = {
@@ -85,6 +127,8 @@ export const useNoteStore = create<NoteState>((set, get) => {
         id: existing?.id ?? newId(),
         title,
         details,
+        ...((existing?.templateId ?? draft.templateId) ? { templateId: existing?.templateId ?? draft.templateId } : {}),
+        fields: Object.keys(fields).length ? fields : undefined,
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,
       }
@@ -102,6 +146,37 @@ export const useNoteStore = create<NoteState>((set, get) => {
     remove: async (id) => {
       set((s) => ({ editing: s.editing === id ? null : s.editing, viewing: s.viewing === id ? null : s.viewing }))
       await commit(get().notes.filter((n) => n.id !== id))
+    },
+
+    saveTemplate: async (template) => {
+      const before = get().templates.find((t) => t.id === template.id)
+      // Fields taken out of a template take their values into the notes' text.
+      if (before) {
+        const gone = before.fields.filter((f) => !template.fields.some((x) => x.id === f.id)).map((f) => f.id)
+        if (gone.length) {
+          const changed = new Map(retireFields(get().notes, before, gone, false).map((n) => [n.id, n]))
+          if (changed.size) await commit(get().notes.map((n) => changed.get(n.id) ?? n))
+        }
+      }
+      const next = { ...template, updatedAt: Date.now() }
+      const templates = before ? get().templates.map((t) => (t.id === next.id ? next : t)) : [...get().templates, next]
+      set({ templates })
+      await saveTemplates(templates)
+    },
+
+    removeTemplate: async (id) => {
+      const tpl = get().templates.find((t) => t.id === id)
+      if (!tpl) return
+      const changed = new Map(retireFields(get().notes, tpl, tpl.fields.map((f) => f.id), true).map((n) => [n.id, n]))
+      if (changed.size) await commit(get().notes.map((n) => changed.get(n.id) ?? n))
+      const templates = get().templates.filter((t) => t.id !== id)
+      set((s) => ({ templates, templateFilter: s.templateFilter === id ? null : s.templateFilter }))
+      await saveTemplates(templates)
+    },
+
+    replaceTemplates: async (templates) => {
+      set((s) => ({ templates, templateFilter: templates.some((t) => t.id === s.templateFilter) ? s.templateFilter : null }))
+      await saveTemplates(templates)
     },
 
     replace: async (notes) => {

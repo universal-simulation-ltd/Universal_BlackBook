@@ -106,6 +106,7 @@ export const en = {
 
   tune_pin_row: "PIN lock",
   action_more: "More",
+  tune_templates: "Note templates",
 } as const
 
 export type Key = keyof typeof en

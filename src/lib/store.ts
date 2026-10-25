@@ -18,6 +18,7 @@ import { toLockRecord, type LockRecord } from './lock'
 import { toTodos, type Todo } from './todos'
 import { toNotes, type Note } from './notes'
 import { toReminders } from './reminders'
+import { toTemplates, type NoteTemplate } from './templates'
 
 const DB_NAME = 'blackbook'
 const DB_VERSION = 1
@@ -240,6 +241,8 @@ export async function replaceAll(contacts: Contact[], tags: Tag[]): Promise<void
 //           part of the vault — it is data, not a preference.
 //   'pages' the Notes tab's notes (lib/notes.ts), as ONE array, for the same
 //           reason as 'todos' — and, like it, part of the vault.
+//   'templates' / 'tplseed'  the note templates (lib/templates.ts) and whether
+//           the example one has been given; templates are part of the vault.
 //   'seed'  whether this device has ever been given its two starting tags. A
 //           marker and not a count, so deleting them is a decision that sticks.
 
@@ -319,6 +322,24 @@ export async function loadPages(): Promise<Note[]> {
 
 export async function savePages(pages: Note[]): Promise<void> {
   await tx(SYNC, 'readwrite', (s) => s.put(pages, 'pages'))
+}
+
+/** Note templates (lib/templates.ts), as ONE array, like 'pages'. Part of the vault. */
+export async function loadTemplates(): Promise<NoteTemplate[]> {
+  return toTemplates(await tx<unknown>(SYNC, 'readonly', (s) => s.get('templates') as IDBRequest<unknown>))
+}
+
+export async function saveTemplates(templates: NoteTemplate[]): Promise<void> {
+  await tx(SYNC, 'readwrite', (s) => s.put(templates, 'templates'))
+}
+
+/** Has this device been given the example "Book" template? A marker, like 'seed'. */
+export async function loadTemplatesSeeded(): Promise<boolean> {
+  return (await tx<unknown>(SYNC, 'readonly', (s) => s.get('tplseed') as IDBRequest<unknown>)) === true
+}
+
+export async function markTemplatesSeeded(): Promise<void> {
+  await tx(SYNC, 'readwrite', (s) => s.put(true, 'tplseed'))
 }
 
 export async function loadDefaultView(): Promise<View | null> {
@@ -427,6 +448,8 @@ export async function wipeDevice(): Promise<void> {
   // The to-do list is part of the book, and goes with it.
   await tx(SYNC, 'readwrite', (s) => s.delete('todos'))
   await tx(SYNC, 'readwrite', (s) => s.delete('pages'))
+  await tx(SYNC, 'readwrite', (s) => s.delete('templates'))
+  await tx(SYNC, 'readwrite', (s) => s.delete('tplseed'))
 }
 
 /**

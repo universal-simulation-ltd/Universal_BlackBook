@@ -94,4 +94,5 @@ export const ptPT: Dict = {
   kb_sources: "Fontes",
   tune_pin_row: "Bloqueio por PIN",
   action_more: "Mais",
+  tune_templates: "Modelos de notas",
 }

@@ -29,6 +29,7 @@ import { NotesView } from './components/NotesView'
 import { LockPanel, LockScreen } from './components/Lock'
 import { DueReminders } from './components/Reminders'
 import { NoteLayers } from './components/NoteView'
+import { TemplateManager } from './components/TemplateManager'
 import { btnPrimary } from './components/ui'
 import { allOnline } from './lib/merge'
 import { forgetVault, loadSyncMeta } from './lib/store'
@@ -425,6 +426,7 @@ export default function App() {
       <NoteLayers />
       <TuneThisApp />
       {panel === 'tags' && <TagManager onClose={closePanel} />}
+      {panel === 'templates' && <TemplateManager onClose={closePanel} />}
       {panel === 'io' && <ImportExport onClose={closePanel} />}
       {panel === 'cloud' && <CloudPanel onClose={closePanel} />}
       {panel === 'lock' && <LockPanel onClose={closePanel} />}
@@ -549,6 +551,7 @@ function useCloudSync(openPanel: () => void) {
   const tags = useBookStore((s) => s.tags)
   const todos = useTodoStore((s) => s.todos)
   const pages = useNoteStore((s) => s.notes)
+  const templates = useNoteStore((s) => s.templates)
   const loaded = useBookStore((s) => s.loaded)
   const hydrate = useSyncStore((s) => s.hydrate)
   const push = useSyncStore((s) => s.push)
@@ -608,7 +611,7 @@ function useCloudSync(openPanel: () => void) {
   // Only a CHANGE of book marks it unsynced — not this effect re-running
   // because sync turned on or the page loaded, which would show "Syncing…"
   // over a book that is already up there.
-  const lastBook = useRef<{ contacts: unknown; tags: unknown; todos: unknown; pages: unknown } | null>(null)
+  const lastBook = useRef<{ contacts: unknown; tags: unknown; todos: unknown; pages: unknown; templates: unknown } | null>(null)
   useEffect(() => {
     if (!loaded || state !== 'on') {
       lastBook.current = null
@@ -619,12 +622,13 @@ function useCloudSync(openPanel: () => void) {
       (lastBook.current.contacts !== contacts ||
         lastBook.current.tags !== tags ||
         lastBook.current.todos !== todos ||
-        lastBook.current.pages !== pages)
-    lastBook.current = { contacts, tags, todos, pages }
+        lastBook.current.pages !== pages ||
+        lastBook.current.templates !== templates)
+    lastBook.current = { contacts, tags, todos, pages, templates }
     if (changed) useSyncStore.getState().markDirty()
     const t = setTimeout(() => void push(supabase), AUTOSAVE_DELAY)
     return () => clearTimeout(t)
-  }, [contacts, tags, todos, pages, loaded, state, push, supabase])
+  }, [contacts, tags, todos, pages, templates, loaded, state, push, supabase])
 
   // A save that failed for want of a network is tried again, rather than
   // sitting there until somebody opens the panel and taps Save now (owner's

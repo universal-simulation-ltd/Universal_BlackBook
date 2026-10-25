@@ -94,4 +94,5 @@ export const es: Dict = {
   kb_sources: "Fuentes",
   tune_pin_row: "Bloqueo con PIN",
   action_more: "Más",
+  tune_templates: "Plantillas de notas",
 }

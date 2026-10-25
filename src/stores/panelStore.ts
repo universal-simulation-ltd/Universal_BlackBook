@@ -7,7 +7,7 @@ import { create } from 'zustand'
  * App's own state, so the phone's Tune tab and the website's Actions menu open
  * the same thing the same way. Not saved: it is a panel being open.
  */
-export type Panel = 'tags' | 'io' | 'cloud' | 'lock' | 'wipe'
+export type Panel = 'tags' | 'io' | 'cloud' | 'lock' | 'wipe' | 'templates'
 
 interface PanelState {
   panel: Panel | null

@@ -75,6 +75,7 @@ export function BackupSection({ onDone }: { onDone: () => void }) {
           tags: useBookStore.getState().tags,
           todos: useTodoStore.getState().todos,
           pages: useNoteStore.getState().notes,
+          templates: useNoteStore.getState().templates,
           settings: { emailLists: settings.emailLists, todos: settings.todos, notes: settings.notes, shownFields: settings.shownFields },
           view: useBookStore.getState().defaultView,
         },
@@ -138,6 +139,8 @@ export function BackupSection({ onDone }: { onDone: () => void }) {
       if (mode === 'replace') {
         await useTodoStore.getState().replace(data.todos)
         await useNoteStore.getState().replace(data.pages)
+        // An older file has no templates (null) and leaves this device's alone.
+        if (data.templates) await useNoteStore.getState().replaceTemplates(data.templates)
         if (data.settings) settings.set(data.settings)
         await restoreBook(
           { contacts: data.contacts, tags: data.tags, view: data.view },
@@ -149,10 +152,12 @@ export function BackupSection({ onDone }: { onDone: () => void }) {
           tags: useBookStore.getState().tags,
           todos: useTodoStore.getState().todos,
           pages: useNoteStore.getState().notes,
+          templates: useNoteStore.getState().templates,
         }
         const merged = mergeBackup(here, data)
         await useTodoStore.getState().replace(merged.todos)
         await useNoteStore.getState().replace(merged.pages)
+        await useNoteStore.getState().replaceTemplates(merged.templates)
         // Switches the file had on are turned on here too (so its to-dos and
         // lists can be seen); none is ever turned off by adding.
         if (data.settings) {

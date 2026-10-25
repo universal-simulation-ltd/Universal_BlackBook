@@ -204,6 +204,24 @@ then what the note holds. The text is tapped into, as on a contact.
 
 All of it is part of the note: in the online copy and the backup file (schema 3).
 
+### Note templates
+
+A **template** is a kind of note with fields of its own (James, 2026-10-25,
+chosen over custom tabs): a name and a few fields, each **text**, a **date**, a
+**number** or a **link**. A book starts with one example, **Book** (Title,
+Author, Date read), which can be changed or deleted like any other. **New note**
+(+, or Add new) then asks: **Plain note** or one of the templates. A templated
+note shows its fields neatly at the top of its view and in its form, takes its
+title from its first text field if left without one, and the Notes tab gets a
+row of **All · Book · …** to show one kind at a time (a row that scrolls shows
+it: the SDK's `useScrollHint`). Search looks in the fields' values too.
+
+Templates are managed in Tune this app ▸ **Note templates** (Tune ▸ Your book on
+the phone). Taking a field out of a template, or deleting a template, moves what
+the notes had in it into their text, so nothing typed is lost. Templates are
+part of the book: the online copy and the backup file (schema 3) carry them;
+an older backup file, which has none, leaves this device's alone.
+
 ## Locking the app
 
 **🔓 Lock with PIN** (🔒 **PIN lock on** once a PIN is set), beside the page title, and

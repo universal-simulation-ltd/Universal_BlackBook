@@ -37,6 +37,7 @@ import { useTodoStore } from './todoStore'
 import { useNoteStore } from './noteStore'
 import { mergeNotes, toNotes } from '../lib/notes'
 import { BACKUP_SCHEMA } from '../lib/backup'
+import { mergeTemplates, toTemplates } from '../lib/templates'
 import { mergeTodos, toTodos } from '../lib/todos'
 
 /**
@@ -121,7 +122,7 @@ function bookPayload(): VaultPayload {
     tags,
     categories: tags,
     ...(todo.loaded && { todos: todo.todos }),
-    ...(note.loaded && { pages: note.notes }),
+    ...(note.loaded && { pages: note.notes, templates: note.templates }),
     savedAt: Date.now(),
   }
 }
@@ -141,6 +142,7 @@ async function adopt(payload: VaultPayload) {
   // Absent = the blob says nothing about to-dos (see VaultPayload): keep ours.
   if (Array.isArray(payload.todos)) await useTodoStore.getState().replace(toTodos(payload.todos))
   if (Array.isArray(payload.pages)) await useNoteStore.getState().replace(toNotes(payload.pages))
+  if (Array.isArray(payload.templates)) await useNoteStore.getState().replaceTemplates(toTemplates(payload.templates))
 }
 
 /**
@@ -165,6 +167,7 @@ async function mergeIn(payload: VaultPayload) {
     .replace(mergeTodos(toTodos(payload.todos), useTodoStore.getState().todos, merged.remap))
   await useNoteStore.getState().init()
   await useNoteStore.getState().replace(mergeNotes(toNotes(payload.pages), useNoteStore.getState().notes))
+  await useNoteStore.getState().replaceTemplates(mergeTemplates(toTemplates(payload.templates), useNoteStore.getState().templates))
 }
 
 /**

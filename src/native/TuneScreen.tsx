@@ -64,6 +64,7 @@ export function TuneContent() {
 
       <Group title={t('tune_your_book')}>
         {row('tags', 'tune_tags')}
+        {row('templates', 'tune_templates')}
         {row('io', 'tune_backup_file')}
         {row('cloud', 'tune_online_backup', { value: t(backup[syncState] ?? 'tune_backup_off') })}
         {row('lock', 'tune_pin_row', { value: t(locked ? 'tune_on' : 'tune_off') })}

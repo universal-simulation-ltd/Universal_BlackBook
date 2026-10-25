@@ -43,6 +43,7 @@ import { SWATCHES } from './palette'
 import { toTodo, mergeTodos, type Todo } from './todos'
 import { toReminders } from './reminders'
 import { mergeNotes, toContactIds, toPlace, type Note } from './notes'
+import { mergeTemplates, toFieldValues, toTemplates, TEMPLATE_LIMITS, type NoteTemplate } from './templates'
 import { toPhoneLink, type Contact, type Tag } from './types'
 
 export const BACKUP_PRODUCT = 'blackbook'
@@ -62,6 +63,8 @@ export interface BackupData {
   tags: Tag[]
   todos: Todo[]
   pages: Note[]
+  /** Note templates (schema 3). Null for an older file, which says nothing about them. */
+  templates: NoteTemplate[] | null
   settings: BackupSettings | null
   view: View | null
 }
@@ -96,6 +99,7 @@ export interface BackupSource {
   tags: Tag[]
   todos: Todo[]
   pages: Note[]
+  templates: NoteTemplate[]
   settings: BackupSettings
   view: View
 }
@@ -107,6 +111,7 @@ export function backupData(src: BackupSource): BackupData {
     tags: src.tags.map((t) => ({ ...t, ...(t.tagIds ? { tagIds: [...t.tagIds] } : {}) })),
     todos: src.todos.map((t) => ({ ...t, tagIds: [...t.tagIds] })),
     pages: src.pages.map((n) => ({ ...n })),
+    templates: src.templates.map((t) => ({ ...t, fields: t.fields.map((f) => ({ ...f })) })),
     settings: {
       emailLists: src.settings.emailLists,
       todos: src.settings.todos,
@@ -293,6 +298,8 @@ function parseNote(raw: unknown): Note | null {
   const reminders = toReminders(raw.reminders)
   const contactIds = toContactIds(raw.contactIds)
   const place = toPlace(raw.place)
+  const fields = toFieldValues(raw.fields)
+  const templateId = id(raw.templateId)
   return {
     id: noteId,
     title,
@@ -300,6 +307,8 @@ function parseNote(raw: unknown): Note | null {
     ...(reminders ? { reminders } : {}),
     ...(contactIds ? { contactIds } : {}),
     ...(place ? { place } : {}),
+    ...(templateId ? { templateId } : {}),
+    ...(fields ? { fields } : {}),
     createdAt,
     updatedAt: time(raw.updatedAt, createdAt),
   }
@@ -392,7 +401,10 @@ export function parseBackup(raw: unknown): BackupData | null {
     }
   }
 
-  return { contacts, tags, todos, pages, settings: parseSettings(raw.settings), view: parseView(raw.view, tagIds) }
+  if (Array.isArray(raw.templates) && raw.templates.length > TEMPLATE_LIMITS.templates * 2) return null
+  const templates = Array.isArray(raw.templates) ? toTemplates(raw.templates) : null
+
+  return { contacts, tags, todos, pages, templates, settings: parseSettings(raw.settings), view: parseView(raw.view, tagIds) }
 }
 
 // ── Merging ──────────────────────────────────────────────────────────────────
@@ -402,6 +414,7 @@ export interface MergedBackup {
   tags: Tag[]
   todos: Todo[]
   pages: Note[]
+  templates: NoteTemplate[]
   /** People, to-dos and notes from the file that were not here. */
   added: number
   /** Ones in both, where the file's copy was edited later. */
@@ -416,7 +429,7 @@ export interface MergedBackup {
  * is not added again either. So opening the same backup twice adds nothing.
  */
 export function mergeBackup(
-  here: { contacts: Contact[]; tags: Tag[]; todos: Todo[]; pages: Note[] },
+  here: { contacts: Contact[]; tags: Tag[]; todos: Todo[]; pages: Note[]; templates?: NoteTemplate[] },
   file: BackupData,
 ): MergedBackup {
   const book = mergeBooks({ contacts: here.contacts, tags: here.tags }, { contacts: file.contacts, tags: file.tags })
@@ -458,6 +471,7 @@ export function mergeBackup(
     tags,
     todos,
     pages,
+    templates: mergeTemplates(here.templates ?? [], file.templates ?? []),
     added: book.added + todosAdded,
     updated: book.updated + todosUpdated,
   }

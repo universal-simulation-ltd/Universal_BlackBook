@@ -52,6 +52,7 @@ import { PhoneLinkified } from './PhoneLinks'
 import { TuneContent } from './TuneScreen'
 import { DueReminders, useAllReminders } from '../components/Reminders'
 import { NoteLayers } from '../components/NoteView'
+import { TemplateManager } from '../components/TemplateManager'
 import { onNotificationTap, scheduleReminders } from './notify'
 import './native.css'
 
@@ -101,7 +102,7 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
   const { canPick, picking, pick } = useContactPicker()
   const newList = useBookStore((s) => s.newList)
   const editTodo = useTodoStore((s) => s.edit)
-  const editNote = useNoteStore((s) => s.edit)
+  const newNote = useNoteStore((s) => s.newNote)
   // The top bar's + (James, 2026-10-23): on Contacts it opens a sheet of the
   // ways to add somebody, so "From my contacts" is no longer a button of its
   // own on the page; on Lists and To-do there is one way, so + just does it.
@@ -175,7 +176,7 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
               </button>
             )}
             {current === 'notes' && (
-              <button type="button" className="bb-iconbtn" aria-label={t('add_note')} onClick={() => editNote('new')}>
+              <button type="button" className="bb-iconbtn" aria-label={t('add_note')} onClick={() => newNote()}>
                 <IconPlus />
               </button>
             )}
@@ -249,6 +250,7 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
         {editing && <ContactForm key={`form-${editing}`} id={editing} />}
         <NoteLayers />
         {panel === 'tags' && <TagManager onClose={closePanel} />}
+        {panel === 'templates' && <TemplateManager onClose={closePanel} />}
         {panel === 'io' && <ImportExport onClose={closePanel} />}
         {panel === 'cloud' && <CloudPanel onClose={closePanel} />}
         {panel === 'lock' && <LockPanel onClose={closePanel} />}

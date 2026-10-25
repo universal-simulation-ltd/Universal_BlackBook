@@ -28,6 +28,7 @@ const todo = (id: string, title: string, patch: Partial<Todo> = {}): Todo => ({
 const tag = (id: string, name: string, patch: Partial<Tag> = {}): Tag => ({ id, name, colour: 'amber', ...patch })
 
 const source = (): BackupSource => ({
+  templates: [],
   contacts: [
     contact('c1', 'Ada', {
       phone: '+44 7700 900123',

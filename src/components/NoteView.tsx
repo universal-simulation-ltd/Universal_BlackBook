@@ -5,6 +5,7 @@ import { copyText } from '../lib/clipboard'
 import { fold } from '../lib/filter'
 import { mapsUrl, noteText, parseCoords, type Note, type Place } from '../lib/notes'
 import { formatWhen, nextOccurrence } from '../lib/reminders'
+import { showValue, type NoteTemplate, type TemplateField } from '../lib/templates'
 import { usePageScrollLock } from '../lib/scrollLock'
 import { useBookStore } from '../stores/bookStore'
 import { useNoteStore } from '../stores/noteStore'
@@ -25,11 +26,95 @@ import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label, textareaCl
 export function NoteLayers() {
   const viewing = useNoteStore((s) => s.viewing)
   const editing = useNoteStore((s) => s.editing)
+  const choosing = useNoteStore((s) => s.choosing)
   return (
     <>
       {viewing && <NoteView key={`nv-${viewing}`} id={viewing} />}
       {editing && <NoteForm key={`nf-${editing}`} id={editing} />}
+      {choosing && <TemplateChooser />}
     </>
+  )
+}
+
+/** A new note: plain, or from one of the templates (James, 2026-10-25). */
+function TemplateChooser() {
+  const t = useT()
+  const kit = usePhoneKit()
+  const templates = useNoteStore((s) => s.templates)
+  const startFrom = useNoteStore((s) => s.startFrom)
+  const stop = useNoteStore((s) => s.stopChoosing)
+  const row = kit
+    ? 'bb-sheetrow'
+    : 'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-slate-200 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400'
+  return (
+    <Modal phone="sheet" title={t('tpl.new_note')} onClose={stop}>
+      <div className="flex flex-col">
+        <button type="button" className={row} onClick={() => startFrom(null)}>
+          <span className={kit ? 'bb-sheetrow-icon' : 'text-orange-400'} aria-hidden>
+            <NoteGlyph />
+          </span>
+          <span className="min-w-0 flex-1 text-left">{t('tpl.plain')}</span>
+        </button>
+        {templates.map((x) => (
+          <button key={x.id} type="button" className={row} onClick={() => startFrom(x.id)}>
+            <span className={kit ? 'bb-sheetrow-icon' : 'text-orange-400'} aria-hidden>
+              <TemplateGlyph />
+            </span>
+            <span className="min-w-0 flex-1 text-left">
+              <span className="block">{x.name}</span>
+              {x.fields.length > 0 && <span className="block truncate text-xs text-slate-500">{x.fields.map((f) => f.label).join(' · ')}</span>}
+            </span>
+          </button>
+        ))}
+      </div>
+    </Modal>
+  )
+}
+
+/** A templated note's fields, as label and value, for the view. */
+function FieldValues({ note, template }: { note: Note; template: NoteTemplate }) {
+  const t = useT()
+  const filled = template.fields.filter((f) => note.fields?.[f.id]?.trim())
+  if (filled.length === 0) return null
+  return (
+    <dl className="grid grid-cols-1 gap-3 rounded-xl border border-slate-800 bg-slate-900 px-3.5 py-3">
+      {filled.map((f) => (
+        <div key={f.id} className="min-w-0">
+          <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{f.label}</dt>
+          <dd className="break-words text-base text-slate-100">
+            {f.type === 'link' ? <Linked text={linkText(note.fields![f.id])} /> : showValue(f.type, note.fields![f.id], t.locale)}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
+
+/** A link field as the linkifier wants it: a bare "example.com/x" becomes https://. */
+function linkText(v: string): string {
+  const s = v.trim()
+  return /^(https?:\/\/|www\.)/i.test(s) || !/^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(s) ? s : `https://${s}`
+}
+
+/** One field's box in the form, by its kind. */
+function FieldInput({ field, value, onChange }: { field: TemplateField; value: string; onChange: (v: string) => void }) {
+  const id = useId()
+  const type = field.type === 'date' ? 'date' : field.type === 'link' ? 'url' : 'text'
+  return (
+    <div>
+      <label htmlFor={id} className={label}>
+        {field.label}
+      </label>
+      <input
+        id={id}
+        className={inputCls}
+        type={type}
+        inputMode={field.type === 'number' ? 'decimal' : field.type === 'link' ? 'url' : undefined}
+        autoCapitalize={field.type === 'link' ? 'off' : undefined}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </div>
   )
 }
 
@@ -49,6 +134,7 @@ function NoteView({ id }: { id: string }) {
   const patch = useNoteStore((s) => s.patch)
   const contacts = useBookStore((s) => s.contacts)
   const viewContact = useBookStore((s) => s.view)
+  const template = useNoteStore((s) => s.templates.find((x) => x.id === note?.templateId))
   const say = useNativeNav((s) => s.say)
   const [sheet, setSheet] = useState<'contacts' | 'place' | 'remind' | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
@@ -158,6 +244,13 @@ function NoteView({ id }: { id: string }) {
   const body = (
     <div className="mx-auto w-full max-w-2xl space-y-5">
       {actionRow}
+
+      {template && (
+        <div className="space-y-2">
+          <span className="inline-flex rounded-full border border-slate-700 px-2.5 py-0.5 text-xs font-medium text-slate-400">{template.name}</span>
+          <FieldValues note={note} template={template} />
+        </div>
+      )}
 
       {people.length > 0 && (
         <div>
@@ -545,15 +638,23 @@ function NoteForm({ id }: { id: string }) {
   const close = useNoteStore((s) => s.edit)
   const [title, setTitle] = useState(() => existing?.title ?? useNoteStore.getState().prefillTitle ?? '')
   const [details, setDetails] = useState(existing?.details ?? '')
+  const [templateId] = useState(() => existing?.templateId ?? useNoteStore.getState().newTemplate ?? undefined)
+  const template = useNoteStore((s) => s.templates.find((x) => x.id === templateId))
+  const [fields, setFields] = useState<Record<string, string>>(() => ({ ...(existing?.fields ?? {}) }))
   const [confirming, setConfirming] = useState(false)
   const titleId = useId()
   const detailsId = useId()
-  const empty = !title.trim() && !details.trim()
+  const empty = !title.trim() && !details.trim() && !Object.values(fields).some((v) => v.trim())
 
   const done = () => {
     if (empty && !existing) close(null)
     else if (empty && existing) setConfirming(true)
-    else void save({ id: existing?.id, title, details })
+    else {
+      // A note from a template with no title of its own takes its first text
+      // field's value ("Middlemarch" for a Book), so the list has a name for it.
+      const first = template?.fields.find((f) => f.type === 'text' && fields[f.id]?.trim())
+      void save({ id: existing?.id, title: title.trim() || (first ? fields[first.id].trim() : ''), details, templateId, fields })
+    }
   }
 
   return (
@@ -576,6 +677,14 @@ function NoteForm({ id }: { id: string }) {
             autoFocus={autoFocusOK() && !existing}
           />
         </div>
+        {template && template.fields.length > 0 && (
+          <fieldset className="space-y-4 rounded-xl border border-slate-800 p-3">
+            <legend className="px-1 text-xs font-semibold text-slate-400">{template.name}</legend>
+            {template.fields.map((f) => (
+              <FieldInput key={f.id} field={f} value={fields[f.id] ?? ''} onChange={(v) => setFields((x) => ({ ...x, [f.id]: v }))} />
+            ))}
+          </fieldset>
+        )}
         <div>
           <label htmlFor={detailsId} className={label}>
             {t('todo.details')}
@@ -583,7 +692,7 @@ function NoteForm({ id }: { id: string }) {
           <textarea
             id={detailsId}
             className={textareaCls}
-            rows={phoneScreens() ? 14 : 10}
+            rows={template ? 6 : phoneScreens() ? 14 : 10}
             value={details}
             onChange={(e) => setDetails(e.target.value)}
           />
@@ -678,6 +787,17 @@ const PinMapGlyph = ({ small }: { small?: boolean }) => (
 const BellGlyph = () => (
   <svg {...g()}>
     <path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15L6 16ZM10 20.5a2 2 0 0 0 4 0" />
+  </svg>
+)
+const NoteGlyph = () => (
+  <svg {...g()}>
+    <path d="M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5" />
+  </svg>
+)
+const TemplateGlyph = () => (
+  <svg {...g()}>
+    <rect x="4" y="4" width="16" height="16" rx="2.5" />
+    <path d="M8 9h8M8 13h3M13 13h3M8 17h3M13 17h3" />
   </svg>
 )
 const CopyGlyph = () => (

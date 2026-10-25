@@ -9,6 +9,7 @@
 // never be mistaken for the `notes` field every contact carries.
 
 import { toReminders, type Reminder } from './reminders'
+import { toFieldValues } from './templates'
 
 export interface Place {
   /** What to call it: "The Crown", "Mum's". */
@@ -88,6 +89,10 @@ export interface Note {
   contactIds?: string[]
   /** "Link to location" (2026-10-25): a place, opened in the phone's own maps. */
   place?: Place
+  /** The template it was made from (lib/templates.ts), if any. */
+  templateId?: string
+  /** That template's fields, filled in: field id → the value as typed. */
+  fields?: Record<string, string>
   createdAt: number
   updatedAt: number
 }
@@ -107,6 +112,8 @@ export function toNote(raw: unknown): Note | null {
     ...(toReminders(r.reminders) ? { reminders: toReminders(r.reminders) } : {}),
     ...(toContactIds(r.contactIds) ? { contactIds: toContactIds(r.contactIds) } : {}),
     ...(toPlace(r.place) ? { place: toPlace(r.place) } : {}),
+    ...(typeof r.templateId === 'string' && LINK_ID.test(r.templateId) ? { templateId: r.templateId } : {}),
+    ...(toFieldValues(r.fields) ? { fields: toFieldValues(r.fields) } : {}),
     createdAt: typeof r.createdAt === 'number' ? r.createdAt : Date.now(),
     updatedAt: typeof r.updatedAt === 'number' ? r.updatedAt : Date.now(),
   }
@@ -130,7 +137,9 @@ function fold(s: string): string {
 export function matchesNote(note: Note, text: string): boolean {
   const words = fold(text).split(/\s+/).filter(Boolean)
   if (words.length === 0) return true
-  const hay = fold(`${note.title}\n${note.details}\n${note.place?.name ?? ''}\n${note.place?.address ?? ''}`)
+  const hay = fold(
+    [note.title, note.details, note.place?.name ?? '', note.place?.address ?? '', ...Object.values(note.fields ?? {})].join('\n'),
+  )
   return words.every((w) => hay.includes(w))
 }
 

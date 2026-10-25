@@ -94,4 +94,5 @@ export const de: Dict = {
   kb_sources: "Quellen",
   tune_pin_row: "PIN-Sperre",
   action_more: "Mehr",
+  tune_templates: "Notizvorlagen",
 }

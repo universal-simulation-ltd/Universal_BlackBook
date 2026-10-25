@@ -94,4 +94,5 @@ export const it: Dict = {
   kb_sources: "Fonti",
   tune_pin_row: "Blocco con PIN",
   action_more: "Altro",
+  tune_templates: "Modelli di note",
 }

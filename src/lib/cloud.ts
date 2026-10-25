@@ -6,6 +6,7 @@
 // the PBKDF2 parameters needed to re-derive the key from a passphrase; the
 // encrypt/decrypt pair lives in lib/vault.ts and never leaves the browser.
 
+import type { NoteTemplate } from './templates'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Contact, Tag } from './types'
 import type { Todo } from './todos'
@@ -50,6 +51,8 @@ export interface VaultPayload {
    * wipe them.
    */
   pages?: Note[]
+  /** Note templates (2026-10-25). Absent means "says nothing about them", as `pages`. */
+  templates?: NoteTemplate[]
   /**
    * The book's shape, as the backup file's schema (lib/backup.ts): 3 since
    * 2026-10-25 (reminders, links, templates, to-do order, tag patterns, all

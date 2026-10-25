@@ -94,4 +94,5 @@ export const fr: Dict = {
   kb_sources: "Sources",
   tune_pin_row: "Verrou par PIN",
   action_more: "Plus",
+  tune_templates: "Modèles de notes",
 }

@@ -94,4 +94,5 @@ export const tr: Dict = {
   kb_sources: "Kaynaklar",
   tune_pin_row: "PIN kilidi",
   action_more: "Daha fazla",
+  tune_templates: "Not şablonları",
 }
