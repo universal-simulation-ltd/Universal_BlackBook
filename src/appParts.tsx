@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components -- hooks and helpers live beside the components that use them; hot reload of these few files is not worth splitting them */
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { DefaultViewSelect, type AboutAppConfig } from '@unisim/sdk'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { useDefaultView, type AboutAppConfig } from '@unisim/sdk'
 // Generated — `npm run credits` after any dependency change. Never edit it by
 // hand: it is read off the installed tree, so a hand-kept list drifts from the
 // lockfile the first time anyone upgrades anything, and a credits list naming a
@@ -13,7 +13,7 @@ import { useBookStore } from './stores/bookStore'
 import { useLockStore } from './stores/lockStore'
 import { useSettingsStore } from './stores/settingsStore'
 import { useSyncStore } from './stores/syncStore'
-import { btnPrimary } from './components/ui'
+import { btnPrimary, radioCls } from './components/ui'
 import { DICTS, en as EN, useT, type Key, type Translator } from './i18n'
 
 // The pieces both layouts share: the website's (App.tsx) and the phone
@@ -216,14 +216,36 @@ function OpensOnPreference() {
   const notes = useSettingsStore((s) => s.notes)
   const t = useT()
   const tabs = availableTabs(emailLists, todos, notes)
+  // The same stored default the double tap writes (useDefaultView), shown as
+  // the app's own choice rows rather than the SDK's dropdown (James,
+  // 2026-10-25: "the dropdown doesn't fit the style"): exactly one is on, and
+  // choosing Contacts, the app's own default, forgets the stored one.
+  const { defaultView, setDefaultView } = useDefaultView<Tab>('tab', 'contacts', { views: TABS })
+  const name = useId()
   if (tabs.length < 2) return null
+  const current = tabs.includes(defaultView) ? defaultView : 'contacts'
   return (
-    <DefaultViewSelect<Tab>
-      id="tab"
-      label={t('pref.opens_on')}
-      fallback="contacts"
-      views={tabs.map((tab) => ({ value: tab, label: tabName(t, tab) }))}
-    />
+    <fieldset className="mt-3 border-t border-slate-800 pt-3">
+      <legend className="sr-only">{t('pref.opens_on')}</legend>
+      <p aria-hidden className="text-sm font-medium text-slate-200">
+        {t('pref.opens_on')}
+      </p>
+      <p className="mb-1.5 mt-0.5 text-xs text-slate-400">{t('pref.opens_on_note')}</p>
+      <div className="grid grid-cols-2 gap-x-4">
+        {tabs.map((tab) => (
+          <label key={tab} className="flex min-h-[36px] items-center gap-3 py-1 text-sm text-slate-200">
+            <input
+              type="radio"
+              name={name}
+              className={radioCls}
+              checked={current === tab}
+              onChange={() => setDefaultView(tab === 'contacts' ? null : tab)}
+            />
+            {tabName(t, tab)}
+          </label>
+        ))}
+      </div>
+    </fieldset>
   )
 }
 

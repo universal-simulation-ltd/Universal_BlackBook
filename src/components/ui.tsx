@@ -52,6 +52,10 @@ export const label = 'mb-1.5 block text-xs font-semibold uppercase tracking-wide
 export const checkboxCls =
   'h-4 w-4 shrink-0 rounded border-slate-600 bg-slate-950 accent-orange-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400'
 
+/** A choice of one among several (Tune this app ▸ Opens on): the tick box's round twin. */
+export const radioCls =
+  'h-4 w-4 shrink-0 rounded-full border-slate-600 bg-slate-950 accent-orange-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400'
+
 /**
  * The suite's Tune glyph: the same two sliders the SDK draws on its Tune this
  * app button, so a Fine-tune button that shows the icon instead of the word

@@ -471,4 +471,5 @@ export const appTr: Partial<Record<AppKey, string>> = {
   'notes.copied': "Kopyalandı",
   'lock.set_done': "PIN belirlendi. BlackBook bu cihazda bir sonraki başlatılışında soracak.",
   'lock.off_done': "PIN kilidi kapatıldı. BlackBook bu cihazda PIN olmadan açılır.",
+  'pref.opens_on_note': "BlackBook'un başlarken gösterdiği sekme. Bir sekmeye iki kez dokunmak da onu seçer.",
 }

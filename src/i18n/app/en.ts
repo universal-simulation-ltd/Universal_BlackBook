@@ -534,6 +534,7 @@ export const appEn = {
   'notes.copied': "Copied",
   'lock.set_done': "PIN set. BlackBook will ask for it the next time it starts on this device.",
   'lock.off_done': "PIN lock turned off. BlackBook opens without a PIN on this device.",
+  'pref.opens_on_note': "The tab BlackBook shows when it starts. Double-tapping a tab chooses it too.",
 } as const
 
 export type AppKey = keyof typeof appEn

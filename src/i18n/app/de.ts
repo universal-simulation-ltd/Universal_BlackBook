@@ -471,4 +471,5 @@ export const appDe: Partial<Record<AppKey, string>> = {
   'notes.copied': "Kopiert",
   'lock.set_done': "PIN festgelegt. BlackBook fragt beim nächsten Start auf diesem Gerät danach.",
   'lock.off_done': "PIN-Sperre ausgeschaltet. BlackBook öffnet sich auf diesem Gerät ohne PIN.",
+  'pref.opens_on_note': "Der Tab, den BlackBook beim Start zeigt. Ein Doppeltipp auf einen Tab wählt ihn auch.",
 }
