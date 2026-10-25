@@ -665,6 +665,13 @@ export const appEn = {
   'todo.move_down': "Move “{title}” down",
   'todo.deleted': "Deleted “{title}”.",
   'todo.undo': "Undo",
+  'tm.pattern_for': "Pattern for {name}",
+  'pattern.plain': "Plain dot",
+  'pattern.dots': "Dots",
+  'pattern.stripes': "Stripes",
+  'pattern.stars': "Star",
+  'pattern.rings': "Rings",
+  'pattern.checks': "Checks",
 } as const
 
 export type AppKey = keyof typeof appEn

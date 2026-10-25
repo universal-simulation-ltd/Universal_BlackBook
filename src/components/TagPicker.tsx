@@ -107,10 +107,10 @@ export function TagPicker({
         listMode ? (
           <ListChip name={t.name} selected={value.includes(t.id)} onClick={() => toggle(t.id)} />
         ) : (
-          <TagChip name={t.name} colour={t.colour} selected={value.includes(t.id)} onClick={() => toggle(t.id)} />
+          <TagChip name={t.name} colour={t.colour} pattern={t.pattern} selected={value.includes(t.id)} onClick={() => toggle(t.id)} />
         )
       }
-      suggestion={(t) => (listMode ? <ListChip name={t.name} /> : <TagChip name={t.name} colour={t.colour} />)}
+      suggestion={(t) => (listMode ? <ListChip name={t.name} /> : <TagChip name={t.name} colour={t.colour} pattern={t.pattern} />)}
       onPick={(id) => onChange(value.includes(id) ? value : [...value, id])}
       onCreate={create}
       placeholder={listMode ? t('tags.find_or_add_list') : t('tags.find_or_add')}

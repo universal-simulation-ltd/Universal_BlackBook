@@ -1,6 +1,8 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { accessibleColor, Chip, ChipToggle } from '@unisim/sdk'
 import { swatch, type Swatch } from '../lib/palette'
+import type { Pattern } from '../lib/patterns'
+import { TagMark } from './TagMark'
 import { useEffectiveTheme } from '../stores/themeStore'
 import { currentT } from '../i18n'
 
@@ -36,6 +38,7 @@ function readable(s: Swatch, theme: 'light' | 'dark'): string {
 export function TagChip({
   name,
   colour,
+  pattern,
   onClick,
   selected,
   hidden,
@@ -44,6 +47,8 @@ export function TagChip({
 }: {
   name: string
   colour: string
+  /** Dots, stripes, a star… in the colour (lib/patterns.ts); absent = the plain dot. */
+  pattern?: Pattern
   onClick?: () => void
   selected?: boolean
   /**
@@ -65,11 +70,7 @@ export function TagChip({
   } as CSSProperties
   // An 8px dot centred in the chip's 14px icon box, so it sits where the
   // selected tick will and the chip's width holds.
-  const dot = (
-    <svg viewBox="0 0 14 14">
-      <circle cx="7" cy="7" r="4" fill={s.dot} />
-    </svg>
-  )
+  const dot = <TagMark colour={s.dot} pattern={pattern} />
   // Lists are never drawn with this — see ListChip.
   const mark = dot
   const eyeOff = (
@@ -121,7 +122,7 @@ export function TagChip({
  * to zero width, not removed — so a screen reader still hears every tag, and
  * `title` answers on a long press where there is no hover.
  */
-export function TagDot({ name, colour }: { name: string; colour: string }) {
+export function TagDot({ name, colour, pattern }: { name: string; colour: string; pattern?: Pattern }) {
   const s = swatch(colour)
   const theme = useEffectiveTheme()
   const style = { '--tag-bg': s.bg, '--tag-border': s.border } as CSSProperties
@@ -131,9 +132,13 @@ export function TagDot({ name, colour }: { name: string; colour: string }) {
       style={style}
       className="group/dot inline-flex min-w-0 items-center rounded-full border border-transparent px-1 py-0.5 transition-[background-color,border-color] duration-150 hover:border-[var(--tag-border)] hover:bg-[var(--tag-bg)]"
     >
-      <svg viewBox="0 0 10 10" className="h-2.5 w-2.5 shrink-0" aria-hidden>
-        <circle cx="5" cy="5" r="4" fill={s.dot} />
-      </svg>
+      {pattern ? (
+        <TagMark colour={s.dot} pattern={pattern} className="h-3.5 w-3.5 shrink-0" />
+      ) : (
+        <svg viewBox="0 0 10 10" className="h-2.5 w-2.5 shrink-0" aria-hidden>
+          <circle cx="5" cy="5" r="4" fill={s.dot} />
+        </svg>
+      )}
       <span
         style={{ color: readable(s, theme) }}
         className="max-w-0 overflow-hidden whitespace-nowrap text-xs font-medium opacity-0 transition-[max-width,opacity,margin] duration-150 group-hover/dot:ml-1 group-hover/dot:max-w-40 group-hover/dot:opacity-100"

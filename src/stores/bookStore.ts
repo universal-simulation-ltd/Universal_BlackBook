@@ -6,6 +6,7 @@ import { newId } from '../lib/id'
 import { listIdsOf } from '../lib/lists'
 import { useTodoStore } from './todoStore'
 import { nextSwatch, SWATCHES } from '../lib/palette'
+import type { Pattern } from '../lib/patterns'
 import { planListImport, type ListRow } from '../lib/emailListImport'
 import {
   clearDefaultView as dbClearDefaultView,
@@ -159,6 +160,8 @@ interface BookState {
   addToContacts: (id: string) => Promise<void>
   renameTag: (id: string, name: string) => Promise<void>
   recolourTag: (id: string, colour: string) => Promise<void>
+  /** A tag's pattern (lib/patterns.ts), or undefined for the plain dot. */
+  setTagPattern: (id: string, pattern: Pattern | undefined) => Promise<void>
   removeTag: (id: string) => Promise<void>
   importBook: (contacts: Contact[], tags: Tag[], mode: 'merge' | 'replace', notice: string | null) => Promise<void>
   /**
@@ -601,12 +604,24 @@ export const useBookStore = create<BookState>((set, get) => ({
     if (changed) await putTag(changed)
   },
 
+  setTagPattern: async (id, pattern) => {
+    const next = get().tags.map((t) => {
+      if (t.id !== id) return t
+      const { pattern: _old, ...rest } = t
+      void _old
+      return pattern ? { ...rest, pattern } : rest
+    })
+    set({ tags: next })
+    const changed = next.find((t) => t.id === id)
+    if (changed) await putTag(changed)
+  },
+
   setTagKind: async (id, kind) => {
     const current = get().tags.find((t) => t.id === id)
     if (!current) return
     const next: Tag = kind === 'list'
       ? { ...current, kind, tagIds: current.tagIds ?? [] }
-      : { id: current.id, name: current.name, colour: current.colour }
+      : { id: current.id, name: current.name, colour: current.colour, ...(current.pattern ? { pattern: current.pattern } : {}) }
     set((s) => ({ tags: s.tags.map((t) => (t.id === id ? next : t)) }))
     await putTag(next)
   },

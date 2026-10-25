@@ -114,7 +114,7 @@ function ListTags({ list, byId }: { list: Tag; byId: Map<string, Tag> }) {
   return (
     <div className="flex flex-wrap gap-1">
       {own.map((t) => (
-        <TagChip key={t.id} name={t.name} colour={t.colour} />
+        <TagChip key={t.id} name={t.name} colour={t.colour} pattern={t.pattern} />
       ))}
     </div>
   )

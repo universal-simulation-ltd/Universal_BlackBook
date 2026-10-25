@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { isList } from '../lib/lists'
 import { SWATCHES, swatch } from '../lib/palette'
+import { PATTERNS } from '../lib/patterns'
+import { TagMark } from './TagMark'
 import { useBookStore } from '../stores/bookStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { Modal } from './Modal'
@@ -21,6 +23,7 @@ export function TagManager({ onClose }: { onClose: () => void }) {
   const addTag = useBookStore((s) => s.addTag)
   const renameTag = useBookStore((s) => s.renameTag)
   const recolourTag = useBookStore((s) => s.recolourTag)
+  const setTagPattern = useBookStore((s) => s.setTagPattern)
   const removeTag = useBookStore((s) => s.removeTag)
   const setTagKind = useBookStore((s) => s.setTagKind)
   const emailLists = useSettingsStore((s) => s.emailLists)
@@ -82,11 +85,7 @@ export function TagManager({ onClose }: { onClose: () => void }) {
               return (
                 <li key={c.id} className="py-3">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      aria-hidden
-                      className="h-3 w-3 shrink-0 rounded-full"
-                      style={{ background: swatch(c.colour).dot }}
-                    />
+                    <TagMark colour={swatch(c.colour).dot} pattern={c.pattern} className="h-4 w-4 shrink-0" />
                     <input
                       className={`${inputCls} flex-1`}
                       value={c.name}
@@ -156,6 +155,25 @@ export function TagManager({ onClose }: { onClose: () => void }) {
                         }`}
                         style={{ background: s.dot }}
                       />
+                    ))}
+                  </div>
+                  {/* The pattern, any colour (2026-10-25): two tags of one
+                      colour told apart by shape, colour-blind or not. */}
+                  <div role="group" aria-label={t('tm.pattern_for', { name: c.name })} className="mt-2 flex flex-wrap gap-1.5 pl-5">
+                    {([undefined, ...PATTERNS] as const).map((p) => (
+                      <button
+                        key={p ?? 'plain'}
+                        type="button"
+                        aria-label={t(p ? (`pattern.${p}` as Key) : 'pattern.plain')}
+                        title={t(p ? (`pattern.${p}` as Key) : 'pattern.plain')}
+                        aria-pressed={(c.pattern ?? undefined) === p}
+                        onClick={() => void setTagPattern(c.id, p)}
+                        className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+                          (c.pattern ?? undefined) === p ? 'border-slate-100 bg-slate-800' : 'border-slate-700 hover:border-slate-500'
+                        }`}
+                      >
+                        <TagMark colour={swatch(c.colour).dot} pattern={p} className="h-5 w-5" />
+                      </button>
                     ))}
                   </div>
                 </li>

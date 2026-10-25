@@ -121,7 +121,7 @@ export function TodoView() {
             chip={(t) => (
               <TagChip
                 name={t.name}
-                colour={t.colour}
+                colour={t.colour} pattern={t.pattern}
                 selected={activeFilter.includes(t.id)}
                 onClick={() =>
                   setTagFilter(
@@ -130,7 +130,7 @@ export function TodoView() {
                 }
               />
             )}
-            suggestion={(t) => <TagChip name={t.name} colour={t.colour} />}
+            suggestion={(t) => <TagChip name={t.name} colour={t.colour} pattern={t.pattern} />}
             onPick={(id) => setTagFilter([...activeFilter, id])}
             placeholder={t('tags.filter_by')}
             fullLabel={t('tags.show_all')}
@@ -517,7 +517,7 @@ function TodoRow({
         {chips.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {chips.map((t) => (
-              <TagChip key={t.id} name={t.name} colour={t.colour} />
+              <TagChip key={t.id} name={t.name} colour={t.colour} pattern={t.pattern} />
             ))}
           </div>
         )}

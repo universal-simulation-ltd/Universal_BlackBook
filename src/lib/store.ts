@@ -18,6 +18,7 @@ import { toLockRecord, type LockRecord } from './lock'
 import { toTodos, type Todo } from './todos'
 import { toNotes, type Note } from './notes'
 import { toReminders } from './reminders'
+import { isPattern } from './patterns'
 import { toTemplates, type NoteTemplate } from './templates'
 
 const DB_NAME = 'blackbook'
@@ -149,6 +150,7 @@ function toTag(raw: unknown): Tag | null {
     id: r.id,
     name: typeof r.name === 'string' ? r.name : 'Untitled',
     colour: typeof r.colour === 'string' ? r.colour : 'amber',
+    ...(isPattern(r.pattern) ? { pattern: r.pattern } : {}),
     // ⚠️ Kept through this reader or lists turn back into tags on the next
     // load — every unknown field is dropped here.
     ...(r.kind === 'list'

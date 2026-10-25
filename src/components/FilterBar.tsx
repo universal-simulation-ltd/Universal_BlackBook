@@ -204,8 +204,8 @@ export function FilterBar({
           <TagCombo
             options={filterOptions}
             isOn={(id) => tagState(query, id) !== 'off'}
-            chip={(t) => <TagChip name={t.name} colour={t.colour} {...chipState(t.id)} onClick={() => toggleTag(t.id)} />}
-            suggestion={(t) => <TagChip name={t.name} colour={t.colour} />}
+            chip={(t) => <TagChip name={t.name} colour={t.colour} pattern={t.pattern} {...chipState(t.id)} onClick={() => toggleTag(t.id)} />}
+            suggestion={(t) => <TagChip name={t.name} colour={t.colour} pattern={t.pattern} />}
             onPick={toggleTag}
             placeholder={t('tags.find')}
             fullLabel={t('tags.show_all')}

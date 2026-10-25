@@ -253,7 +253,7 @@ export function ContactView({ id }: { id: string }) {
         <Row name={fieldLabel('tags')}>
           <div className="flex flex-wrap gap-1.5">
             {tagChips.map((t) => (
-              <TagChip key={t.id} name={t.name} colour={t.colour} />
+              <TagChip key={t.id} name={t.name} colour={t.colour} pattern={t.pattern} />
             ))}
           </div>
         </Row>

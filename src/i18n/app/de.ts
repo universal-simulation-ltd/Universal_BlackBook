@@ -602,4 +602,11 @@ export const appDe: Partial<Record<AppKey, string>> = {
   'todo.move_down': "„{title}“ nach unten",
   'todo.deleted': "„{title}“ gelöscht.",
   'todo.undo': "Rückgängig",
+  'tm.pattern_for': "Muster für {name}",
+  'pattern.plain': "Einfacher Punkt",
+  'pattern.dots': "Punkte",
+  'pattern.stripes': "Streifen",
+  'pattern.stars': "Stern",
+  'pattern.rings': "Ringe",
+  'pattern.checks': "Karos",
 }

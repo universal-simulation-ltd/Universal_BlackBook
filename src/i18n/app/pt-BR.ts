@@ -602,4 +602,11 @@ export const appPtBR: Partial<Record<AppKey, string>> = {
   'todo.move_down': "Descer “{title}”",
   'todo.deleted': "“{title}” excluída.",
   'todo.undo': "Desfazer",
+  'tm.pattern_for': "Padrão de {name}",
+  'pattern.plain': "Ponto liso",
+  'pattern.dots': "Bolinhas",
+  'pattern.stripes': "Listras",
+  'pattern.stars': "Estrela",
+  'pattern.rings': "Anéis",
+  'pattern.checks': "Xadrez",
 }

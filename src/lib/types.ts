@@ -1,3 +1,4 @@
+import type { Pattern } from './patterns'
 import type { Reminder } from './reminders'
 // The whole domain, in one file. A BlackBook is a list of people, a list of
 // tags, and nothing else — there is no server, no account and no sync, so
@@ -25,6 +26,11 @@ export interface Tag {
   name: string
   /** One of the swatch keys in lib/palette.ts. Not a raw colour — see there. */
   colour: string
+  /**
+   * A pattern drawn in the colour (lib/patterns.ts, 2026-10-25), so two tags
+   * of one colour can be told apart. Absent = the plain dot.
+   */
+  pattern?: Pattern
   /**
    * `'list'` makes this an Email LIST rather than a tag (owner's request,
    * 2026-09-17: "have a distinction between lists and tags"). Same record,

@@ -602,4 +602,11 @@ export const appTr: Partial<Record<AppKey, string>> = {
   'todo.move_down': "“{title}” aşağı taşı",
   'todo.deleted': "“{title}” silindi.",
   'todo.undo': "Geri al",
+  'tm.pattern_for': "{name} için desen",
+  'pattern.plain': "Düz nokta",
+  'pattern.dots': "Benekler",
+  'pattern.stripes': "Çizgiler",
+  'pattern.stars': "Yıldız",
+  'pattern.rings': "Halkalar",
+  'pattern.checks': "Damalı",
 }

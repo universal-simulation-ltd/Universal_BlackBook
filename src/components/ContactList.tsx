@@ -1027,7 +1027,7 @@ export function ContactRow({
             {tagChips.length > 0 && (
               <span className="-my-0.5 flex shrink-0 items-center">
                 {tagChips.map((t) => (
-                  <TagDot key={t.id} name={t.name} colour={t.colour} />
+                  <TagDot key={t.id} name={t.name} colour={t.colour} pattern={t.pattern} />
                 ))}
               </span>
             )}

@@ -602,4 +602,11 @@ export const appIt: Partial<Record<AppKey, string>> = {
   'todo.move_down': "Sposta giù «{title}»",
   'todo.deleted': "«{title}» eliminata.",
   'todo.undo': "Annulla",
+  'tm.pattern_for': "Motivo di {name}",
+  'pattern.plain': "Punto semplice",
+  'pattern.dots': "Pois",
+  'pattern.stripes': "Righe",
+  'pattern.stars': "Stella",
+  'pattern.rings': "Anelli",
+  'pattern.checks': "Quadretti",
 }

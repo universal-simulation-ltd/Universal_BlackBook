@@ -42,6 +42,7 @@ import { mergeBooks } from './merge'
 import { SWATCHES } from './palette'
 import { toTodo, mergeTodos, type Todo } from './todos'
 import { toReminders } from './reminders'
+import { isPattern } from './patterns'
 import { mergeNotes, toContactIds, toPlace, type Note } from './notes'
 import { mergeTemplates, toFieldValues, toTemplates, TEMPLATE_LIMITS, type NoteTemplate } from './templates'
 import { toPhoneLink, type Contact, type Tag } from './types'
@@ -227,6 +228,7 @@ function parseTag(raw: unknown): Tag | null {
     id: tagId,
     name,
     colour: typeof raw.colour === 'string' && COLOURS.has(raw.colour) ? raw.colour : SWATCHES[0].key,
+    ...(isPattern(raw.pattern) ? { pattern: raw.pattern } : {}),
     ...(raw.kind === 'list' ? { kind: 'list' as const, tagIds: [] } : {}),
   }
 }
