@@ -50,7 +50,7 @@ export const it: Dict = {
   tune_backup_file: "Backup, importazione ed esportazione",
   tune_online_backup: "Backup online",
   tune_backup_off: "Disattivo",
-  tune_backup_locked: "Bloccato",
+  tune_backup_locked: "Serve la passphrase",
   tune_backup_on: "Attivo",
   tune_pin: "Blocca con PIN",
   tune_on: "Attivo",
@@ -92,4 +92,5 @@ export const it: Dict = {
   kb_short: "Come funziona",
   kb_intro: "Risposte brevi alle domande che ci si fa: dove è conservata la rubrica, che cosa fanno i backup e come si spostano i file.",
   kb_sources: "Fonti",
+  tune_pin_row: "Blocco con PIN",
 }

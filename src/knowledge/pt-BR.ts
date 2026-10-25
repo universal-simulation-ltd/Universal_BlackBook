@@ -118,7 +118,7 @@ Apagar sempre pede confirmação e diz quem será apagado. No celular, deslizar 
     title: 'O que o PIN faz e o que não faz',
     summary: 'Um bloqueio de 4 dígitos no aplicativo, não uma criptografia da agenda.',
     group: 'Privacidade e segurança',
-    body: `Você pode definir um PIN de 4 dígitos para que o BlackBook o peça sempre que for aberto naquele aparelho. Ele serve para barrar alguém que pegue seu celular ou computador.
+    body: `Você pode definir um PIN de 4 dígitos para que o BlackBook o peça sempre que for iniciado naquele aparelho: depois de ser fechado ou de a página ser recarregada. Voltar a ele vindo de outro app não pede de novo. Ele serve para barrar alguém que pegue seu celular ou computador.
 
 ## O que ele protege
 

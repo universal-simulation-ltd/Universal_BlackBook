@@ -3,7 +3,9 @@ import { onlyDigits, PIN_LENGTH } from '../lib/lock'
 import { useLockStore, type PinResult } from '../stores/lockStore'
 import ProductLogo from './Header/ProductLogo'
 import { Modal } from './Modal'
-import { autoFocusOK } from '../native/kit'
+import { autoFocusOK, usePhoneKit } from '../native/kit'
+import { useNativeNav } from '../native/nav'
+import { useBookStore } from '../stores/bookStore'
 import { useT, type Translator } from '../i18n'
 import { btnDanger, btnGhost, btnPrimary, inputBase, label } from './ui'
 
@@ -245,14 +247,25 @@ function Forgotten() {
 export function LockPanel({ onClose }: { onClose: () => void }) {
   const record = useLockStore((s) => s.record)
   const t = useT()
+  const kit = usePhoneKit()
+  const toast = useNativeNav((s) => s.say)
+  const setNotice = useBookStore((s) => s.setNotice)
+  // What just happened, said once the panel has gone (the phone's toast, the
+  // website's notice): setting a PIN leaves the app open, so without this it
+  // looks as if nothing was locked.
+  const say = (message: string) => (kit ? toast(message) : setNotice(message))
   return (
     <Modal title={record ? t('lock.panel_on') : t('lock.panel_off')} onClose={onClose}>
-      {record ? <TurnOff onDone={onClose} /> : <TurnOn onDone={onClose} />}
+      {record ? (
+        <TurnOff onDone={onClose} onOff={() => say(t('lock.off_done'))} />
+      ) : (
+        <TurnOn onDone={onClose} onSet={() => say(t('lock.set_done'))} />
+      )}
     </Modal>
   )
 }
 
-function TurnOn({ onDone }: { onDone: () => void }) {
+function TurnOn({ onDone, onSet }: { onDone: () => void; onSet: () => void }) {
   const setPinLock = useLockStore((s) => s.setPin)
   const [pin, setPin] = useState('')
   const [again, setAgain] = useState('')
@@ -271,7 +284,10 @@ function TurnOn({ onDone }: { onDone: () => void }) {
     setBusy(true)
     const result = await setPinLock(pin)
     setBusy(false)
-    if (result === 'ok') return onDone()
+    if (result === 'ok') {
+      onSet()
+      return onDone()
+    }
     setError(errorFor(result, t))
   }
 
@@ -311,7 +327,9 @@ function TurnOn({ onDone }: { onDone: () => void }) {
           only moment the person can still do anything about it. There IS a
           reset now, and the warning names what it costs rather than claiming
           there is no way out: an accurate warning is the one that gets read
-          twice, and "no way to reset" stopped being true. */}
+          twice, and "no way to reset" stopped being true. (2026-10-25: the
+          heading still said "Nobody can reset this PIN" over a body that
+          described the reset; both now say the same thing.) */}
       <div className="rounded-xl border border-orange-900/60 bg-orange-950/30 px-3 py-2.5 text-xs leading-relaxed text-orange-200">
         <p className="font-semibold">{t('lock.no_reset')}</p>
         <p className="mt-1">{t('lock.no_reset_body')}</p>
@@ -337,7 +355,7 @@ function TurnOn({ onDone }: { onDone: () => void }) {
   )
 }
 
-function TurnOff({ onDone }: { onDone: () => void }) {
+function TurnOff({ onDone, onOff }: { onDone: () => void; onOff: () => void }) {
   const removePin = useLockStore((s) => s.removePin)
   const blockedUntil = useLockStore((s) => s.blockedUntil)
   const [pin, setPin] = useState('')
@@ -352,7 +370,10 @@ function TurnOff({ onDone }: { onDone: () => void }) {
     setBusy(true)
     const result = await removePin(pin)
     setBusy(false)
-    if (result === 'ok') return onDone()
+    if (result === 'ok') {
+      onOff()
+      return onDone()
+    }
     setPin('')
     setError(errorFor(result, t))
   }

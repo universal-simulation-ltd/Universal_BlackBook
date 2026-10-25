@@ -118,7 +118,7 @@ Borrar siempre pide confirmación y nombra a quién se va a borrar. En el teléf
     title: 'Lo que hace el PIN y lo que no hace',
     summary: 'Un bloqueo de 4 dígitos para la aplicación, no un cifrado de la libreta.',
     group: 'Privacidad y seguridad',
-    body: `Puede establecer un PIN de 4 dígitos para que BlackBook lo pida cada vez que se abra en ese dispositivo. Sirve para impedir el paso a alguien que coja su teléfono u ordenador.
+    body: `Puede establecer un PIN de 4 dígitos para que BlackBook lo pida cada vez que se inicie en ese dispositivo: después de cerrarlo o de recargar la página. Volver a él desde otra app no lo vuelve a pedir. Sirve para impedir el paso a alguien que coja su teléfono u ordenador.
 
 ## Lo que protege
 

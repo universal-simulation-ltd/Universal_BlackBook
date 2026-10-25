@@ -50,7 +50,7 @@ export const ptPT: Dict = {
   tune_backup_file: "Cópia, importar e exportar",
   tune_online_backup: "Cópia online",
   tune_backup_off: "Desligada",
-  tune_backup_locked: "Bloqueada",
+  tune_backup_locked: "Falta a frase",
   tune_backup_on: "Ligada",
   tune_pin: "Bloquear com PIN",
   tune_on: "Ligado",
@@ -92,4 +92,5 @@ export const ptPT: Dict = {
   kb_short: "Como funciona",
   kb_intro: "Respostas curtas às perguntas habituais: onde a agenda é guardada, o que fazem as cópias e como os ficheiros se movem.",
   kb_sources: "Fontes",
+  tune_pin_row: "Bloqueio por PIN",
 }

@@ -118,7 +118,7 @@ Silme her zaman önce onay ister ve kimin silineceğini adıyla belirtir. Telefo
     title: 'PIN kilidi ne yapar, ne yapmaz',
     summary: 'Uygulama için 4 haneli bir kilit; rehberin şifrelenmesi değil.',
     group: 'Gizlilik ve güvenlik',
-    body: `BlackBook’un o cihazda her açılışta sormasını sağlamak için 4 haneli bir PIN belirleyebilirsiniz. Amacı, telefonunuzu veya dizüstü bilgisayarınızı eline alan birini uzak tutmaktır.
+    body: `BlackBook’un o cihazda her başlatıldığında sormasını sağlamak için 4 haneli bir PIN belirleyebilirsiniz: kapatıldıktan veya sayfa yeniden yüklendikten sonra. Başka bir uygulamadan ona geri dönmek PIN’i yeniden sormaz. Amacı, telefonunuzu veya dizüstü bilgisayarınızı eline alan birini uzak tutmaktır.
 
 ## Neyi korur
 

@@ -118,7 +118,7 @@ La suppression demande toujours confirmation et nomme les personnes concernées.
     title: 'Ce que fait le code PIN, et ce qu’il ne fait pas',
     summary: 'Un verrou à 4 chiffres sur l’application, pas un chiffrement du carnet.',
     group: 'Confidentialité et sécurité',
-    body: `Vous pouvez définir un code PIN à 4 chiffres pour que BlackBook le demande à chaque ouverture sur cet appareil. Il sert à tenir à l’écart quelqu’un qui prendrait votre téléphone ou votre ordinateur.
+    body: `Vous pouvez définir un code PIN à 4 chiffres pour que BlackBook le demande à chaque démarrage sur cet appareil : après sa fermeture ou le rechargement de la page. Revenir à l’app depuis une autre ne le redemande pas. Il sert à tenir à l’écart quelqu’un qui prendrait votre téléphone ou votre ordinateur.
 
 ## Ce qu’il protège
 

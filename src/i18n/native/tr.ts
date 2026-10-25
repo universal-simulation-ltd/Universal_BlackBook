@@ -50,7 +50,7 @@ export const tr: Dict = {
   tune_backup_file: "Yedek, içe ve dışa aktarma",
   tune_online_backup: "Çevrimiçi yedek",
   tune_backup_off: "Kapalı",
-  tune_backup_locked: "Kilitli",
+  tune_backup_locked: "Parola gerekli",
   tune_backup_on: "Açık",
   tune_pin: "PIN ile kilitle",
   tune_on: "Açık",
@@ -92,4 +92,5 @@ export const tr: Dict = {
   kb_short: "Nasıl çalışır",
   kb_intro: "Sık sorulan sorulara kısa yanıtlar: defterin nerede tutulur, yedekler ne yapar ve dosyalar nasıl taşınır.",
   kb_sources: "Kaynaklar",
+  tune_pin_row: "PIN kilidi",
 }

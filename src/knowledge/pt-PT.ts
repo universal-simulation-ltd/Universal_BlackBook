@@ -118,7 +118,7 @@ Eliminar pede sempre confirmação e diz quem vai ser eliminado. No telemóvel, 
     title: 'O que o PIN faz e o que não faz',
     summary: 'Um bloqueio de 4 dígitos na aplicação, não uma encriptação da agenda.',
     group: 'Privacidade e segurança',
-    body: `Pode definir um PIN de 4 dígitos para que o BlackBook o peça sempre que for aberto nesse dispositivo. Serve para impedir a entrada a quem pegue no seu telemóvel ou computador.
+    body: `Pode definir um PIN de 4 dígitos para que o BlackBook o peça sempre que for iniciado nesse dispositivo: depois de ser fechado ou de a página ser recarregada. Voltar a ele a partir de outra app não o volta a pedir. Serve para impedir a entrada a quem pegue no seu telemóvel ou computador.
 
 ## O que protege
 

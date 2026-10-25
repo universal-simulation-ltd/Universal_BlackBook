@@ -118,7 +118,7 @@ Beim Löschen wird immer zuerst nachgefragt und genannt, wer gelöscht wird. Auf
     title: 'Was die PIN-Sperre tut und was nicht',
     summary: 'Eine vierstellige Sperre für die App, keine Verschlüsselung des Adressbuchs.',
     group: 'Datenschutz und Sicherheit',
-    body: `Sie können eine vierstellige PIN festlegen, nach der BlackBook bei jedem Öffnen auf diesem Gerät fragt. Sie soll jemanden fernhalten, der Ihr Telefon oder Ihren Laptop in die Hand nimmt.
+    body: `Sie können eine vierstellige PIN festlegen, nach der BlackBook bei jedem Start auf diesem Gerät fragt: nachdem es geschlossen oder die Seite neu geladen wurde. Wenn Sie aus einer anderen App zurückwechseln, wird nicht erneut gefragt. Sie soll jemanden fernhalten, der Ihr Telefon oder Ihren Laptop in die Hand nimmt.
 
 ## Was sie schützt
 

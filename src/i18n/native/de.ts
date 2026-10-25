@@ -50,7 +50,7 @@ export const de: Dict = {
   tune_backup_file: "Sicherung, Import & Export",
   tune_online_backup: "Online-Sicherung",
   tune_backup_off: "Aus",
-  tune_backup_locked: "Gesperrt",
+  tune_backup_locked: "Passphrase nötig",
   tune_backup_on: "An",
   tune_pin: "Mit PIN sperren",
   tune_on: "An",
@@ -92,4 +92,5 @@ export const de: Dict = {
   kb_short: "So funktioniert es",
   kb_intro: "Kurze Antworten auf die Fragen, die man sich stellt: wo dein Buch aufbewahrt wird, was die Sicherungen tun und wie die Dateien umziehen.",
   kb_sources: "Quellen",
+  tune_pin_row: "PIN-Sperre",
 }

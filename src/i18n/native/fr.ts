@@ -50,7 +50,7 @@ export const fr: Dict = {
   tune_backup_file: "Sauvegarde, import et export",
   tune_online_backup: "Sauvegarde en ligne",
   tune_backup_off: "Désactivée",
-  tune_backup_locked: "Verrouillée",
+  tune_backup_locked: "Phrase requise",
   tune_backup_on: "Activée",
   tune_pin: "Verrouiller par code",
   tune_on: "Activé",
@@ -92,4 +92,5 @@ export const fr: Dict = {
   kb_short: "Comment ça marche",
   kb_intro: "Des réponses courtes aux questions qu’on se pose : où votre carnet est gardé, ce que font les sauvegardes et comment les fichiers voyagent.",
   kb_sources: "Sources",
+  tune_pin_row: "Verrou par PIN",
 }

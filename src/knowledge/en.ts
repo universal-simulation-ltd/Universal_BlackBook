@@ -118,7 +118,7 @@ Deleting always asks first and names who is going. On a phone, swiping a card le
     title: 'What the PIN lock does, and what it does not',
     summary: 'A 4-digit lock on the app, not encryption of the book.',
     group: 'Privacy and security',
-    body: `You can set a 4-digit PIN so that BlackBook asks for it every time it is opened on that device. It is meant to keep out someone who picks up your phone or laptop.
+    body: `You can set a 4-digit PIN so that BlackBook asks for it each time it starts on that device: after it has been closed, or the page reloaded. Switching back to it from another app does not ask again. It is meant to keep out someone who picks up your phone or laptop.
 
 ## What it protects
 

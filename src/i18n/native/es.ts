@@ -50,7 +50,7 @@ export const es: Dict = {
   tune_backup_file: "Copia, importar y exportar",
   tune_online_backup: "Copia en línea",
   tune_backup_off: "Desactivada",
-  tune_backup_locked: "Bloqueada",
+  tune_backup_locked: "Falta la frase",
   tune_backup_on: "Activada",
   tune_pin: "Bloquear con PIN",
   tune_on: "Activado",
@@ -92,4 +92,5 @@ export const es: Dict = {
   kb_short: "Cómo funciona",
   kb_intro: "Respuestas breves a las preguntas habituales: dónde se guarda tu agenda, qué hacen las copias y cómo se mueven los archivos.",
   kb_sources: "Fuentes",
+  tune_pin_row: "Bloqueo con PIN",
 }

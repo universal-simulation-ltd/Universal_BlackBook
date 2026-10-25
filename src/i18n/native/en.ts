@@ -57,7 +57,7 @@ export const en = {
   tune_backup_file: 'Backup, import & export',
   tune_online_backup: 'Online backup',
   tune_backup_off: 'Off',
-  tune_backup_locked: 'Locked',
+  tune_backup_locked: "Needs passphrase",
   tune_backup_on: 'On',
   tune_pin: 'Lock with PIN',
   tune_on: 'On',
@@ -104,6 +104,7 @@ export const en = {
   kb_intro: 'Short answers to the questions people ask: where your book is kept, what the backups do, and how the files move.',
   kb_sources: 'Sources',
 
+  tune_pin_row: "PIN lock",
 } as const
 
 export type Key = keyof typeof en

@@ -154,9 +154,13 @@ and a device that never touched the old switches gets the new defaults.
 
 ## Locking the app
 
-**🔓 Lock with PIN** (🔒 **Locked** once a PIN is set), beside the page title. Tap it to set a 4-digit PIN,
-and BlackBook asks for it every time it is opened on that device. Tap it again
-(with the PIN) to take the lock off. Five wrong tries in a row and the keypad
+**🔓 Lock with PIN** (🔒 **PIN lock on** once a PIN is set), beside the page title, and
+Tune ▸ **PIN lock** on the phone. Tap it to set a 4-digit PIN, and BlackBook asks
+for it each time it starts on that device (after it has been closed, or the page
+reloaded; switching back to it from another app does not ask again). Setting the
+PIN says so and leaves the app open. Tap it again (with the PIN) to take the lock
+off. There is no "lock now", no PIN change (turn it off and on) and no Face ID /
+fingerprint unlock. Five wrong tries in a row and the keypad
 starts making you wait, doubling each time.
 
 > **It locks the app, not the data.** The book stays in this browser's storage

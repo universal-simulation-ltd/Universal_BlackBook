@@ -50,7 +50,7 @@ export const ptBR: Dict = {
   tune_backup_file: "Backup, importar e exportar",
   tune_online_backup: "Backup on-line",
   tune_backup_off: "Desativado",
-  tune_backup_locked: "Bloqueado",
+  tune_backup_locked: "Falta a frase",
   tune_backup_on: "Ativado",
   tune_pin: "Bloquear com PIN",
   tune_on: "Ativado",
@@ -92,4 +92,5 @@ export const ptBR: Dict = {
   kb_short: "Como funciona",
   kb_intro: "Respostas curtas às perguntas comuns: onde sua agenda é guardada, o que os backups fazem e como os arquivos se movem.",
   kb_sources: "Fontes",
+  tune_pin_row: "Bloqueio por PIN",
 }

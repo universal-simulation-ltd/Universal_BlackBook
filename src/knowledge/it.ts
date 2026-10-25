@@ -118,7 +118,7 @@ L’eliminazione chiede sempre conferma e indica chi verrà eliminato. Sul telef
     title: 'Cosa fa il PIN e cosa non fa',
     summary: 'Un blocco a 4 cifre sull’app, non una crittografia della rubrica.',
     group: 'Privacy e sicurezza',
-    body: `Puoi impostare un PIN di 4 cifre perché BlackBook lo chieda ogni volta che viene aperto su quel dispositivo. Serve a tenere fuori chi prende in mano il tuo telefono o il tuo computer.
+    body: `Puoi impostare un PIN di 4 cifre perché BlackBook lo chieda ogni volta che si avvia su quel dispositivo: dopo essere stato chiuso o dopo aver ricaricato la pagina. Tornarci da un’altra app non lo richiede di nuovo. Serve a tenere fuori chi prende in mano il tuo telefono o il tuo computer.
 
 ## Cosa protegge
 
