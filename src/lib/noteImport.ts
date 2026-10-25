@@ -35,7 +35,6 @@ export interface ImportResult {
   skipped: { file: string; reason: 'type' | 'size' | 'empty' | 'damaged' }[]
 }
 
-export const IMPORT_ACCEPT = '.docx,.html,.htm,.mht,.mhtml,.txt,.md,.markdown,text/plain,text/html,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 const MAX_FILE = 20 * 1024 * 1024
 const MAX_TEXT = 100_000
 const MAX_TITLE = 1_000

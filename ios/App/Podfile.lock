@@ -11,6 +11,8 @@ PODS:
   - CapacitorFilesystem (8.1.3):
     - Capacitor
     - IONFilesystemLib (~> 1.1.1)
+  - CapacitorLocalNotifications (8.3.1):
+    - Capacitor
   - CapacitorShare (8.0.2):
     - Capacitor
   - IONFilesystemLib (1.1.2)
@@ -24,6 +26,7 @@ DEPENDENCIES:
   - "CapacitorCommunityContacts (from `../../node_modules/@capacitor-community/contacts`)"
   - "CapacitorCordova (from `../../node_modules/@capacitor/ios`)"
   - "CapacitorFilesystem (from `../../node_modules/@capacitor/filesystem`)"
+  - "CapacitorLocalNotifications (from `../../node_modules/@capacitor/local-notifications`)"
   - "CapacitorShare (from `../../node_modules/@capacitor/share`)"
   - "UnisimSdk (from `../../node_modules/@unisim/sdk`)"
 
@@ -44,6 +47,8 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor/ios"
   CapacitorFilesystem:
     :path: "../../node_modules/@capacitor/filesystem"
+  CapacitorLocalNotifications:
+    :path: "../../node_modules/@capacitor/local-notifications"
   CapacitorShare:
     :path: "../../node_modules/@capacitor/share"
   UnisimSdk:
@@ -56,10 +61,11 @@ SPEC CHECKSUMS:
   CapacitorCommunityContacts: 87559fd3d6d829cc38bea834ea4d2242a0995ac2
   CapacitorCordova: 5bec5648cbd09a176ce34ce5e7b6cdabb2c8a327
   CapacitorFilesystem: b2bbd84bb91c177906c9dbc252864cb71ab9957b
+  CapacitorLocalNotifications: e0747a329ddde3074d52dc74a003688af90e42be
   CapacitorShare: 2fde721d06a6f83ff5c7578e6a91b190d341ac6a
   IONFilesystemLib: 21a63377696b2d8fab5632ecfb7d2ac67bddb68a
   UnisimSdk: 122d9ec49e2b16b56fb90c1c569e409733047dd4
 
-PODFILE CHECKSUM: 174010542549fdaeb73e980bfbc0345e462757fc
+PODFILE CHECKSUM: 9d4498952a4b5fa08ff11e56433859e5f7a886b9
 
 COCOAPODS: 1.16.2

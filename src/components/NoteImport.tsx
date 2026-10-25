@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { IMPORT_ACCEPT, importFiles, type ImportResult } from '../lib/noteImport'
+import { importFiles, type ImportResult } from '../lib/noteImport'
 import { useNoteStore } from '../stores/noteStore'
 import { usePhoneKit } from '../native/kit'
 import { useNativeNav } from '../native/nav'
@@ -58,7 +58,16 @@ export function NoteImportButton() {
       <button type="button" className={btnGhost} onClick={() => input.current?.click()} disabled={busy}>
         {busy ? t('imp.reading') : t('imp.import')}
       </button>
-      <input ref={input} type="file" multiple accept={IMPORT_ACCEPT} className="hidden" onChange={(e) => void pick(e.target.files)} />
+      {/* The accept written out (scripts/verify-ios-launch.mjs reads it): no
+          image or video types, so iOS never offers the camera here. */}
+      <input
+        ref={input}
+        type="file"
+        multiple
+        accept=".docx,.html,.htm,.mht,.mhtml,.txt,.md,.markdown,text/plain,text/html,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        className="hidden"
+        onChange={(e) => void pick(e.target.files)}
+      />
       {found && (
         <Modal phone="sheet" title={t('imp.title')} onClose={() => setFound(null)}>
           {found.notes.length > 0 ? (
