@@ -504,4 +504,8 @@ export const appFr: Partial<Record<AppKey, string>> = {
   'notify.generic_body': "Tu as un rappel.",
   'pref.notify_details': "Afficher les noms dans les notifications",
   'pref.notify_details_note': "Désactivé, un rappel sur l’écran verrouillé dit seulement « Tu as un rappel ». Activé, il montre le nom du contact ou le titre de la note et le texte du rappel.",
+  'more.no_phone_title': "Pas encore de numéro",
+  'more.add_phone': "Ajouter un numéro",
+  'more.import_phone': "Importer d’un contact du téléphone",
+  'more.picked_no_phone': "{name} n’a pas de numéro sur le téléphone non plus.",
 }

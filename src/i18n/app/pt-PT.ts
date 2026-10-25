@@ -504,4 +504,8 @@ export const appPtPT: Partial<Record<AppKey, string>> = {
   'notify.generic_body': "Tem um lembrete.",
   'pref.notify_details': "Mostrar nomes nas notificações",
   'pref.notify_details_note': "Desligado, um lembrete no ecrã bloqueado diz apenas “Tem um lembrete”. Ligado, mostra o nome do contacto ou o título da nota e o texto do lembrete.",
+  'more.no_phone_title': "Ainda sem telefone",
+  'more.add_phone': "Adicionar telefone",
+  'more.import_phone': "Importar de um contacto do telemóvel",
+  'more.picked_no_phone': "{name} também não tem número no telemóvel.",
 }

@@ -504,4 +504,8 @@ export const appDe: Partial<Record<AppKey, string>> = {
   'notify.generic_body': "Du hast eine Erinnerung.",
   'pref.notify_details': "Namen in Mitteilungen zeigen",
   'pref.notify_details_note': "Aus: Eine Erinnerung auf dem Sperrbildschirm sagt nur „Du hast eine Erinnerung“. An: Sie zeigt den Namen des Kontakts oder den Titel der Notiz und die Worte der Erinnerung.",
+  'more.no_phone_title': "Noch keine Telefonnummer",
+  'more.add_phone': "Telefonnummer hinzufügen",
+  'more.import_phone': "Aus Telefonkontakt übernehmen",
+  'more.picked_no_phone': "{name} hat auch auf dem Telefon keine Nummer.",
 }

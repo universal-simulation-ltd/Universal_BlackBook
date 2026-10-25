@@ -387,6 +387,9 @@ html.bb-phone body {
 .bb-action[aria-disabled='true'] {
   opacity: 0.4;
 }
+.bb-action.muted {
+  opacity: 0.55;
+}
 
 .bb-toast {
   position: fixed;

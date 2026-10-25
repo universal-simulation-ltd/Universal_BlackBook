@@ -504,4 +504,8 @@ export const appTr: Partial<Record<AppKey, string>> = {
   'notify.generic_body': "Bir hatırlatmanız var.",
   'pref.notify_details': "Bildirimlerde adları göster",
   'pref.notify_details_note': "Kapalıyken kilit ekranındaki hatırlatma yalnızca “Bir hatırlatmanız var” der. Açıkken kişinin adını veya notun başlığını ve hatırlatmanın sözlerini gösterir.",
+  'more.no_phone_title': "Henüz telefon numarası yok",
+  'more.add_phone': "Telefon numarası ekle",
+  'more.import_phone': "Telefon kişisinden al",
+  'more.picked_no_phone': "{name} için telefonda da numara yok.",
 }

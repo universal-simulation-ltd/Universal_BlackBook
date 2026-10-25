@@ -567,6 +567,10 @@ export const appEn = {
   'notify.generic_body': "You have a reminder.",
   'pref.notify_details': "Show names in notifications",
   'pref.notify_details_note': "Off, a reminder on the lock screen says only “You have a reminder”. On, it shows the contact’s name or the note’s title and the reminder’s words.",
+  'more.no_phone_title': "No phone number yet",
+  'more.add_phone': "Add phone number",
+  'more.import_phone': "Import from phone contact",
+  'more.picked_no_phone': "{name} has no phone number on the phone either.",
 } as const
 
 export type AppKey = keyof typeof appEn

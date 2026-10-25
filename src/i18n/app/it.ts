@@ -504,4 +504,8 @@ export const appIt: Partial<Record<AppKey, string>> = {
   'notify.generic_body': "Hai un promemoria.",
   'pref.notify_details': "Mostra i nomi nelle notifiche",
   'pref.notify_details_note': "Disattivato, un promemoria sulla schermata di blocco dice solo «Hai un promemoria». Attivato, mostra il nome del contatto o il titolo della nota e il testo del promemoria.",
+  'more.no_phone_title': "Nessun numero ancora",
+  'more.add_phone': "Aggiungi numero di telefono",
+  'more.import_phone': "Importa da un contatto del telefono",
+  'more.picked_no_phone': "Anche sul telefono {name} non ha un numero.",
 }

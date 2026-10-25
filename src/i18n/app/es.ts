@@ -504,4 +504,8 @@ export const appEs: Partial<Record<AppKey, string>> = {
   'notify.generic_body': "Tienes un recordatorio.",
   'pref.notify_details': "Mostrar nombres en las notificaciones",
   'pref.notify_details_note': "Desactivado, un recordatorio en la pantalla bloqueada solo dice «Tienes un recordatorio». Activado, muestra el nombre del contacto o el título de la nota y el texto del recordatorio.",
+  'more.no_phone_title': "Aún sin número de teléfono",
+  'more.add_phone': "Añadir número de teléfono",
+  'more.import_phone': "Importar de un contacto del teléfono",
+  'more.picked_no_phone': "{name} tampoco tiene número en el teléfono.",
 }
