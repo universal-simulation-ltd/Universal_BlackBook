@@ -36,6 +36,7 @@
     "@capacitor/share": "^8.0.2",
     "@unisim/media": "^0.7.0",
     "@unisim/sdk": "^0.203.1",
+    "fflate": "^0.8.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "zustand": "^5.0.2"

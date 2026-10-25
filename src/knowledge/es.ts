@@ -238,6 +238,38 @@ Cuando cambia la frase de contraseña en un dispositivo, los demás dejan de gua
 
 Si el otro dispositivo es nuevo, elija Sustituir todo. Si ya tiene contactos propios, elija Añadir a lo que hay y las dos libretas se fusionarán.`,
   },
+  {
+    id: 'notes-from-onenote',
+    title: "Trae tus notas de OneNote",
+    summary: "Exporta páginas de OneNote e importa los archivos en Notas.",
+    group: "Cómo funciona",
+    body: `BlackBook no puede abrir un bloc de notas de OneNote por sí mismo, pero lee los archivos que OneNote exporta. Todo se lee en su dispositivo; no se sube nada.
+
+## OneNote para Windows
+
+1. Abra la página o la sección que quiera traer.
+2. Elija **Archivo** ▸ **Exportar**.
+3. En **Exportar actual**, elija **Página** o **Sección**.
+4. En **Seleccionar formato**, elija **Documento de Word** (.docx), o **Página web de un solo archivo** (.mht) si no se ofrece Word.
+5. Elija **Exportar** y guarde el archivo.
+
+Un bloc de notas entero no se puede exportar a Word: expórtelo sección por sección.
+
+## OneNote en Mac o en la web
+
+Según Microsoft, OneNote para Mac y OneNote para la web todavía no pueden exportar páginas. Abra el bloc de notas en OneNote para Windows (en la web: **Edición** ▸ **Abrir en la aplicación de escritorio**) o copie las páginas una a una: seleccione todo lo de la página, cópielo, péguelo en un documento de texto o de Word y guárdelo.
+
+## Importar en BlackBook
+
+Abra la pestaña **Notas** y elija **Importar**. Puede elegir varios archivos a la vez: Word (.docx), páginas web (.html, .htm, .mht), texto sin formato (.txt) y Markdown (.md).
+
+- Un archivo de Word con varias páginas de OneNote se convierte en una nota por página, separadas en cada título de página.
+- El título de cada nota es el título de la página; si no, su primer encabezado; si no, el nombre del archivo.
+- El texto llega como texto sin formato: se conservan los párrafos y las listas; no el formato, las imágenes, los dibujos ni los adjuntos.
+- Si OneNote escribió la fecha de la página bajo su título, esa será la fecha de la nota.
+
+Verá lo que se ha encontrado antes de que se añada nada.`,
+  },
 ]
 
 export default articles

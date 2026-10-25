@@ -238,6 +238,38 @@ Wenn Sie die Passphrase auf einem Gerät ändern, hören Ihre anderen Geräte au
 
 Ist das andere Gerät neu, wählen Sie „Alles ersetzen“. Hat es schon eigene Personen, wählen Sie „Zum Vorhandenen hinzufügen“, und die beiden Adressbücher werden zusammengeführt.`,
   },
+  {
+    id: 'notes-from-onenote',
+    title: "Notizen aus OneNote übernehmen",
+    summary: "Seiten aus OneNote exportieren und die Dateien in Notizen importieren.",
+    group: "So funktioniert es",
+    body: `BlackBook kann ein OneNote-Notizbuch nicht selbst öffnen, liest aber die Dateien, die OneNote exportiert. Alles wird auf Ihrem Gerät gelesen; nichts wird hochgeladen.
+
+## OneNote für Windows
+
+1. Öffnen Sie die Seite oder den Abschnitt, den Sie übernehmen möchten.
+2. Wählen Sie **Datei** ▸ **Exportieren**.
+3. Wählen Sie unter **Aktuelles exportieren** **Seite** oder **Abschnitt**.
+4. Wählen Sie unter **Format auswählen** **Word-Dokument** (.docx) oder, wenn Word nicht angeboten wird, **Webseite in einer Datei** (.mht).
+5. Wählen Sie **Exportieren** und speichern Sie die Datei.
+
+Ein ganzes Notizbuch lässt sich nicht als Word-Datei exportieren: Exportieren Sie es Abschnitt für Abschnitt.
+
+## OneNote auf dem Mac oder im Web
+
+Laut Microsoft können OneNote für Mac und OneNote für das Web noch keine Seiten exportieren. Öffnen Sie das Notizbuch in OneNote für Windows (im Web: **Bearbeitung** ▸ **In Desktop-App öffnen**) oder kopieren Sie eine Seite nach der anderen: alles auf der Seite markieren, kopieren, in ein Text- oder Word-Dokument einfügen und dieses speichern.
+
+## In BlackBook importieren
+
+Öffnen Sie den Tab **Notizen** und wählen Sie **Importieren**. Sie können mehrere Dateien auf einmal wählen: Word (.docx), Webseiten (.html, .htm, .mht), reiner Text (.txt) und Markdown (.md).
+
+- Eine Word-Datei mit mehreren OneNote-Seiten wird zu einer Notiz pro Seite, getrennt an jedem Seitentitel.
+- Der Titel jeder Notiz ist der Seitentitel, sonst die erste Überschrift, sonst der Dateiname.
+- Der Text kommt als reiner Text: Absätze und Listen bleiben erhalten, Formatierung, Bilder, Zeichnungen und Anhänge nicht.
+- Hat OneNote das Datum der Seite unter den Titel geschrieben, wird es zum Datum der Notiz.
+
+Sie sehen, was gefunden wurde, bevor etwas hinzugefügt wird.`,
+  },
 ]
 
 export default articles

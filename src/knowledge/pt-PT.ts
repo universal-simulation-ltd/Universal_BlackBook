@@ -238,6 +238,38 @@ Quando altera a frase de acesso num dispositivo, os outros deixam de guardar e p
 
 Se o outro dispositivo for novo, escolha Substituir tudo. Se já tiver pessoas próprias, escolha Acrescentar ao que já existe e as duas agendas são fundidas.`,
   },
+  {
+    id: 'notes-from-onenote',
+    title: "Traga as suas notas do OneNote",
+    summary: "Exporte páginas do OneNote e importe os ficheiros em Notas.",
+    group: "Como funciona",
+    body: `O BlackBook não consegue abrir sozinho um bloco de notas do OneNote, mas lê os ficheiros que o OneNote exporta. Tudo é lido no seu dispositivo; nada é enviado.
+
+## OneNote para Windows
+
+1. Abra a página ou a secção que quer trazer.
+2. Escolha **Ficheiro** ▸ **Exportar**.
+3. Em **Exportar Atual**, escolha **Página** ou **Secção**.
+4. Em **Selecionar Formato**, escolha **Documento do Word** (.docx), ou **Página Web de Ficheiro Único** (.mht) se o Word não for proposto.
+5. Escolha **Exportar** e guarde o ficheiro.
+
+Um bloco de notas inteiro não pode ser exportado para Word: exporte-o secção a secção.
+
+## OneNote no Mac ou na web
+
+Segundo a Microsoft, o OneNote para Mac e o OneNote para a web ainda não exportam páginas. Abra o bloco de notas no OneNote para Windows (na web: **Edição** ▸ **Abrir na Aplicação de Ambiente de Trabalho**) ou copie uma página de cada vez: selecione tudo na página, copie, cole num documento de texto ou do Word e guarde-o.
+
+## Importar no BlackBook
+
+Abra o separador **Notas** e escolha **Importar**. Pode escolher vários ficheiros de uma vez: Word (.docx), páginas web (.html, .htm, .mht), texto simples (.txt) e Markdown (.md).
+
+- Um ficheiro Word com várias páginas do OneNote passa a uma nota por página, dividida em cada título de página.
+- O título de cada nota é o título da página; se não houver, o primeiro cabeçalho; se não, o nome do ficheiro.
+- O texto chega como texto simples: parágrafos e listas mantêm-se; formatação, imagens, desenhos e anexos não.
+- Se o OneNote escreveu a data da página por baixo do título, essa passa a ser a data da nota.
+
+Vê o que foi encontrado antes de se acrescentar alguma coisa.`,
+  },
 ]
 
 export default articles

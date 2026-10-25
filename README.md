@@ -222,6 +222,22 @@ the notes had in it into their text, so nothing typed is lost. Templates are
 part of the book: the online copy and the backup file (schema 3) carry them;
 an older backup file, which has none, leaves this device's alone.
 
+### Importing notes (from OneNote and elsewhere)
+
+Notes ▸ **Import** takes several files at once: Word (`.docx`), web pages
+(`.html`, `.htm`, and OneNote's Single File Web Page `.mht`), plain text
+(`.txt`) and Markdown (`.md`). Each is read **on the device** and nothing is
+uploaded; you see what was found (and which files were skipped, and why)
+before anything is added. One note per file, except a Word file holding
+several OneNote pages, which is split at each page title (the Title style,
+else Heading 1, else page breaks). The title is the page title, else the first
+heading, else the file name; the text is plain, with paragraphs and lists
+(as "• …") kept; when OneNote wrote the page's date under its title (in any
+suite language), it becomes the note's date. The help article **Bring your
+notes from OneNote** has the export steps. The `.docx` reader is
+[fflate](https://github.com/101arrowz/fflate) (MIT) to unzip plus a small XML
+scanner of our own (`src/lib/noteImport.ts`).
+
 ## Locking the app
 
 **🔓 Lock with PIN** (🔒 **PIN lock on** once a PIN is set), beside the page title, and

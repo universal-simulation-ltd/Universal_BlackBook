@@ -44,6 +44,8 @@ interface NoteState {
   patch: (id: string, patch: Partial<Omit<Note, 'id' | 'createdAt' | 'updatedAt'>>) => Promise<void>
   /** The vault's or a backup file's copy (or a merge of it) becomes this device's. */
   replace: (notes: Note[]) => Promise<void>
+  /** Notes → Import: these become new notes. `createdAt` is kept when the file said. */
+  addMany: (drafts: { title: string; details: string; createdAt?: number }[]) => Promise<number>
   /** Note templates (lib/templates.ts) — the book's, synced and in backups. */
   templates: NoteTemplate[]
   /** The Notes tab's filter: a template id, or null for all. Never remembered. */
@@ -177,6 +179,21 @@ export const useNoteStore = create<NoteState>((set, get) => {
     replaceTemplates: async (templates) => {
       set((s) => ({ templates, templateFilter: templates.some((t) => t.id === s.templateFilter) ? s.templateFilter : null }))
       await saveTemplates(templates)
+    },
+
+    addMany: async (drafts) => {
+      const now = Date.now()
+      // `updatedAt` is NOW, whatever the page's own date: it is what tells the
+      // online copy (and signing out) that these are new here.
+      const added: Note[] = drafts.map((d, i) => ({
+        id: newId(),
+        title: d.title,
+        details: d.details,
+        createdAt: d.createdAt && d.createdAt < now ? d.createdAt : now,
+        updatedAt: now + i,
+      }))
+      await commit([...get().notes, ...added])
+      return added.length
     },
 
     replace: async (notes) => {

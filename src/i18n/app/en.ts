@@ -637,6 +637,23 @@ export const appEn = {
   'tpl.filter': "Show notes of one kind",
   'tpl.all': "All",
   'tpl.filter_none': "No notes of this kind yet.",
+  'imp.import': "Import",
+  'imp.reading': "Reading…",
+  'imp.title': "Import notes",
+  'imp.found_one': "Found {count} note:",
+  'imp.found_other': "Found {count} notes:",
+  'imp.none': "No notes in those files.",
+  'imp.skipped': "Not imported",
+  'imp.skip_type': "not a file BlackBook reads (Word, web page, text or Markdown)",
+  'imp.skip_size': "larger than 20 MB",
+  'imp.skip_empty': "nothing in it to import",
+  'imp.skip_damaged': "could not be read",
+  'imp.plain': "Notes come in as plain text: paragraphs and lists, no formatting or pictures.",
+  'imp.howto': "How to export from OneNote",
+  'imp.add_one': "Add {count} note",
+  'imp.add_other': "Add {count} notes",
+  'imp.added_one': "Added {count} note.",
+  'imp.added_other': "Added {count} notes.",
 } as const
 
 export type AppKey = keyof typeof appEn

@@ -5,6 +5,7 @@ import { AddTyped, ListSearch } from './ListSearch'
 import { compareNotes, matchesNote, preview, type Note } from '../lib/notes'
 import { useNoteStore } from '../stores/noteStore'
 import { btnPrimary } from './ui'
+import { NoteImportButton } from './NoteImport'
 import { phoneScreens } from '../native/shell'
 import { useT } from '../i18n'
 
@@ -48,12 +49,16 @@ export function NotesView() {
           <h1 className="text-xl font-semibold text-slate-100 sm:text-2xl">{t('tab_notes')}</h1>
           <p className="text-sm text-slate-500">{t('notes.intro')}</p>
         </div>
-        {/* On the phone the top bar's + does this. */}
-        {!phoneScreens() && (
-          <button type="button" className={btnPrimary} onClick={() => newNote()}>
-            {t('c.add_new')}
-          </button>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Notes ▸ Import: OneNote and other files (NoteImport). */}
+          <NoteImportButton />
+          {/* On the phone the top bar's + does this. */}
+          {!phoneScreens() && (
+            <button type="button" className={btnPrimary} onClick={() => newNote()}>
+              {t('c.add_new')}
+            </button>
+          )}
+        </div>
       </div>
 
       <ListSearch value={query} onChange={setQuery} label={t('notes.search')} />

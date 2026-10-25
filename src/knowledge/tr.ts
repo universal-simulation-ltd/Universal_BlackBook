@@ -238,6 +238,38 @@ Bir cihazda parola ifadesini değiştirdiğinizde diğer cihazlarınız kaydetme
 
 Diğer cihaz yeniyse "Her şeyi değiştir" seçeneğini seçin. Cihazda zaten kendi kişileri varsa "Mevcutlara ekle" seçeneğini seçin; iki rehber birleştirilir.`,
   },
+  {
+    id: 'notes-from-onenote',
+    title: "Notlarınızı OneNote’tan getirin",
+    summary: "OneNote’tan sayfaları dışa aktarın, sonra dosyaları Notlar’a içe aktarın.",
+    group: "Nasıl çalışır",
+    body: `BlackBook bir OneNote not defterini kendisi açamaz, ancak OneNote’un dışa aktardığı dosyaları okur. Her şey cihazınızda okunur; hiçbir şey yüklenmez.
+
+## Windows için OneNote
+
+1. Getirmek istediğiniz sayfayı veya bölümü açın.
+2. **Dosya** ▸ **Dışarı Aktar**’ı seçin.
+3. **Geçerli Olanı Dışarı Aktar** altında **Sayfa** veya **Bölüm**’ü seçin.
+4. **Biçim Seçin** altında **Word Belgesi** (.docx)’i ya da Word sunulmuyorsa **Tek Dosya Web Sayfası** (.mht)’yı seçin.
+5. **Dışarı Aktar**’ı seçin ve dosyayı kaydedin.
+
+Not defterinin tamamı Word’e aktarılamaz: bölüm bölüm aktarın.
+
+## Mac’te veya web’de OneNote
+
+Microsoft’a göre Mac için OneNote ve web için OneNote henüz sayfa dışa aktaramıyor. Not defterini Windows için OneNote’ta açın (web’de: **Düzenleme** ▸ **Masaüstü Uygulamasında Aç**) ya da sayfaları tek tek kopyalayın: sayfadaki her şeyi seçin, kopyalayın, bir metin veya Word belgesine yapıştırıp kaydedin.
+
+## BlackBook’a içe aktarma
+
+**Notlar** sekmesini açıp **İçe aktar**’ı seçin. Birden çok dosyayı aynı anda seçebilirsiniz: Word (.docx), web sayfaları (.html, .htm, .mht), düz metin (.txt) ve Markdown (.md).
+
+- Birden çok OneNote sayfası içeren bir Word dosyası, her sayfa başlığında bölünerek sayfa başına bir nota dönüşür.
+- Her notun başlığı sayfa başlığıdır; yoksa ilk başlık, o da yoksa dosyanın adı.
+- Metin düz metin olarak gelir: paragraflar ve listeler korunur; biçimlendirme, resimler, çizimler ve ekler korunmaz.
+- OneNote sayfanın tarihini başlığın altına yazdıysa, bu notun tarihi olur.
+
+Bir şey eklenmeden önce nelerin bulunduğunu görürsünüz.`,
+  },
 ]
 
 export default articles

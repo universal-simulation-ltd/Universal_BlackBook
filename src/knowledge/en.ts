@@ -238,6 +238,38 @@ When you change the passphrase on one device, your other devices stop saving and
 
 If the other device is new, choose Replace everything. If it already has people of its own, choose Add to what's here and the two books are merged.`,
   },
+  {
+    id: 'notes-from-onenote',
+    title: "Bring your notes from OneNote",
+    summary: "Export pages from OneNote, then import the files into Notes.",
+    group: "How it works",
+    body: `BlackBook cannot open a OneNote notebook itself, but it reads the files OneNote exports. Everything is read on your device; nothing is uploaded.
+
+## OneNote for Windows
+
+1. Open the page or section you want to bring across.
+2. Choose **File** ▸ **Export**.
+3. Under **Export Current**, choose **Page** or **Section**.
+4. Under **Select Format**, choose **Word Document** (.docx), or **Single File Web Page** (.mht) if Word is not offered.
+5. Choose **Export** and save the file.
+
+A whole notebook cannot be exported to Word: export it a section at a time.
+
+## OneNote on a Mac or on the web
+
+Microsoft says OneNote for Mac and OneNote for the web cannot export pages yet. Open the notebook in OneNote for Windows (on the web: **Editing** ▸ **Open in Desktop App**), or copy one page at a time: select everything on the page, copy it, paste it into a plain text or Word document, and save that.
+
+## Importing into BlackBook
+
+Open the **Notes** tab and choose **Import**. You can pick several files at once: Word (.docx), web pages (.html, .htm, .mht), plain text (.txt) and Markdown (.md).
+
+- A Word file holding several OneNote pages becomes one note per page, split at each page title.
+- Each note's title is the page title, else its first heading, else the file's name.
+- The text comes across as plain text: paragraphs and lists are kept; formatting, pictures, drawings and attachments are not.
+- When OneNote wrote the page's date under its title, that becomes the note's date.
+
+You see what was found before anything is added.`,
+  },
 ]
 
 export default articles

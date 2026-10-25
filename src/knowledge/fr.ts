@@ -238,6 +238,38 @@ Quand vous changez la phrase secrète sur un appareil, vos autres appareils cess
 
 Si l’autre appareil est neuf, choisissez Tout remplacer. S’il contient déjà ses propres contacts, choisissez Ajouter à l’existant et les deux carnets sont fusionnés.`,
   },
+  {
+    id: 'notes-from-onenote',
+    title: "Rapatrier vos notes de OneNote",
+    summary: "Exportez des pages de OneNote, puis importez les fichiers dans Notes.",
+    group: "Fonctionnement",
+    body: `BlackBook ne peut pas ouvrir lui-même un bloc-notes OneNote, mais il lit les fichiers que OneNote exporte. Tout est lu sur votre appareil ; rien n’est envoyé.
+
+## OneNote pour Windows
+
+1. Ouvrez la page ou la section à rapatrier.
+2. Choisissez **Fichier** ▸ **Exporter**.
+3. Sous **Exporter l’élément actif**, choisissez **Page** ou **Section**.
+4. Sous **Sélectionner le format**, choisissez **Document Word** (.docx), ou **Page Web à fichier unique** (.mht) si Word n’est pas proposé.
+5. Choisissez **Exporter** et enregistrez le fichier.
+
+Un bloc-notes entier ne peut pas être exporté en Word : exportez-le section par section.
+
+## OneNote sur Mac ou sur le web
+
+D’après Microsoft, OneNote pour Mac et OneNote pour le web ne peuvent pas encore exporter de pages. Ouvrez le bloc-notes dans OneNote pour Windows (sur le web : **Modification** ▸ **Ouvrir dans l’application de bureau**), ou copiez une page à la fois : sélectionnez tout le contenu de la page, copiez-le, collez-le dans un document texte ou Word, puis enregistrez-le.
+
+## Importer dans BlackBook
+
+Ouvrez l’onglet **Notes** et choisissez **Importer**. Vous pouvez choisir plusieurs fichiers à la fois : Word (.docx), pages web (.html, .htm, .mht), texte brut (.txt) et Markdown (.md).
+
+- Un fichier Word contenant plusieurs pages OneNote devient une note par page, découpée à chaque titre de page.
+- Le titre de chaque note est le titre de la page, sinon son premier intertitre, sinon le nom du fichier.
+- Le texte arrive en texte brut : paragraphes et listes sont conservés ; la mise en forme, les images, les dessins et les pièces jointes ne le sont pas.
+- Si OneNote a écrit la date de la page sous son titre, elle devient la date de la note.
+
+Vous voyez ce qui a été trouvé avant que quoi que ce soit soit ajouté.`,
+  },
 ]
 
 export default articles

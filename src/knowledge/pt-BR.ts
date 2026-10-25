@@ -238,6 +238,38 @@ Quando você muda a frase secreta em um aparelho, os outros param de salvar e pe
 
 Se o outro aparelho for novo, escolha Substituir tudo. Se ele já tiver pessoas próprias, escolha Adicionar ao que já existe e as duas agendas são mescladas.`,
   },
+  {
+    id: 'notes-from-onenote',
+    title: "Traga suas notas do OneNote",
+    summary: "Exporte páginas do OneNote e importe os arquivos em Notas.",
+    group: "Como funciona",
+    body: `O BlackBook não abre um bloco de anotações do OneNote sozinho, mas lê os arquivos que o OneNote exporta. Tudo é lido no seu aparelho; nada é enviado.
+
+## OneNote para Windows
+
+1. Abra a página ou a seção que você quer trazer.
+2. Escolha **Arquivo** ▸ **Exportar**.
+3. Em **Exportar Atual**, escolha **Página** ou **Seção**.
+4. Em **Selecionar Formato**, escolha **Documento do Word** (.docx), ou **Página da Web de Arquivo Único** (.mht) se o Word não aparecer.
+5. Escolha **Exportar** e salve o arquivo.
+
+Um bloco de anotações inteiro não pode ser exportado para o Word: exporte uma seção de cada vez.
+
+## OneNote no Mac ou na web
+
+Segundo a Microsoft, o OneNote para Mac e o OneNote para a web ainda não exportam páginas. Abra o bloco no OneNote para Windows (na web: **Edição** ▸ **Abrir no Aplicativo da Área de Trabalho**) ou copie uma página de cada vez: selecione tudo na página, copie, cole num documento de texto ou do Word e salve.
+
+## Importar no BlackBook
+
+Abra a aba **Notas** e escolha **Importar**. Você pode escolher vários arquivos de uma vez: Word (.docx), páginas da web (.html, .htm, .mht), texto simples (.txt) e Markdown (.md).
+
+- Um arquivo do Word com várias páginas do OneNote vira uma nota por página, separada em cada título de página.
+- O título de cada nota é o título da página; senão, o primeiro cabeçalho; senão, o nome do arquivo.
+- O texto chega como texto simples: parágrafos e listas são mantidos; formatação, imagens, desenhos e anexos, não.
+- Se o OneNote escreveu a data da página sob o título, ela vira a data da nota.
+
+Você vê o que foi encontrado antes de qualquer coisa ser adicionada.`,
+  },
 ]
 
 export default articles

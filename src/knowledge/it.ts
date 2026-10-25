@@ -238,6 +238,38 @@ Quando cambi la passphrase su un dispositivo, gli altri smettono di salvare e ch
 
 Se l’altro dispositivo è nuovo, scegli Sostituisci tutto. Se ha già dei contatti suoi, scegli Aggiungi a quello che c’è e le due rubriche vengono unite.`,
   },
+  {
+    id: 'notes-from-onenote',
+    title: "Porta le tue note da OneNote",
+    summary: "Esporta le pagine da OneNote, poi importa i file in Note.",
+    group: "Come funziona",
+    body: `BlackBook non può aprire da solo un blocco appunti di OneNote, ma legge i file che OneNote esporta. Tutto viene letto sul tuo dispositivo; nulla viene caricato.
+
+## OneNote per Windows
+
+1. Apri la pagina o la sezione che vuoi portare.
+2. Scegli **File** ▸ **Esporta**.
+3. In **Esporta corrente**, scegli **Pagina** o **Sezione**.
+4. In **Seleziona formato**, scegli **Documento di Word** (.docx), oppure **Pagina Web in file unico** (.mht) se Word non è proposto.
+5. Scegli **Esporta** e salva il file.
+
+Un intero blocco appunti non si può esportare in Word: esportalo una sezione alla volta.
+
+## OneNote su Mac o sul web
+
+Secondo Microsoft, OneNote per Mac e OneNote per il web non possono ancora esportare pagine. Apri il blocco appunti in OneNote per Windows (sul web: **Modifica** ▸ **Apri nell’app desktop**) oppure copia una pagina alla volta: seleziona tutto nella pagina, copialo, incollalo in un documento di testo o di Word e salvalo.
+
+## Importare in BlackBook
+
+Apri la scheda **Note** e scegli **Importa**. Puoi scegliere più file insieme: Word (.docx), pagine web (.html, .htm, .mht), testo semplice (.txt) e Markdown (.md).
+
+- Un file Word con più pagine di OneNote diventa una nota per pagina, divisa a ogni titolo di pagina.
+- Il titolo di ogni nota è il titolo della pagina, altrimenti il primo titoletto, altrimenti il nome del file.
+- Il testo arriva come testo semplice: paragrafi ed elenchi restano; formattazione, immagini, disegni e allegati no.
+- Se OneNote ha scritto la data della pagina sotto il titolo, diventa la data della nota.
+
+Vedi cosa è stato trovato prima che venga aggiunto qualcosa.`,
+  },
 ]
 
 export default articles
