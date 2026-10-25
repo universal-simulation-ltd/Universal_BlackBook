@@ -304,6 +304,29 @@ notes from OneNote** has the export steps. The `.docx` reader is
 [fflate](https://github.com/101arrowz/fflate) (MIT) to unzip plus a small XML
 scanner of our own (`src/lib/noteImport.ts`).
 
+### Locations in parts, with real place lists (offline)
+
+A note's **Link to location** and a contact's **Address** are Place (notes:
+optional, "Mum's"), Street, City, County, Country (James, 2026-10-25) —
+`src/lib/geo.ts`, `src/components/LocationFields.tsx`. Country starts as this
+device's (its language region). City, County and Country suggest from real
+lists while you type, narrowed by the country (and county for towns); picking
+a town fills its county and country; anything not in a list is kept as typed.
+The County box is called what the country calls it: County (UK, Ireland),
+State, Province or Region. **No coordinates are stored**: the first location
+shape (a place name, an address and latitude/longitude) is read in as Place and
+Street, coordinates dropped. A contact keeps `address` as the text of its parts,
+so CSV, sharing, search and older builds see the whole address. Backup file
+schema 4.
+
+The lists are GeoNames' (CC BY 4.0, credited in THIRD-PARTY-NOTICES and About):
+252 countries (named in the language on screen by the browser's own
+`Intl.DisplayNames`), 4,193 divisions (the UK's counties are GeoNames' second
+level), and the 69,960 towns of 5,000 people or more. `scripts/geo-build.mjs`
+builds them into `public/geo/`: **2.2 MB as files (cities.tsv 2.1 MB), about
+1.1 MB compressed**, fetched from the app's own files only when a location form
+(or the map) opens — never in the main bundle, never from anyone else.
+
 ## Locking the app
 
 **🔓 Lock with PIN** (🔒 **PIN lock on** once a PIN is set), beside the page title, and

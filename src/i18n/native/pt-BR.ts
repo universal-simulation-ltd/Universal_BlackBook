@@ -95,4 +95,5 @@ export const ptBR: Dict = {
   tune_pin_row: "Bloqueio por PIN",
   action_more: "Mais",
   tune_templates: "Modelos de notas",
+  about_geonames: "Listas de países, regiões e cidades · CC BY 4.0",
 }

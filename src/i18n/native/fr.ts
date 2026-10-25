@@ -95,4 +95,5 @@ export const fr: Dict = {
   tune_pin_row: "Verrou par PIN",
   action_more: "Plus",
   tune_templates: "Modèles de notes",
+  about_geonames: "Listes de pays, régions et villes · CC BY 4.0",
 }

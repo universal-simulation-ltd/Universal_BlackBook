@@ -9,6 +9,8 @@ import { BirthdayField } from './BirthdayField'
 import { EmailListForm } from './EmailListForm'
 import { TagPicker } from './TagPicker'
 import { PhoneContactLink } from './PhoneContactLink'
+import { LocationFields } from './LocationFields'
+import { newLocation } from './currentLocation'
 import { Modal } from './Modal'
 import { ExpandGlyph, NotesFullscreen } from './NotesFullscreen'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label, PinGlyph, textareaCls } from './ui'
@@ -120,6 +122,7 @@ export function ContactForm({ id }: { id: string }) {
           phone: existing.phone,
           company: existing.company,
           address: existing.address,
+          location: existing.location,
           tagIds: existing.tagIds,
           birthdate: existing.birthdate,
           notes: existing.notes,
@@ -249,23 +252,17 @@ export function ContactForm({ id }: { id: string }) {
           </div>
         )
       case 'address':
+        // In parts since 2026-10-25 (Street, City, County, Country, with
+        // suggestions); an address kept as one block reads in as the street.
         return (
-          <div key={k}>
-            <label className={label} htmlFor="cf-address">
-              {fieldLabel('address')}
-            </label>
-            <textarea
-              id="cf-address"
-              className={textareaCls}
-              // One block, the lines as they go on an envelope — see
-              // Contact.address for why it is not split into parts.
-              rows={3}
-              value={draft.address ?? ''}
-              onChange={(e) => patch({ address: e.target.value })}
-              placeholder={'12 High Street\nLeeds\nLS1 1AA'}
-              autoComplete="off"
+          <fieldset key={k}>
+            <legend className={label}>{fieldLabel('address')}</legend>
+            <LocationFields
+              withPlace={false}
+              value={draft.location ?? (draft.address?.trim() ? { street: draft.address } : newLocation())}
+              onChange={(location) => patch({ location })}
             />
-          </div>
+          </fieldset>
         )
       case 'birthday':
         return (
@@ -509,6 +506,7 @@ export function ContactForm({ id }: { id: string }) {
                 email: p.email || draft.email,
                 phone: p.phone || draft.phone,
                 address: p.address || draft.address,
+                ...(p.address ? { location: { street: p.address } } : {}),
                 birthdate: p.birthdate ?? draft.birthdate,
               })
               setMore(true)
@@ -612,7 +610,7 @@ function hasValue(k: Extra, draft: ContactDraft, tags: Tag[]): boolean {
     case 'phone':
       return draft.phone.trim() !== ''
     case 'address':
-      return (draft.address ?? '').trim() !== ''
+      return (draft.address ?? '').trim() !== '' || Boolean(draft.location?.street || draft.location?.city)
     case 'birthday':
       return Boolean(draft.birthdate)
     case 'tags':

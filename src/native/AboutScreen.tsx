@@ -43,6 +43,13 @@ export function AboutContent() {
             </span>
           </div>
         ))}
+        {/* Data, not code (2026-10-25): the place lists. */}
+        <button type="button" className="bb-row" onClick={() => open('https://www.geonames.org')}>
+          <span className="min-w-0 flex-1">
+            GeoNames
+            <span className="note">{t('about_geonames')}</span>
+          </span>
+        </button>
       </Group>
 
       <Credit />

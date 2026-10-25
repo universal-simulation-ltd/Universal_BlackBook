@@ -107,6 +107,7 @@ export const en = {
   tune_pin_row: "PIN lock",
   action_more: "More",
   tune_templates: "Note templates",
+  about_geonames: "Country, county and town lists · CC BY 4.0",
 } as const
 
 export type Key = keyof typeof en

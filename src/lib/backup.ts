@@ -13,6 +13,12 @@
 //
 //   { contacts, tags, todos, pages, settings, view }
 //
+// Schema 4 (2026-10-25, evening): a location is Place / Street / City /
+// County / Country (lib/geo.ts) on notes (`location`, was `place` with
+// coordinates) and contacts (`location`, beside the `address` text kept for
+// CSV and older builds). A schema-3 file opens with its places read into the
+// new shape and their coordinates dropped.
+//
 // Schema 3 (2026-10-25) adds, all optional: reminders on contacts and notes,
 // a contact's link to a phone contact, a note's linked contacts, place,
 // template and field values, the note templates themselves (`templates`), a
@@ -44,13 +50,14 @@ import { toTodo, mergeTodos, type Todo } from './todos'
 import { toReminders } from './reminders'
 import { isPattern } from './patterns'
 import { normaliseOrder, type Tab } from './tabs'
-import { mergeNotes, toContactIds, toPlace, type Note } from './notes'
+import { mergeNotes, toContactIds, type Note } from './notes'
+import { toLocation } from './geo'
 import { mergeTemplates, toFieldValues, toTemplates, TEMPLATE_LIMITS, type NoteTemplate } from './templates'
 import { toPhoneLink, type Contact, type Tag } from './types'
 
 export const BACKUP_PRODUCT = 'blackbook'
 export const BACKUP_KIND = 'backup'
-export const BACKUP_SCHEMA = 3
+export const BACKUP_SCHEMA = 4
 
 /** The app's own switches that travel with a backup (stores/settingsStore.ts). */
 export interface BackupSettings {
@@ -269,6 +276,7 @@ function parseContact(raw: unknown, known: Set<string>): Contact | null {
     notes,
     ...(toReminders(raw.reminders) ? { reminders: toReminders(raw.reminders) } : {}),
     ...(toPhoneLink(raw.phoneLink) ? { phoneLink: toPhoneLink(raw.phoneLink) } : {}),
+    ...(toLocation(raw.location) ? { location: toLocation(raw.location) } : {}),
     createdAt,
     updatedAt: time(raw.updatedAt, createdAt),
   }
@@ -305,7 +313,7 @@ function parseNote(raw: unknown): Note | null {
   const createdAt = time(raw.createdAt, EARLIEST)
   const reminders = toReminders(raw.reminders)
   const contactIds = toContactIds(raw.contactIds)
-  const place = toPlace(raw.place)
+  const location = toLocation(raw.location ?? raw.place)
   const fields = toFieldValues(raw.fields)
   const templateId = id(raw.templateId)
   return {
@@ -314,7 +322,7 @@ function parseNote(raw: unknown): Note | null {
     details,
     ...(reminders ? { reminders } : {}),
     ...(contactIds ? { contactIds } : {}),
-    ...(place ? { place } : {}),
+    ...(location ? { location } : {}),
     ...(templateId ? { templateId } : {}),
     ...(fields ? { fields } : {}),
     ...(optTime(raw.pinnedAt) ? { pinnedAt: optTime(raw.pinnedAt) } : {}),

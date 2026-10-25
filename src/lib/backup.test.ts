@@ -75,7 +75,7 @@ describe('backup file', () => {
     expect(opened.ok && opened.data.contacts.length).toBe(2)
   }, 20_000)
 
-  it('opens a schema-1 file (from before Notes) with no notes, and writes schema 3', async () => {
+  it('opens a schema-1 file (from before Notes) with no notes, and writes schema 4', async () => {
     const old = JSON.stringify({
       format: 'unisim-transfer',
       version: 1,
@@ -91,7 +91,7 @@ describe('backup file', () => {
     expect(opened.data.pages).toEqual([])
     // Schema 1's To-do switch was opt-in; on is the default now, and Notes is new.
     expect(opened.data.settings).toMatchObject({ todos: true, notes: true })
-    expect(JSON.parse((await packBackup(source())).text).schema).toBe(3)
+    expect(JSON.parse((await packBackup(source())).text).schema).toBe(4)
   })
 
   it('drops a note with no id or with nothing in it', () => {

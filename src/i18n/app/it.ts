@@ -661,4 +661,12 @@ export const appIt: Partial<Record<AppKey, string>> = {
   'sel.taken_off_other': "Tolte {count} persone da {list}.",
   'sel.left_out_one': "Esclusa {count} nota.",
   'sel.left_out_other': "Escluse {count} note.",
+  'loc.place': "Luogo (facoltativo)",
+  'loc.street': "Via",
+  'loc.city': "Città o paese",
+  'loc.county': "Contea",
+  'loc.state': "Stato",
+  'loc.province': "Provincia",
+  'loc.region': "Regione",
+  'loc.country': "Paese",
 }

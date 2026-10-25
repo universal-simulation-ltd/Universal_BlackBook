@@ -3,7 +3,10 @@ import { Capacitor } from '@capacitor/core'
 import { LinkifiedText } from '@unisim/sdk'
 import { copyText } from '../lib/clipboard'
 import { fold } from '../lib/filter'
-import { mapsUrl, noteText, parseCoords, type Note, type Place } from '../lib/notes'
+import { mapsUrl, noteText, type Note } from '../lib/notes'
+import { hasLocation, locationLines, type Location } from '../lib/geo'
+import { LocationFields } from './LocationFields'
+import { newLocation, useCurrentLocation } from './currentLocation'
 import { formatWhen, nextOccurrence } from '../lib/reminders'
 import { showValue, type NoteTemplate, type TemplateField } from '../lib/templates'
 import { usePageScrollLock } from '../lib/scrollLock'
@@ -263,7 +266,7 @@ function NoteView({ id }: { id: string }) {
         }}
       />
 
-      {note.place && <PlaceBlock place={note.place} />}
+      {note.location && hasLocation(note.location) && <LocationBlock loc={note.location} />}
 
       <div>
         <span className={label}>{t('todo.details')}</span>
@@ -328,7 +331,7 @@ function NoteView({ id }: { id: string }) {
   const layers = (
     <>
       {sheet === 'contacts' && <ContactPicker note={note} onClose={() => setSheet(null)} />}
-      {sheet === 'place' && <PlaceEditor note={note} onClose={() => setSheet(null)} />}
+      {sheet === 'place' && <LocationEditor note={note} onClose={() => setSheet(null)} />}
       {sheet === 'remind' && (
         <ReminderEditor
           onClose={() => setSheet(null)}
@@ -406,22 +409,21 @@ function Linked({ text }: { text: string }) {
   return <LinkifiedText text={text} theme={theme} linkClassName={linkClassName} />
 }
 
-/** The place, and Open in Maps: the phone's own maps app, OpenStreetMap on the website. */
-function PlaceBlock({ place }: { place: Place }) {
+/** The location, and Open in Maps: the phone's own maps app, OpenStreetMap on the website. */
+function LocationBlock({ loc }: { loc: Location }) {
   const t = useT()
-  const url = mapsUrl(place, Capacitor.getPlatform())
+  const url = mapsUrl(loc, Capacitor.getPlatform(), t.locale)
   const native = Capacitor.isNativePlatform()
   return (
     <div>
       <span className={label}>{t('nlink.location_label')}</span>
       <div className="rounded-xl border border-slate-800 bg-slate-900 px-3 py-2.5">
-        {place.name && <p className="break-words text-base font-medium text-slate-100">{place.name}</p>}
-        {place.address && <p className="whitespace-pre-line break-words text-sm text-slate-300">{place.address}</p>}
-        {place.lat !== undefined && place.lng !== undefined && (
-          <p className="text-xs tabular-nums text-slate-500">
-            {place.lat}, {place.lng}
+        {loc.place && <p className="break-words text-base font-medium text-slate-100">{loc.place}</p>}
+        {locationLines(loc, t.locale).map((l, i) => (
+          <p key={i} className="break-words text-sm text-slate-300">
+            {l}
           </p>
-        )}
+        ))}
         <a
           href={url}
           target="_blank"
@@ -522,66 +524,36 @@ function ContactPicker({ note, onClose }: { note: Note; onClose: () => void }) {
   )
 }
 
-/** Link to location: a name, an address and (if you have them) coordinates. */
-function PlaceEditor({ note, onClose }: { note: Note; onClose: () => void }) {
+/**
+ * Link to location: Place, Street, City, County, Country, with suggestions
+ * from the offline lists (LocationFields). A new one starts in this device's
+ * country, or — with Tune this app ▸ Fill in my current location — in the
+ * nearest town.
+ */
+function LocationEditor({ note, onClose }: { note: Note; onClose: () => void }) {
   const t = useT()
   const patch = useNoteStore((s) => s.patch)
-  const ids = useId()
-  const [name, setName] = useState(note.place?.name ?? '')
-  const [address, setAddress] = useState(note.place?.address ?? '')
-  const [coords, setCoords] = useState(
-    note.place?.lat !== undefined && note.place?.lng !== undefined ? `${note.place.lat}, ${note.place.lng}` : '',
-  )
-  const parsed = coords.trim() ? parseCoords(coords) : null
-  const badCoords = coords.trim() !== '' && parsed === null
-  const ok = !badCoords && (name.trim() !== '' || address.trim() !== '' || parsed !== null)
+  const [loc, setLoc] = useState<Location>(() => note.location ?? newLocation())
+  useCurrentLocation(!note.location, (here) => setLoc((l) => ({ ...l, ...here })))
+  const ok = hasLocation(loc)
   return (
     <Modal phone="sheet" title={t('nlink.location')} onClose={onClose}>
       <form
         className="space-y-4"
         onSubmit={(e) => {
           e.preventDefault()
-          if (!ok) return
-          void patch(note.id, {
-            place: { name: name.trim(), ...(address.trim() ? { address: address.trim() } : {}), ...(parsed ?? {}) },
-          })
+          void patch(note.id, { location: ok ? loc : undefined })
           onClose()
         }}
       >
-        <div>
-          <label htmlFor={`${ids}-n`} className={label}>
-            {t('place.name')}
-          </label>
-          <input id={`${ids}-n`} className={inputCls} value={name} placeholder={t('place.name_placeholder')} onChange={(e) => setName(e.target.value)} />
-        </div>
-        <div>
-          <label htmlFor={`${ids}-a`} className={label}>
-            {t('place.address')}
-          </label>
-          <textarea id={`${ids}-a`} className={textareaCls} rows={3} value={address} onChange={(e) => setAddress(e.target.value)} />
-        </div>
-        <div>
-          <label htmlFor={`${ids}-c`} className={label}>
-            {t('place.coords')}
-          </label>
-          <input
-            id={`${ids}-c`}
-            className={inputCls}
-            inputMode="decimal"
-            value={coords}
-            placeholder="51.5007, -0.1246"
-            aria-invalid={badCoords}
-            onChange={(e) => setCoords(e.target.value)}
-          />
-          {badCoords && <p className="mt-1 text-xs text-rose-300">{t('place.coords_bad')}</p>}
-        </div>
+        <LocationFields value={loc} onChange={setLoc} />
         <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-          {note.place ? (
+          {note.location ? (
             <button
               type="button"
               className={btnSubtle}
               onClick={() => {
-                void patch(note.id, { place: undefined })
+                void patch(note.id, { location: undefined })
                 onClose()
               }}
             >

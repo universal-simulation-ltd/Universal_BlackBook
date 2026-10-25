@@ -661,4 +661,12 @@ export const appTr: Partial<Record<AppKey, string>> = {
   'sel.taken_off_other': "{count} kişi {list} listesinden çıkarıldı.",
   'sel.left_out_one': "{count} not dışarıda bırakıldı.",
   'sel.left_out_other': "{count} not dışarıda bırakıldı.",
+  'loc.place': "Yer (isteğe bağlı)",
+  'loc.street': "Sokak",
+  'loc.city': "Şehir veya kasaba",
+  'loc.county': "İlçe",
+  'loc.state': "Eyalet",
+  'loc.province': "İl",
+  'loc.region': "Bölge",
+  'loc.country': "Ülke",
 }

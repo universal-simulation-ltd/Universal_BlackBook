@@ -661,4 +661,12 @@ export const appPtBR: Partial<Record<AppKey, string>> = {
   'sel.taken_off_other': "{count} pessoas tiradas de {list}.",
   'sel.left_out_one': "{count} nota deixada de fora.",
   'sel.left_out_other': "{count} notas deixadas de fora.",
+  'loc.place': "Lugar (opcional)",
+  'loc.street': "Rua",
+  'loc.city': "Cidade",
+  'loc.county': "Condado",
+  'loc.state': "Estado",
+  'loc.province': "Província",
+  'loc.region': "Região",
+  'loc.country': "País",
 }

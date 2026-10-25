@@ -724,6 +724,14 @@ export const appEn = {
   'sel.taken_off_other': "Took {count} people off {list}.",
   'sel.left_out_one': "Left out {count} note.",
   'sel.left_out_other': "Left out {count} notes.",
+  'loc.place': "Place (optional)",
+  'loc.street': "Street",
+  'loc.city': "City or town",
+  'loc.county': "County",
+  'loc.state': "State",
+  'loc.province': "Province",
+  'loc.region': "Region",
+  'loc.country': "Country",
 } as const
 
 export type AppKey = keyof typeof appEn

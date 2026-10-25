@@ -1,3 +1,4 @@
+import type { Location } from './geo'
 import type { Pattern } from './patterns'
 import type { Reminder } from './reminders'
 // The whole domain, in one file. A BlackBook is a list of people, a list of
@@ -83,6 +84,13 @@ export interface Contact {
    * lays one out differently. Optional, and absent on every earlier record.
    */
   address?: string
+  /**
+   * The address in parts (2026-10-25): Street, City, County, Country (lib/geo.ts),
+   * for suggestions and the map. `address` above stays as its text, so CSV,
+   * sharing, search and older builds keep working. A contact with only the
+   * old text reads it as the street.
+   */
+  location?: Location
   /** Many-to-many, by id. A contact may carry no tags at all. */
   tagIds: string[]
   /**

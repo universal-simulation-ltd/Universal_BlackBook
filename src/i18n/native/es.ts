@@ -95,4 +95,5 @@ export const es: Dict = {
   tune_pin_row: "Bloqueo con PIN",
   action_more: "Más",
   tune_templates: "Plantillas de notas",
+  about_geonames: "Listas de países, regiones y localidades · CC BY 4.0",
 }

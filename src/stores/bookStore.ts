@@ -7,6 +7,7 @@ import { listIdsOf } from '../lib/lists'
 import { useTodoStore } from './todoStore'
 import { nextSwatch, SWATCHES } from '../lib/palette'
 import type { Pattern } from '../lib/patterns'
+import { hasLocation, locationText, type Location } from '../lib/geo'
 import { planListImport, type ListRow } from '../lib/emailListImport'
 import {
   clearDefaultView as dbClearDefaultView,
@@ -201,6 +202,8 @@ export interface ContactDraft {
   company?: string
   /** Optional for the same reason as `company`. */
   address?: string
+  /** The address in parts (lib/geo.ts); when given, `address` is its text. */
+  location?: Location
   tagIds: string[]
   birthdate?: string
   notes: string
@@ -429,7 +432,13 @@ export const useBookStore = create<BookState>((set, get) => ({
       phone: draft.phone.trim(),
       company: draft.company?.trim() || undefined,
       // Trimmed at the ends only: the line breaks inside are the address.
-      address: draft.address?.trim() || undefined,
+      // In parts (draft.location) the text is made from them, so CSV,
+      // sharing, search and older builds keep the whole address.
+      ...(draft.location !== undefined
+        ? hasLocation(draft.location)
+          ? { location: draft.location, address: locationText(draft.location, currentT().locale) || undefined }
+          : { location: undefined, address: undefined }
+        : { address: draft.address?.trim() || undefined }),
       tagIds: draft.tagIds,
       birthdate: draft.birthdate,
       // ⚠️ Carried from the existing record, never from the draft. The form has

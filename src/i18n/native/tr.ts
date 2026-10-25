@@ -95,4 +95,5 @@ export const tr: Dict = {
   tune_pin_row: "PIN kilidi",
   action_more: "Daha fazla",
   tune_templates: "Not şablonları",
+  about_geonames: "Ülke, bölge ve yerleşim listeleri · CC BY 4.0",
 }

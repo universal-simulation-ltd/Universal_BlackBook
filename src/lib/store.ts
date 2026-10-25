@@ -19,6 +19,7 @@ import { toTodos, type Todo } from './todos'
 import { toNotes, type Note } from './notes'
 import { toReminders } from './reminders'
 import { isPattern } from './patterns'
+import { toLocation } from './geo'
 import { toTemplates, type NoteTemplate } from './templates'
 
 const DB_NAME = 'blackbook'
@@ -137,6 +138,7 @@ function toContact(raw: unknown): Contact | null {
     // drops every field it does not name.
     ...(toReminders(r.reminders) ? { reminders: toReminders(r.reminders) } : {}),
     ...(toPhoneLink(r.phoneLink) ? { phoneLink: toPhoneLink(r.phoneLink) } : {}),
+    ...(toLocation(r.location) ? { location: toLocation(r.location) } : {}),
     createdAt: typeof r.createdAt === 'number' ? r.createdAt : Date.now(),
     updatedAt: typeof r.updatedAt === 'number' ? r.updatedAt : Date.now(),
   }
