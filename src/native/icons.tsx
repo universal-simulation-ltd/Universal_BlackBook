@@ -103,6 +103,14 @@ export function IconMail() {
   )
 }
 
+export function IconMap() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6 shrink-0" {...stroke} aria-hidden>
+      <path d="M9 4 3.5 6v14L9 18l6 2 5.5-2V4L15 6 9 4ZM9 4v14M15 6v14" />
+    </svg>
+  )
+}
+
 export function IconMore() {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" fill="currentColor" aria-hidden>

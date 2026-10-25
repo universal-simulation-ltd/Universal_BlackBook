@@ -96,4 +96,5 @@ export const de: Dict = {
   action_more: "Mehr",
   tune_templates: "Notizvorlagen",
   about_geonames: "Länder-, Regionen- und Ortslisten · CC BY 4.0",
+  about_map_privacy: "Die Karte kommt vom freien Kachelserver von OpenFreeMap, und erst wenn du sie öffnest: Dieser Server sieht den Ausschnitt auf dem Bildschirm, nie, was in deinem Buch steht. Dein Standort wird, wenn du ihn einschaltest, auf diesem Telefon zu einem Ort und nie gespeichert.",
 }

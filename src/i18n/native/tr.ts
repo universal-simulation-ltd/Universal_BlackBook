@@ -96,4 +96,5 @@ export const tr: Dict = {
   action_more: "Daha fazla",
   tune_templates: "Not şablonları",
   about_geonames: "Ülke, bölge ve yerleşim listeleri · CC BY 4.0",
+  about_map_privacy: "Harita OpenFreeMap’in ücretsiz döşeme sunucusundan gelir ve yalnızca açtığınızda: o sunucu ekrandaki bölgeyi görür, rehberinizde olanı asla. Konumunuz, açarsanız, bu telefonda bir yerleşime dönüştürülür ve asla saklanmaz.",
 }

@@ -96,4 +96,5 @@ export const it: Dict = {
   action_more: "Altro",
   tune_templates: "Modelli di note",
   about_geonames: "Elenchi di paesi, regioni e località · CC BY 4.0",
+  about_map_privacy: "La mappa arriva dal server di tasselli gratuito di OpenFreeMap, e solo quando la apri: quel server vede la zona sullo schermo, mai ciò che c’è nella tua rubrica. La tua posizione, se la attivi, diventa una località su questo telefono e non viene conservata.",
 }

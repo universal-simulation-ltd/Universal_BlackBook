@@ -108,6 +108,9 @@ export default defineConfig(({ mode }) => {
         },
         workbox: {
           navigateFallback: `${BASE_PATH}index.html`,
+          // The map (MapLibre, ~1 MB) is fetched only when the map is opened,
+          // never precached in the background (2026-10-25).
+          globIgnores: ['**/maplibre-gl-*', '**/MapView-*'],
         },
         devOptions: { enabled: false },
       })]),

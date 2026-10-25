@@ -96,4 +96,5 @@ export const es: Dict = {
   action_more: "Más",
   tune_templates: "Plantillas de notas",
   about_geonames: "Listas de países, regiones y localidades · CC BY 4.0",
+  about_map_privacy: "El mapa viene del servidor gratuito de teselas de OpenFreeMap, y solo cuando lo abres: ese servidor ve la zona en pantalla, nunca lo que hay en tu libreta. Tu ubicación, si la activas, se convierte en una localidad en este teléfono y no se guarda.",
 }

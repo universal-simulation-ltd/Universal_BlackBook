@@ -96,4 +96,5 @@ export const ptBR: Dict = {
   action_more: "Mais",
   tune_templates: "Modelos de notas",
   about_geonames: "Listas de países, regiões e cidades · CC BY 4.0",
+  about_map_privacy: "O mapa vem do servidor gratuito de blocos do OpenFreeMap, e só quando você o abre: esse servidor vê a área na tela, nunca o que há na sua agenda. Sua localização, se você ligar, vira uma cidade neste celular e nunca é guardada.",
 }

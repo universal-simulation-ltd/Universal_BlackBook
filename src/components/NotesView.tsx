@@ -13,6 +13,7 @@ import { compareNotes, matchesNote, noteText, preview, type Note } from '../lib/
 import { useNoteStore } from '../stores/noteStore'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle } from './ui'
 import { NoteImportButton } from './NoteImport'
+import { usePanelStore } from '../stores/panelStore'
 import { phoneScreens } from '../native/shell'
 import { useT } from '../i18n'
 
@@ -108,6 +109,12 @@ export function NotesView() {
           <p className="text-sm text-slate-500">{t('notes.intro')}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {/* The map's on the phone's top bar; here a button. */}
+          {!phoneScreens() && (
+            <button type="button" className={btnGhost} onClick={() => usePanelStore.getState().open('map')}>
+              {t('map.title')}
+            </button>
+          )}
           {/* Notes ▸ Import: OneNote and other files (NoteImport). */}
           <NoteImportButton />
           {/* On the phone the top bar's + does this. */}

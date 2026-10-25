@@ -27,6 +27,7 @@ export function AboutContent() {
 
       <p className="mt-5 text-[16px] leading-relaxed text-slate-200">{t('about_what')}</p>
       <p className="mt-3 text-[16px] leading-relaxed text-slate-200">{t('about_private')}</p>
+      <p className="mt-3 text-[14px] leading-relaxed text-slate-400">{t('about_map_privacy')}</p>
 
       <Group title={t('about_paperwork')}>
         <LinkRow label={t('about_privacy')} onClick={() => open(PRIVACY_URL)} />

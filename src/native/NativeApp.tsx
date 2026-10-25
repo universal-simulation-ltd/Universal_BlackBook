@@ -19,7 +19,7 @@
 // same stored default as the website's tabs); Tune ▸ Reset to defaults
 // clears it.
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { withShownOrder } from '../lib/tabs'
 import { requestSearch, useDefaultView } from '@unisim/sdk'
 import { availableTabs, LockLink, SyncStatus, useContactPicker, type Tab } from '../appParts'
@@ -43,7 +43,7 @@ import { useSettingsStore } from '../stores/settingsStore'
 import { AboutContent } from './AboutScreen'
 import { ContactActions } from './ContactActions'
 import { useT, type Key } from '../i18n'
-import { IconBook, IconContactsBook, IconFile, IconLists, IconNote, IconPerson, IconPlus, IconTodo, IconTune, Ribbon } from './icons'
+import { IconMap, IconBook, IconContactsBook, IconFile, IconLists, IconNote, IconPerson, IconPlus, IconTodo, IconTune, Ribbon } from './icons'
 import { PhoneKitContext, type PhoneKit } from './kit'
 import { ArticleBody, KnowledgeList, useArticles } from './KnowledgeScreen'
 import { Page, Sheet, SheetRow } from './layers'
@@ -56,6 +56,9 @@ import { NoteLayers } from '../components/NoteView'
 import { TemplateManager } from '../components/TemplateManager'
 import { onNotificationTap, scheduleReminders } from './notify'
 import './native.css'
+
+// The map (and MapLibre with it) loads only when it is opened.
+const MapView = lazy(() => import('../components/MapView').then((m) => ({ default: m.MapView })))
 
 type PhoneTab = Tab | 'tune'
 
@@ -244,6 +247,11 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
               <Ribbon />
               <span className="truncate">BlackBook</span>
             </span>
+            {(current === 'contacts' || current === 'notes') && (
+              <button type="button" className="bb-iconbtn" aria-label={t('map.title')} onClick={() => openPanel('map')}>
+                <IconMap />
+              </button>
+            )}
             {current === 'contacts' && (
               <button type="button" className="bb-iconbtn" aria-label={t('add_contact')} aria-haspopup="dialog" onClick={() => setAdding(true)}>
                 <IconPlus />
@@ -338,6 +346,11 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
         <NoteLayers />
         {panel === 'tags' && <TagManager onClose={closePanel} />}
         {panel === 'templates' && <TemplateManager onClose={closePanel} />}
+        {panel === 'map' && (
+          <Suspense fallback={null}>
+            <MapView onClose={closePanel} />
+          </Suspense>
+        )}
         {panel === 'io' && <ImportExport onClose={closePanel} />}
         {panel === 'cloud' && <CloudPanel onClose={closePanel} />}
         {panel === 'lock' && <LockPanel onClose={closePanel} />}

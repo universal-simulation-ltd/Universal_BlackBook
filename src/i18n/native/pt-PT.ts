@@ -96,4 +96,5 @@ export const ptPT: Dict = {
   action_more: "Mais",
   tune_templates: "Modelos de notas",
   about_geonames: "Listas de países, regiões e localidades · CC BY 4.0",
+  about_map_privacy: "O mapa vem do servidor gratuito de mosaicos do OpenFreeMap, e só quando o abre: esse servidor vê a zona no ecrã, nunca o que há na sua agenda. A sua localização, se a ligar, passa a uma localidade neste telemóvel e nunca é guardada.",
 }

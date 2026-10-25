@@ -136,6 +136,19 @@ page that pretended otherwise would look like a lie.
   how many people have the app.
 - **The changelog and update notice**, which is just fetching a list of
   releases.
+- **The map, only when you open it.** The Map view draws a map from
+  [OpenFreeMap](https://openfreemap.org)'s free tile server
+  (`tiles.openfreemap.org`): opening it fetches the map's style, tiles, fonts
+  and symbols for the area shown, which tells that server your device's IP
+  address and which part of the world is on screen — never who or what is in
+  your book. The pins are placed on the device from BlackBook's own town list,
+  and nothing is sent about them. Until you open the map, nothing is fetched
+  from that server at all.
+- **Your location, only if you ask.** With Tune this app ▸ "Fill in my
+  current location" on, the device is asked where it is; the nearest town is
+  found in BlackBook's own list on the device, and the position is forgotten.
+  It is not stored and not sent anywhere. The place lists (GeoNames) are part
+  of the app's own files.
 
 **There is no third-party analytics, no tracking pixel, and no advertising
 script.** The website's security policy ([`public/_headers`](public/_headers))

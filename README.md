@@ -337,6 +337,20 @@ the position is forgotten. Nothing is sent anywhere and no coordinates are
 stored. iOS: `NSLocationWhenInUseUsageDescription` in 8 languages
 (`ios/App/App/*.lproj/InfoPlist.strings`); Android: `ACCESS_COARSE_LOCATION` only.
 
+### The map
+
+**Map** (the map icon in the phone's top bar on Contacts and Notes; a Map
+button on the website) shows contacts and notes by town: a pin per town with
+how many are there, placed at the town's position from the bundled list (no
+coordinates are stored, so town-level is the precision). Tap a pin for a sheet
+of who and what is there; filter by Contacts / Notes, tag and template (a row
+that scrolls). MapLibre GL JS (BSD-3-Clause) draws OpenFreeMap's free tiles
+(no key, no account; positron for Light, dark for Dark), credited on the map.
+**Both load only when the map is opened**: MapLibre is its own chunk (1.06 MB,
+285 kB compressed; not precached by the service worker), and the tile server
+is first contacted then. PRIVACY.md and About say so. The website's
+Content-Security-Policy allows `https://tiles.openfreemap.org` for it.
+
 ## Locking the app
 
 **🔓 Lock with PIN** (🔒 **PIN lock on** once a PIN is set), beside the page title, and

@@ -284,3 +284,21 @@ dialog::backdrop {
 .bb-drop-right::after {
   right: -5px;
 }
+
+/* The map's pins (MapView): a round badge per town with how many are there. */
+.bb-pin {
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 2px solid #fff;
+  background: var(--color-orange-600);
+  color: #fff;
+  font: 700 13px/26px system-ui, sans-serif;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+}
+.bb-pin:focus-visible {
+  outline: 3px solid var(--color-orange-300);
+  outline-offset: 2px;
+}

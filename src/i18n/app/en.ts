@@ -735,6 +735,16 @@ export const appEn = {
   'pref.fill_location': "Fill in my current location for new notes and contacts",
   'pref.fill_location_note': "Asks the device where it is, finds the nearest town in BlackBook's own list on the device, and fills in City, County and Country. Nothing is sent anywhere and the position is not kept.",
   'pref.fill_location_refused': "Location is not allowed for BlackBook, so this stays off. You can allow it in the device's settings.",
+  'map.title': "Map",
+  'map.filter': "Show on the map",
+  'map.things_one': "{count} here",
+  'map.things_other': "{count} here",
+  'map.empty': "Nobody and nothing has a town yet. Give a contact's address or a note's location a city, and it shows here.",
+  'map.failed': "The map could not load (it needs the internet). Everything else works offline.",
+  'map.unplaced_one': "{count} town is not in the list, so it is not on the map.",
+  'map.unplaced_other': "{count} towns are not in the list, so they are not on the map.",
+  'map.contact': "Contact",
+  'map.note': "Note",
 } as const
 
 export type AppKey = keyof typeof appEn

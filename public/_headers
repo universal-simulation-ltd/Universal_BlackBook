@@ -18,7 +18,10 @@
 #   • connect-src: Supabase (sign-in, the encrypted online copy, the usage
 #     event, and the anonymous daily open count on the website), the suite changelog, Google
 #     sign-in.
-#   • worker-src 'self' blob:: the PWA service worker, and supabase-js's
+#   • connect-src also has https://tiles.openfreemap.org: the map view's
+#     style, tiles, fonts and sprites (2026-10-25), fetched only once the map
+#     is opened.
+#   • worker-src 'self' blob:: the PWA service worker, MapLibre's tile workers, and supabase-js's
 #     realtime heartbeat worker, which it builds from a blob: URL.
 #   • frame-src: Google sign-in only.
 #   • img-src https:: account avatars and the suite's app icons.
@@ -35,4 +38,4 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: SAMEORIGIN
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-hVaKprp/X8bOpWAQQOEvfdanU3VNh3qGz3boOH09OWg=' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' data: blob: https://rygfxgalojojppxmhddo.supabase.co wss://rygfxgalojojppxmhddo.supabase.co https://changelog.unisim.co.uk https://accounts.google.com/gsi/; worker-src 'self' blob:; frame-src 'self' https://accounts.google.com/gsi/; media-src 'self' blob: data:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-hVaKprp/X8bOpWAQQOEvfdanU3VNh3qGz3boOH09OWg=' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' data: blob: https://rygfxgalojojppxmhddo.supabase.co wss://rygfxgalojojppxmhddo.supabase.co https://changelog.unisim.co.uk https://accounts.google.com/gsi/ https://tiles.openfreemap.org; worker-src 'self' blob:; frame-src 'self' https://accounts.google.com/gsi/; media-src 'self' blob: data:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'

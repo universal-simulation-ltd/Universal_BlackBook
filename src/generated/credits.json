@@ -2,7 +2,7 @@
   "app": "universal-blackbook",
   "appVersion": "0.1.0",
   "generated": "2026-10-25",
-  "noticesCount": 23,
+  "noticesCount": 49,
   "ships": [
     {
       "name": "@capacitor-community/contacts",
@@ -32,6 +32,15 @@
       "authors": [
         "Arjun Barrett"
       ],
+      "source": "node_modules"
+    },
+    {
+      "name": "maplibre-gl",
+      "version": "5.24.0",
+      "licence": "BSD-3-Clause",
+      "repo": "https://github.com/maplibre/maplibre-gl-js",
+      "homepage": "https://maplibre.org/",
+      "authors": [],
       "source": "node_modules"
     },
     {

@@ -108,6 +108,7 @@ export const en = {
   action_more: "More",
   tune_templates: "Note templates",
   about_geonames: "Country, county and town lists · CC BY 4.0",
+  about_map_privacy: "The map is drawn from OpenFreeMap's free tile server, and only once you open it: that server sees the area on screen, never what is in your book. Your location, if you turn it on, is turned into a town on this phone and never kept.",
 } as const
 
 export type Key = keyof typeof en

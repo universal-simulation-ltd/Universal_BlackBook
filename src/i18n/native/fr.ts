@@ -96,4 +96,5 @@ export const fr: Dict = {
   action_more: "Plus",
   tune_templates: "Modèles de notes",
   about_geonames: "Listes de pays, régions et villes · CC BY 4.0",
+  about_map_privacy: "La carte vient du serveur de tuiles gratuit d’OpenFreeMap, et seulement quand tu l’ouvres : ce serveur voit la zone affichée, jamais ce qu’il y a dans ton carnet. Ta position, si tu l’actives, devient une ville sur ce téléphone et n’est jamais gardée.",
 }

@@ -30,7 +30,7 @@ import { LockPanel, LockScreen } from './components/Lock'
 import { DueReminders } from './components/Reminders'
 import { NoteLayers } from './components/NoteView'
 import { TemplateManager } from './components/TemplateManager'
-import { btnPrimary } from './components/ui'
+import { btnGhost, btnPrimary } from './components/ui'
 import { allOnline } from './lib/merge'
 import { forgetVault, loadSyncMeta } from './lib/store'
 import { useBookStore } from './stores/bookStore'
@@ -71,6 +71,8 @@ if (PHONE) {
   followThemeWithStatusBar()
 }
 const NativeApp = lazy(() => import('./native/NativeApp'))
+// The map (and MapLibre with it) loads only when it is opened.
+const MapView = lazy(() => import('./components/MapView').then((m) => ({ default: m.MapView })))
 
 /** How long to wait after the last edit before pushing to the vault. */
 const AUTOSAVE_DELAY = 2500
@@ -334,6 +336,9 @@ export default function App() {
               {/* With the device's own contacts to offer, the two ways to add
                   somebody are one Add new menu (James, 2026-10-23, the phone
                   app's + sheet); without them Add new is still one click. */}
+              <button type="button" className={btnGhost} onClick={() => setPanel('map')}>
+                {tr('map.title')}
+              </button>
               {canPick ? (
                 <AddMenu onNew={() => void newContact()} onPick={pick} />
               ) : (
@@ -428,6 +433,11 @@ export default function App() {
       <TuneThisApp />
       {panel === 'tags' && <TagManager onClose={closePanel} />}
       {panel === 'templates' && <TemplateManager onClose={closePanel} />}
+      {panel === 'map' && (
+        <Suspense fallback={null}>
+          <MapView onClose={closePanel} />
+        </Suspense>
+      )}
       {panel === 'io' && <ImportExport onClose={closePanel} />}
       {panel === 'cloud' && <CloudPanel onClose={closePanel} />}
       {panel === 'lock' && <LockPanel onClose={closePanel} />}
