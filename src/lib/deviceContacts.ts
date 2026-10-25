@@ -41,7 +41,7 @@
 // The cause is Vite's `__vitePreload` wrapper around a code-split chunk under
 // the `capacitor://localhost` scheme. **Never lazily import a Capacitor plugin
 // in this suite** — the saving is a few KB and the failure mode is silence.
-import { Capacitor } from '@capacitor/core'
+import { Capacitor, registerPlugin } from '@capacitor/core'
 import { Contacts, type ContactPayload } from '@capacitor-community/contacts'
 import { parseBirthdayInput } from './birthday'
 import { digits, fold } from './filter'
@@ -50,7 +50,10 @@ import type { Contact } from './types'
 import type { ContactDraft } from '../stores/bookStore'
 
 /** What a picked person looks like before it becomes a Contact. */
-export type PickedContact = Omit<ContactDraft, 'id'>
+export type PickedContact = Omit<ContactDraft, 'id'> & {
+  /** The phone's own id for the contact (the native picker only): what a link stores. */
+  deviceContactId?: string
+}
 
 /** Everything this app has any use for. Nothing else is requested. */
 const PROJECTION = { name: true, phones: true, emails: true, birthday: true, postalAddresses: true } as const
@@ -121,6 +124,41 @@ export async function pickOneContact(): Promise<PickedContact | null> {
  * store — so it asks first and reports a refusal as something the UI can
  * explain rather than as a raw plugin string.
  */
+/**
+ * One phone contact by its id, for "Update from phone contact" on a linked
+ * person. Null when it is no longer on this phone. Reading one contact by id
+ * needs the contacts permission (the picker does not), so it asks first.
+ */
+export async function readDeviceContact(id: string): Promise<PickedContact | null> {
+  if (!Capacitor.isNativePlatform()) return null
+  const permission = await Contacts.requestPermissions()
+  if (permission.contacts !== 'granted' && permission.contacts !== 'limited') throw new ContactsPermissionError()
+  try {
+    const { contact } = await Contacts.getContact({ contactId: id, projection: { ...PROJECTION } })
+    return contact ? toDraft(contact) : null
+  } catch (e) {
+    const err = asPermissionError(e)
+    if (err instanceof ContactsPermissionError) throw err
+    return null
+  }
+}
+
+/**
+ * Show the linked contact in the phone's own Contacts card: an app-local
+ * plugin (ios/App/App/PhoneContactPlugin.swift, android …/PhoneContactPlugin.java),
+ * since no npm plugin opens a contact by id. Resolves false when it is gone.
+ */
+const PhoneContact = registerPlugin<{ open(options: { id: string }): Promise<{ opened: boolean }> }>('PhoneContact')
+
+export async function openDeviceContact(id: string): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) return false
+  try {
+    return (await PhoneContact.open({ id })).opened
+  } catch {
+    return false
+  }
+}
+
 export async function readAllContacts(): Promise<PickedContact[]> {
   if (!Capacitor.isNativePlatform()) return []
   const permission = await Contacts.requestPermissions()
@@ -180,6 +218,7 @@ export function toDraft(contact: ContactPayload): PickedContact {
     tagIds: [],
     notes: '',
     birthdate: toBirthdate(contact.birthday),
+    ...(contact.contactId ? { deviceContactId: contact.contactId } : {}),
   }
 }
 

@@ -43,7 +43,7 @@ import { SWATCHES } from './palette'
 import { toTodo, mergeTodos, type Todo } from './todos'
 import { toReminders } from './reminders'
 import { mergeNotes, type Note } from './notes'
-import type { Contact, Tag } from './types'
+import { toPhoneLink, type Contact, type Tag } from './types'
 
 export const BACKUP_PRODUCT = 'blackbook'
 export const BACKUP_KIND = 'backup'
@@ -257,6 +257,7 @@ function parseContact(raw: unknown, known: Set<string>): Contact | null {
     listOnly: raw.listOnly === true ? true : undefined,
     notes,
     ...(toReminders(raw.reminders) ? { reminders: toReminders(raw.reminders) } : {}),
+    ...(toPhoneLink(raw.phoneLink) ? { phoneLink: toPhoneLink(raw.phoneLink) } : {}),
     createdAt,
     updatedAt: time(raw.updatedAt, createdAt),
   }

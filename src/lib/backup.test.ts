@@ -224,4 +224,17 @@ describe('mergeBackup (Add to what is here)', () => {
     expect(rs.map((r) => r.id)).toEqual(['r3'])
     expect(rs[0].repeat).toBe('once')
   })
+
+  it('keeps a phone-contact link, and drops a malformed one', () => {
+    const data = parseBackup({
+      contacts: [
+        contact('c1', 'Ada', { phoneLink: { id: 'ABC-123:ABPerson', name: 'Ada L' } }),
+        contact('c2', 'Bob', { phoneLink: { id: 'x'.repeat(500), name: 'Bob' } as never }),
+        contact('c3', 'Cy', { phoneLink: 'nope' as never }),
+      ],
+    })!
+    expect(data.contacts[0].phoneLink).toEqual({ id: 'ABC-123:ABPerson', name: 'Ada L' })
+    expect(data.contacts[1].phoneLink).toBeUndefined()
+    expect(data.contacts[2].phoneLink).toBeUndefined()
+  })
 })

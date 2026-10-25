@@ -571,6 +571,16 @@ export const appEn = {
   'more.add_phone': "Add phone number",
   'more.import_phone': "Import from phone contact",
   'more.picked_no_phone': "{name} has no phone number on the phone either.",
+  'link.title': "Phone contact",
+  'link.link': "Link to a phone contact",
+  'link.linked': "Linked to phone contact",
+  'link.open': "Open in Contacts",
+  'link.update': "Update from phone contact",
+  'link.unlink': "Unlink",
+  'link.updated': "Filled in from the phone contact. Save to keep it.",
+  'link.gone': "That contact is no longer on this phone. Unlink it, or link another.",
+  'link.no_id': "The phone did not say which contact that was, so it cannot be linked.",
+  'link.web_only': "Open it from the phone app on the phone it was linked on.",
 } as const
 
 export type AppKey = keyof typeof appEn

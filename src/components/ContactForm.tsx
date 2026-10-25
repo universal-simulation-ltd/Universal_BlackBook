@@ -8,6 +8,7 @@ import type { Tag } from '../lib/types'
 import { BirthdayField } from './BirthdayField'
 import { EmailListForm } from './EmailListForm'
 import { TagPicker } from './TagPicker'
+import { PhoneContactLink } from './PhoneContactLink'
 import { Modal } from './Modal'
 import { ExpandGlyph, NotesFullscreen } from './NotesFullscreen'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label, PinGlyph, textareaCls } from './ui'
@@ -492,6 +493,24 @@ export function ContactForm({ id }: { id: string }) {
             {t('form.customise')}
           </button>
         </div>
+
+        {existing && (
+          <PhoneContactLink
+            contact={existing}
+            onUpdate={(p) => {
+              // The phone's values fill the boxes; an empty one on the phone
+              // leaves what is here. Saved, or not, with Save.
+              patch({
+                name: p.name || draft.name,
+                email: p.email || draft.email,
+                phone: p.phone || draft.phone,
+                address: p.address || draft.address,
+                birthdate: p.birthdate ?? draft.birthdate,
+              })
+              setMore(true)
+            }}
+          />
+        )}
 
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-800 pt-4">
           <div>

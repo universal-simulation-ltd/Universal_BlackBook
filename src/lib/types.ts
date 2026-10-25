@@ -38,6 +38,19 @@ export interface Tag {
   tagIds?: string[]
 }
 
+export interface PhoneLink {
+  id: string
+  name: string
+}
+
+/** A phone link read from storage or a file, or undefined. */
+export function toPhoneLink(raw: unknown): PhoneLink | undefined {
+  if (!raw || typeof raw !== 'object') return undefined
+  const r = raw as Record<string, unknown>
+  if (typeof r.id !== 'string' || !r.id || r.id.length > 200 || [...r.id].some((ch) => ch < ' ')) return undefined
+  return { id: r.id, name: typeof r.name === 'string' ? r.name.slice(0, 500) : '' }
+}
+
 export interface Contact {
   id: string
   name: string
@@ -132,6 +145,14 @@ export interface Contact {
    * and on everyone without one.
    */
   reminders?: Reminder[]
+  /**
+   * The phone contact this person is linked to (James, 2026-10-25): the
+   * device's own identifier for it (iOS CNContact.identifier, Android's
+   * contact id) and its name when it was linked. Only the phone app can open
+   * or read it; another device, or the website, shows the link and nothing
+   * more — the identifier means nothing anywhere else. Absent = not linked.
+   */
+  phoneLink?: PhoneLink
   createdAt: number
   updatedAt: number
 }

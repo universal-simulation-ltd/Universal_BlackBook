@@ -282,6 +282,16 @@ actually yours. **Advanced ▸ Backup, import & export ▸ Import my phone conta
 address book at once, skipping anybody already in your book so you can run it
 again whenever you add someone to your phone.
 
+**Linked to a phone contact** *(the phone app)* — Fine-tune ▸ **Link to a phone
+contact** picks one from the phone's contacts (someone added with From my
+contacts is linked from the start). The form then shows "Linked to phone
+contact" with **Open in Contacts** (the phone's own card, read-only), **Update
+from phone contact** (fills the form's boxes from the card; Save keeps them) and
+**Unlink**. The link is the phone's own id for the card, so the website and other
+devices show it and nothing more. It travels in the online copy and the backup
+file. (App-local plugins: `ios/App/App/PhoneContactPlugin.swift`,
+`android/…/PhoneContactPlugin.java`.)
+
 > BlackBook only ever **reads** your contacts, once, when you ask it to. It
 > never writes anything back, and it never copies across the note on your
 > phone's own contact card — the note in here is meant to be the private one.

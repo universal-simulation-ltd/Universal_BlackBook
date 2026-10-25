@@ -85,7 +85,7 @@ interface BookState {
    * the rest. `seed` fills in what is already known — a search typed, a
    * person picked from the phone's contacts.
    */
-  newContact: (seed?: Partial<ContactDraft>) => Promise<string>
+  newContact: (seed?: Partial<ContactDraft> & { deviceContactId?: string }) => Promise<string>
   /** Change some fields of one contact, as typed in its view. */
   patchContact: (id: string, patch: Partial<Omit<Contact, 'id' | 'createdAt' | 'updatedAt'>>) => Promise<void>
 
@@ -192,7 +192,7 @@ export interface ContactDraft {
 
 /** A contact with nothing typed into it at all (a `newContact` left as it came). */
 export function contactIsEmpty(c: Contact): boolean {
-  return draftIsEmpty(c)
+  return draftIsEmpty(c) && !c.reminders?.length && !c.phoneLink
 }
 
 /** Is there anything in this draft worth offering back? */
@@ -328,6 +328,8 @@ export const useBookStore = create<BookState>((set, get) => ({
       tagIds: seed.tagIds ?? [],
       birthdate: seed.birthdate,
       notes: seed.notes ?? '',
+      // Picked from the phone's contacts: linked to that card from the start.
+      ...(seed.deviceContactId ? { phoneLink: { id: seed.deviceContactId, name: (seed.name ?? '').trim() } } : {}),
       createdAt: now,
       updatedAt: now,
     }

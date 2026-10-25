@@ -11,7 +11,7 @@
 //     result, never thrown over: one bad row must not make the whole book
 //     unopenable.
 
-import type { Contact, Tag } from './types'
+import { toPhoneLink, type Contact, type Tag } from './types'
 import { isValidBirthday } from './birthday'
 import { SORT_KEYS, type SortKey, type View } from './filter'
 import { toLockRecord, type LockRecord } from './lock'
@@ -134,6 +134,7 @@ function toContact(raw: unknown): Contact | null {
     // Added 2026-10-25 (lib/reminders.ts). Kept through this reader, which
     // drops every field it does not name.
     ...(toReminders(r.reminders) ? { reminders: toReminders(r.reminders) } : {}),
+    ...(toPhoneLink(r.phoneLink) ? { phoneLink: toPhoneLink(r.phoneLink) } : {}),
     createdAt: typeof r.createdAt === 'number' ? r.createdAt : Date.now(),
     updatedAt: typeof r.updatedAt === 'number' ? r.updatedAt : Date.now(),
   }

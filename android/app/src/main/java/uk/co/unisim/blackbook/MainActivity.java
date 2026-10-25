@@ -12,6 +12,8 @@ public class MainActivity extends BridgeActivity {
         // The strips round the web view follow the app's Light / Dark — see
         // WindowThemePlugin and src/native/systemBars.ts.
         registerPlugin(WindowThemePlugin.class);
+        // "Open in Contacts" on a contact linked to a phone contact.
+        registerPlugin(PhoneContactPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }
