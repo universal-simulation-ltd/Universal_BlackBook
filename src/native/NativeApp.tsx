@@ -43,7 +43,7 @@ import { useSettingsStore } from '../stores/settingsStore'
 import { AboutContent } from './AboutScreen'
 import { ContactActions } from './ContactActions'
 import { useT, type Key } from '../i18n'
-import { IconMap, IconBook, IconContactsBook, IconFile, IconLists, IconNote, IconPerson, IconPlus, IconTodo, IconTune, Ribbon } from './icons'
+import { IconBin, IconMap, IconBook, IconContactsBook, IconFile, IconLists, IconNote, IconPerson, IconPlus, IconTodo, IconTune, Ribbon } from './icons'
 import { PhoneKitContext, type PhoneKit } from './kit'
 import { ArticleBody, KnowledgeList, useArticles } from './KnowledgeScreen'
 import { Page, Sheet, SheetRow } from './layers'
@@ -53,6 +53,7 @@ import { useBookTitle } from './Account'
 import { PhoneLinkified } from './PhoneLinks'
 import { TuneContent } from './TuneScreen'
 import { DueReminders, useAllReminders } from '../components/Reminders'
+import { UndoBar, useUndo } from '../components/SwipeActions'
 import { NoteLayers } from '../components/NoteView'
 import { TemplateManager } from '../components/TemplateManager'
 import { onNotificationTap, scheduleReminders } from './notify'
@@ -62,6 +63,9 @@ import './native.css'
 const MapView = lazy(() => import('../components/MapView').then((m) => ({ default: m.MapView })))
 
 type PhoneTab = Tab | 'tune'
+
+/** The tabs a switch in Tune turns off, and that switch: what the bin can take. */
+const TAB_SWITCH: Partial<Record<Tab, 'emailLists' | 'todos' | 'notes'>> = { lists: 'emailLists', todos: 'todos', notes: 'notes' }
 
 const TAB_LABEL: Record<PhoneTab, Key> = { contacts: 'tab_contacts', lists: 'tab_lists', todos: 'tab_todos', notes: 'tab_notes', tune: 'tab_tune' }
 const TAB_ICON: Record<PhoneTab, () => JSX.Element> = { contacts: IconBook, lists: IconLists, todos: IconTodo, notes: IconNote, tune: IconTune }
@@ -105,8 +109,12 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
   const setSettings = useSettingsStore((s) => s.set)
   const shownTabs = availableTabs(emailLists, todosOn, notesOn, tabOrder)
   // Hold a tab and drag it (James, 2026-10-25). While one is held the bar
-  // shows the order it would drop into; Tune stays last.
-  const [dragTabs, setDragTabs] = useState<{ tab: Tab; order: Tab[] } | null>(null)
+  // shows the order it would drop into; Tune stays last. A tab that Tune can
+  // switch off can also be dropped on the bin that rises above the bar, which
+  // switches it off (James, 2026-10-26, a suite rule), with Undo.
+  const [dragTabs, setDragTabs] = useState<{ tab: Tab; order: Tab[]; bin?: boolean } | null>(null)
+  const binRef = useRef<HTMLDivElement>(null)
+  const binned = useUndo<Tab>(async (x) => setSettings({ [TAB_SWITCH[x]!]: true }))
   const tabs: PhoneTab[] = [...(dragTabs?.order ?? shownTabs), 'tune']
   const navRef = useRef<HTMLElement>(null)
   const tabHold = useRef<{ tab: Tab; x0: number; y0: number; active: boolean; timer: ReturnType<typeof setTimeout> } | null>(null)
@@ -116,6 +124,8 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
   shownRef.current = shownTabs
   const orderRef = useRef(tabOrder)
   orderRef.current = tabOrder
+  const binnedRef = useRef(binned.deleted)
+  binnedRef.current = binned.deleted
   const holdTab = (tab: Tab) => (e: React.TouchEvent) => {
     if (e.touches.length !== 1 || shownRef.current.length < 2) return
     const t0 = e.touches[0]
@@ -146,14 +156,26 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
         return
       }
       e.preventDefault()
+      const d = dragRef.current
+      if (!d) return
+      // Over the bin (with a finger's width to spare): the order holds still.
+      const b = binRef.current?.getBoundingClientRect()
+      const pad = 18
+      const overBin = Boolean(
+        b && t0.clientX >= b.left - pad && t0.clientX <= b.right + pad && t0.clientY >= b.top - pad && t0.clientY <= b.bottom + pad,
+      )
+      if (overBin !== Boolean(d.bin)) {
+        navigator.vibrate?.(8)
+        setDragTabs({ ...d, bin: overBin })
+      }
+      if (overBin) return
       // Which slot the finger is over, among the tabs that can move.
       const slots = [...(navRef.current?.querySelectorAll<HTMLElement>('[data-tab]') ?? [])].filter((el) => el.dataset.tab !== 'tune')
       const at = slots.findIndex((el) => {
         const r = el.getBoundingClientRect()
         return t0.clientX >= r.left && t0.clientX <= r.right
       })
-      const d = dragRef.current
-      if (!d || at < 0) return
+      if (at < 0) return
       const next = d.order.filter((x) => x !== d.tab)
       next.splice(Math.min(at, next.length), 0, d.tab)
       if (next.join() !== d.order.join()) setDragTabs({ tab: d.tab, order: next })
@@ -166,7 +188,9 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
       if (!h.active) return
       // The lift is not a tap: the click it ends with must not switch tabs
       // or count toward a double tap.
+      // Only on the bar itself: a quick tap on the Undo the bin leaves must count.
       const swallow = (ev: Event) => {
+        if (!navRef.current?.contains(ev.target as Node)) return
         ev.preventDefault()
         ev.stopPropagation()
       }
@@ -174,6 +198,11 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
       setTimeout(() => document.removeEventListener('click', swallow, { capture: true }), 600)
       const d = dragRef.current
       setDragTabs(null)
+      if (d?.bin && TAB_SWITCH[d.tab]) {
+        setSettings({ [TAB_SWITCH[d.tab]!]: false })
+        binnedRef.current(d.tab)
+        return
+      }
       if (d && d.order.join() !== shownRef.current.join()) setSettings({ tabOrder: withShownOrder(orderRef.current, d.order) })
     }
     document.addEventListener('touchmove', move, { passive: false, capture: true })
@@ -318,6 +347,20 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
             </>
           )}
         </main>
+
+        {dragTabs && TAB_SWITCH[dragTabs.tab] && (
+          <div ref={binRef} className={`bb-tabbin${dragTabs.bin ? ' hot' : ''}`} aria-hidden>
+            <IconBin />
+            <span>{t(dragTabs.bin ? 'tab_bin_drop' : 'tab_bin_hint')}</span>
+          </div>
+        )}
+        {binned.item && (
+          <UndoBar
+            title=""
+            text={t('tab_binned', { tab: t(TAB_LABEL[binned.item]) })}
+            onUndo={() => void binned.undo()}
+          />
+        )}
 
         <nav ref={navRef} className="bb-tabs" aria-label={t('tabs_label')}>
           {tabs.map((target) => {

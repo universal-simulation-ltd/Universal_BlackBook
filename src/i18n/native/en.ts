@@ -118,6 +118,9 @@ export const en = {
   tune_delete_account: "Delete my account",
   book_of: "{name}’s Book",
   book_mine: "My Book",
+  tab_bin_hint: "Drop here to hide",
+  tab_bin_drop: "Let go to hide",
+  tab_binned: "{tab} tab hidden. Bring it back in Tune.",
 } as const
 
 export type Key = keyof typeof en

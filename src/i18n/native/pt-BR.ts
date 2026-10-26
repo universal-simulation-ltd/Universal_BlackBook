@@ -107,4 +107,7 @@ export const ptBR: Dict = {
   tune_delete_account: "Excluir minha conta",
   book_of: "Agenda de {name}",
   book_mine: "Minha agenda",
+  tab_bin_hint: "Solte aqui para ocultar",
+  tab_bin_drop: "Solte para ocultar",
+  tab_binned: "Aba {tab} oculta. Mostre de novo em Ajustar.",
 }

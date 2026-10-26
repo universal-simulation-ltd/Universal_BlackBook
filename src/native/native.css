@@ -134,6 +134,38 @@ html.bb-phone body {
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
   transition: transform 120ms ease-out;
 }
+/* The bin a held tab can be dropped on, to switch it off (2026-10-26). */
+.bb-tabbin {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(env(safe-area-inset-bottom) + var(--bb-tabs-h) + 18px);
+  z-index: 60;
+  /* Centred by margin, not a transform: bb-rise animates the transform. */
+  width: max-content;
+  margin-inline: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1.5px dashed var(--color-slate-600);
+  background: var(--color-slate-900);
+  color: var(--color-slate-300);
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+  animation: bb-rise 160ms ease-out;
+  transition: transform 120ms ease-out, background-color 120ms, color 120ms;
+}
+.bb-tabbin.hot {
+  transform: scale(1.12);
+  border-style: solid;
+  border-color: var(--color-rose-500);
+  background: var(--color-rose-600);
+  color: white;
+}
 .bb-tab[aria-current='page'] {
   color: var(--color-orange-400);
 }
@@ -464,6 +496,7 @@ html.bb-phone body {
   .bb-page,
   .bb-sheet,
   .bb-toast,
+  .bb-tabbin,
   .bb-tab.flash {
     animation: none;
   }

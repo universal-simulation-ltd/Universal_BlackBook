@@ -111,6 +111,14 @@ export function IconMap() {
   )
 }
 
+export function IconBin() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6 shrink-0" {...stroke} aria-hidden>
+      <path d="M4 7h16M10 3h4a1 1 0 0 1 1 1v3H9V4a1 1 0 0 1 1-1ZM6 7l1 12.2A2 2 0 0 0 9 21h6a2 2 0 0 0 2-1.8L18 7M10 11v6M14 11v6" />
+    </svg>
+  )
+}
+
 export function IconMore() {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" fill="currentColor" aria-hidden>

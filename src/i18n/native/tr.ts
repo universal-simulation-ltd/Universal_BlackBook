@@ -107,4 +107,7 @@ export const tr: Dict = {
   tune_delete_account: "Hesabımı sil",
   book_of: "{name} · Defter",
   book_mine: "Defterim",
+  tab_bin_hint: "Gizlemek için buraya bırak",
+  tab_bin_drop: "Gizlemek için bırak",
+  tab_binned: "{tab} sekmesi gizlendi. Ayarla’dan geri getirebilirsin.",
 }
