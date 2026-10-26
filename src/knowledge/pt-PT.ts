@@ -35,7 +35,7 @@ Os programas de folha de cálculo por vezes mudam o formato do que abrem, transf
     title: 'Onde a sua agenda é guardada',
     summary: 'Neste dispositivo, sem precisar de conta, e o que isso significa para si.',
     group: 'O essencial',
-    body: `O BlackBook guarda a sua agenda no dispositivo que está a usar. Num navegador, fica no armazenamento que esse navegador reserva a este site; na aplicação para telemóvel, fica no armazenamento da própria aplicação. Nada sobre os seus contactos é enviado para lado nenhum, a menos que ative a cópia de segurança online.
+    body: `O BlackBook guarda a sua agenda no dispositivo que está a usar. Num navegador, fica no armazenamento que esse navegador reserva a este site; na aplicação para telemóvel, fica no armazenamento da própria aplicação. Nada sobre os seus contactos é enviado para lado nenhum, a menos que inicie sessão, o que liga a cópia de segurança online.
 
 Não precisa de conta para usar o BlackBook. Tudo funciona sem iniciar sessão.
 
@@ -49,8 +49,8 @@ Não precisa de conta para usar o BlackBook. Tudo funciona sem iniciar sessão.
 
 Como a agenda no seu dispositivo pode ser a única cópia, vale a pena ter outra:
 
-1. Inicie sessão com o seu Universal ID e ative a cópia de segurança online encriptada.
-2. Guarde de vez em quando um ficheiro de cópia de segurança (Avançado, depois Cópia de segurança, importação e exportação) e mantenha-o num local seguro. Contém tudo, incluindo as tarefas, e pode ter uma palavra-passe.
+1. Inicie sessão com o seu Universal ID. A cópia de segurança online encriptada começa sozinha.
+2. Guarde de vez em quando um ficheiro de cópia de segurança (Afinar, depois Cópia e exportar na aplicação para telemóvel; Ações, depois Avançado, depois Cópia e exportar no site) e mantenha-o num local seguro. Contém tudo, incluindo as tarefas, e pode ter uma palavra-passe.
 3. Ou exporte um ficheiro CSV, que qualquer folha de cálculo ou agenda consegue ler, mas que deixa de fora as suas tarefas.
 
 ## Ajustar esta aplicação
@@ -60,15 +60,26 @@ As escolhas sobre o aspeto e o comportamento da aplicação neste dispositivo, c
   {
     id: 'importing-and-exporting',
     title: 'Trazer contactos para dentro e levá-los para fora',
-    summary: 'Importar e exportar CSV, e escolher pessoas dos contactos do telemóvel.',
+    summary: 'Um só Importar para contactos, notas, tarefas e cópias de segurança, e uma exportação CSV.',
     group: 'Como funciona',
-    body: `## Exportar
+    body: `## Uma porta para entrar, uma para sair
+
+Tudo o que entra no BlackBook passa por **Importar**: Afinar, depois Importar na aplicação para telemóvel, ou Ações, depois Avançado, depois Importar no site. Há quatro opções:
+
+- **Contactos**, a partir de um ficheiro CSV e, na aplicação para telemóvel, dos contactos do próprio telemóvel.
+- **Notas**, a partir de ficheiros Word, páginas web (.html, .htm, .mht), texto simples ou Markdown. Consulte Traga as suas notas do OneNote.
+- **Tarefas**, a partir de uma lista num ficheiro de texto, Markdown, folha de cálculo ou calendário (mais abaixo).
+- **Restaurar uma cópia do BlackBook**, que abre um ficheiro de cópia de segurança que guardou (consulte O seu ficheiro de cópia de segurança).
+
+Tudo o que sai está em **Cópia e exportar**: Afinar, depois Cópia e exportar na aplicação para telemóvel, ou Ações, depois Avançado, depois Cópia e exportar no site. Aí guarda um ficheiro de cópia de segurança e exporta um CSV.
+
+## Exportar
 
 A exportação guarda toda a sua agenda num ficheiro CSV com a data de hoje no nome. Tem uma coluna para o nome, o email, as etiquetas, as notas, o aniversário, o telefone, a empresa e para indicar se o aniversário ou o cartão de uma pessoa está oculto, pelo que voltar a importá-lo repõe os seus contactos tal como os deixou. O ficheiro abre em qualquer programa de folha de cálculo. Deixa de fora as suas tarefas: para uma cópia completa, guarde antes um ficheiro de cópia de segurança (consulte O seu ficheiro de cópia de segurança).
 
 ## Importar um ficheiro CSV
 
-Pode importar um ficheiro CSV exportado do BlackBook ou de outra agenda. Escolhe se quer **acrescentar** as pessoas do ficheiro à sua agenda ou **substituir** a agenda por elas.
+Escolha Importar, depois Contactos. Pode importar um ficheiro CSV exportado do BlackBook ou de outra agenda. Escolhe se quer **acrescentar** as pessoas do ficheiro à sua agenda ou **substituir** a agenda por elas.
 
 O BlackBook entende os nomes de coluna usados pelo Google Contacts e pelo Outlook. Por exemplo:
 
@@ -84,9 +95,21 @@ Os aniversários são aceites como 1990-06-04, 4 June 1990, June 4 ou --06-04 (u
 
 ## A partir dos contactos do telemóvel
 
-Na aplicação para telemóvel, pode escolher uma pessoa dos contactos do telemóvel para preencher um novo cartão, ou importar de uma só vez toda a agenda do telemóvel. A importação completa ignora quem já está na sua agenda, por isso pode repeti-la mais tarde sem problemas. No Chrome para Android, o seletor de contactos do navegador oferece o mesmo para um nome, um email e um número.
+Na aplicação para telemóvel, pode escolher uma pessoa dos contactos do telemóvel para preencher um novo cartão, ou importar de uma só vez toda a agenda do telemóvel com Importar, depois Contactos. A importação completa ignora quem já está na sua agenda, por isso pode repeti-la mais tarde sem problemas. No Chrome para Android, o seletor de contactos do navegador oferece o mesmo para um nome, um email e um número.
 
-O BlackBook só lê os contactos do telemóvel quando lho pede e nunca escreve nada neles. A nota do cartão de contacto do telemóvel não é copiada.`,
+O BlackBook só lê os contactos do telemóvel quando lho pede e nunca escreve nada neles. A nota do cartão de contacto do telemóvel não é copiada.
+
+## Importar tarefas
+
+Escolha Importar, depois Tarefas, para trazer uma lista que já mantém noutro lado. Pode escolher vários ficheiros de uma vez, e cada ficheiro é lido no seu dispositivo; nada é enviado.
+
+- **Texto e Markdown (.txt, .md).** Uma tarefa por linha. As marcas de lista e os números são retirados, uma caixa assinalada ([x]) chega como concluída, e as linhas avançadas por baixo de uma tarefa passam a ser os seus detalhes. Os títulos de Markdown são nomes de secção, não tarefas, por isso ficam de fora.
+- **Folhas de cálculo (.csv, .tsv).** As colunas são lidas pelo nome: Title, Task ou Content para a tarefa, Notes ou Description para os detalhes, Due ou Deadline para a data, e Done, Completed ou Status para saber se está concluída. A exportação do Todoist funciona tal como está; as suas secções ficam de fora.
+- **Ficheiros de calendário (.ics).** As tarefas do ficheiro, com os detalhes, os prazos e se estavam concluídas.
+
+São lidos prazos escritos como 2026-10-25 ou 25 October 2026. Uma data escrita como 04/06/2026 fica de fora de propósito, tal como nos aniversários: a tarefa entra na mesma, apenas sem data.
+
+Vê o que foi encontrado antes de se acrescentar alguma coisa e pode retirar qualquer item deslizando-o. A importação liga o separador Tarefas, para que veja o que entrou.`,
   },
   {
     id: 'tags-lists-and-hiding',
@@ -135,36 +158,44 @@ O PIN bloqueia a aplicação, não os dados. A sua agenda continua no armazename
 
 Ninguém lhe pode dizer o seu PIN nem retirar o bloqueio por si. A única forma de ultrapassar um PIN esquecido é o botão "Forgotten your PIN?" no ecrã de bloqueio, que **apaga a agenda deste dispositivo** e recomeça do zero, sem bloqueio. É isso que torna seguro oferecê-lo: um estranho poderia esvaziar a aplicação, mas nunca lê-la.
 
-Se usar a cópia de segurança online encriptada, esquecer o PIN é apenas um incómodo: inicie sessão de novo, introduza a frase de acesso da cópia de segurança e a sua agenda volta. Se tiver um ficheiro de cópia de segurança, esquecer o PIN é apenas um incómodo: depois da reposição, abra a cópia de segurança e a sua agenda volta. Sem ele não há nada a partir do qual repor, por isso guarde uma cópia de segurança antes de definir um PIN.`,
+Se usar a cópia de segurança online encriptada, esquecer o PIN é apenas um incómodo: inicie sessão de novo (e introduza a frase de acesso da cópia de segurança, se tiver acrescentado uma) e a sua agenda volta. Se tiver um ficheiro de cópia de segurança, esquecer o PIN é apenas um incómodo: depois da reposição, escolha Importar, depois Restaurar uma cópia do BlackBook, selecione o ficheiro e a sua agenda volta. Sem ele não há nada a partir do qual repor, por isso guarde uma cópia de segurança antes de definir um PIN.`,
   },
   {
     id: 'encrypted-online-backup',
     title: 'A cópia de segurança online encriptada',
-    summary: 'Como a sua agenda é encriptada antes de sair do dispositivo e porque mais ninguém a consegue ler.',
+    summary: 'Como a sua agenda é encriptada antes de sair do dispositivo, quem guarda a chave e o que acrescenta uma frase de acesso.',
     group: 'Privacidade e segurança',
-    body: `A cópia de segurança online é opcional e fica desligada até iniciar sessão com o seu Universal ID. Depois de ativada, o BlackBook guarda uma cópia da sua agenda nos servidores da UNI·SIM, para que sobreviva à perda de um dispositivo e possa ser aberta noutro.
+    body: `A cópia de segurança online é opcional e precisa de um Universal ID. Iniciar sessão liga-a (na aplicação para telemóvel, inicie sessão em Afinar, depois Conta) e, a partir daí, o BlackBook guarda uma cópia da sua agenda nos servidores da UNI·SIM, para que sobreviva à perda de um dispositivo e abra em todos os dispositivos em que iniciar sessão. As opções da cópia estão em Cópia online: Afinar, depois Conta, depois Cópia online na aplicação para telemóvel, ou Ações, depois Avançado, depois Cópia online no site.
 
 ## Encriptada antes de sair
 
-A sua agenda é encriptada no seu dispositivo antes de qualquer envio. O servidor recebe e guarda apenas dados baralhados para os quais não tem chave, por isso a UNI·SIM não consegue ler os seus contactos, notas, etiquetas ou tarefas.
+A sua agenda é encriptada no seu dispositivo antes de qualquer envio, com **AES-GCM e uma chave de 256 bits**, uma norma amplamente utilizada. Quem consegue ler a cópia online depende de onde essa chave fica guardada, e é o utilizador quem escolhe.
 
-- A encriptação é **AES-GCM com uma chave de 256 bits**, uma norma amplamente utilizada.
-- A chave é obtida a partir de uma **frase de acesso escolhida por si**, com PBKDF2 e SHA-256 em 600 000 iterações, o que torna cada tentativa de a adivinhar lenta e dispendiosa.
+## Sem frase de acesso (a predefinição)
+
+A chave é aleatória e fica guardada com a sua conta nos servidores da UNI·SIM. É isso que permite que um dispositivo novo abra a sua agenda apenas ao iniciar sessão. Só a sua própria conta a consegue obter, mas a UNI·SIM **poderia** tecnicamente ler a cópia online, como acontece com a maioria das aplicações que sincronizam.
+
+## Com uma frase de acesso
+
+Assinale Protegê-la com uma frase-passe ao ligar a cópia, ou escolha mais tarde Adicionar uma frase-passe em Cópia online. A partir daí, ninguém além de si consegue ler a cópia online, nem mesmo a UNI·SIM.
+
+- A chave é obtida a partir da sua frase de acesso, com PBKDF2 e SHA-256 em 600 000 iterações, o que torna cada tentativa de a adivinhar lenta e dispendiosa, e a chave é retirada do servidor.
 - A sua frase de acesso nunca sai do seu dispositivo. **Não** é a palavra-passe do seu Universal ID, e alterar essa palavra-passe não a afeta.
+- Cada um dos seus outros dispositivos pede-a uma vez.
 
 Isto importa porque as pessoas da sua agenda não se registaram em nada. Os nomes, os endereços e as suas notas privadas sobre elas merecem o mesmo cuidado que os seus próprios dados.
 
-## Não há recuperação
+## Com frase de acesso, não há recuperação
 
-A UNI·SIM não guarda nenhuma cópia da sua chave e não tem forma de repor a sua frase de acesso. Se a esquecer, ninguém consegue abrir a cópia online. A agenda no seu dispositivo não é afetada, e é por isso que a cópia online é uma cópia de segurança e não a cópia principal.
+A UNI·SIM deixa então de guardar qualquer cópia da sua chave e não tem forma de repor a sua frase de acesso. Se a esquecer, ninguém consegue abrir a cópia online. A agenda no seu dispositivo não é afetada, e é por isso que a cópia online é uma cópia de segurança e não a cópia principal.
 
 ## Memorizar um dispositivo
 
-Pode pedir a um dispositivo que memorize a chave, para não ter de introduzir a frase de acesso sempre. A chave é guardada de forma que a aplicação a pode usar, mas não extrair. Terminar sessão, ou escolher esquecer este dispositivo, remove-a.
+Com uma frase de acesso, pode pedir a um dispositivo que memorize a chave, para não ter de a introduzir sempre. A chave é guardada de forma que a aplicação a pode usar, mas não extrair. Terminar sessão, ou escolher Esquecer este dispositivo, remove-a.
 
 ## Alterar ou eliminar
 
-Alterar a frase de acesso exige a atual, mesmo num dispositivo que a memoriza, e volta a encriptar a cópia de segurança num único passo. Desligar a cópia de segurança elimina por completo a cópia online e deixa a agenda do seu dispositivo como está. Eliminar o seu Universal ID elimina também a cópia online.
+Alterar a frase de acesso, ou escolher Remover a frase-passe, exige a atual, mesmo num dispositivo que a memoriza, e volta a encriptar a cópia de segurança num único passo. Removê-la volta a guardar uma chave aleatória com a sua conta, e os seus dispositivos abrem a cópia online apenas ao iniciar sessão de novo. Desligar e apagar a cópia online elimina por completo a cópia online, deixa a agenda do seu dispositivo como está e faz com que iniciar sessão de novo nesse dispositivo não volte a ligar a cópia. Eliminar o seu Universal ID elimina também a cópia online.
 
 A cópia de segurança tem um limite de cerca de 2 MB de dados encriptados, o que equivale a muitos milhares de contactos. Notas muito longas são normalmente a razão quando uma agenda atinge esse limite.`,
   },
@@ -173,7 +204,7 @@ A cópia de segurança tem um limite de cerca de 2 MB de dados encriptados, o qu
     title: 'O seu ficheiro de cópia de segurança',
     summary: 'Um ficheiro com tudo o que está na sua agenda, uma palavra-passe opcional e como voltar a abri-lo.',
     group: 'Privacidade e segurança',
-    body: `Um ficheiro de cópia de segurança é uma cópia completa da sua agenda num único ficheiro. Para guardar um, abra Ações, depois Avançado, depois Cópia de segurança, importação e exportação, e escolha Guardar uma cópia de segurança. No telemóvel abre-se o menu de partilha, para que possa guardar o ficheiro em Ficheiros, num serviço de armazenamento na nuvem ou num email para si próprio; num navegador, o ficheiro é transferido.
+    body: `Um ficheiro de cópia de segurança é uma cópia completa da sua agenda num único ficheiro. Para guardar um, abra Cópia e exportar (Afinar, depois Cópia e exportar na aplicação para telemóvel; Ações, depois Avançado, depois Cópia e exportar no site) e escolha Guardar uma cópia. No telemóvel abre-se o menu de partilha, para que possa guardar o ficheiro em Ficheiros, num serviço de armazenamento na nuvem ou num email para si próprio; num navegador, o ficheiro é transferido.
 
 ## O que contém
 
@@ -196,7 +227,7 @@ Sem palavra-passe, o ficheiro é texto simples, como uma exportação CSV: qualq
 
 ## Abrir uma cópia de segurança
 
-Escolha Abrir uma cópia de segurança e selecione o ficheiro, ou arraste-o para a janela num navegador. Se tiver palavra-passe, ser-lhe-á pedida. Depois escolha:
+Escolha Importar, depois Restaurar uma cópia do BlackBook (Afinar, depois Importar na aplicação para telemóvel; Ações, depois Avançado, depois Importar no site). Escolha Abrir uma cópia e selecione o ficheiro, ou arraste-o para a janela num navegador. Se tiver palavra-passe, ser-lhe-á pedida. Depois escolha:
 
 - **Acrescentar ao que já existe.** Tudo o que já está neste dispositivo mantém-se. As pessoas e tarefas do ficheiro são acrescentadas e, se uma estiver em ambos, fica a cópia editada mais recentemente. Quem já cá estiver com o mesmo nome e o mesmo email ou número de telefone não é acrescentado duas vezes, e as etiquetas com o mesmo nome passam a ser uma só.
 - **Substituir tudo.** A agenda deste dispositivo é trocada pela do ficheiro, depois de confirmar.
@@ -212,11 +243,11 @@ O BlackBook verifica cada campo de um ficheiro antes de o usar, por isso um fich
 
 ## Iniciar sessão num dispositivo novo
 
-1. Inicie sessão com o seu Universal ID.
-2. Introduza a frase de acesso da cópia de segurança.
-3. Se este dispositivo já tiver contactos próprios, o BlackBook pergunta se os quer fundir ou usar apenas a cópia online.
+1. Inicie sessão com o seu Universal ID (na aplicação para telemóvel, em Afinar, depois Conta).
+2. Se protegeu a cópia de segurança com uma frase de acesso, introduza-a. Sem ela, basta iniciar sessão.
+3. Se este dispositivo já tiver contactos ou tarefas próprios, como os que acrescentou antes de iniciar sessão, o BlackBook funde-os na cópia online e guarda-a de imediato. Não há nada para escolher.
 
-Ao fundir, a cópia online é o ponto de partida e os contactos deste dispositivo são-lhe acrescentados. Quem já lá estiver, reconhecido como o mesmo cartão ou pelo mesmo nome com o mesmo email ou telefone, não é acrescentado duas vezes. As etiquetas com o mesmo nome passam a ser uma só.
+Ao fundir, a cópia online é o ponto de partida e os contactos deste dispositivo são-lhe acrescentados. Quem já lá estiver, reconhecido como o mesmo cartão ou pelo mesmo nome com o mesmo email ou telefone, não é acrescentado duas vezes. As etiquetas com o mesmo nome passam a ser uma só. Fundir só acrescenta, por isso alguém que eliminou noutro dispositivo pode voltar a partir de um dispositivo que ainda o tenha. Para ficar antes com a cópia online exatamente como está, abra Cópia online (Afinar, depois Conta, depois Cópia online na aplicação para telemóvel; Ações, depois Avançado, depois Cópia online no site) e escolha Obter a cópia online.
 
 ## Guardar
 
@@ -228,13 +259,13 @@ A cópia online é guardada como uma agenda inteira. Se dois dispositivos altera
 
 ## Depois de alterar a frase de acesso
 
-Quando altera a frase de acesso num dispositivo, os outros deixam de guardar e pedem a nova. Nada se perde neles, e ao desbloqueá-los oferecem-se para voltar a fundir os seus contactos. Um dispositivo que ainda tenha a chave antiga não consegue sobrepor-se à alteração.
+Quando acrescenta ou altera a frase de acesso num dispositivo, os outros deixam de guardar e pedem-na uma vez. Nada se perde neles, e ao desbloqueá-los oferecem-se para voltar a fundir os seus contactos. Um dispositivo que ainda tenha a chave antiga não consegue sobrepor-se à alteração. Quando remove a frase de acesso, os outros dispositivos voltam a abrir a cópia online sozinhos.
 
 ## Passar a sua agenda sem conta
 
-1. No dispositivo que tem a sua agenda, guarde um ficheiro de cópia de segurança. Uma palavra-passe é boa ideia se o ficheiro for passar por email ou por um serviço de armazenamento na nuvem.
+1. No dispositivo que tem a sua agenda, guarde um ficheiro de cópia de segurança em Cópia e exportar. Uma palavra-passe é boa ideia se o ficheiro for passar por email ou por um serviço de armazenamento na nuvem.
 2. Faça chegar o ficheiro ao outro dispositivo, por exemplo por AirDrop, por um serviço de armazenamento na nuvem ou por email.
-3. No outro dispositivo, abra o BlackBook, escolha Abrir uma cópia de segurança e selecione o ficheiro.
+3. No outro dispositivo, abra o BlackBook, escolha Importar, depois Restaurar uma cópia do BlackBook, e selecione o ficheiro.
 
 Se o outro dispositivo for novo, escolha Substituir tudo. Se já tiver pessoas próprias, escolha Acrescentar ao que já existe e as duas agendas são fundidas.`,
   },
@@ -261,14 +292,14 @@ Segundo a Microsoft, o OneNote para Mac e o OneNote para a web ainda não export
 
 ## Importar no BlackBook
 
-Abra o separador **Notas** e escolha **Importar**. Pode escolher vários ficheiros de uma vez: Word (.docx), páginas web (.html, .htm, .mht), texto simples (.txt) e Markdown (.md).
+Escolha **Importar** ▸ **Notas**: na aplicação para telemóvel, Importar está em **Afinar**; no site, em **Ações** ▸ **Avançado**. Pode escolher vários ficheiros de uma vez: Word (.docx), páginas web (.html, .htm, .mht), texto simples (.txt) e Markdown (.md).
 
 - Um ficheiro Word com várias páginas do OneNote passa a uma nota por página, dividida em cada título de página.
 - O título de cada nota é o título da página; se não houver, o primeiro cabeçalho; se não, o nome do ficheiro.
 - O texto chega como texto simples: parágrafos e listas mantêm-se; formatação, imagens, desenhos e anexos não.
 - Se o OneNote escreveu a data da página por baixo do título, essa passa a ser a data da nota.
 
-Vê o que foi encontrado antes de se acrescentar alguma coisa.`,
+Vê o que foi encontrado antes de se acrescentar alguma coisa e pode retirar qualquer item deslizando-o. A importação liga o separador Notas.`,
   },
 ]
 

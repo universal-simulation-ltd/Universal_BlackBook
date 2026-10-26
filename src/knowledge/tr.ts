@@ -35,7 +35,7 @@ Tablo programları bazen açtıkları içeriğin biçimini değiştirir ve bir d
     title: 'Rehberiniz nerede saklanır',
     summary: 'Bu cihazda, hesap gerekmeden; bunun sizin için anlamı.',
     group: 'Temel bilgiler',
-    body: `BlackBook adres defterinizi kullandığınız cihazda saklar. Bir tarayıcıda, o tarayıcının bu site için ayırdığı depolama alanında durur; telefon uygulamasında ise uygulamanın kendi depolama alanında durur. Çevrimiçi yedeklemeyi açmadığınız sürece kişilerinizle ilgili hiçbir şey hiçbir yere gönderilmez.
+    body: `BlackBook adres defterinizi kullandığınız cihazda saklar. Bir tarayıcıda, o tarayıcının bu site için ayırdığı depolama alanında durur; telefon uygulamasında ise uygulamanın kendi depolama alanında durur. Oturum açmadığınız sürece kişilerinizle ilgili hiçbir şey hiçbir yere gönderilmez; oturum açmak çevrimiçi yedeklemeyi açar.
 
 BlackBook’u kullanmak için hesaba ihtiyacınız yoktur. Oturum açmadan her şey çalışır.
 
@@ -49,8 +49,8 @@ BlackBook’u kullanmak için hesaba ihtiyacınız yoktur. Oturum açmadan her �
 
 Cihazınızdaki rehber tek kopya olabileceği için bir kopya daha tutmakta fayda vardır:
 
-1. Universal ID ile oturum açıp şifreli çevrimiçi yedeklemeyi açın.
-2. Zaman zaman bir yedek dosyası kaydedin ("Gelişmiş", ardından "Yedek, içe ve dışa aktarma") ve güvenli bir yerde saklayın. Dosya, yapılacaklarınız dahil her şeyi içerir ve parolalı olabilir.
+1. Universal ID ile oturum açın. Şifreli çevrimiçi yedekleme ardından kendiliğinden başlar.
+2. Zaman zaman bir yedek dosyası kaydedin (telefon uygulamasında "Ayarla", ardından "Yedek ve dışa aktarma"; web sitesinde "Eylemler", ardından "Gelişmiş", ardından "Yedek ve dışa aktarma") ve güvenli bir yerde saklayın. Dosya, yapılacaklarınız dahil her şeyi içerir ve parolalı olabilir.
 3. Ya da her tablo programının ve adres defterinin okuyabildiği, ancak yapılacaklarınızı dışarıda bırakan bir CSV dosyası dışa aktarın.
 
 ## Bu uygulamayı ayarla
@@ -60,15 +60,26 @@ Uygulamanın bu cihazdaki görünümü ve davranışıyla ilgili seçimler, örn
   {
     id: 'importing-and-exporting',
     title: 'Kişileri içeri almak ve dışarı çıkarmak',
-    summary: 'CSV içe ve dışa aktarma ile telefon kişilerinizden kişi seçme.',
+    summary: 'Kişiler, notlar, yapılacaklar ve yedekler için tek bir İçe aktar, bir de CSV dışa aktarma.',
     group: 'Nasıl çalışır',
-    body: `## Dışa aktarma
+    body: `## İçeri tek kapı, dışarı tek kapı
+
+BlackBook’a giren her şey **İçe aktar** üzerinden gelir: telefon uygulamasında "Ayarla", ardından "İçe aktar"; web sitesinde "Eylemler", ardından "Gelişmiş", ardından "İçe aktar". Burada dört seçenek vardır:
+
+- **Kişiler**: bir CSV dosyasından ve telefon uygulamasında telefonunuzun kendi kişilerinden.
+- **Notlar**: Word dosyalarından, web sayfalarından (.html, .htm, .mht), düz metinden veya Markdown’dan. "Notlarınızı OneNote’tan getirin" makalesine bakın.
+- **Yapılacaklar**: bir metin, Markdown, tablo veya takvim dosyasındaki listeden (aşağıya bakın).
+- **BlackBook yedeğini geri yükle**: kaydettiğiniz bir yedek dosyasını açar ("Yedek dosyanız" makalesine bakın).
+
+Dışarı çıkan her şey **Yedek ve dışa aktarma** bölümündedir: telefon uygulamasında "Ayarla", ardından "Yedek ve dışa aktarma"; web sitesinde "Eylemler", ardından "Gelişmiş", ardından "Yedek ve dışa aktarma". Burada bir yedek dosyası kaydeder ve bir CSV dışa aktarırsınız.
+
+## Dışa aktarma
 
 Dışa aktarma, rehberinizin tamamını adında bugünün tarihi olan bir CSV dosyasına kaydeder. Dosyada ad, e-posta, etiketler, notlar, doğum günü, telefon, şirket ve bir kişinin doğum gününün ya da kartının gizlenip gizlenmediği için birer sütun vardır; böylece dosyayı yeniden içe aktardığınızda kişileriniz bıraktığınız gibi geri gelir. Dosya her tablo programında açılır. Yapılacaklarınız dosyada yer almaz: eksiksiz bir kopya için bunun yerine bir yedek dosyası kaydedin (bkz. "Yedek dosyanız").
 
 ## CSV dosyası içe aktarma
 
-BlackBook’tan veya başka bir adres defterinden dışa aktarılmış bir CSV dosyasını içe aktarabilirsiniz. Dosyadaki kişileri rehberinize **eklemeyi** ya da rehberinizi onlarla **değiştirmeyi** siz seçersiniz.
+"İçe aktar", ardından "Kişiler" seçeneğini seçin. BlackBook’tan veya başka bir adres defterinden dışa aktarılmış bir CSV dosyasını içe aktarabilirsiniz. Dosyadaki kişileri rehberinize **eklemeyi** ya da rehberinizi onlarla **değiştirmeyi** siz seçersiniz.
 
 BlackBook, Google Contacts ve Outlook’un kullandığı sütun adlarını tanır. Örneğin:
 
@@ -84,9 +95,21 @@ Doğum günleri 1990-06-04, 4 June 1990, June 4 veya --06-04 (yılı olmayan bir
 
 ## Telefon kişilerinizden
 
-Telefon uygulamasında, yeni bir kartı doldurmak için telefon kişilerinizden birini seçebilir ya da telefonunuzun tüm adres defterini tek seferde içe aktarabilirsiniz. Toplu içe aktarma, rehberinizde zaten olan kişileri atlar; bu yüzden daha sonra güvenle yeniden çalıştırabilirsiniz. Android’deki Chrome’da tarayıcının kişi seçicisi aynı işlemi bir ad, bir e-posta ve bir numara için sunar.
+Telefon uygulamasında, yeni bir kartı doldurmak için telefon kişilerinizden birini seçebilir ya da "İçe aktar", ardından "Kişiler" ile telefonunuzun tüm adres defterini tek seferde içe aktarabilirsiniz. Toplu içe aktarma, rehberinizde zaten olan kişileri atlar; bu yüzden daha sonra güvenle yeniden çalıştırabilirsiniz. Android’deki Chrome’da tarayıcının kişi seçicisi aynı işlemi bir ad, bir e-posta ve bir numara için sunar.
 
-BlackBook telefon kişilerinizi yalnızca siz istediğinizde okur ve onlara hiçbir zaman bir şey yazmaz. Telefonunuzdaki kişi kartında bulunan not kopyalanmaz.`,
+BlackBook telefon kişilerinizi yalnızca siz istediğinizde okur ve onlara hiçbir zaman bir şey yazmaz. Telefonunuzdaki kişi kartında bulunan not kopyalanmaz.
+
+## Yapılacakları içe aktarma
+
+Başka bir yerde tuttuğunuz bir listeyi getirmek için "İçe aktar", ardından "Yapılacaklar" seçeneğini seçin. Birden çok dosyayı aynı anda seçebilirsiniz; her dosya cihazınızda okunur, hiçbir şey yüklenmez.
+
+- **Metin ve Markdown (.txt, .md).** Her satır bir yapılacak iş olur. Madde işaretleri ve numaralar kaldırılır, işaretli bir kutu ([x]) tamamlanmış olarak gelir ve bir işin altındaki girintili satırlar onun ayrıntıları olur. Markdown başlıkları iş değil bölüm adlarıdır, bu yüzden alınmaz.
+- **Tablolar (.csv, .tsv).** Sütunlar adlarına göre okunur: iş için Title, Task veya Content; ayrıntıları için Notes veya Description; tarihi için Due veya Deadline; tamamlanıp tamamlanmadığı için Done, Completed veya Status. Todoist’in dışa aktarımı olduğu gibi çalışır; bölümleri alınmaz.
+- **Takvim dosyaları (.ics).** Dosyadaki görevler; ayrıntıları, son tarihleri ve tamamlanıp tamamlanmadıklarıyla birlikte.
+
+2026-10-25 veya 25 October 2026 gibi yazılmış son tarihler okunur. 04/06/2026 gibi yazılmış bir tarih, doğum günlerinde olduğu gibi bilerek dışarıda bırakılır: iş yine de gelir, yalnızca tarihsiz olarak.
+
+Bir şey eklenmeden önce nelerin bulunduğunu görürsünüz ve herhangi birini kaydırarak çıkarabilirsiniz. İçe aktarma, gelenleri görebilmeniz için "Yapılacaklar" sekmesini açar.`,
   },
   {
     id: 'tags-lists-and-hiding',
@@ -135,36 +158,44 @@ PIN verileri değil, uygulamayı kilitler. Rehberiniz cihazın depolama alanınd
 
 Kimse size PIN’inizi söyleyemez veya kilidi sizin yerinize kaldıramaz. Unutulan bir PIN’i aşmanın tek yolu kilit ekranındaki "Forgotten your PIN?" düğmesidir; bu düğme **bu cihazdaki rehberi siler** ve kilitsiz olarak baştan başlar. Bunu sunmayı güvenli kılan da budur: bir yabancı uygulamayı boşaltabilir ama asla okuyamaz.
 
-Şifreli çevrimiçi yedeklemeyi kullanıyorsanız, unutulan bir PIN yalnızca küçük bir zahmettir: yeniden oturum açın, yedek parola ifadenizi girin ve rehberiniz geri gelir. Bir yedek dosyanız varsa, unutulan bir PIN yalnızca küçük bir zahmettir: sıfırlamadan sonra yedeği açın ve rehberiniz geri gelir. Yedek yoksa geri yüklenecek bir şey de yoktur; bu nedenle PIN belirlemeden önce bir yedek kaydedin.`,
+Şifreli çevrimiçi yedeklemeyi kullanıyorsanız, unutulan bir PIN yalnızca küçük bir zahmettir: yeniden oturum açın (bir parola ifadesi eklediyseniz onu da girin) ve rehberiniz geri gelir. Bir yedek dosyanız varsa, unutulan bir PIN yalnızca küçük bir zahmettir: sıfırlamadan sonra "İçe aktar", ardından "BlackBook yedeğini geri yükle" seçeneğini seçin, dosyayı belirleyin ve rehberiniz geri gelir. Yedek yoksa geri yüklenecek bir şey de yoktur; bu nedenle PIN belirlemeden önce bir yedek kaydedin.`,
   },
   {
     id: 'encrypted-online-backup',
     title: 'Şifreli çevrimiçi yedekleme',
-    summary: 'Rehberinizin cihazdan çıkmadan önce nasıl şifrelendiği ve neden başka kimsenin okuyamadığı.',
+    summary: 'Rehberinizin cihazdan çıkmadan önce nasıl şifrelendiği, anahtarı kimin tuttuğu ve bir parola ifadesinin neler kattığı.',
     group: 'Gizlilik ve güvenlik',
-    body: `Çevrimiçi yedekleme isteğe bağlıdır ve Universal ID ile oturum açana kadar kapalıdır. Açıldığında BlackBook, rehberinizin bir kopyasını UNI·SIM sunucularında tutar; böylece rehber bir cihazın kaybolmasından etkilenmez ve başka bir cihazda açılabilir.
+    body: `Çevrimiçi yedekleme isteğe bağlıdır ve bir Universal ID gerektirir. Oturum açmak onu açar (telefon uygulamasında oturumu "Ayarla", ardından "Hesap" bölümünden açın); o andan itibaren BlackBook, rehberinizin bir kopyasını UNI·SIM sunucularında tutar. Böylece rehber bir cihazın kaybolmasından etkilenmez ve oturum açtığınız her cihazda açılır. Yedeklemenin ayarları "Çevrimiçi yedek" bölümündedir: telefon uygulamasında "Ayarla", ardından "Hesap", ardından "Çevrimiçi yedek"; web sitesinde "Eylemler", ardından "Gelişmiş", ardından "Çevrimiçi yedek".
 
 ## Çıkmadan önce şifrelenir
 
-Rehberiniz, herhangi bir şey gönderilmeden önce cihazınızda şifrelenir. Sunucu yalnızca anahtarına sahip olmadığı karışık veriyi alır ve saklar; bu nedenle UNI·SIM kişilerinizi, notlarınızı, etiketlerinizi veya yapılacaklarınızı okuyamaz.
+Rehberiniz, herhangi bir şey gönderilmeden önce cihazınızda, yaygın olarak kullanılan bir standart olan **256 bit anahtarlı AES-GCM** ile şifrelenir. Çevrimiçi kopyayı kimin okuyabileceği, bu anahtarın nerede tutulduğuna bağlıdır ve bunu siz seçersiniz.
 
-- Şifreleme, yaygın olarak kullanılan bir standart olan **256 bit anahtarlı AES-GCM**’dir.
-- Anahtar, **sizin seçtiğiniz bir parola ifadesinden** PBKDF2 ve SHA-256 ile 600.000 turda türetilir; bu da parola ifadesini tahmin etmeye yönelik her denemeyi yavaş ve maliyetli kılar.
+## Parola ifadesi olmadan (varsayılan)
+
+Anahtar rastgele bir anahtardır ve UNI·SIM sunucularında hesabınızla birlikte tutulur. Yeni bir cihazın rehberinizi yalnızca oturum açarak açabilmesini sağlayan budur. Onu yalnızca kendi hesabınız alabilir, ancak eşitleme yapan çoğu uygulamada olduğu gibi UNI·SIM çevrimiçi kopyayı teknik olarak **okuyabilir**.
+
+## Parola ifadesiyle
+
+Yedeklemeyi açarken "Bir parolayla koru" kutusunu işaretleyin ya da daha sonra "Çevrimiçi yedek" bölümünde "Parola ekle" seçeneğini seçin. Bundan sonra çevrimiçi kopyayı UNI·SIM dahil sizden başka kimse okuyamaz.
+
+- Anahtar, parola ifadenizden PBKDF2 ve SHA-256 ile 600.000 turda türetilir; bu da onu tahmin etmeye yönelik her denemeyi yavaş ve maliyetli kılar. Anahtar sunucudan kaldırılır.
 - Parola ifadeniz cihazınızdan hiç çıkmaz. Universal ID parolanız **değildir** ve o parolayı değiştirmek onu etkilemez.
+- Diğer cihazlarınızın her biri onu bir kez sorar.
 
 Bu önemlidir, çünkü rehberinizdeki kişiler hiçbir şeye kaydolmamıştır. Onların adları, adresleri ve onlar hakkındaki özel notlarınız, kendi verileriniz kadar özeni hak eder.
 
-## Kurtarma yoktur
+## Parola ifadesiyle kurtarma yoktur
 
-UNI·SIM anahtarınızın hiçbir kopyasını tutmaz ve parola ifadenizi sıfırlamanın bir yolu yoktur. Unutursanız çevrimiçi kopyayı kimse açamaz. Cihazınızdaki rehber etkilenmez; çevrimiçi kopyanın ana kopya değil, bir yedek olmasının nedeni budur.
+UNI·SIM bu durumda anahtarınızın hiçbir kopyasını tutmaz ve parola ifadenizi sıfırlamanın bir yolu yoktur. Unutursanız çevrimiçi kopyayı kimse açamaz. Cihazınızdaki rehber etkilenmez; çevrimiçi kopyanın ana kopya değil, bir yedek olmasının nedeni budur.
 
 ## Cihazı hatırlatmak
 
-Parola ifadesini her seferinde girmemek için bir cihazdan anahtarı hatırlamasını isteyebilirsiniz. Anahtar, uygulamanın kullanabileceği ama dışarı çıkaramayacağı bir biçimde saklanır. Oturumu kapatmak veya bu cihazı unutmayı seçmek anahtarı kaldırır.
+Parola ifadesi kullanıyorsanız, onu her seferinde girmemek için bir cihazdan anahtarı hatırlamasını isteyebilirsiniz. Anahtar, uygulamanın kullanabileceği ama dışarı çıkaramayacağı bir biçimde saklanır. Oturumu kapatmak veya "Bu cihazı unut" seçeneği anahtarı kaldırır.
 
 ## Değiştirmek veya silmek
 
-Parola ifadesini değiştirmek, onu hatırlayan bir cihazda bile mevcut ifadeyi gerektirir ve yedeği tek adımda yeniden şifreler. Yedeklemeyi kapatmak çevrimiçi kopyayı tamamen siler ve cihazınızdaki rehberi olduğu gibi bırakır. Universal ID’nizi silmek çevrimiçi kopyayı da siler.
+Parola ifadesini değiştirmek ya da "Parolayı kaldır" seçeneği, onu hatırlayan bir cihazda bile mevcut ifadeyi gerektirir ve yedeği tek adımda yeniden şifreler. Kaldırdığınızda hesabınızla birlikte yeniden rastgele bir anahtar tutulur ve cihazlarınız çevrimiçi kopyayı yalnızca yeniden oturum açarak açar. "Kapat ve çevrimiçi kopyayı sil" çevrimiçi kopyayı tamamen siler, cihazınızdaki rehberi olduğu gibi bırakır ve o cihazda yeniden oturum açmanın yedeklemeyi tekrar açmamasını sağlar. Universal ID’nizi silmek çevrimiçi kopyayı da siler.
 
 Yedeğin yaklaşık 2 MB şifreli veri sınırı vardır; bu, binlerce kişiye karşılık gelir. Bir rehber bu sınıra ulaştığında neden genellikle çok uzun notlardır.`,
   },
@@ -173,7 +204,7 @@ Yedeğin yaklaşık 2 MB şifreli veri sınırı vardır; bu, binlerce kişiye k
     title: 'Yedek dosyanız',
     summary: 'Rehberinizdeki her şeyi içeren tek bir dosya, isteğe bağlı bir parola ve dosyayı yeniden nasıl açacağınız.',
     group: 'Gizlilik ve güvenlik',
-    body: `Yedek dosyası, rehberinizin tek bir dosyadaki eksiksiz kopyasıdır. Kaydetmek için "Eylemler", ardından "Gelişmiş", ardından "Yedek, içe ve dışa aktarma" bölümünü açın ve "Yedek kaydet" seçeneğini seçin. Telefonda paylaşım menüsü açılır; dosyayı Dosyalar’da, bir bulut sürücüde ya da kendinize gönderdiğiniz bir e-postada saklayabilirsiniz. Tarayıcıda ise dosya indirilir.
+    body: `Yedek dosyası, rehberinizin tek bir dosyadaki eksiksiz kopyasıdır. Kaydetmek için "Yedek ve dışa aktarma" bölümünü açın (telefon uygulamasında "Ayarla", ardından "Yedek ve dışa aktarma"; web sitesinde "Eylemler", ardından "Gelişmiş", ardından "Yedek ve dışa aktarma") ve "Yedek kaydet" seçeneğini seçin. Telefonda paylaşım menüsü açılır; dosyayı Dosyalar’da, bir bulut sürücüde ya da kendinize gönderdiğiniz bir e-postada saklayabilirsiniz. Tarayıcıda ise dosya indirilir.
 
 ## İçinde neler var
 
@@ -196,7 +227,7 @@ Parola olmadan dosya, bir CSV dışa aktarımı gibi düz metindir: onu ele geç
 
 ## Bir yedeği açmak
 
-"Yedek aç" seçeneğini seçip dosyayı belirleyin ya da tarayıcıda dosyayı pencereye bırakın. Dosyanın parolası varsa parola sorulur. Ardından şunlardan birini seçin:
+"İçe aktar", ardından "BlackBook yedeğini geri yükle" seçeneğini seçin (telefon uygulamasında "Ayarla", ardından "İçe aktar"; web sitesinde "Eylemler", ardından "Gelişmiş", ardından "İçe aktar"). "Yedek aç" seçeneğini seçip dosyayı belirleyin ya da tarayıcıda dosyayı pencereye bırakın. Dosyanın parolası varsa parola sorulur. Ardından şunlardan birini seçin:
 
 - **Mevcutlara ekle.** Bu cihazda zaten olan her şey kalır. Dosyadaki kişiler ve yapılacaklar eklenir; bir öğe ikisinde de varsa en son düzenlenen kopya tutulur. Burada aynı adla ve aynı e-posta ya da telefon numarasıyla zaten bulunan biri iki kez eklenmez; aynı adlı etiketler tek etikete dönüşür.
 - **Her şeyi değiştir.** Siz onayladıktan sonra bu cihazdaki rehberin yerini dosyadaki rehber alır.
@@ -212,11 +243,11 @@ BlackBook bir dosyayı kullanmadan önce içindeki her alanı kontrol eder; bu s
 
 ## Yeni bir cihazda oturum açmak
 
-1. Universal ID ile oturum açın.
-2. Yedek parola ifadenizi girin.
-3. Bu cihazda zaten kendi kişileri varsa, BlackBook bunları birleştirmek mi yoksa yalnızca çevrimiçi kopyayı kullanmak mı istediğinizi sorar.
+1. Universal ID ile oturum açın (telefon uygulamasında "Ayarla", ardından "Hesap" bölümünden).
+2. Yedeği bir parola ifadesiyle koruduysanız onu girin. Parola ifadesi yoksa oturum açmak yeterlidir.
+3. Bu cihazda, örneğin oturum açmadan önce eklediğiniz, kendi kişileri veya yapılacakları varsa BlackBook bunları çevrimiçi kopyayla birleştirir ve hemen kaydeder. Seçmeniz gereken bir şey yoktur.
 
-Birleştirirken çevrimiçi kopya temel alınır ve bu cihazın kişileri ona eklenir. Zaten orada olan biri, aynı kart olarak ya da aynı ad ve aynı e-posta veya telefon numarasıyla tanınır ve iki kez eklenmez. Aynı adlı etiketler tek etikete dönüşür.
+Birleştirirken çevrimiçi kopya temel alınır ve bu cihazın kişileri ona eklenir. Zaten orada olan biri, aynı kart olarak ya da aynı ad ve aynı e-posta veya telefon numarasıyla tanınır ve iki kez eklenmez. Aynı adlı etiketler tek etikete dönüşür. Birleştirme yalnızca ekler; bu yüzden başka bir cihazda sildiğiniz biri, onu hâlâ tutan bir cihazdan geri gelebilir. Bunun yerine çevrimiçi kopyayı olduğu gibi almak için "Çevrimiçi yedek" bölümünü açın (telefon uygulamasında "Ayarla", ardından "Hesap", ardından "Çevrimiçi yedek"; web sitesinde "Eylemler", ardından "Gelişmiş", ardından "Çevrimiçi yedek") ve "Çevrimiçi kopyayı getir" seçeneğini seçin.
 
 ## Kaydetme
 
@@ -228,13 +259,13 @@ Yedekleme açıkken her değişiklik, yapıldıktan birkaç saniye sonra şifrel
 
 ## Parola ifadesini değiştirdikten sonra
 
-Bir cihazda parola ifadesini değiştirdiğinizde diğer cihazlarınız kaydetmeyi bırakır ve yeni ifadeyi ister. Onlarda hiçbir şey kaybolmaz ve kilitlerini açtığınızda kişilerini yeniden birleştirmeyi önerirler. Hâlâ eski anahtarı tutan bir cihaz bu değişikliğin üzerine yazamaz.
+Bir cihazda parola ifadesi eklediğinizde veya onu değiştirdiğinizde diğer cihazlarınız kaydetmeyi bırakır ve ifadeyi bir kez ister. Onlarda hiçbir şey kaybolmaz ve kilitlerini açtığınızda kişilerini yeniden birleştirmeyi önerirler. Hâlâ eski anahtarı tutan bir cihaz bu değişikliğin üzerine yazamaz. Parola ifadesini kaldırdığınızda diğer cihazlarınız çevrimiçi kopyayı kendiliğinden yeniden açar.
 
 ## Rehberinizi hesap olmadan taşımak
 
-1. Rehberinizin bulunduğu cihazda bir yedek dosyası kaydedin. Dosya e-postadan veya bir bulut sürücüden geçecekse parola koymak iyi bir fikirdir.
+1. Rehberinizin bulunduğu cihazda "Yedek ve dışa aktarma" bölümünden bir yedek dosyası kaydedin. Dosya e-postadan veya bir bulut sürücüden geçecekse parola koymak iyi bir fikirdir.
 2. Dosyayı diğer cihaza aktarın; örneğin AirDrop, bir bulut sürücü veya e-postayla.
-3. Diğer cihazda BlackBook’u açın, "Yedek aç" seçeneğini seçin ve dosyayı belirleyin.
+3. Diğer cihazda BlackBook’u açın, "İçe aktar", ardından "BlackBook yedeğini geri yükle" seçeneğini seçin ve dosyayı belirleyin.
 
 Diğer cihaz yeniyse "Her şeyi değiştir" seçeneğini seçin. Cihazda zaten kendi kişileri varsa "Mevcutlara ekle" seçeneğini seçin; iki rehber birleştirilir.`,
   },
@@ -261,14 +292,14 @@ Microsoft’a göre Mac için OneNote ve web için OneNote henüz sayfa dışa a
 
 ## BlackBook’a içe aktarma
 
-**Notlar** sekmesini açıp **İçe aktar**’ı seçin. Birden çok dosyayı aynı anda seçebilirsiniz: Word (.docx), web sayfaları (.html, .htm, .mht), düz metin (.txt) ve Markdown (.md).
+**İçe aktar** ▸ **Notlar** seçeneğini seçin: telefon uygulamasında "İçe aktar" **Ayarla** bölümünde, web sitesinde **Eylemler** ▸ **Gelişmiş** altındadır. Birden çok dosyayı aynı anda seçebilirsiniz: Word (.docx), web sayfaları (.html, .htm, .mht), düz metin (.txt) ve Markdown (.md).
 
 - Birden çok OneNote sayfası içeren bir Word dosyası, her sayfa başlığında bölünerek sayfa başına bir nota dönüşür.
 - Her notun başlığı sayfa başlığıdır; yoksa ilk başlık, o da yoksa dosyanın adı.
 - Metin düz metin olarak gelir: paragraflar ve listeler korunur; biçimlendirme, resimler, çizimler ve ekler korunmaz.
 - OneNote sayfanın tarihini başlığın altına yazdıysa, bu notun tarihi olur.
 
-Bir şey eklenmeden önce nelerin bulunduğunu görürsünüz.`,
+Bir şey eklenmeden önce nelerin bulunduğunu görürsünüz ve herhangi birini kaydırarak çıkarabilirsiniz. İçe aktarma "Notlar" sekmesini açar.`,
   },
 ]
 

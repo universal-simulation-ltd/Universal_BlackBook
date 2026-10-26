@@ -35,7 +35,7 @@ Tabellenprogramme formatieren manchmal um, was sie öffnen, und machen aus einem
     title: 'Wo Ihr Adressbuch gespeichert ist',
     summary: 'Auf diesem Gerät, ohne Konto – und was das für Sie bedeutet.',
     group: 'Grundlagen',
-    body: `BlackBook speichert Ihr Adressbuch auf dem Gerät, das Sie gerade verwenden. Im Browser liegt es im Speicher, den dieser Browser für diese Website vorsieht; in der App auf dem Telefon liegt es im eigenen Speicher der App. Nichts über Ihre Kontakte wird irgendwohin gesendet, es sei denn, Sie schalten die Online-Sicherung ein.
+    body: `BlackBook speichert Ihr Adressbuch auf dem Gerät, das Sie gerade verwenden. Im Browser liegt es im Speicher, den dieser Browser für diese Website vorsieht; in der App auf dem Telefon liegt es im eigenen Speicher der App. Nichts über Ihre Kontakte wird irgendwohin gesendet, es sei denn, Sie melden sich an; dadurch wird die Online-Sicherung eingeschaltet.
 
 Sie brauchen kein Konto, um BlackBook zu nutzen. Alles funktioniert auch ohne Anmeldung.
 
@@ -49,8 +49,8 @@ Sie brauchen kein Konto, um BlackBook zu nutzen. Alles funktioniert auch ohne An
 
 Da das Adressbuch auf Ihrem Gerät womöglich die einzige Kopie ist, lohnt sich eine zweite:
 
-1. Melden Sie sich mit Ihrer Universal ID an und schalten Sie die verschlüsselte Online-Sicherung ein.
-2. Speichern Sie ab und zu eine Sicherungsdatei („Erweitert“, dann „Sicherung, Import & Export“) und bewahren Sie sie sicher auf. Sie enthält alles, auch Ihre Aufgaben, und kann ein Passwort haben.
+1. Melden Sie sich mit Ihrer Universal ID an. Die verschlüsselte Online-Sicherung startet dann von selbst.
+2. Speichern Sie ab und zu eine Sicherungsdatei (in der App auf dem Telefon „Anpassen“, dann „Sicherung & Export“; auf der Website „Aktionen“, dann „Erweitert“, dann „Sicherung & Export“) und bewahren Sie sie sicher auf. Sie enthält alles, auch Ihre Aufgaben, und kann ein Passwort haben.
 3. Oder exportieren Sie eine CSV-Datei. Jedes Tabellenprogramm und jedes Adressbuch kann sie lesen, aber Ihre Aufgaben fehlen darin.
 
 ## Diese App anpassen
@@ -60,15 +60,26 @@ Einstellungen dazu, wie die App auf diesem Gerät aussieht und sich verhält, et
   {
     id: 'importing-and-exporting',
     title: 'Kontakte hinein- und hinausbringen',
-    summary: 'CSV-Import und -Export sowie das Übernehmen von Personen aus den Kontakten Ihres Telefons.',
+    summary: 'Ein Import für Kontakte, Notizen, Aufgaben und Sicherungen sowie ein CSV-Export.',
     group: 'So funktioniert es',
-    body: `## Exportieren
+    body: `## Eine Tür hinein, eine hinaus
+
+Alles, was in BlackBook hineinkommt, läuft über **Importieren**: in der App auf dem Telefon „Anpassen“, dann „Importieren“, auf der Website „Aktionen“, dann „Erweitert“, dann „Importieren“. Dort gibt es vier Möglichkeiten:
+
+- **Kontakte** aus einer CSV-Datei und in der App auf dem Telefon aus den eigenen Kontakten Ihres Telefons.
+- **Notizen** aus Word-Dateien, Webseiten (.html, .htm, .mht), reinem Text oder Markdown. Siehe „Notizen aus OneNote übernehmen“.
+- **Aufgaben** aus einer Liste in einer Text-, Markdown-, Tabellen- oder Kalenderdatei (siehe unten).
+- **BlackBook-Sicherung wiederherstellen** öffnet eine Sicherungsdatei, die Sie gespeichert haben (siehe „Ihre Sicherungsdatei“).
+
+Alles, was hinausgeht, finden Sie unter **Sicherung & Export**: in der App auf dem Telefon „Anpassen“, dann „Sicherung & Export“, auf der Website „Aktionen“, dann „Erweitert“, dann „Sicherung & Export“. Dort speichern Sie eine Sicherungsdatei und exportieren eine CSV-Datei.
+
+## Exportieren
 
 Der Export speichert Ihr gesamtes Adressbuch als CSV-Datei mit dem heutigen Datum im Namen. Sie enthält je eine Spalte für Name, E-Mail, Schlagwörter, Notizen, Geburtstag, Telefon, Firma sowie dafür, ob der Geburtstag oder die Karte einer Person ausgeblendet ist. Wenn Sie die Datei wieder importieren, sind Ihre Kontakte also so wie zuvor. Die Datei lässt sich in jedem Tabellenprogramm öffnen. Ihre Aufgaben sind nicht enthalten: Für eine vollständige Kopie speichern Sie stattdessen eine Sicherungsdatei (siehe „Ihre Sicherungsdatei“).
 
 ## Eine CSV-Datei importieren
 
-Sie können eine CSV-Datei importieren, die aus BlackBook oder aus einem anderen Adressbuch exportiert wurde. Sie wählen, ob die Personen aus der Datei Ihrem Adressbuch **hinzugefügt** werden oder ob sie Ihr Adressbuch **ersetzen**.
+Wählen Sie „Importieren“, dann „Kontakte“. Sie können eine CSV-Datei importieren, die aus BlackBook oder aus einem anderen Adressbuch exportiert wurde. Sie wählen, ob die Personen aus der Datei Ihrem Adressbuch **hinzugefügt** werden oder ob sie Ihr Adressbuch **ersetzen**.
 
 BlackBook versteht die Spaltennamen, die Google Contacts und Outlook verwenden. Zum Beispiel:
 
@@ -84,9 +95,21 @@ Geburtstage werden als 1990-06-04, 4 June 1990, June 4 oder --06-04 (ein Geburts
 
 ## Aus den Kontakten Ihres Telefons
 
-In der App auf dem Telefon können Sie eine Person aus den Kontakten Ihres Telefons wählen, um eine neue Karte auszufüllen, oder das ganze Telefonbuch auf einmal importieren. Der Gesamtimport überspringt alle, die schon in Ihrem Adressbuch stehen, Sie können ihn also später gefahrlos wiederholen. In Chrome unter Android bietet die Kontaktauswahl des Browsers dasselbe für einen Namen, eine E-Mail-Adresse und eine Nummer.
+In der App auf dem Telefon können Sie eine Person aus den Kontakten Ihres Telefons wählen, um eine neue Karte auszufüllen, oder mit „Importieren“, dann „Kontakte“ das ganze Telefonbuch auf einmal importieren. Der Gesamtimport überspringt alle, die schon in Ihrem Adressbuch stehen, Sie können ihn also später gefahrlos wiederholen. In Chrome unter Android bietet die Kontaktauswahl des Browsers dasselbe für einen Namen, eine E-Mail-Adresse und eine Nummer.
 
-BlackBook liest die Kontakte Ihres Telefons nur, wenn Sie es darum bitten, und schreibt nie etwas zurück. Die Notiz auf der Kontaktkarte Ihres Telefons wird nicht übernommen.`,
+BlackBook liest die Kontakte Ihres Telefons nur, wenn Sie es darum bitten, und schreibt nie etwas zurück. Die Notiz auf der Kontaktkarte Ihres Telefons wird nicht übernommen.
+
+## Aufgaben importieren
+
+Wählen Sie „Importieren“, dann „Aufgaben“, um eine Liste zu übernehmen, die Sie schon anderswo führen. Sie können mehrere Dateien auf einmal wählen, und jede Datei wird auf Ihrem Gerät gelesen; nichts wird hochgeladen.
+
+- **Text und Markdown (.txt, .md).** Eine Aufgabe pro Zeile. Aufzählungszeichen und Nummern fallen weg, ein angehaktes Kästchen ([x]) kommt als erledigt an, und eingerückte Zeilen unter einer Aufgabe werden zu ihren Details. Markdown-Überschriften sind Abschnittsnamen, keine Aufgaben, und werden ausgelassen.
+- **Tabellen (.csv, .tsv).** Die Spalten werden nach ihrem Namen gelesen: Title, Task oder Content für die Aufgabe, Notes oder Description für ihre Details, Due oder Deadline für ihr Datum und Done, Completed oder Status dafür, ob sie erledigt ist. Der Export von Todoist funktioniert so, wie er ist; seine Abschnitte werden ausgelassen.
+- **Kalenderdateien (.ics).** Die Aufgaben in der Datei, mit ihren Details, Fälligkeitsdaten und ob sie erledigt waren.
+
+Fälligkeitsdaten wie 2026-10-25 oder 25 October 2026 werden gelesen. Ein Datum wie 04/06/2026 wird bewusst ausgelassen, wie bei Geburtstagen: Die Aufgabe kommt trotzdem an, nur ohne Datum.
+
+Sie sehen, was gefunden wurde, bevor etwas hinzugefügt wird, und können jeden Eintrag wegwischen. Der Import schaltet den Tab „Aufgaben“ ein, damit Sie sehen, was angekommen ist.`,
   },
   {
     id: 'tags-lists-and-hiding',
@@ -135,36 +158,44 @@ Die PIN sperrt die App, nicht die Daten. Ihr Adressbuch liegt weiterhin genau so
 
 Niemand kann Ihnen Ihre PIN nennen oder die Sperre für Sie aufheben. Der einzige Weg an einer vergessenen PIN vorbei ist die Schaltfläche „Forgotten your PIN?“ auf dem Sperrbildschirm. Sie **löscht das Adressbuch auf diesem Gerät** und beginnt neu, ohne Sperre. Genau deshalb ist sie sicher: Ein Fremder könnte die App leeren, aber nie lesen.
 
-Wenn Sie die verschlüsselte Online-Sicherung nutzen, ist eine vergessene PIN nur lästig: Melden Sie sich erneut an, geben Sie Ihre Passphrase für die Sicherung ein, und Ihr Adressbuch ist wieder da. Wenn Sie eine Sicherungsdatei haben, ist eine vergessene PIN nur lästig: Öffnen Sie nach dem Zurücksetzen die Sicherung, und Ihr Adressbuch ist wieder da. Ohne Sicherung gibt es nichts wiederherzustellen. Speichern Sie also eine Sicherung, bevor Sie eine PIN festlegen.`,
+Wenn Sie die verschlüsselte Online-Sicherung nutzen, ist eine vergessene PIN nur lästig: Melden Sie sich erneut an (und geben Sie Ihre Passphrase für die Sicherung ein, falls Sie eine hinzugefügt haben), und Ihr Adressbuch ist wieder da. Wenn Sie eine Sicherungsdatei haben, ist eine vergessene PIN nur lästig: Wählen Sie nach dem Zurücksetzen „Importieren“, dann „BlackBook-Sicherung wiederherstellen“, wählen Sie die Datei, und Ihr Adressbuch ist wieder da. Ohne Sicherung gibt es nichts wiederherzustellen. Speichern Sie also eine Sicherung, bevor Sie eine PIN festlegen.`,
   },
   {
     id: 'encrypted-online-backup',
     title: 'Die verschlüsselte Online-Sicherung',
-    summary: 'Wie Ihr Adressbuch verschlüsselt wird, bevor es das Gerät verlässt, und warum niemand sonst es lesen kann.',
+    summary: 'Wie Ihr Adressbuch verschlüsselt wird, bevor es das Gerät verlässt, wer den Schlüssel hat und was eine Passphrase hinzufügt.',
     group: 'Datenschutz und Sicherheit',
-    body: `Die Online-Sicherung ist freiwillig und bleibt aus, bis Sie sich mit Ihrer Universal ID anmelden. Ist sie eingeschaltet, speichert BlackBook eine Kopie Ihres Adressbuchs auf den Servern von UNI·SIM. So übersteht es den Verlust eines Geräts und lässt sich auf einem anderen öffnen.
+    body: `Die Online-Sicherung ist freiwillig und braucht eine Universal ID. Mit der Anmeldung wird sie eingeschaltet (in der App auf dem Telefon melden Sie sich unter „Anpassen“, dann „Konto“ an). Ab dann speichert BlackBook eine Kopie Ihres Adressbuchs auf den Servern von UNI·SIM. So übersteht es den Verlust eines Geräts und öffnet sich auf jedem Gerät, auf dem Sie sich anmelden. Die Einstellungen der Sicherung finden Sie unter „Online-Sicherung“: in der App auf dem Telefon „Anpassen“, dann „Konto“, dann „Online-Sicherung“, auf der Website „Aktionen“, dann „Erweitert“, dann „Online-Sicherung“.
 
 ## Verschlüsselt, bevor es losgeht
 
-Ihr Adressbuch wird auf Ihrem Gerät verschlüsselt, bevor irgendetwas gesendet wird. Der Server empfängt und speichert nur unlesbare Daten, für die er keinen Schlüssel hat. UNI·SIM kann Ihre Kontakte, Notizen, Schlagwörter und Aufgaben daher nicht lesen.
+Ihr Adressbuch wird auf Ihrem Gerät verschlüsselt, bevor irgendetwas gesendet wird, mit **AES-GCM und einem 256-Bit-Schlüssel**, einem weit verbreiteten Standard. Wer die Online-Kopie lesen kann, hängt davon ab, wo dieser Schlüssel liegt – und das entscheiden Sie.
 
-- Verschlüsselt wird mit **AES-GCM und einem 256-Bit-Schlüssel**, einem weit verbreiteten Standard.
-- Der Schlüssel wird aus einer **Passphrase, die Sie selbst wählen**, mit PBKDF2 und SHA-256 in 600.000 Durchläufen abgeleitet. Das macht jeden Rateversuch langsam und teuer.
+## Ohne Passphrase (die Voreinstellung)
+
+Der Schlüssel ist ein zufälliger und liegt bei Ihrem Konto auf den Servern von UNI·SIM. Deshalb kann ein neues Gerät Ihr Adressbuch allein durch die Anmeldung öffnen. Nur Ihr eigenes Konto kann ihn abrufen, aber UNI·SIM **könnte** die Online-Kopie technisch lesen, wie bei den meisten Apps, die synchronisieren.
+
+## Mit einer Passphrase
+
+Setzen Sie beim Einschalten der Sicherung das Häkchen bei „Mit einer Passphrase schützen“ oder wählen Sie später unter „Online-Sicherung“ „Passphrase hinzufügen“. Dann kann niemand außer Ihnen die Online-Kopie lesen, auch UNI·SIM nicht.
+
+- Der Schlüssel wird mit PBKDF2 und SHA-256 in 600.000 Durchläufen aus Ihrer Passphrase abgeleitet, was jeden Rateversuch langsam und teuer macht, und der Schlüssel wird vom Server entfernt.
 - Ihre Passphrase verlässt nie Ihr Gerät. Sie ist **nicht** das Passwort Ihrer Universal ID, und eine Änderung dieses Passworts wirkt sich nicht auf sie aus.
+- Jedes Ihrer anderen Geräte fragt einmal danach.
 
 Das ist wichtig, weil sich die Menschen in Ihrem Adressbuch nirgends angemeldet haben. Ihre Namen, Adressen und Ihre privaten Notizen über sie verdienen dieselbe Sorgfalt wie Ihre eigenen Daten.
 
-## Keine Wiederherstellung
+## Mit Passphrase gibt es keine Wiederherstellung
 
-UNI·SIM besitzt keine Kopie Ihres Schlüssels und kann Ihre Passphrase nicht zurücksetzen. Wenn Sie sie vergessen, kann niemand die Online-Kopie öffnen. Das Adressbuch auf Ihrem Gerät ist davon nicht betroffen – deshalb ist die Online-Kopie eine Sicherung und nicht die Hauptkopie.
+UNI·SIM besitzt dann keine Kopie Ihres Schlüssels und kann Ihre Passphrase nicht zurücksetzen. Wenn Sie sie vergessen, kann niemand die Online-Kopie öffnen. Das Adressbuch auf Ihrem Gerät ist davon nicht betroffen – deshalb ist die Online-Kopie eine Sicherung und nicht die Hauptkopie.
 
 ## Ein Gerät merken
 
-Sie können ein Gerät den Schlüssel merken lassen, damit Sie die Passphrase nicht jedes Mal eingeben müssen. Der Schlüssel wird so gespeichert, dass die App ihn verwenden, aber nicht auslesen kann. Abmelden oder „Forget this device“ entfernt ihn.
+Mit einer Passphrase können Sie ein Gerät den Schlüssel merken lassen, damit Sie die Passphrase nicht jedes Mal eingeben müssen. Der Schlüssel wird so gespeichert, dass die App ihn verwenden, aber nicht auslesen kann. Abmelden oder „Dieses Gerät vergessen“ entfernt ihn.
 
 ## Ändern oder löschen
 
-Zum Ändern der Passphrase brauchen Sie die aktuelle, auch auf einem Gerät, das sie sich merkt. Die Sicherung wird dann in einem Schritt neu verschlüsselt. Wenn Sie die Sicherung ausschalten, wird die Online-Kopie vollständig gelöscht und das Adressbuch auf Ihrem Gerät bleibt, wie es ist. Wenn Sie Ihre Universal ID löschen, wird die Online-Kopie mitgelöscht.
+Zum Ändern der Passphrase oder für „Passphrase entfernen“ brauchen Sie die aktuelle, auch auf einem Gerät, das sie sich merkt. Die Sicherung wird dann in einem Schritt neu verschlüsselt. Wenn Sie sie entfernen, liegt wieder ein zufälliger Schlüssel bei Ihrem Konto, und Ihre Geräte öffnen die Online-Kopie allein durch die Anmeldung. „Ausschalten und Online-Kopie löschen“ löscht die Online-Kopie vollständig, lässt das Adressbuch auf Ihrem Gerät, wie es ist, und sorgt dafür, dass eine erneute Anmeldung auf diesem Gerät die Sicherung nicht wieder einschaltet. Wenn Sie Ihre Universal ID löschen, wird die Online-Kopie mitgelöscht.
 
 Die Sicherung ist auf etwa 2 MB verschlüsselte Daten begrenzt, das sind viele Tausend Kontakte. Meist sind sehr lange Notizen der Grund, wenn ein Adressbuch diese Grenze erreicht.`,
   },
@@ -173,7 +204,7 @@ Die Sicherung ist auf etwa 2 MB verschlüsselte Daten begrenzt, das sind viele T
     title: 'Ihre Sicherungsdatei',
     summary: 'Eine Datei mit allem aus Ihrem Adressbuch, ein optionales Passwort und wie Sie sie wieder öffnen.',
     group: 'Datenschutz und Sicherheit',
-    body: `Eine Sicherungsdatei ist eine vollständige Kopie Ihres Adressbuchs in einer einzigen Datei. Um eine zu speichern, öffnen Sie „Aktionen“, dann „Erweitert“, dann „Sicherung, Import & Export“, und wählen Sie „Sicherung speichern“. Auf dem Telefon öffnet sich das Teilen-Menü, sodass Sie die Datei in „Dateien“, in einem Cloud-Speicher oder in einer E-Mail an sich selbst ablegen können; im Browser wird sie heruntergeladen.
+    body: `Eine Sicherungsdatei ist eine vollständige Kopie Ihres Adressbuchs in einer einzigen Datei. Um eine zu speichern, öffnen Sie „Sicherung & Export“ (in der App auf dem Telefon „Anpassen“, dann „Sicherung & Export“; auf der Website „Aktionen“, dann „Erweitert“, dann „Sicherung & Export“) und wählen Sie „Sicherung erstellen“. Auf dem Telefon öffnet sich das Teilen-Menü, sodass Sie die Datei in „Dateien“, in einem Cloud-Speicher oder in einer E-Mail an sich selbst ablegen können; im Browser wird sie heruntergeladen.
 
 ## Was sie enthält
 
@@ -196,7 +227,7 @@ Ohne Passwort ist die Datei reiner Text, wie ein CSV-Export: Wer sie in die Hän
 
 ## Eine Sicherung öffnen
 
-Wählen Sie „Sicherung öffnen“ und dann die Datei, oder ziehen Sie sie im Browser in das Fenster. Hat sie ein Passwort, werden Sie danach gefragt. Wählen Sie dann:
+Wählen Sie „Importieren“, dann „BlackBook-Sicherung wiederherstellen“ (in der App auf dem Telefon „Anpassen“, dann „Importieren“; auf der Website „Aktionen“, dann „Erweitert“, dann „Importieren“). Wählen Sie „Sicherung öffnen“ und dann die Datei, oder ziehen Sie sie im Browser in das Fenster. Hat sie ein Passwort, werden Sie danach gefragt. Wählen Sie dann:
 
 - **Zum Vorhandenen hinzufügen.** Alles, was schon auf diesem Gerät ist, bleibt. Personen und Aufgaben aus der Datei werden hinzugefügt, und ist etwas in beiden vorhanden, bleibt die zuletzt bearbeitete Fassung. Wer hier schon mit demselben Namen und derselben E-Mail-Adresse oder Telefonnummer steht, wird nicht doppelt hinzugefügt, und Schlagwörter mit gleichem Namen werden zu einem.
 - **Alles ersetzen.** Das Adressbuch auf diesem Gerät wird nach Ihrer Bestätigung durch das aus der Datei ersetzt.
@@ -212,11 +243,11 @@ BlackBook prüft jedes Feld einer Datei, bevor es sie verwendet. Eine beschädig
 
 ## Auf einem neuen Gerät anmelden
 
-1. Melden Sie sich mit Ihrer Universal ID an.
-2. Geben Sie Ihre Passphrase für die Sicherung ein.
-3. Hat dieses Gerät schon eigene Kontakte, fragt BlackBook, ob sie zusammengeführt werden sollen oder ob nur die Online-Kopie verwendet werden soll.
+1. Melden Sie sich mit Ihrer Universal ID an (in der App auf dem Telefon unter „Anpassen“, dann „Konto“).
+2. Wenn Sie die Sicherung mit einer Passphrase geschützt haben, geben Sie sie ein. Ohne Passphrase genügt die Anmeldung.
+3. Hat dieses Gerät schon eigene Kontakte oder Aufgaben, etwa solche, die Sie vor der Anmeldung hinzugefügt haben, führt BlackBook sie in die Online-Kopie zusammen und speichert diese sofort. Sie müssen nichts auswählen.
 
-Beim Zusammenführen ist die Online-Kopie die Grundlage, und die Kontakte dieses Geräts werden ergänzt. Wer schon vorhanden ist – als dieselbe Karte oder mit demselben Namen und derselben E-Mail-Adresse oder Telefonnummer –, wird nicht doppelt hinzugefügt. Schlagwörter mit gleichem Namen werden zu einem.
+Beim Zusammenführen ist die Online-Kopie die Grundlage, und die Kontakte dieses Geräts werden ergänzt. Wer schon vorhanden ist – als dieselbe Karte oder mit demselben Namen und derselben E-Mail-Adresse oder Telefonnummer –, wird nicht doppelt hinzugefügt. Schlagwörter mit gleichem Namen werden zu einem. Zusammenführen fügt immer nur hinzu: Jemand, den Sie auf einem anderen Gerät gelöscht haben, kann also von einem Gerät zurückkommen, auf dem er noch steht. Um stattdessen die Online-Kopie genau so zu übernehmen, wie sie ist, öffnen Sie „Online-Sicherung“ (in der App auf dem Telefon „Anpassen“, dann „Konto“, dann „Online-Sicherung“; auf der Website „Aktionen“, dann „Erweitert“, dann „Online-Sicherung“) und wählen Sie „Online-Kopie abrufen“.
 
 ## Speichern
 
@@ -228,13 +259,13 @@ Die Online-Kopie wird als ganzes Adressbuch gespeichert. Haben zwei Geräte das 
 
 ## Nach einer Änderung der Passphrase
 
-Wenn Sie die Passphrase auf einem Gerät ändern, hören Ihre anderen Geräte auf zu speichern und fragen nach der neuen. Auf ihnen geht nichts verloren, und beim Entsperren bieten sie an, ihre Kontakte wieder zusammenzuführen. Ein Gerät mit dem alten Schlüssel kann die Änderung nicht überschreiben.
+Wenn Sie auf einem Gerät eine Passphrase hinzufügen oder sie ändern, hören Ihre anderen Geräte auf zu speichern und fragen einmal danach. Auf ihnen geht nichts verloren, und beim Entsperren bieten sie an, ihre Kontakte wieder zusammenzuführen. Ein Gerät mit dem alten Schlüssel kann die Änderung nicht überschreiben. Wenn Sie die Passphrase entfernen, öffnen Ihre anderen Geräte die Online-Kopie wieder von selbst.
 
 ## Ihr Adressbuch ohne Konto umziehen
 
-1. Speichern Sie auf dem Gerät, auf dem Ihr Adressbuch ist, eine Sicherungsdatei. Ein Passwort ist sinnvoll, wenn die Datei per E-Mail oder über einen Cloud-Speicher reist.
+1. Speichern Sie auf dem Gerät, auf dem Ihr Adressbuch ist, unter „Sicherung & Export“ eine Sicherungsdatei. Ein Passwort ist sinnvoll, wenn die Datei per E-Mail oder über einen Cloud-Speicher reist.
 2. Bringen Sie die Datei auf das andere Gerät, zum Beispiel per AirDrop, Cloud-Speicher oder E-Mail.
-3. Öffnen Sie auf dem anderen Gerät BlackBook, wählen Sie „Sicherung öffnen“ und dann die Datei.
+3. Öffnen Sie auf dem anderen Gerät BlackBook, wählen Sie „Importieren“, dann „BlackBook-Sicherung wiederherstellen“, und dann die Datei.
 
 Ist das andere Gerät neu, wählen Sie „Alles ersetzen“. Hat es schon eigene Personen, wählen Sie „Zum Vorhandenen hinzufügen“, und die beiden Adressbücher werden zusammengeführt.`,
   },
@@ -261,14 +292,14 @@ Laut Microsoft können OneNote für Mac und OneNote für das Web noch keine Seit
 
 ## In BlackBook importieren
 
-Öffnen Sie den Tab **Notizen** und wählen Sie **Importieren**. Sie können mehrere Dateien auf einmal wählen: Word (.docx), Webseiten (.html, .htm, .mht), reiner Text (.txt) und Markdown (.md).
+Wählen Sie **Importieren** ▸ **Notizen**: In der App auf dem Telefon finden Sie „Importieren“ unter **Anpassen**, auf der Website unter **Aktionen** ▸ **Erweitert**. Sie können mehrere Dateien auf einmal wählen: Word (.docx), Webseiten (.html, .htm, .mht), reiner Text (.txt) und Markdown (.md).
 
 - Eine Word-Datei mit mehreren OneNote-Seiten wird zu einer Notiz pro Seite, getrennt an jedem Seitentitel.
 - Der Titel jeder Notiz ist der Seitentitel, sonst die erste Überschrift, sonst der Dateiname.
 - Der Text kommt als reiner Text: Absätze und Listen bleiben erhalten, Formatierung, Bilder, Zeichnungen und Anhänge nicht.
 - Hat OneNote das Datum der Seite unter den Titel geschrieben, wird es zum Datum der Notiz.
 
-Sie sehen, was gefunden wurde, bevor etwas hinzugefügt wird.`,
+Sie sehen, was gefunden wurde, bevor etwas hinzugefügt wird, und können jeden Eintrag wegwischen. Der Import schaltet den Tab „Notizen“ ein.`,
   },
 ]
 

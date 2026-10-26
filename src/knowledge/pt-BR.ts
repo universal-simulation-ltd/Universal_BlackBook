@@ -35,7 +35,7 @@ Programas de planilha às vezes mudam o formato do que abrem, transformando um a
     title: 'Onde sua agenda fica guardada',
     summary: 'Neste aparelho, sem precisar de conta, e o que isso significa para você.',
     group: 'O básico',
-    body: `O BlackBook guarda sua agenda no aparelho que você está usando. No navegador, ela fica no armazenamento que esse navegador reserva para este site; no aplicativo do celular, fica no armazenamento do próprio aplicativo. Nada sobre seus contatos é enviado a lugar nenhum, a menos que você ative o backup on-line.
+    body: `O BlackBook guarda sua agenda no aparelho que você está usando. No navegador, ela fica no armazenamento que esse navegador reserva para este site; no aplicativo do celular, fica no armazenamento do próprio aplicativo. Nada sobre seus contatos é enviado a lugar nenhum, a menos que você faça login, o que liga o backup on-line.
 
 Você não precisa de conta para usar o BlackBook. Tudo funciona sem fazer login.
 
@@ -49,8 +49,8 @@ Você não precisa de conta para usar o BlackBook. Tudo funciona sem fazer login
 
 Como a agenda do seu aparelho pode ser a única cópia, vale a pena ter outra:
 
-1. Faça login com seu Universal ID e ative o backup on-line criptografado.
-2. Salve um arquivo de backup de vez em quando (Avançado, depois Backup, importação e exportação) e guarde em um lugar seguro. Ele tem tudo, inclusive as tarefas, e pode ter senha.
+1. Faça login com seu Universal ID. O backup on-line criptografado começa sozinho.
+2. Salve um arquivo de backup de vez em quando (Ajustar, depois Backup e exportar no aplicativo do celular; Ações, depois Avançado, depois Backup e exportar no site) e guarde em um lugar seguro. Ele tem tudo, inclusive as tarefas, e pode ter senha.
 3. Ou exporte um arquivo CSV, que qualquer planilha ou agenda consegue ler, mas que deixa as tarefas de fora.
 
 ## Ajustar este app
@@ -60,15 +60,26 @@ As escolhas sobre a aparência e o comportamento do aplicativo neste aparelho, c
   {
     id: 'importing-and-exporting',
     title: 'Colocando contatos para dentro e para fora',
-    summary: 'Importar e exportar CSV, e escolher pessoas dos contatos do celular.',
+    summary: 'Um só Importar para contatos, notas, tarefas e backups, e uma exportação CSV.',
     group: 'Como funciona',
-    body: `## Exportar
+    body: `## Uma porta para entrar, uma para sair
+
+Tudo o que entra no BlackBook passa por **Importar**: Ajustar, depois Importar no aplicativo do celular, ou Ações, depois Avançado, depois Importar no site. Há quatro opções:
+
+- **Contatos**, de um arquivo CSV e, no aplicativo do celular, dos contatos do próprio celular.
+- **Notas**, de arquivos do Word, páginas da web (.html, .htm, .mht), texto simples ou Markdown. Veja Traga suas notas do OneNote.
+- **Tarefas**, de uma lista em um arquivo de texto, Markdown, planilha ou calendário (veja abaixo).
+- **Restaurar um backup do BlackBook**, que abre um arquivo de backup que você salvou (veja Seu arquivo de backup).
+
+Tudo o que sai fica em **Backup e exportar**: Ajustar, depois Backup e exportar no aplicativo do celular, ou Ações, depois Avançado, depois Backup e exportar no site. Ali você salva um arquivo de backup e exporta um CSV.
+
+## Exportar
 
 A exportação salva toda a sua agenda em um arquivo CSV com a data de hoje no nome. Ele tem uma coluna para nome, e-mail, etiquetas, anotações, aniversário, telefone, empresa e para indicar se o aniversário ou o cartão de uma pessoa está oculto, então importá-lo de volta restaura seus contatos como você os deixou. O arquivo abre em qualquer programa de planilha. Ele deixa suas tarefas de fora: para uma cópia completa, salve um arquivo de backup (veja Seu arquivo de backup).
 
 ## Importar um arquivo CSV
 
-Você pode importar um arquivo CSV exportado do BlackBook ou de outra agenda. Você escolhe se quer **adicionar** as pessoas do arquivo à sua agenda ou **substituir** a agenda por elas.
+Escolha Importar, depois Contatos. Você pode importar um arquivo CSV exportado do BlackBook ou de outra agenda. Você escolhe se quer **adicionar** as pessoas do arquivo à sua agenda ou **substituir** a agenda por elas.
 
 O BlackBook entende os nomes de coluna usados pelo Google Contacts e pelo Outlook. Por exemplo:
 
@@ -84,9 +95,21 @@ Os aniversários são aceitos como 1990-06-04, 4 June 1990, June 4 ou --06-04 (u
 
 ## Dos contatos do seu celular
 
-No aplicativo do celular, você pode escolher uma pessoa dos contatos do celular para preencher um novo cartão ou importar toda a agenda do celular de uma vez. A importação completa pula quem já está na sua agenda, então você pode repeti-la depois sem problema. No Chrome para Android, o seletor de contatos do navegador oferece o mesmo para um nome, um e-mail e um número.
+No aplicativo do celular, você pode escolher uma pessoa dos contatos do celular para preencher um novo cartão ou importar toda a agenda do celular de uma vez com Importar, depois Contatos. A importação completa pula quem já está na sua agenda, então você pode repeti-la depois sem problema. No Chrome para Android, o seletor de contatos do navegador oferece o mesmo para um nome, um e-mail e um número.
 
-O BlackBook só lê os contatos do celular quando você pede e nunca grava nada neles. A anotação do cartão de contato do celular não é copiada.`,
+O BlackBook só lê os contatos do celular quando você pede e nunca grava nada neles. A anotação do cartão de contato do celular não é copiada.
+
+## Importar tarefas
+
+Escolha Importar, depois Tarefas, para trazer uma lista que você já mantém em outro lugar. Você pode escolher vários arquivos de uma vez, e cada arquivo é lido no seu aparelho; nada é enviado.
+
+- **Texto e Markdown (.txt, .md).** Uma tarefa por linha. Marcadores e números são retirados, uma caixa marcada ([x]) chega como concluída, e linhas recuadas abaixo de uma tarefa viram os detalhes dela. Títulos de Markdown são nomes de seção, não tarefas, por isso ficam de fora.
+- **Planilhas (.csv, .tsv).** As colunas são lidas pelo nome: Title, Task ou Content para a tarefa, Notes ou Description para os detalhes, Due ou Deadline para a data, e Done, Completed ou Status para saber se está concluída. A exportação do Todoist funciona como está; as seções dele ficam de fora.
+- **Arquivos de calendário (.ics).** As tarefas do arquivo, com detalhes, prazos e se foram concluídas.
+
+Prazos escritos como 2026-10-25 ou 25 October 2026 são lidos. Uma data escrita como 04/06/2026 fica de fora de propósito, como nos aniversários: a tarefa entra mesmo assim, só que sem data.
+
+Você vê o que foi encontrado antes de qualquer coisa ser adicionada e pode tirar qualquer item deslizando. A importação liga a aba Tarefas, para você ver o que entrou.`,
   },
   {
     id: 'tags-lists-and-hiding',
@@ -135,36 +158,44 @@ O PIN bloqueia o aplicativo, não os dados. Sua agenda continua no armazenamento
 
 Ninguém pode dizer seu PIN nem tirar o bloqueio por você. A única forma de passar por um PIN esquecido é o botão "Forgotten your PIN?" na tela de bloqueio, que **apaga a agenda deste aparelho** e recomeça do zero, sem bloqueio. É isso que torna seguro oferecê-lo: um estranho poderia esvaziar o aplicativo, mas nunca lê-lo.
 
-Se você usa o backup on-line criptografado, esquecer o PIN é só um incômodo: faça login de novo, digite a frase secreta do backup e sua agenda volta. Se você tem um arquivo de backup, esquecer o PIN é só um incômodo: depois de recomeçar, abra o backup e sua agenda volta. Sem ele, não há de onde restaurar, então salve um backup antes de definir um PIN.`,
+Se você usa o backup on-line criptografado, esquecer o PIN é só um incômodo: faça login de novo (e digite a frase secreta do backup, se tiver adicionado uma) e sua agenda volta. Se você tem um arquivo de backup, esquecer o PIN é só um incômodo: depois de recomeçar, escolha Importar, depois Restaurar um backup do BlackBook, selecione o arquivo e sua agenda volta. Sem ele, não há de onde restaurar, então salve um backup antes de definir um PIN.`,
   },
   {
     id: 'encrypted-online-backup',
     title: 'O backup on-line criptografado',
-    summary: 'Como sua agenda é criptografada antes de sair do aparelho e por que ninguém mais consegue lê-la.',
+    summary: 'Como sua agenda é criptografada antes de sair do aparelho, quem guarda a chave e o que uma frase secreta acrescenta.',
     group: 'Privacidade e segurança',
-    body: `O backup on-line é opcional e fica desligado até você fazer login com seu Universal ID. Depois de ativado, o BlackBook guarda uma cópia da sua agenda nos servidores da UNI·SIM, para que ela sobreviva à perda de um aparelho e possa ser aberta em outro.
+    body: `O backup on-line é opcional e precisa de um Universal ID. Fazer login liga o backup (no aplicativo do celular, faça login em Ajustar, depois Conta), e a partir daí o BlackBook guarda uma cópia da sua agenda nos servidores da UNI·SIM, para que ela sobreviva à perda de um aparelho e abra em todo aparelho em que você fizer login. As opções do backup ficam em Backup on-line: Ajustar, depois Conta, depois Backup on-line no aplicativo do celular, ou Ações, depois Avançado, depois Backup on-line no site.
 
 ## Criptografado antes de sair
 
-Sua agenda é criptografada no seu aparelho antes de qualquer envio. O servidor recebe e guarda apenas dados embaralhados para os quais não tem chave, então a UNI·SIM não consegue ler seus contatos, anotações, etiquetas ou tarefas.
+Sua agenda é criptografada no seu aparelho antes de qualquer envio, com **AES-GCM e chave de 256 bits**, um padrão amplamente usado. Quem consegue ler a cópia on-line depende de onde essa chave fica guardada, e quem escolhe é você.
 
-- A criptografia é **AES-GCM com chave de 256 bits**, um padrão amplamente usado.
-- A chave é gerada a partir de uma **frase secreta escolhida por você**, usando PBKDF2 com SHA-256 e 600.000 rodadas, o que torna cada tentativa de adivinhar a frase lenta e cara.
+## Sem frase secreta (o padrão)
+
+A chave é aleatória e fica guardada com a sua conta nos servidores da UNI·SIM. É isso que permite que um aparelho novo abra sua agenda só com o login. Só a sua própria conta consegue buscá-la, mas a UNI·SIM **poderia** tecnicamente ler a cópia on-line, como acontece com a maioria dos aplicativos que sincronizam.
+
+## Com uma frase secreta
+
+Marque Proteger com uma frase secreta ao ligar o backup, ou escolha depois Adicionar uma frase secreta em Backup on-line. Aí ninguém além de você consegue ler a cópia on-line, nem a UNI·SIM.
+
+- A chave é gerada a partir da sua frase secreta, usando PBKDF2 com SHA-256 e 600.000 rodadas, o que torna cada tentativa de adivinhá-la lenta e cara, e a chave é retirada do servidor.
 - Sua frase secreta nunca sai do seu aparelho. Ela **não** é a senha do seu Universal ID, e mudar essa senha não a afeta.
+- Cada um dos seus outros aparelhos pede a frase uma vez.
 
 Isso importa porque as pessoas da sua agenda não se cadastraram em nada. Os nomes, os endereços e suas anotações particulares sobre elas merecem o mesmo cuidado que os seus próprios dados.
 
-## Não há recuperação
+## Com frase secreta, não há recuperação
 
-A UNI·SIM não guarda nenhuma cópia da sua chave e não tem como redefinir sua frase secreta. Se você esquecê-la, ninguém consegue abrir a cópia on-line. A agenda no seu aparelho não é afetada, e é por isso que a cópia on-line é um backup, e não a cópia principal.
+A UNI·SIM então não guarda nenhuma cópia da sua chave e não tem como redefinir sua frase secreta. Se você esquecê-la, ninguém consegue abrir a cópia on-line. A agenda no seu aparelho não é afetada, e é por isso que a cópia on-line é um backup, e não a cópia principal.
 
 ## Lembrar um aparelho
 
-Você pode pedir que um aparelho lembre a chave, para não precisar digitar a frase secreta toda vez. A chave é guardada de um jeito que o aplicativo consegue usar, mas não consegue extrair. Sair da conta, ou escolher esquecer este aparelho, apaga a chave.
+Com uma frase secreta, você pode pedir que um aparelho lembre a chave, para não precisar digitar a frase toda vez. A chave é guardada de um jeito que o aplicativo consegue usar, mas não consegue extrair. Sair da conta, ou escolher Esquecer este dispositivo, apaga a chave.
 
 ## Mudar ou apagar
 
-Para mudar a frase secreta é preciso informar a atual, mesmo em um aparelho que a lembra, e o backup é criptografado de novo em uma única etapa. Desligar o backup apaga completamente a cópia on-line e deixa a agenda do seu aparelho como está. Excluir seu Universal ID exclui junto a cópia on-line.
+Para mudar a frase secreta, ou para escolher Remover a frase secreta, é preciso informar a atual, mesmo em um aparelho que a lembra, e o backup é criptografado de novo em uma única etapa. Remover a frase coloca de volta uma chave aleatória com a sua conta, e seus aparelhos abrem a cópia on-line só fazendo login de novo. Desativar e apagar a cópia on-line apaga completamente a cópia on-line, deixa a agenda do seu aparelho como está e faz com que um novo login nesse aparelho não ligue o backup de novo. Excluir seu Universal ID exclui junto a cópia on-line.
 
 O backup tem um limite de cerca de 2 MB de dados criptografados, o que equivale a muitos milhares de contatos. Anotações muito longas costumam ser o motivo quando uma agenda chega a esse limite.`,
   },
@@ -173,7 +204,7 @@ O backup tem um limite de cerca de 2 MB de dados criptografados, o que equivale 
     title: 'Seu arquivo de backup',
     summary: 'Um arquivo com tudo o que está na sua agenda, uma senha opcional e como abri-lo de novo.',
     group: 'Privacidade e segurança',
-    body: `Um arquivo de backup é uma cópia completa da sua agenda em um único arquivo. Para salvar um, abra Ações, depois Avançado, depois Backup, importação e exportação, e escolha Salvar um backup. No celular, abre-se o menu de compartilhamento para você guardar o arquivo em Arquivos, em um serviço de nuvem ou em um e-mail para você mesmo; no navegador, ele é baixado.
+    body: `Um arquivo de backup é uma cópia completa da sua agenda em um único arquivo. Para salvar um, abra Backup e exportar (Ajustar, depois Backup e exportar no aplicativo do celular; Ações, depois Avançado, depois Backup e exportar no site) e escolha Salvar um backup. No celular, abre-se o menu de compartilhamento para você guardar o arquivo em Arquivos, em um serviço de nuvem ou em um e-mail para você mesmo; no navegador, ele é baixado.
 
 ## O que tem nele
 
@@ -196,7 +227,7 @@ Sem senha, o arquivo é texto simples, como uma exportação CSV: qualquer pesso
 
 ## Abrindo um backup
 
-Escolha Abrir um backup e selecione o arquivo, ou arraste-o para a janela no navegador. Se ele tiver senha, ela será pedida. Depois escolha:
+Escolha Importar, depois Restaurar um backup do BlackBook (Ajustar, depois Importar no aplicativo do celular; Ações, depois Avançado, depois Importar no site). Escolha Abrir um backup e selecione o arquivo, ou arraste-o para a janela no navegador. Se ele tiver senha, ela será pedida. Depois escolha:
 
 - **Adicionar ao que já existe.** Tudo o que já está neste aparelho continua. As pessoas e tarefas do arquivo são adicionadas e, se uma estiver nos dois, fica a cópia editada por último. Quem já está aqui com o mesmo nome e o mesmo e-mail ou telefone não é adicionado duas vezes, e etiquetas com o mesmo nome viram uma só.
 - **Substituir tudo.** A agenda deste aparelho é trocada pela do arquivo, depois que você confirma.
@@ -212,11 +243,11 @@ O BlackBook confere cada campo de um arquivo antes de usá-lo, então um arquivo
 
 ## Fazendo login em um aparelho novo
 
-1. Faça login com seu Universal ID.
-2. Digite a frase secreta do backup.
-3. Se este aparelho já tiver contatos próprios, o BlackBook pergunta se você quer mesclá-los ou usar apenas a cópia on-line.
+1. Faça login com seu Universal ID (no aplicativo do celular, em Ajustar, depois Conta).
+2. Se você protegeu o backup com uma frase secreta, digite-a. Sem ela, basta fazer login.
+3. Se este aparelho já tiver contatos ou tarefas próprios, como os que você adicionou antes de fazer login, o BlackBook os mescla na cópia on-line e a salva na hora. Não há nada para escolher.
 
-Ao mesclar, a cópia on-line é o ponto de partida e os contatos deste aparelho são adicionados a ela. Quem já está lá, reconhecido como o mesmo cartão ou pelo mesmo nome com o mesmo e-mail ou telefone, não é adicionado duas vezes. Etiquetas com o mesmo nome viram uma só.
+Ao mesclar, a cópia on-line é o ponto de partida e os contatos deste aparelho são adicionados a ela. Quem já está lá, reconhecido como o mesmo cartão ou pelo mesmo nome com o mesmo e-mail ou telefone, não é adicionado duas vezes. Etiquetas com o mesmo nome viram uma só. Mesclar só adiciona, então alguém que você apagou em outro aparelho pode voltar de um aparelho que ainda o tenha. Para ficar com a cópia on-line exatamente como está, abra Backup on-line (Ajustar, depois Conta, depois Backup on-line no aplicativo do celular; Ações, depois Avançado, depois Backup on-line no site) e escolha Buscar cópia on-line.
 
 ## Salvamento
 
@@ -228,13 +259,13 @@ A cópia on-line é salva como uma agenda inteira. Se dois aparelhos alteraram a
 
 ## Depois de mudar a frase secreta
 
-Quando você muda a frase secreta em um aparelho, os outros param de salvar e pedem a nova. Nada se perde neles, e ao desbloqueá-los eles oferecem mesclar de novo seus contatos. Um aparelho que ainda tenha a chave antiga não consegue sobrescrever a mudança.
+Quando você adiciona ou muda a frase secreta em um aparelho, os outros param de salvar e pedem a frase uma vez. Nada se perde neles, e ao desbloqueá-los eles oferecem mesclar de novo seus contatos. Um aparelho que ainda tenha a chave antiga não consegue sobrescrever a mudança. Quando você remove a frase secreta, os outros aparelhos voltam a abrir a cópia on-line sozinhos.
 
 ## Levando sua agenda sem conta
 
-1. No aparelho que tem sua agenda, salve um arquivo de backup. Uma senha é uma boa ideia se o arquivo for passar por e-mail ou por um serviço de nuvem.
+1. No aparelho que tem sua agenda, salve um arquivo de backup em Backup e exportar. Uma senha é uma boa ideia se o arquivo for passar por e-mail ou por um serviço de nuvem.
 2. Coloque o arquivo no outro aparelho, por exemplo com AirDrop, um serviço de nuvem ou e-mail.
-3. No outro aparelho, abra o BlackBook, escolha Abrir um backup e selecione o arquivo.
+3. No outro aparelho, abra o BlackBook, escolha Importar, depois Restaurar um backup do BlackBook, e selecione o arquivo.
 
 Se o outro aparelho for novo, escolha Substituir tudo. Se ele já tiver pessoas próprias, escolha Adicionar ao que já existe e as duas agendas são mescladas.`,
   },
@@ -261,14 +292,14 @@ Segundo a Microsoft, o OneNote para Mac e o OneNote para a web ainda não export
 
 ## Importar no BlackBook
 
-Abra a aba **Notas** e escolha **Importar**. Você pode escolher vários arquivos de uma vez: Word (.docx), páginas da web (.html, .htm, .mht), texto simples (.txt) e Markdown (.md).
+Escolha **Importar** ▸ **Notas**: no aplicativo do celular, Importar fica em **Ajustar**; no site, em **Ações** ▸ **Avançado**. Você pode escolher vários arquivos de uma vez: Word (.docx), páginas da web (.html, .htm, .mht), texto simples (.txt) e Markdown (.md).
 
 - Um arquivo do Word com várias páginas do OneNote vira uma nota por página, separada em cada título de página.
 - O título de cada nota é o título da página; senão, o primeiro cabeçalho; senão, o nome do arquivo.
 - O texto chega como texto simples: parágrafos e listas são mantidos; formatação, imagens, desenhos e anexos, não.
 - Se o OneNote escreveu a data da página sob o título, ela vira a data da nota.
 
-Você vê o que foi encontrado antes de qualquer coisa ser adicionada.`,
+Você vê o que foi encontrado antes de qualquer coisa ser adicionada e pode tirar qualquer item deslizando. A importação liga a aba Notas.`,
   },
 ]
 

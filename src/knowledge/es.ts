@@ -35,7 +35,7 @@ Las hojas de cálculo a veces cambian el formato de lo que abren y convierten un
     title: 'Dónde se guarda su libreta',
     summary: 'En este dispositivo, sin necesidad de cuenta, y lo que eso significa para usted.',
     group: 'Lo básico',
-    body: `BlackBook guarda su libreta de direcciones en el dispositivo que está usando. En un navegador, vive en el almacenamiento que ese navegador reserva para este sitio; en la aplicación del teléfono, vive en el almacenamiento propio de la aplicación. Nada sobre sus contactos se envía a ningún sitio, salvo que active la copia de seguridad en línea.
+    body: `BlackBook guarda su libreta de direcciones en el dispositivo que está usando. En un navegador, vive en el almacenamiento que ese navegador reserva para este sitio; en la aplicación del teléfono, vive en el almacenamiento propio de la aplicación. Nada sobre sus contactos se envía a ningún sitio, salvo que inicie sesión, lo que activa la copia de seguridad en línea.
 
 No necesita una cuenta para usar BlackBook. Todo funciona sin iniciar sesión.
 
@@ -49,8 +49,8 @@ No necesita una cuenta para usar BlackBook. Todo funciona sin iniciar sesión.
 
 Como la libreta de su dispositivo puede ser la única copia, conviene tener otra:
 
-1. Inicie sesión con su Universal ID y active la copia de seguridad en línea cifrada.
-2. Guarde de vez en cuando un archivo de copia de seguridad (Avanzado y luego Copia de seguridad, importar y exportar) y consérvelo en un lugar seguro. Lo contiene todo, tareas incluidas, y puede llevar contraseña.
+1. Inicie sesión con su Universal ID. La copia de seguridad en línea cifrada se pone en marcha sola.
+2. Guarde de vez en cuando un archivo de copia de seguridad (Ajustes y luego Copia y exportar en la aplicación del teléfono; Acciones, luego Avanzado y luego Copia y exportar en el sitio web) y consérvelo en un lugar seguro. Lo contiene todo, tareas incluidas, y puede llevar contraseña.
 3. O exporte un archivo CSV, que cualquier hoja de cálculo o libreta de direcciones puede leer, pero que deja fuera sus tareas.
 
 ## Ajustar esta app
@@ -60,15 +60,26 @@ Las opciones sobre el aspecto y el funcionamiento de la aplicación en este disp
   {
     id: 'importing-and-exporting',
     title: 'Añadir contactos y sacarlos',
-    summary: 'Importar y exportar CSV, y elegir personas de los contactos de su teléfono.',
+    summary: 'Un solo Importar para contactos, notas, tareas y copias de seguridad, y una exportación CSV.',
     group: 'Cómo funciona',
-    body: `## Exportar
+    body: `## Una puerta para entrar y otra para salir
+
+Todo lo que entra en BlackBook pasa por **Importar**: Ajustes y luego Importar en la aplicación del teléfono, o Acciones, luego Avanzado y luego Importar en el sitio web. Ofrece cuatro opciones:
+
+- **Contactos**, desde un archivo CSV y, en la aplicación del teléfono, desde los contactos de su teléfono.
+- **Notas**, desde archivos de Word, páginas web (.html, .htm, .mht), texto sin formato o Markdown. Consulte Trae tus notas de OneNote.
+- **Tareas**, desde una lista en un archivo de texto, Markdown, hoja de cálculo o calendario (más abajo).
+- **Restaurar una copia de BlackBook**, que abre un archivo de copia de seguridad que usted guardó (consulte Su archivo de copia de seguridad).
+
+Todo lo que sale está en **Copia y exportar**: Ajustes y luego Copia y exportar en la aplicación del teléfono, o Acciones, luego Avanzado y luego Copia y exportar en el sitio web. Ahí se guarda un archivo de copia de seguridad y se exporta un CSV.
+
+## Exportar
 
 La exportación guarda toda su libreta en un archivo CSV con la fecha de hoy en el nombre. Tiene una columna para el nombre, el correo, las etiquetas, las notas, el cumpleaños, el teléfono, la empresa y para indicar si el cumpleaños o la ficha de una persona están ocultos, de modo que volver a importarlo restaura sus contactos tal como los dejó. El archivo se abre en cualquier hoja de cálculo. Deja fuera sus tareas: para una copia completa, guarde mejor un archivo de copia de seguridad (consulte Su archivo de copia de seguridad).
 
 ## Importar un archivo CSV
 
-Puede importar un archivo CSV exportado desde BlackBook o desde otra libreta de direcciones. Usted elige si **añadir** las personas del archivo a su libreta o **sustituir** su libreta por ellas.
+Elija Importar y luego Contactos. Puede importar un archivo CSV exportado desde BlackBook o desde otra libreta de direcciones. Usted elige si **añadir** las personas del archivo a su libreta o **sustituir** su libreta por ellas.
 
 BlackBook entiende los nombres de columna que usan Google Contacts y Outlook. Por ejemplo:
 
@@ -84,9 +95,21 @@ Los cumpleaños se aceptan como 1990-06-04, 4 June 1990, June 4 o --06-04 (un cu
 
 ## Desde los contactos de su teléfono
 
-En la aplicación del teléfono, puede elegir a una persona de los contactos del teléfono para rellenar una ficha nueva, o importar toda la libreta del teléfono de una vez. La importación completa omite a quien ya está en su libreta, así que puede repetirla más adelante sin problema. En Chrome para Android, el selector de contactos del navegador ofrece lo mismo para un nombre, un correo y un número.
+En la aplicación del teléfono, puede elegir a una persona de los contactos del teléfono para rellenar una ficha nueva, o importar toda la libreta del teléfono de una vez con Importar y luego Contactos. La importación completa omite a quien ya está en su libreta, así que puede repetirla más adelante sin problema. En Chrome para Android, el selector de contactos del navegador ofrece lo mismo para un nombre, un correo y un número.
 
-BlackBook solo lee los contactos de su teléfono cuando usted lo pide y nunca escribe nada en ellos. La nota de la ficha de contacto del teléfono no se copia.`,
+BlackBook solo lee los contactos de su teléfono cuando usted lo pide y nunca escribe nada en ellos. La nota de la ficha de contacto del teléfono no se copia.
+
+## Importar tareas
+
+Elija Importar y luego Tareas para traer una lista que ya lleva en otro sitio. Puede elegir varios archivos a la vez, y cada archivo se lee en su dispositivo; no se sube nada.
+
+- **Texto y Markdown (.txt, .md).** Una tarea por línea. Las viñetas y los números se quitan, una casilla marcada ([x]) llega como hecha y las líneas con sangría bajo una tarea pasan a ser sus detalles. Los encabezados de Markdown son nombres de sección, no tareas, así que se dejan fuera.
+- **Hojas de cálculo (.csv, .tsv).** Las columnas se leen por su nombre: Title, Task o Content para la tarea, Notes o Description para sus detalles, Due o Deadline para su fecha, y Done, Completed o Status para saber si está hecha. La exportación de Todoist funciona tal cual; sus secciones se dejan fuera.
+- **Archivos de calendario (.ics).** Las tareas del archivo, con sus detalles, sus fechas de vencimiento y si estaban hechas.
+
+Se leen fechas de vencimiento escritas como 2026-10-25 o 25 October 2026. Una fecha escrita como 04/06/2026 se deja fuera a propósito, igual que con los cumpleaños: la tarea llega igualmente, solo que sin fecha.
+
+Verá lo que se ha encontrado antes de que se añada nada, y puede quitar cualquier elemento deslizándolo. Importar activa la pestaña Tareas, para que vea lo que ha llegado.`,
   },
   {
     id: 'tags-lists-and-hiding',
@@ -135,36 +158,44 @@ El PIN bloquea la aplicación, no los datos. Su libreta sigue en el almacenamien
 
 Nadie puede decirle su PIN ni quitar el bloqueo por usted. La única forma de pasar un PIN olvidado es el botón «Forgotten your PIN?» de la pantalla de bloqueo, que **borra la libreta de este dispositivo** y empieza de nuevo, sin bloqueo. Eso es lo que hace que sea seguro ofrecerlo: un desconocido podría vaciar la aplicación, pero nunca leerla.
 
-Si usa la copia de seguridad en línea cifrada, olvidar el PIN es solo una molestia: vuelva a iniciar sesión, introduzca su frase de contraseña de la copia y su libreta volverá. Si tiene un archivo de copia de seguridad, olvidar el PIN es solo una molestia: después del restablecimiento, abra la copia y su libreta volverá. Sin ella no hay nada que restaurar, así que guarde una copia de seguridad antes de establecer un PIN.`,
+Si usa la copia de seguridad en línea cifrada, olvidar el PIN es solo una molestia: vuelva a iniciar sesión (e introduzca su frase de contraseña de la copia, si añadió una) y su libreta volverá. Si tiene un archivo de copia de seguridad, olvidar el PIN es solo una molestia: después del restablecimiento, elija Importar y luego Restaurar una copia de BlackBook, seleccione el archivo y su libreta volverá. Sin ella no hay nada que restaurar, así que guarde una copia de seguridad antes de establecer un PIN.`,
   },
   {
     id: 'encrypted-online-backup',
     title: 'La copia de seguridad en línea cifrada',
-    summary: 'Cómo se cifra su libreta antes de salir del dispositivo y por qué nadie más puede leerla.',
+    summary: 'Cómo se cifra su libreta antes de salir del dispositivo, quién tiene la clave y qué añade una frase de contraseña.',
     group: 'Privacidad y seguridad',
-    body: `La copia de seguridad en línea es opcional y está desactivada hasta que inicie sesión con su Universal ID. Una vez activada, BlackBook guarda una copia de su libreta en los servidores de UNI·SIM, para que sobreviva a la pérdida de un dispositivo y pueda abrirse en otro.
+    body: `La copia de seguridad en línea es opcional y necesita una Universal ID. Iniciar sesión la activa (en la aplicación del teléfono, inicie sesión desde Ajustes y luego Cuenta), y a partir de ahí BlackBook guarda una copia de su libreta en los servidores de UNI·SIM, para que sobreviva a la pérdida de un dispositivo y se abra en cada dispositivo en el que inicie sesión. Las opciones de la copia están en Copia en línea: Ajustes, luego Cuenta y luego Copia en línea en la aplicación del teléfono, o Acciones, luego Avanzado y luego Copia en línea en el sitio web.
 
 ## Cifrada antes de salir
 
-Su libreta se cifra en su dispositivo antes de enviar nada. El servidor solo recibe y guarda datos codificados para los que no tiene clave, así que UNI·SIM no puede leer sus contactos, notas, etiquetas ni tareas.
+Su libreta se cifra en su dispositivo antes de enviar nada, con **AES-GCM y una clave de 256 bits**, un estándar muy extendido. Quién puede leer la copia en línea depende de dónde se guarde esa clave, y eso lo decide usted.
 
-- El cifrado es **AES-GCM con una clave de 256 bits**, un estándar muy extendido.
-- La clave se obtiene a partir de una **frase de contraseña que usted elige**, mediante PBKDF2 con SHA-256 y 600 000 rondas, lo que hace que cada intento de adivinarla sea lento y costoso.
+## Sin frase de contraseña (la opción predeterminada)
+
+La clave es una clave aleatoria que se guarda con su cuenta en los servidores de UNI·SIM. Eso es lo que permite que un dispositivo nuevo abra su libreta solo con iniciar sesión. Solo su propia cuenta puede obtenerla, pero UNI·SIM **podría** técnicamente leer la copia en línea, como ocurre con la mayoría de las aplicaciones que sincronizan.
+
+## Con una frase de contraseña
+
+Marque Protegerla con una frase de contraseña al activar la copia, o elija más tarde Añadir una frase de contraseña en Copia en línea. Así nadie más que usted puede leer la copia en línea, ni siquiera UNI·SIM.
+
+- La clave se obtiene a partir de su frase de contraseña mediante PBKDF2 con SHA-256 y 600 000 rondas, lo que hace que cada intento de adivinarla sea lento y costoso, y la clave se retira del servidor.
 - Su frase de contraseña nunca sale de su dispositivo. **No** es la contraseña de su Universal ID, y cambiar esa contraseña no la afecta.
+- Cada uno de sus otros dispositivos se la pide una vez.
 
 Esto importa porque las personas de su libreta no se han registrado en nada. Sus nombres, direcciones y sus notas privadas sobre ellas merecen el mismo cuidado que sus propios datos.
 
-## No hay recuperación
+## Con frase de contraseña no hay recuperación
 
-UNI·SIM no guarda ninguna copia de su clave ni tiene forma de restablecer su frase de contraseña. Si la olvida, nadie podrá abrir la copia en línea. La libreta de su dispositivo no se ve afectada, y por eso la copia en línea es una copia de seguridad y no la copia principal.
+UNI·SIM no guarda entonces ninguna copia de su clave ni tiene forma de restablecer su frase de contraseña. Si la olvida, nadie podrá abrir la copia en línea. La libreta de su dispositivo no se ve afectada, y por eso la copia en línea es una copia de seguridad y no la copia principal.
 
 ## Recordar un dispositivo
 
-Puede pedir a un dispositivo que recuerde la clave para no tener que escribir la frase cada vez. La clave se guarda de forma que la aplicación puede usarla pero no extraerla. Cerrar sesión, o elegir olvidar este dispositivo, la elimina.
+Con una frase de contraseña, puede pedir a un dispositivo que recuerde la clave para no tener que escribir la frase cada vez. La clave se guarda de forma que la aplicación puede usarla pero no extraerla. Cerrar sesión, o elegir Olvidar este dispositivo, la elimina.
 
 ## Cambiarla o borrarla
 
-Cambiar la frase de contraseña exige la actual, incluso en un dispositivo que la recuerda, y vuelve a cifrar la copia en un solo paso. Desactivar la copia de seguridad borra por completo la copia en línea y deja la libreta de su dispositivo tal como está. Si elimina su Universal ID, la copia en línea se elimina con él.
+Cambiar la frase de contraseña, o elegir Quitar la frase de contraseña, exige la actual, incluso en un dispositivo que la recuerda, y vuelve a cifrar la copia en un solo paso. Quitarla vuelve a guardar una clave aleatoria con su cuenta, de modo que sus dispositivos abren la copia en línea solo con volver a iniciar sesión. Desactivar y eliminar la copia en línea borra por completo la copia en línea, deja la libreta de su dispositivo tal como está y hace que volver a iniciar sesión en ese dispositivo no vuelva a activar la copia. Si elimina su Universal ID, la copia en línea se elimina con él.
 
 La copia de seguridad tiene un límite de unos 2 MB de datos cifrados, lo que equivale a muchos miles de contactos. Las notas muy largas suelen ser la causa cuando una libreta lo alcanza.`,
   },
@@ -173,7 +204,7 @@ La copia de seguridad tiene un límite de unos 2 MB de datos cifrados, lo que eq
     title: 'Su archivo de copia de seguridad',
     summary: 'Un solo archivo con todo lo que hay en su libreta, una contraseña opcional y cómo volver a abrirlo.',
     group: 'Privacidad y seguridad',
-    body: `Un archivo de copia de seguridad es una copia completa de su libreta en un solo archivo. Para guardar uno, abra Acciones, luego Avanzado, luego Copia de seguridad, importar y exportar, y elija Guardar una copia de seguridad. En un teléfono se abre el menú de compartir, para que pueda guardar el archivo en Archivos, en una nube o en un correo a sí mismo; en un navegador, se descarga.
+    body: `Un archivo de copia de seguridad es una copia completa de su libreta en un solo archivo. Para guardar uno, abra Copia y exportar (Ajustes y luego Copia y exportar en la aplicación del teléfono; Acciones, luego Avanzado y luego Copia y exportar en el sitio web) y elija Guardar una copia. En un teléfono se abre el menú de compartir, para que pueda guardar el archivo en Archivos, en una nube o en un correo a sí mismo; en un navegador, se descarga.
 
 ## Qué contiene
 
@@ -196,7 +227,7 @@ Sin contraseña, el archivo es texto sin cifrar, como una exportación CSV: cual
 
 ## Abrir una copia de seguridad
 
-Elija Abrir una copia de seguridad y seleccione el archivo, o suéltelo sobre la ventana en un navegador. Si tiene contraseña, se le pedirá. Después elija:
+Elija Importar y luego Restaurar una copia de BlackBook (Ajustes y luego Importar en la aplicación del teléfono; Acciones, luego Avanzado y luego Importar en el sitio web). Elija Abrir una copia y seleccione el archivo, o suéltelo sobre la ventana en un navegador. Si tiene contraseña, se le pedirá. Después elija:
 
 - **Añadir a lo que hay.** Todo lo que ya está en este dispositivo se queda. Se añaden las personas y tareas del archivo y, si alguna está en ambos, se conserva la copia editada más recientemente. Quien ya esté aquí con el mismo nombre y el mismo correo o teléfono no se añade dos veces, y las etiquetas con el mismo nombre se convierten en una sola.
 - **Sustituir todo.** La libreta de este dispositivo se cambia por la del archivo, después de que usted lo confirme.
@@ -212,11 +243,11 @@ BlackBook comprueba cada campo de un archivo antes de usarlo, así que un archiv
 
 ## Iniciar sesión en un dispositivo nuevo
 
-1. Inicie sesión con su Universal ID.
-2. Introduzca su frase de contraseña de la copia.
-3. Si este dispositivo ya tiene contactos propios, BlackBook le pregunta si quiere fusionarlos o usar solo la copia en línea.
+1. Inicie sesión con su Universal ID (en la aplicación del teléfono, desde Ajustes y luego Cuenta).
+2. Si protegió la copia con una frase de contraseña, introdúzcala. Sin ella, basta con iniciar sesión.
+3. Si este dispositivo ya tiene contactos o tareas propios, como los que añadió antes de iniciar sesión, BlackBook los fusiona con la copia en línea y la guarda de inmediato. No tiene que elegir nada.
 
-Al fusionar, la copia en línea es el punto de partida y se le añaden los contactos de este dispositivo. Quien ya esté allí, reconocido como la misma ficha o por el mismo nombre con el mismo correo o teléfono, no se añade dos veces. Las etiquetas con el mismo nombre se convierten en una sola.
+Al fusionar, la copia en línea es el punto de partida y se le añaden los contactos de este dispositivo. Quien ya esté allí, reconocido como la misma ficha o por el mismo nombre con el mismo correo o teléfono, no se añade dos veces. Las etiquetas con el mismo nombre se convierten en una sola. Fusionar solo añade, así que alguien a quien borró en otro dispositivo puede volver desde un dispositivo que todavía lo tenga. Para quedarse en cambio con la copia en línea tal como está, abra Copia en línea (Ajustes, luego Cuenta y luego Copia en línea en la aplicación del teléfono; Acciones, luego Avanzado y luego Copia en línea en el sitio web) y elija Traer la copia en línea.
 
 ## Guardado
 
@@ -228,13 +259,13 @@ La copia en línea se guarda como una libreta completa. Si dos dispositivos han 
 
 ## Después de cambiar la frase de contraseña
 
-Cuando cambia la frase de contraseña en un dispositivo, los demás dejan de guardar y piden la nueva. No se pierde nada en ellos, y al desbloquearlos ofrecen volver a fusionar sus contactos. Un dispositivo que todavía tenga la clave antigua no puede sobrescribir el cambio.
+Cuando añade o cambia la frase de contraseña en un dispositivo, los demás dejan de guardar y se la piden una vez. No se pierde nada en ellos, y al desbloquearlos ofrecen volver a fusionar sus contactos. Un dispositivo que todavía tenga la clave antigua no puede sobrescribir el cambio. Cuando quita la frase de contraseña, sus otros dispositivos vuelven a abrir la copia en línea por sí solos.
 
 ## Pasar su libreta sin cuenta
 
-1. En el dispositivo que tiene su libreta, guarde un archivo de copia de seguridad. Conviene ponerle contraseña si el archivo va a pasar por el correo o por una nube.
+1. En el dispositivo que tiene su libreta, guarde un archivo de copia de seguridad desde Copia y exportar. Conviene ponerle contraseña si el archivo va a pasar por el correo o por una nube.
 2. Lleve el archivo al otro dispositivo, por ejemplo con AirDrop, una nube o el correo.
-3. En el otro dispositivo, abra BlackBook, elija Abrir una copia de seguridad y seleccione el archivo.
+3. En el otro dispositivo, abra BlackBook, elija Importar y luego Restaurar una copia de BlackBook, y seleccione el archivo.
 
 Si el otro dispositivo es nuevo, elija Sustituir todo. Si ya tiene contactos propios, elija Añadir a lo que hay y las dos libretas se fusionarán.`,
   },
@@ -261,14 +292,14 @@ Según Microsoft, OneNote para Mac y OneNote para la web todavía no pueden expo
 
 ## Importar en BlackBook
 
-Abra la pestaña **Notas** y elija **Importar**. Puede elegir varios archivos a la vez: Word (.docx), páginas web (.html, .htm, .mht), texto sin formato (.txt) y Markdown (.md).
+Elija **Importar** ▸ **Notas**: en la aplicación del teléfono, Importar está en **Ajustes**; en el sitio web, en **Acciones** ▸ **Avanzado**. Puede elegir varios archivos a la vez: Word (.docx), páginas web (.html, .htm, .mht), texto sin formato (.txt) y Markdown (.md).
 
 - Un archivo de Word con varias páginas de OneNote se convierte en una nota por página, separadas en cada título de página.
 - El título de cada nota es el título de la página; si no, su primer encabezado; si no, el nombre del archivo.
 - El texto llega como texto sin formato: se conservan los párrafos y las listas; no el formato, las imágenes, los dibujos ni los adjuntos.
 - Si OneNote escribió la fecha de la página bajo su título, esa será la fecha de la nota.
 
-Verá lo que se ha encontrado antes de que se añada nada.`,
+Verá lo que se ha encontrado antes de que se añada nada, y puede quitar cualquier elemento deslizándolo. Importar activa la pestaña Notas.`,
   },
 ]
 
