@@ -1191,7 +1191,7 @@ export function ContactRow({
  * how it leaves the app: pasted into a To: line, or opened in a spreadsheet.
  *
  * ⚠️ The VISIBLE list, not the book. What the filters show is what goes out;
- * Advanced ▸ Backup, import & export is still the whole-book export.
+ * Advanced ▸ Backup & export is still the whole-book export.
  */
 export function ListExport({ contacts, tags, tagIds }: { contacts: Contact[]; tags: Tag[]; tagIds: string[] }) {
   const t = useT()

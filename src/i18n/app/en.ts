@@ -223,7 +223,7 @@ export const appEn = {
   'colour.lime': "Lime",
   'colour.slate': "Slate",
 
-  // ── Backup, import & export ───────────────────────────────────────────────
+  // ── Backup & export ───────────────────────────────────────────────
   'io.title': "Backup & export",
   'io.sentence': "{text}.",
   'io.phone_nothing_new': "Nothing new — all {count} of your phone contacts are already in your book.",
@@ -291,7 +291,7 @@ export const appEn = {
   // ── Online backup ─────────────────────────────────────────────────────────
   'cp.signin_why': "Sign in with your Universal ID and your book syncs to every device you sign in on, so it survives a lost one too.",
   'cp.signin': "Sign in with Universal ID",
-  'cp.one_account': "One account across every UNI·SIM app. BlackBook works perfectly well without one — your book stays on this device, and a backup file (Backup, import & export) moves or keeps a copy without an account.",
+  'cp.one_account': "One account across every UNI·SIM app. BlackBook works perfectly well without one — your book stays on this device, and a backup file (Backup & export) moves or keeps a copy without an account.",
   'cp.signed_in_as': "Signed in as ",
   'cp.none_yet': ". Online backup is off for this book. Turn it on to sync it to every device you sign in on.",
   'cp.locked': ". Your book is backed up online — enter the passphrase you chose to download it.",
@@ -413,7 +413,7 @@ export const appEn = {
   'wipe.online_kept': "Your online backup is not deleted.",
   'wipe.online_kept_body': "Only this device is cleared. Signing in and entering your vault passphrase brings the book back.",
   'wipe.online_none': "There is no online copy.",
-  'wipe.online_none_body': "Nothing can bring this book back afterwards except a backup file. Save one first (Backup, import & export ▸ Save a backup) if you might want it again.",
+  'wipe.online_none_body': "Nothing can bring this book back afterwards except a backup file. Save one first (Backup & export ▸ Save a backup) if you might want it again.",
   'wipe.type_word': "Type {word} to delete everything",
   'wipe.deleting': "Deleting…",
 

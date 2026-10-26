@@ -396,8 +396,10 @@ account, no server and no telemetry about its contents.
 
 Ways to get it out or move it elsewhere: sync with your Universal ID across
 devices (optional, the encrypted online copy below), or a backup file; and a
-CSV for any other address book. The file ones are under Actions ▸ Advanced ▸
-**Backup, import & export**.
+CSV for any other address book. Saving the backup and exporting the CSV are
+**Backup & export**; bringing anything in (contacts, notes, to-dos, or a backup
+to restore) is **Import** — both in Tune on the phone and under Actions ▸
+Advanced on the website.
 
 **A backup file** — **Save a backup** writes everything (every contact with
 every field, tags and lists, to-dos, your Tune this app choices and the view
@@ -443,7 +445,7 @@ so.
 **Your phone's own contacts** *(the iPhone app)* — **From my contacts** opens
 the system picker, and the person you choose arrives in the Add form with their
 name, email, number, postal address and birthday already filled in, ready for the part that is
-actually yours. **Advanced ▸ Backup, import & export ▸ Import my phone contacts** does the whole
+actually yours. **Tune ▸ Import ▸ Contacts ▸ Import my phone contacts** does the whole
 address book at once, skipping anybody already in your book so you can run it
 again whenever you add someone to your phone.
 

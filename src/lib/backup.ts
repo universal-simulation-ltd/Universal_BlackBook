@@ -1,5 +1,5 @@
-// The backup file — "Save a backup" / "Open a backup" in Backup, import &
-// export. Added 2026-10-20 (Docs_UNI_SIM/login-free-plan.md) as the way to
+// The backup file — "Save a backup" in Backup & export, "Open a backup" in
+// Import ▸ Restore a BlackBook backup. Added 2026-10-20 (Docs_UNI_SIM/login-free-plan.md) as the way to
 // move or keep a copy of a book without an account; it sits beside the
 // optional Universal ID sign-in and its encrypted online vault (syncStore),
 // which came back the same day ("blackbook needs sign-in, it's designed to be

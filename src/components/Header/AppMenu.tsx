@@ -84,7 +84,7 @@ export default function AppMenu({
           onSelect={onBackup}
         />
         {/* Delete all data (owner's request, 2026-10-08 — a guest wanting
-            everything gone). Last, after Backup, import & export and Online
+            everything gone). Last, after Backup & export and Online
             backup, so "save a copy first" is right above it. See DeleteAllData. */}
         <AdvancedMenuItem
           theme={theme}

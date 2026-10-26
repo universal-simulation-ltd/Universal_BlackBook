@@ -97,7 +97,8 @@ stops it, and signing in again on that device does not start it again.
 
 ### 2. A backup file you save
 
-**Actions ▸ Advanced ▸ Backup, import & export ▸ Save a backup** writes the
+**Backup & export ▸ Save a backup** (Tune on the phone, Actions ▸ Advanced on
+the website) writes the
 whole book (contacts, tags and lists, to-dos, and your Tune this app choices)
 into one `.json` file and hands it to you: a download in a browser, the share
 sheet on a phone. Where it goes from there is up to you. Nothing is uploaded
