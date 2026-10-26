@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type FormEvent, type ReactNode, type TouchEvent as ReactTouchEvent } from 'react'
 import { SwipeRow } from './SwipeRow'
+import { useMove } from './MoveTo'
 import { actionSwipe, deleteSwipe, FocusActions, pinSwipe, SelectBar, SwipeGroup, SwipeItem, UndoBar, useHoldSelect, useUndo } from './SwipeActions'
 import { usePhoneKit } from '../native/kit'
 import type { Side } from '../lib/swipe'
@@ -61,6 +62,8 @@ export function TodoView() {
     for (const x of xs) void remove(x.id)
   }
   const removeWithUndo = (x: Todo) => removeManyWithUndo([x])
+  // Select ▸ Move: to Contacts or Notes (MoveTo).
+  const moveTo = useMove('todos')
 
   const { drag, dragStart, gripDown } = useTodoDrag(
     (id, target, after) => void move(id, target, after),
@@ -165,6 +168,7 @@ export function TodoView() {
           actions={[
             { label: t('todo.pin'), onClick: (ids) => ids.forEach((id) => void setPinned(id, true)) },
             { label: t('todo.mark_done_short'), onClick: (ids) => ids.forEach((id) => void setDone(id, true)) },
+            { label: t('sel.move'), onClick: moveTo.start },
             { label: t('c.delete'), danger: true, onClick: (ids) => removeManyWithUndo(open.filter((x) => ids.includes(x.id))) },
           ]}
         />
@@ -220,6 +224,7 @@ export function TodoView() {
       <p id={hintId} className="sr-only">
         {t('todo.order_hint')}
       </p>
+      {moveTo.ui}
       {undo.item && (
         <UndoBar
           title={undo.item.length === 1 ? undo.item[0].title : ''}
@@ -262,6 +267,7 @@ export function TodoView() {
                 total={done.length}
                 actions={[
                   { label: t('todo.not_done'), onClick: (ids) => ids.forEach((id) => void setDone(id, false)) },
+                  { label: t('sel.move'), onClick: moveTo.start },
                   { label: t('c.delete'), danger: true, onClick: (ids) => removeManyWithUndo(done.filter((x) => ids.includes(x.id))) },
                 ]}
               />

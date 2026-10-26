@@ -6,11 +6,11 @@ import { useTodoStore } from '../stores/todoStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { usePhoneKit } from '../native/kit'
 import { useNativeNav } from '../native/nav'
-import { SheetRow } from '../native/layers'
 import { IconContactsBook, IconFile, IconNote, IconTodo } from '../native/icons'
 import { useBookStore } from '../stores/bookStore'
 import { useT, type Key } from '../i18n'
 import { BackupSection } from './BackupSection'
+import { Choices } from './Choices'
 import { ImportExport } from './ImportExport'
 import { Modal } from './Modal'
 import { removeSwipe, SelectBar, SwipeGroup, SwipeItem, UndoBar, useHoldSelect, useUndo } from './SwipeActions'
@@ -168,34 +168,7 @@ export function ImportPanel({ onClose }: { onClose: () => void }) {
         className="hidden"
         onChange={(e) => void read(e.currentTarget, e.target.files, importTodoFiles, setTodos)}
       />
-      {kit ? (
-        choices.map((c) => (
-          <SheetRow key={c.key} icon={c.icon} onClick={c.onClick}>
-            <span className="block">{t(c.label)}</span>
-            <span className="block text-[13px] font-normal text-slate-500">{t(c.note)}</span>
-          </SheetRow>
-        ))
-      ) : (
-        <div className="space-y-2">
-          {choices.map((c) => (
-            <button
-              key={c.key}
-              type="button"
-              disabled={reading}
-              onClick={c.onClick}
-              className="flex w-full items-center gap-3 rounded-xl border border-slate-800 px-4 py-3 text-left transition-colors hover:border-orange-500/50 hover:bg-orange-500/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 disabled:opacity-50"
-            >
-              <span className="h-6 w-6 shrink-0 text-orange-400" aria-hidden>
-                {c.icon}
-              </span>
-              <span className="min-w-0">
-                <span className="block text-sm font-semibold text-slate-100">{t(c.label)}</span>
-                <span className="block text-xs text-slate-400">{t(c.note)}</span>
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
+      <Choices choices={choices.map((c) => ({ ...c, label: t(c.label), note: t(c.note) }))} disabled={reading} />
     </Modal>
   )
 }

@@ -1,5 +1,6 @@
 import { useId, useMemo, useRef, useState } from 'react'
 import { SwipeRow } from './SwipeRow'
+import { useMove } from './MoveTo'
 import { deleteSwipe, FocusActions, pinSwipe, UndoBar, useHold, useLeaveSelection, useUndo } from './SwipeActions'
 import type { Side } from '../lib/swipe'
 import { Modal } from './Modal'
@@ -56,6 +57,8 @@ export function NotesView() {
   const restoreMany = useNoteStore((s) => s.restoreMany)
   const [openRow, setOpenRow] = useState<{ id: string; side: Side } | null>(null)
   const undo = useUndo<Note[]>(restoreMany)
+  // Select ▸ Move: to Contacts or To-do (MoveTo).
+  const moveTo = useMove('notes')
   const removeWithUndo = (list: Note[]) => {
     if (!list.length) return
     undo.deleted(list)
@@ -164,6 +167,10 @@ export function NotesView() {
                 setSelected(null)
               }}
               onCopy={() => void copyPicked()}
+              onMove={() => {
+                moveTo.start(picked.map((n) => n.id))
+                setSelected(null)
+              }}
               onDelete={() => setConfirming(true)}
               onDone={() => setSelected(null)}
               copied={copied}
@@ -218,6 +225,7 @@ export function NotesView() {
           </p>
         </>
       )}
+      {moveTo.ui}
       {undo.item && (
         <UndoBar
           title={undo.item.length === 1 ? undo.item[0].title : ''}
@@ -345,7 +353,7 @@ function NoteRow({
   )
 }
 
-/** Over the list while selecting: how many, then Pin / Unpin, Copy, Delete, Done. */
+/** Over the list while selecting: how many, then Pin / Unpin, Copy, Move, Delete, Done. */
 function NoteSelectBar({
   count,
   allPicked,
@@ -353,6 +361,7 @@ function NoteSelectBar({
   onAll,
   onPin,
   onCopy,
+  onMove,
   onDelete,
   onDone,
   copied,
@@ -363,6 +372,7 @@ function NoteSelectBar({
   onAll: () => void
   onPin: (pin: boolean) => void
   onCopy: () => void
+  onMove: () => void
   onDelete: () => void
   onDone: () => void
   copied: boolean
@@ -383,6 +393,9 @@ function NoteSelectBar({
       </button>
       <button type="button" className={act} onClick={onCopy} disabled={none}>
         {copied ? t('notes.copied') : t('notes.copy')}
+      </button>
+      <button type="button" className={act} onClick={onMove} disabled={none}>
+        {t('sel.move')}
       </button>
       <button type="button" className={`${act} text-rose-300 hover:bg-rose-950 hover:text-rose-200`} onClick={onDelete} disabled={none}>
         {t('c.delete')}

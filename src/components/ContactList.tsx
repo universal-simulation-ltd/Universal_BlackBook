@@ -20,6 +20,7 @@ import { useSettingsStore } from '../stores/settingsStore'
 import { useSyncStore } from '../stores/syncStore'
 import { Modal } from './Modal'
 import { SwipeRow, type SwipeAction } from './SwipeRow'
+import { useMove } from './MoveTo'
 import { FocusActions, UndoBar, useHold, useLeaveSelection, useUndo } from './SwipeActions'
 import { ListChip } from './ListChip'
 import { TagDot } from './TagChip'
@@ -141,6 +142,8 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
   // swipes", 2026-10-25); the form's Delete and the bulk Delete still ask.
   const restoreContacts = useBookStore((s) => s.restoreContacts)
   const undoDelete = useUndo<Contact[]>(restoreContacts)
+  // Select ▸ Move: to Notes or To-do (MoveTo).
+  const moveTo = useMove('contacts')
   const removeWithUndo = (list: Contact[]) => {
     undoDelete.deleted(list)
     for (const c of list) void removeContact(c.id)
@@ -414,6 +417,10 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
             setSelected(null)
           }}
           onTag={() => setBulk('tag')}
+          onMove={() => {
+            moveTo.start(picked.map((c) => c.id))
+            setSelected(null)
+          }}
           onDelete={() => setBulk('delete')}
           onDone={() => setSelected(null)}
         />
@@ -649,6 +656,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
         />
       )}
 
+      {moveTo.ui}
       {undoDelete.item && <UndoBar title={undoDelete.item[0]?.name || ''} onUndo={() => void undoDelete.undo()} />}
       {pending && (
         <ConfirmDelete
@@ -755,6 +763,7 @@ function SelectBar({
   hide,
   onHide,
   onTag,
+  onMove,
   onDelete,
   onDone,
 }: {
@@ -764,6 +773,7 @@ function SelectBar({
   hide: 'hide' | 'show' | null
   onHide: (hidden: boolean) => void
   onTag: () => void
+  onMove: () => void
   onDelete: () => void
   onDone: () => void
 }) {
@@ -780,6 +790,9 @@ function SelectBar({
       </button>
       <button type="button" className={act} onClick={onTag} disabled={none}>
         {t('sel.tag')}
+      </button>
+      <button type="button" className={act} onClick={onMove} disabled={none}>
+        {t('sel.move')}
       </button>
       {hide && (
         <button type="button" className={act} onClick={() => onHide(hide === 'hide')} disabled={none}>
