@@ -12,7 +12,6 @@ export const ptPT: Dict = {
   tab_notes: "Notas",
   tab_tune: "Afinar",
   tab_tune_title: "Afinar esta app",
-  contacts_title: "A sua agenda",
   add_contact: "Adicionar alguém",
   from_my_contacts: "Dos meus contactos",
   add_new: "Adicionar",

@@ -12,7 +12,6 @@ export const tr: Dict = {
   tab_notes: "Notlar",
   tab_tune: "Ayarla",
   tab_tune_title: "Bu uygulamayı ayarla",
-  contacts_title: "Defterin",
   add_contact: "Birini ekle",
   from_my_contacts: "Kişilerimden",
   add_new: "Yeni ekle",

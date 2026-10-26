@@ -296,7 +296,7 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
           {/* Hidden with a class, not unmounted, while another tab shows, so
               the search, the Filters and the list are as they were left. */}
           <div className={current === 'contacts' ? undefined : 'hidden'}>
-            <h1 className="bb-h1">{t('contacts_title')}</h1>
+            <h1 className="bb-h1">{t('tab_contacts')}</h1>
             <div className="mb-4 mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
               <LockLink onClick={() => openPanel('lock')} />
               <SyncStatus onOpen={openCloud} />

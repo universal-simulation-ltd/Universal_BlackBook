@@ -16,7 +16,7 @@ import { TagCombo } from './TagCombo'
 import { AddTyped, ListSearch } from './ListSearch'
 import { matchesNote } from '../lib/notes'
 import { useT } from '../i18n'
-import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label, textareaCls } from './ui'
+import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label, tabHeading, textareaCls } from './ui'
 import { autoFocusOK } from '../native/kit'
 import { phoneScreens } from '../native/shell'
 
@@ -104,8 +104,8 @@ export function TodoView() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-slate-100 sm:text-2xl">{t('tab_todos')}</h1>
-          <p className="text-sm text-slate-500">{t('todo.intro')}</p>
+          <h1 className={phoneScreens() ? 'bb-h1' : tabHeading}>{t('tab_todos')}</h1>
+          {!phoneScreens() && <p className="text-sm text-slate-500">{t('todo.intro')}</p>}
         </div>
         {/* On the phone the top bar's + does this. */}
         {!phoneScreens() && (

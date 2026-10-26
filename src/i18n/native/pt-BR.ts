@@ -12,7 +12,6 @@ export const ptBR: Dict = {
   tab_notes: "Notas",
   tab_tune: "Ajustar",
   tab_tune_title: "Ajustar esta app",
-  contacts_title: "Sua agenda",
   add_contact: "Adicionar alguém",
   from_my_contacts: "Dos meus contatos",
   add_new: "Adicionar",

@@ -10,6 +10,13 @@
 // slate-200, secondary slate-400, the accent orange (the suite's #fe8c01 in
 // Dark, #e05504 in Light, the ribbon red on the phone).
 
+/**
+ * A tab's heading. On the phone every tab has the same one as Contacts — the
+ * big serif title, nothing under it (James, 2026-10-26); the website keeps its
+ * smaller heading with the intro line.
+ */
+export const tabHeading = 'text-xl font-semibold text-slate-100 sm:text-2xl'
+
 export const btnPrimary =
   'rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-orange-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:cursor-not-allowed disabled:opacity-40'
 

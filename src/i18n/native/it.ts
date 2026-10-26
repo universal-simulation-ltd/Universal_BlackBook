@@ -12,7 +12,6 @@ export const it: Dict = {
   tab_notes: "Note",
   tab_tune: "Regola",
   tab_tune_title: "Regola questa app",
-  contacts_title: "La tua rubrica",
   add_contact: "Aggiungi qualcuno",
   from_my_contacts: "Dai miei contatti",
   add_new: "Aggiungi",

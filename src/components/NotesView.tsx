@@ -11,7 +11,7 @@ import { showValue, type NoteTemplate } from '../lib/templates'
 import { AddTyped, ListSearch } from './ListSearch'
 import { compareNotes, matchesNote, noteText, preview, type Note } from '../lib/notes'
 import { useNoteStore } from '../stores/noteStore'
-import { btnDanger, btnGhost, btnPrimary, btnSubtle } from './ui'
+import { btnDanger, btnGhost, btnPrimary, btnSubtle, tabHeading } from './ui'
 import { NoteImportButton } from './NoteImport'
 import { usePanelStore } from '../stores/panelStore'
 import { phoneScreens } from '../native/shell'
@@ -105,8 +105,8 @@ export function NotesView() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-slate-100 sm:text-2xl">{t('tab_notes')}</h1>
-          <p className="text-sm text-slate-500">{t('notes.intro')}</p>
+          <h1 className={phoneScreens() ? 'bb-h1' : tabHeading}>{t('tab_notes')}</h1>
+          {!phoneScreens() && <p className="text-sm text-slate-500">{t('notes.intro')}</p>}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {/* The map's on the phone's top bar; here a button. */}

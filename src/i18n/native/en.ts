@@ -14,8 +14,6 @@ export const en = {
   tab_notes: 'Notes',
   tab_tune: 'Tune',
   tab_tune_title: 'Tune this app',
-
-  contacts_title: 'Your book',
   add_contact: 'Add someone',
   from_my_contacts: 'From my contacts',
   add_new: 'Add new',

@@ -12,7 +12,6 @@ export const fr: Dict = {
   tab_notes: "Notes",
   tab_tune: "Réglages",
   tab_tune_title: "Régler cette app",
-  contacts_title: "Votre carnet",
   add_contact: "Ajouter quelqu’un",
   from_my_contacts: "Depuis mes contacts",
   add_new: "Ajouter",

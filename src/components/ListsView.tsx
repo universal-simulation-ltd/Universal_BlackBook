@@ -14,7 +14,7 @@ import { useBookStore } from '../stores/bookStore'
 import { ContactRow, ListExport } from './ContactList'
 import { ListChip } from './ListChip'
 import { TagChip } from './TagChip'
-import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls } from './ui'
+import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, tabHeading } from './ui'
 import { autoFocusOK } from '../native/kit'
 import { phoneScreens } from '../native/shell'
 import { useT } from '../i18n'
@@ -88,8 +88,8 @@ export function ListsView() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-slate-100 sm:text-2xl">{t('tab_lists')}</h1>
-          <p className="text-sm text-slate-500">{t('lists.intro')}</p>
+          <h1 className={phoneScreens() ? 'bb-h1' : tabHeading}>{t('tab_lists')}</h1>
+          {!phoneScreens() && <p className="text-sm text-slate-500">{t('lists.intro')}</p>}
         </div>
         {/* On the phone the top bar's + does this. */}
         {!phoneScreens() && (
