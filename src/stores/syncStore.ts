@@ -15,8 +15,10 @@ import {
 import {
   forgetVault,
   forgetVaultKey,
+  loadBackupOff,
   loadSyncMeta,
   loadVaultKey,
+  saveBackupOff,
   saveSyncMeta,
   saveVaultKey,
   type SyncMeta,
@@ -26,7 +28,9 @@ import {
   decryptJson,
   deriveKey,
   encryptJson,
+  importAccountKey,
   KDF_ITERATIONS,
+  newAccountKey,
   newSalt,
   VAULT_VERSION,
   vaultSizeError,
@@ -45,10 +49,14 @@ import { mergeTodos, toTodos } from '../lib/todos'
  *
  *   'signed-out'  no Universal ID — the only state where the feature is not
  *                 available at all.
- *   'off'         signed in, no vault on the server. The default, and the
- *                 state the app stays in unless somebody opts in.
- *   'locked'      a vault exists but this device has no key for it. Needs the
- *                 passphrase; this is what a second device sees.
+ *   'off'         signed in, no vault on the server, and this device is not
+ *                 starting one: it was turned off here, or deleted on another
+ *                 device. Signing in otherwise turns it on by itself, without
+ *                 a passphrase (James, 2026-10-26: an account in BlackBook is
+ *                 for syncing every device).
+ *   'locked'      a vault with a passphrase, and no key for it on this device.
+ *                 What a second device sees — only ever with a passphrase:
+ *                 one without opens on signing in.
  *   'on'          unlocked and syncing.
  */
 export type SyncState = 'signed-out' | 'off' | 'locked' | 'on'
@@ -68,6 +76,13 @@ interface SyncStore {
   key: CryptoKey | null
   /** True once `remember` was chosen, so the UI can offer to undo it. */
   remembered: boolean
+  /** The online copy has a passphrase (on or locked). Without one its key is `accountKey`. */
+  hasPassphrase: boolean
+  /**
+   * A vault without a passphrase keeps its key in the row (lib/vault.ts); it
+   * goes back with every write, which would otherwise clear it.
+   */
+  accountKey: string | null
   /**
    * A vault decrypted during `unlock` but not yet adopted — the user is being
    * asked whether to merge this device's contacts into it or to take the
@@ -89,19 +104,23 @@ interface SyncStore {
   offline: number
 
   hydrate: (supabase: SupabaseClient, userId: string | null) => Promise<void>
-  enable: (supabase: SupabaseClient, userId: string, passphrase: string, remember: boolean) => Promise<void>
+  /** `passphrase` null: no passphrase — the key is kept with the account. */
+  enable: (supabase: SupabaseClient, userId: string, passphrase: string | null, remember: boolean) => Promise<void>
   unlock: (supabase: SupabaseClient, userId: string, passphrase: string, remember: boolean) => Promise<void>
   adoptPending: () => Promise<void>
   mergePending: (supabase: SupabaseClient) => Promise<void>
   push: (supabase: SupabaseClient, force?: boolean) => Promise<void>
   pull: (supabase: SupabaseClient) => Promise<void>
   /**
-   * Re-encrypt the online copy under a new passphrase. Resolves true once it
-   * has landed. Needs the CURRENT passphrase even on a remembered device —
-   * whoever is holding an unlocked phone must not be able to lock its owner
-   * out of their own backup.
+   * Re-encrypt the online copy under a new passphrase — or, with `next` null,
+   * under a random key kept with the account (no passphrase). Resolves true
+   * once it has landed. Needs the CURRENT passphrase even on a remembered
+   * device — whoever is holding an unlocked phone must not be able to lock its
+   * owner out of their own backup. A copy without one has nothing to prove.
+   * `remember` applies only when adding the first passphrase; a change keeps
+   * whatever this device chose before.
    */
-  changePassphrase: (supabase: SupabaseClient, current: string, next: string) => Promise<boolean>
+  changePassphrase: (supabase: SupabaseClient, current: string | null, next: string | null, remember?: boolean) => Promise<boolean>
   disable: (supabase: SupabaseClient) => Promise<void>
   forgetDevice: () => Promise<void>
   reset: () => void
@@ -178,11 +197,22 @@ async function mergeIn(payload: VaultPayload) {
  * Nothing local is lost. Unlocking with the new passphrase offers to merge
  * this device's contacts in, the same as any second device.
  */
-async function lockIfPassphraseChanged(row: VaultRow): Promise<boolean> {
+async function lockIfPassphraseChanged(supabase: SupabaseClient, row: VaultRow): Promise<boolean> {
   if (row.kdf_salt === useSyncStore.getState().salt) return false
   await forgetVaultKey()
+  // Taken off (or the key renewed) on another device: nothing to ask for,
+  // signing in opens it, so open it again the way a launch would.
+  if (row.account_key) {
+    const meta = await loadSyncMeta()
+    if (meta) {
+      await useSyncStore.getState().hydrate(supabase, meta.userId)
+      return true
+    }
+  }
   useSyncStore.setState({
     state: 'locked',
+    hasPassphrase: true,
+    accountKey: null,
     status: 'idle',
     rev: row.rev,
     salt: row.kdf_salt,
@@ -200,6 +230,59 @@ export const offlineMessage = () => currentT()('sync.offline')
 /** Shown on a device whose key stopped working because of `changePassphrase` elsewhere. */
 export const passphraseChanged = () => currentT()('sync.passphrase_changed')
 
+/**
+ * Take a decrypted vault on as this device's: what entering the passphrase
+ * does, and what signing in does on its own for a vault without one. An empty
+ * device just takes the online copy; one that already has entries (a guest's)
+ * has them merged in, unasked — see `mergeIn` — and pushed straight up.
+ */
+async function openVault(
+  supabase: SupabaseClient,
+  userId: string,
+  row: VaultRow,
+  key: CryptoKey,
+  payload: VaultPayload,
+  remember: boolean,
+) {
+  // To-dos count as local data too: a device holding only to-dos must be
+  // asked, not have them replaced by the online list.
+  await Promise.all([useBookStore.getState().init(), useTodoStore.getState().init(), useNoteStore.getState().init()])
+  const local = useBookStore.getState().contacts.length + useTodoStore.getState().todos.length + useNoteStore.getState().notes.length
+  const now = Date.now()
+  const meta: SyncMeta = {
+    userId,
+    rev: row.rev,
+    salt: row.kdf_salt,
+    iterations: row.kdf_iterations,
+    pushedAt: now,
+    // 0 until the merge has gone up (`push` sets it) — see SyncMeta.syncedAt.
+    syncedAt: local > 0 ? 0 : now,
+  }
+  await saveSyncMeta(meta)
+  // A key kept with the account is fetched every time; only a passphrase's is worth remembering.
+  const keep = remember && !row.account_key
+  if (keep) await saveVaultKey(key)
+  useSyncStore.setState({
+    state: 'on',
+    rev: row.rev,
+    salt: row.kdf_salt,
+    iterations: row.kdf_iterations,
+    key,
+    remembered: keep,
+    hasPassphrase: !row.account_key,
+    accountKey: row.account_key,
+    pending: null,
+    status: 'idle',
+    message: null,
+  })
+  if (local === 0) await adopt(payload)
+  else {
+    await mergeIn(payload)
+    // Straight up: the online copy lacks the guest's contacts until it goes.
+    await useSyncStore.getState().push(supabase)
+  }
+}
+
 export const useSyncStore = create<SyncStore>((set, get) => ({
   state: 'signed-out',
   status: 'idle',
@@ -210,6 +293,8 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
   lastPushedAt: null,
   key: null,
   remembered: false,
+  hasPassphrase: false,
+  accountKey: null,
   pending: null,
   dirty: false,
   markDirty: () => set({ dirty: true }),
@@ -224,6 +309,8 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       salt: null,
       key: null,
       remembered: false,
+      hasPassphrase: false,
+      accountKey: null,
       pending: null,
       lastPushedAt: null,
     }),
@@ -233,17 +320,37 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       // Signing out drops the in-memory key immediately. The REMEMBERED key
       // is cleared separately, by App's sign-out effect, because forgetting it
       // is a disk write and this path also runs on a transient session blip.
-      set({ state: 'signed-out', key: null, pending: null, status: 'idle', message: null })
+      set({ state: 'signed-out', key: null, accountKey: null, pending: null, status: 'idle', message: null })
       return
     }
     set({ status: 'working', message: null })
     try {
       const row = await fetchVault(supabase)
       if (!row) {
-        set({ state: 'off', status: 'idle', rev: 0, salt: null, key: null, remembered: false })
+        set({ state: 'off', status: 'idle', rev: 0, salt: null, key: null, remembered: false, hasPassphrase: false, accountKey: null })
+        // Signing in IS syncing (James, 2026-10-26): start the online copy,
+        // without a passphrase, unless it was turned off here — or this
+        // device was syncing it, so it was deleted on another one on purpose.
+        const meta = await loadSyncMeta()
+        if ((meta && meta.userId === userId) || (await loadBackupOff()) === userId) return
+        // The book has to be off the disk first, or an empty one goes up.
+        await Promise.all([useBookStore.getState().init(), useTodoStore.getState().init(), useNoteStore.getState().init()])
+        await get().enable(supabase, userId, null, false)
         return
       }
-      const [storedKey, meta] = await Promise.all([loadVaultKey(), loadSyncMeta()])
+      const accountKey = row.account_key ? await importAccountKey(row.account_key) : null
+      const [storedKey, meta] = await Promise.all([accountKey ?? loadVaultKey(), loadSyncMeta()])
+      // No passphrase and new to this device (or this account): open it as
+      // entering a passphrase would — there is nothing to ask.
+      if (accountKey && (!meta || meta.userId !== userId)) {
+        const payload = await decryptJson<VaultPayload>(row.ciphertext, accountKey)
+        if (!payload) {
+          set({ status: 'error', message: currentT()('sync.bad_key') })
+          return
+        }
+        await openVault(supabase, userId, row, accountKey, payload, false)
+        return
+      }
       // A remembered key belongs to ONE account. Signing in as somebody else
       // on the same browser must not try it against their vault — it would
       // fail the GCM tag anyway, but "wrong passphrase" is a misleading thing
@@ -261,10 +368,16 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
           iterations: row.kdf_iterations,
           key: null,
           remembered: false,
+          hasPassphrase: true,
+          accountKey: null,
         })
         return
       }
       const payload = await decryptJson<VaultPayload>(row.ciphertext, storedKey)
+      if (!payload && accountKey) {
+        set({ status: 'error', message: currentT()('sync.bad_key') })
+        return
+      }
       if (!payload) {
         // A new salt on the server is how a passphrase change elsewhere shows
         // up. Say so, and drop the dead key so the next opening does not try
@@ -279,6 +392,8 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
           iterations: row.kdf_iterations,
           key: null,
           remembered: false,
+          hasPassphrase: true,
+          accountKey: null,
           message: changed ? passphraseChanged() : null,
         })
         return
@@ -315,14 +430,16 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
         salt: row.kdf_salt,
         iterations: row.kdf_iterations,
         key: storedKey,
-        remembered: true,
+        remembered: !accountKey,
+        hasPassphrase: !accountKey,
+        accountKey: row.account_key,
         lastPushedAt: meta.pushedAt,
         pending: null,
       })
       // A merge is in sync once it has gone up: `push` writes the meta. Until
       // then (offline) a reload merges again, which changes nothing.
       if (ask) await get().push(supabase)
-      else await saveSyncMeta({ ...meta, rev: row.rev, syncedAt: behind ? Date.now() : since })
+      else await saveSyncMeta({ ...meta, rev: row.rev, salt: row.kdf_salt, iterations: row.kdf_iterations, syncedAt: behind ? Date.now() : since })
     } catch (e) {
       set({ status: 'error', message: e instanceof Error ? e.message : currentT()('sync.unreachable') })
     }
@@ -332,7 +449,9 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
     set({ status: 'working', message: null })
     try {
       const salt = newSalt()
-      const key = await deriveKey(passphrase, salt, KDF_ITERATIONS)
+      const account = passphrase === null ? await newAccountKey() : null
+      const iterations = account ? 0 : KDF_ITERATIONS
+      const key = account ? account.key : await deriveKey(passphrase!, salt, KDF_ITERATIONS)
       const ciphertext = await encryptJson(bookPayload(), key)
       // Refuse an oversized book BEFORE the insert. Nothing has been persisted
       // at this point — no meta, no stored key — so the app simply stays off.
@@ -341,23 +460,33 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
         set({ status: 'error', message: tooBig })
         return
       }
-      const rev = await createVault(supabase, ciphertext, salt, KDF_ITERATIONS)
+      const rev = await createVault(supabase, ciphertext, salt, iterations, account?.raw ?? null)
       const now = Date.now()
-      const meta: SyncMeta = { userId, rev, salt, iterations: KDF_ITERATIONS, pushedAt: now, syncedAt: now }
+      const meta: SyncMeta = { userId, rev, salt, iterations, pushedAt: now, syncedAt: now }
       await saveSyncMeta(meta)
-      if (remember) await saveVaultKey(key)
+      const keep = remember && !account
+      if (keep) await saveVaultKey(key)
+      await saveBackupOff(null)
       set({
         state: 'on',
         status: 'saved',
         rev,
         salt,
-        iterations: KDF_ITERATIONS,
+        iterations,
         key,
-        remembered: remember,
+        remembered: keep,
+        hasPassphrase: !account,
+        accountKey: account?.raw ?? null,
         lastPushedAt: meta.pushedAt,
         message: null,
       })
     } catch (e) {
+      // Two devices starting it at once on signing in: the other one won, so
+      // open what it made.
+      if (e instanceof VaultConflictError && passphrase === null) {
+        await get().hydrate(supabase, userId)
+        return
+      }
       set({
         status: 'error',
         message:
@@ -379,48 +508,17 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
         return
       }
       // Derive with the salt and iteration count THE VAULT WAS WRITTEN WITH,
-      // never with today's constants — see the note on KDF_ITERATIONS.
-      const key = await deriveKey(passphrase, row.kdf_salt, row.kdf_iterations)
+      // never with today's constants — see the note on KDF_ITERATIONS. One
+      // without a passphrase (taken off elsewhere meanwhile) needs none.
+      const key = row.account_key
+        ? await importAccountKey(row.account_key)
+        : await deriveKey(passphrase, row.kdf_salt, row.kdf_iterations)
       const payload = await decryptJson<VaultPayload>(row.ciphertext, key)
       if (!payload) {
         set({ status: 'error', message: currentT()('sync.wrong_passphrase') })
         return
       }
-      // To-dos count as local data too: a device holding only to-dos must be
-      // asked, not have them replaced by the online list.
-      await Promise.all([useBookStore.getState().init(), useTodoStore.getState().init(), useNoteStore.getState().init()])
-      const local = useBookStore.getState().contacts.length + useTodoStore.getState().todos.length + useNoteStore.getState().notes.length
-      const now = Date.now()
-      const meta: SyncMeta = {
-        userId,
-        rev: row.rev,
-        salt: row.kdf_salt,
-        iterations: row.kdf_iterations,
-        pushedAt: now,
-        // 0 until the merge has gone up (`push` sets it) — see SyncMeta.syncedAt.
-        syncedAt: local > 0 ? 0 : now,
-      }
-      await saveSyncMeta(meta)
-      if (remember) await saveVaultKey(key)
-      set({
-        state: 'on',
-        rev: row.rev,
-        salt: row.kdf_salt,
-        iterations: row.kdf_iterations,
-        key,
-        remembered: remember,
-        // An empty device just takes the online copy. One that already has
-        // contacts (a guest's) has them merged in, unasked — see `mergeIn`.
-        pending: null,
-        status: 'idle',
-        message: null,
-      })
-      if (local === 0) await adopt(payload)
-      else {
-        await mergeIn(payload)
-        // Straight up: the online copy lacks the guest's contacts until it goes.
-        await get().push(supabase)
-      }
+      await openVault(supabase, userId, row, key, payload, remember)
     } catch (e) {
       set({ status: 'error', message: e instanceof Error ? e.message : currentT()('sync.unreachable') })
     }
@@ -447,7 +545,7 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
   },
 
   push: async (supabase, force = false) => {
-    const { key, rev, salt, iterations, state, pending } = get()
+    const { key, rev, salt, iterations, state, pending, accountKey } = get()
     // ⚠️ Never while the merge question is open. This device's book is not
     // the answer yet, and the autosave fires 2.5 s after sync turns on: it
     // used to write the local book over the online copy before anybody had
@@ -474,15 +572,15 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
         // ⚠️ Not after a passphrase change elsewhere. This device's key is the
         // OLD one, and "keep this device" would quietly put the old passphrase
         // back — undoing the change, and locking out the device that made it.
-        if (row && (await lockIfPassphraseChanged(row))) return
+        if (row && (await lockIfPassphraseChanged(supabase, row))) return
         expected = row?.rev ?? 0
         if (!row) {
-          const created = await createVault(supabase, ciphertext, salt, iterations)
+          const created = await createVault(supabase, ciphertext, salt, iterations, accountKey)
           set({ status: 'saved', rev: created, lastPushedAt: Date.now(), dirty: false })
           return
         }
       }
-      const next = await updateVault(supabase, ciphertext, salt, iterations, expected)
+      const next = await updateVault(supabase, ciphertext, salt, iterations, expected, accountKey)
       const meta = await loadSyncMeta()
       const now = Date.now()
       if (meta) await saveSyncMeta({ ...meta, rev: next, pushedAt: now, syncedAt: now })
@@ -492,7 +590,7 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
         // A passphrase change moves the rev too. Offering "keep this device"
         // for that would be offering to revert it — see the force branch.
         const row = await fetchVault(supabase).catch(() => null)
-        if (row && (await lockIfPassphraseChanged(row))) return
+        if (row && (await lockIfPassphraseChanged(supabase, row))) return
         set({
           status: 'conflict',
           message: currentT()('sync.conflict'),
@@ -514,12 +612,12 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
     try {
       const row = await fetchVault(supabase)
       if (!row) {
-        set({ state: 'off', status: 'idle', rev: 0, key: null })
+        set({ state: 'off', status: 'idle', rev: 0, key: null, accountKey: null })
         return
       }
       const payload = await decryptJson<VaultPayload>(row.ciphertext, key)
       if (!payload) {
-        if (await lockIfPassphraseChanged(row)) return
+        if (await lockIfPassphraseChanged(supabase, row)) return
         set({ status: 'error', message: currentT()('sync.bad_key') })
         return
       }
@@ -532,7 +630,7 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
     }
   },
 
-  changePassphrase: async (supabase, current, next) => {
+  changePassphrase: async (supabase, current, next, remember = true) => {
     const { state, rev, remembered } = get()
     if (state !== 'on') return false
     set({ status: 'working', message: null })
@@ -545,10 +643,12 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       // Checked against the server, not against the key in memory: the proof
       // asked for is "you know the passphrase", and a remembered device holds
       // the key without anybody having typed it.
-      const oldKey = await deriveKey(current, row.kdf_salt, row.kdf_iterations)
-      if (!(await decryptJson<VaultPayload>(row.ciphertext, oldKey))) {
-        set({ status: 'error', message: currentT()('sync.not_current') })
-        return false
+      if (!row.account_key) {
+        const oldKey = current === null ? null : await deriveKey(current, row.kdf_salt, row.kdf_iterations)
+        if (!oldKey || !(await decryptJson<VaultPayload>(row.ciphertext, oldKey))) {
+          set({ status: 'error', message: currentT()('sync.not_current') })
+          return false
+        }
       }
       if (row.rev !== rev) {
         // Re-encrypting THIS device's book over a newer one would lose the
@@ -558,9 +658,12 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
         return false
       }
       // A fresh salt, and today's iteration count — so a change is also how an
-      // old vault picks up a raised KDF_ITERATIONS.
+      // old vault picks up a raised KDF_ITERATIONS. The new salt is also how
+      // the other devices notice, with or without a passphrase.
       const salt = newSalt()
-      const key = await deriveKey(next, salt, KDF_ITERATIONS)
+      const account = next === null ? await newAccountKey() : null
+      const iterations = account ? 0 : KDF_ITERATIONS
+      const key = account ? account.key : await deriveKey(next!, salt, KDF_ITERATIONS)
       const ciphertext = await encryptJson(bookPayload(), key)
       const tooBig = vaultSizeError(ciphertext)
       if (tooBig) {
@@ -570,22 +673,27 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       // The same compare-and-set as every push. Ciphertext and salt go in ONE
       // row update, so there is no moment when the server holds a blob its
       // stored salt cannot open.
-      const nextRev = await updateVault(supabase, ciphertext, salt, KDF_ITERATIONS, rev)
+      const nextRev = await updateVault(supabase, ciphertext, salt, iterations, rev, account?.raw ?? null)
       const pushedAt = Date.now()
       const meta = await loadSyncMeta()
-      if (meta) await saveSyncMeta({ ...meta, rev: nextRev, salt, iterations: KDF_ITERATIONS, pushedAt, syncedAt: pushedAt })
+      if (meta) await saveSyncMeta({ ...meta, rev: nextRev, salt, iterations, pushedAt, syncedAt: pushedAt })
       // Replace the remembered key rather than leaving the old one on disk,
       // where the next opening would fail with it and ask for a passphrase.
-      if (remembered) await saveVaultKey(key)
+      const keep = !account && (row.account_key ? remember : remembered)
+      if (keep) await saveVaultKey(key)
+      else await forgetVaultKey()
       set({
         key,
         salt,
-        iterations: KDF_ITERATIONS,
+        iterations,
         rev: nextRev,
+        remembered: keep,
+        hasPassphrase: !account,
+        accountKey: account?.raw ?? null,
         lastPushedAt: pushedAt,
         dirty: false,
         status: 'saved',
-        message: currentT()('sync.changed'),
+        message: currentT()(account ? 'sync.passphrase_removed' : row.account_key ? 'sync.passphrase_added' : 'sync.changed'),
       })
       return true
     } catch (e) {
@@ -601,9 +709,12 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
   disable: async (supabase) => {
     set({ status: 'working', message: null })
     try {
+      const meta = await loadSyncMeta()
       await deleteVault(supabase)
+      // Turned off on purpose: signing in again must not start it by itself.
+      await saveBackupOff(meta?.userId ?? null)
       await forgetVault()
-      set({ state: 'off', status: 'idle', rev: 0, salt: null, key: null, remembered: false, pending: null, lastPushedAt: null })
+      set({ state: 'off', status: 'idle', rev: 0, salt: null, key: null, remembered: false, hasPassphrase: false, accountKey: null, pending: null, lastPushedAt: null })
     } catch (e) {
       set({ status: 'error', message: e instanceof Error ? e.message : currentT()('sync.delete_failed') })
     }

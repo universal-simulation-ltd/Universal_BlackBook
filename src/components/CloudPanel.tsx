@@ -16,10 +16,11 @@ const MIN_PASSPHRASE = 10
  *
  * ⚠️ Signing in is the whole of the front door (owner's call, 2026-09-17).
  * There used to be a separate "Save online" step beside the navbar's Sign in,
- * and two ways in read as two features. Now App opens this panel by itself
- * once somebody signs in: an existing backup asks for its passphrase and comes
- * straight down, and a device that already has contacts is asked whether to
- * merge them in. With no backup yet, it asks for a passphrase to start one.
+ * and two ways in read as two features. Since 2026-10-26 signing in starts the
+ * backup by itself, without a passphrase (syncStore `hydrate`), and the
+ * passphrase is an opt-in here: add, change or remove it. App still opens this
+ * panel by itself for a backup WITH one that this device cannot open yet, and
+ * for one that was turned off.
  *
  * BlackBook still works completely without an account.
  */
@@ -37,8 +38,10 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
   const [confirm, setConfirm] = useState('')
   const [remember, setRemember] = useState(true)
   const [acknowledged, setAcknowledged] = useState(false)
+  // Optional, so unticked (the suite rule for tick boxes).
+  const [withPassphrase, setWithPassphrase] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const [changing, setChanging] = useState(false)
+  const [changing, setChanging] = useState<PassphraseMode | null>(null)
   const revealConfirmRef = useRevealOnOpen()
 
   const busy = sync.status === 'working'
@@ -70,7 +73,7 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
     <>
       <Modal title={t('online_backup')} onClose={onClose} wide>
         <div className="space-y-4">
-          <PrivacyNote />
+          <PrivacyNote account={sync.state === 'on' ? !sync.hasPassphrase : sync.state !== 'locked' && !withPassphrase} />
 
           {sync.state === 'signed-out' && (
             <div className="space-y-3">
@@ -89,7 +92,7 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
               className="space-y-3"
               onSubmit={(e) => {
                 e.preventDefault()
-                void sync.enable(supabase, user.id, passphrase, remember)
+                void sync.enable(supabase, user.id, withPassphrase ? passphrase : null, remember)
               }}
             >
               <p className="text-sm text-slate-300">
@@ -97,6 +100,20 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
                 <span className="font-medium text-slate-100">{user.email}</span>
                 {t('cp.none_yet')}
               </p>
+              <label className="flex items-start gap-2 text-sm text-slate-300">
+                <input
+                  type="checkbox"
+                  className={`${checkboxCls} mt-0.5`}
+                  checked={withPassphrase}
+                  onChange={(e) => setWithPassphrase(e.target.checked)}
+                />
+                <span>
+                  {t('cp.with_passphrase')}
+                  <span className="block text-xs text-slate-500">{t('cp.add_note')}</span>
+                </span>
+              </label>
+              {withPassphrase && (
+              <>
               <div>
                 <label className={label} htmlFor="cp-pass">
                   {t('cp.passphrase')}
@@ -149,22 +166,22 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
                   {t('cp.ack_after')}
                 </span>
               </label>
+              </>
+              )}
               <button
                 type="submit"
                 className={btnPrimary}
                 disabled={
                   busy ||
-                  !acknowledged ||
-                  passphrase.length < MIN_PASSPHRASE ||
-                  passphrase !== confirm
+                  (withPassphrase && (!acknowledged || passphrase.length < MIN_PASSPHRASE || passphrase !== confirm))
                 }
               >
-                {busy ? t('cp.encrypting') : t.plural('cp.back_up', contacts.length)}
+                {busy ? t('cp.encrypting') : t('cp.turn_on')}
               </button>
-              {passphrase.length > 0 && passphrase.length < MIN_PASSPHRASE && (
+              {withPassphrase && passphrase.length > 0 && passphrase.length < MIN_PASSPHRASE && (
                 <p className="text-xs text-slate-500">{t('cp.more_chars', { count: MIN_PASSPHRASE })}</p>
               )}
-              {confirm.length > 0 && passphrase !== confirm && (
+              {withPassphrase && confirm.length > 0 && passphrase !== confirm && (
                 <p className="text-xs text-rose-300">{t('cp.mismatch')}</p>
               )}
             </form>
@@ -271,19 +288,30 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
                     {t('cp.forget')}
                   </button>
                 )}
-                {!changing && (
-                  <button type="button" className={btnGhost} disabled={busy} onClick={() => setChanging(true)}>
-                    {t('cp.change')}
+                {!changing && sync.hasPassphrase && (
+                  <>
+                    <button type="button" className={btnGhost} disabled={busy} onClick={() => setChanging('change')}>
+                      {t('cp.change')}
+                    </button>
+                    <button type="button" className={btnGhost} disabled={busy} onClick={() => setChanging('remove')}>
+                      {t('cp.remove')}
+                    </button>
+                  </>
+                )}
+                {!changing && !sync.hasPassphrase && (
+                  <button type="button" className={btnGhost} disabled={busy} onClick={() => setChanging('add')}>
+                    {t('cp.add')}
                   </button>
                 )}
               </div>
               {changing && (
-                <ChangePassphraseForm
+                <PassphraseForm
+                  mode={changing}
                   busy={busy}
-                  onSubmit={async (current, next) => {
-                    if (await sync.changePassphrase(supabase, current, next)) setChanging(false)
+                  onSubmit={async (current, next, keep) => {
+                    if (await sync.changePassphrase(supabase, current, next, keep)) setChanging(null)
                   }}
-                  onCancel={() => setChanging(false)}
+                  onCancel={() => setChanging(null)}
                 />
               )}
               <div className="border-t border-slate-800 pt-3">
@@ -333,27 +361,38 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
   )
 }
 
+type PassphraseMode = 'add' | 'change' | 'remove'
+
 /**
- * Change the online copy's passphrase.
+ * Add, change or remove the online copy's passphrase.
  *
- * Asks for the current one even when this device remembers the key — see
- * `changePassphrase` in syncStore for why.
+ * Change and remove ask for the current one even when this device remembers
+ * the key — see `changePassphrase` in syncStore for why. Adding one has
+ * nothing to prove: without a passphrase, signing in already opens the copy.
  */
-function ChangePassphraseForm({
+function PassphraseForm({
+  mode,
   busy,
   onSubmit,
   onCancel,
 }: {
+  mode: PassphraseMode
   busy: boolean
-  onSubmit: (current: string, next: string) => Promise<void>
+  onSubmit: (current: string | null, next: string | null, remember: boolean) => Promise<void>
   onCancel: () => void
 }) {
   const t = useT()
   const [current, setCurrent] = useState('')
   const [next, setNext] = useState('')
   const [confirm, setConfirm] = useState('')
+  const [remember, setRemember] = useState(true)
   const [acknowledged, setAcknowledged] = useState(false)
   const revealRef = useRevealOnOpen<HTMLFormElement>()
+  const title = { add: t('cp.add'), change: t('cp.change'), remove: t('cp.remove') }[mode]
+  const asksNew = mode !== 'remove'
+  const ready =
+    (mode === 'add' || current.length > 0) &&
+    (!asksNew || (acknowledged && next.length >= MIN_PASSPHRASE && next === confirm))
 
   return (
     <form
@@ -361,89 +400,102 @@ function ChangePassphraseForm({
       className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-3"
       onSubmit={(e) => {
         e.preventDefault()
-        void onSubmit(current, next)
+        void onSubmit(mode === 'add' ? null : current, asksNew ? next : null, remember)
       }}
     >
-      <p className="text-sm font-semibold text-slate-200">{t('cp.change')}</p>
-      <div>
-        <label className={label} htmlFor="cp-current">
-          {t('cp.current')}
-        </label>
-        <input
-          id="cp-current"
-          className={inputCls}
-          type="password"
-          autoComplete="current-password"
-          value={current}
-          onChange={(e) => setCurrent(e.target.value)}
-          autoFocus={autoFocusOK()}
-        />
-      </div>
-      <div>
-        <label className={label} htmlFor="cp-new">
-          {t('cp.new')}
-        </label>
-        <input
-          id="cp-new"
-          className={inputCls}
-          type="password"
-          autoComplete="new-password"
-          value={next}
-          onChange={(e) => setNext(e.target.value)}
-          placeholder={t('cp.at_least', { count: MIN_PASSPHRASE })}
-        />
-      </div>
-      <div>
-        <label className={label} htmlFor="cp-new-confirm">
-          {t('cp.new_again')}
-        </label>
-        <input
-          id="cp-new-confirm"
-          className={inputCls}
-          type="password"
-          autoComplete="new-password"
-          value={confirm}
-          onChange={(e) => setConfirm(e.target.value)}
-        />
-      </div>
+      <p className="text-sm font-semibold text-slate-200">{title}</p>
+      {mode !== 'add' && (
+        <div>
+          <label className={label} htmlFor="cp-current">
+            {t('cp.current')}
+          </label>
+          <input
+            id="cp-current"
+            className={inputCls}
+            type="password"
+            autoComplete="current-password"
+            value={current}
+            onChange={(e) => setCurrent(e.target.value)}
+            autoFocus={autoFocusOK()}
+          />
+        </div>
+      )}
+      {asksNew && (
+        <>
+          <div>
+            <label className={label} htmlFor="cp-new">
+              {mode === 'add' ? t('cp.passphrase') : t('cp.new')}
+            </label>
+            <input
+              id="cp-new"
+              className={inputCls}
+              type="password"
+              autoComplete="new-password"
+              value={next}
+              onChange={(e) => setNext(e.target.value)}
+              placeholder={t('cp.at_least', { count: MIN_PASSPHRASE })}
+              autoFocus={mode === 'add' && autoFocusOK()}
+            />
+          </div>
+          <div>
+            <label className={label} htmlFor="cp-new-confirm">
+              {mode === 'add' ? t('cp.again') : t('cp.new_again')}
+            </label>
+            <input
+              id="cp-new-confirm"
+              className={inputCls}
+              type="password"
+              autoComplete="new-password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+            />
+          </div>
+        </>
+      )}
       <p className="text-xs text-slate-500">
-        {t('cp.change_note')}
+        {{ add: t('cp.add_note'), change: t('cp.change_note'), remove: t('cp.remove_note') }[mode]}
       </p>
-      <label className="flex items-start gap-2 text-sm text-slate-300">
-        <input
-          type="checkbox"
-          className={`${checkboxCls} mt-0.5`}
-          checked={acknowledged}
-          onChange={(e) => setAcknowledged(e.target.checked)}
-        />
-        <span>
-          {t('cp.ack_before')}
-          <strong className="font-semibold">{t('cp.ack_strong')}</strong>
-          {t('cp.ack_new_after')}
-        </span>
-      </label>
+      {mode === 'add' && (
+        <label className="flex items-start gap-2 text-sm text-slate-300">
+          <input
+            type="checkbox"
+            className={`${checkboxCls} mt-0.5`}
+            checked={remember}
+            onChange={(e) => setRemember(e.target.checked)}
+          />
+          <span>
+            {t('cp.remember')}
+            <span className="block text-xs text-slate-500">{t('cp.remember_note')}</span>
+          </span>
+        </label>
+      )}
+      {asksNew && (
+        <label className="flex items-start gap-2 text-sm text-slate-300">
+          <input
+            type="checkbox"
+            className={`${checkboxCls} mt-0.5`}
+            checked={acknowledged}
+            onChange={(e) => setAcknowledged(e.target.checked)}
+          />
+          <span>
+            {t('cp.ack_before')}
+            <strong className="font-semibold">{t('cp.ack_strong')}</strong>
+            {mode === 'add' ? t('cp.ack_after') : t('cp.ack_new_after')}
+          </span>
+        </label>
+      )}
       <div className="flex flex-wrap gap-2">
-        <button
-          type="submit"
-          className={btnPrimary}
-          disabled={
-            busy ||
-            !acknowledged ||
-            current.length === 0 ||
-            next.length < MIN_PASSPHRASE ||
-            next !== confirm
-          }
-        >
-          {busy ? t('cp.reencrypting') : t('cp.change')}
+        <button type="submit" className={btnPrimary} disabled={busy || !ready}>
+          {busy ? t('cp.reencrypting') : title}
         </button>
         <button type="button" className={btnGhost} onClick={onCancel}>
           {t('c.cancel')}
         </button>
       </div>
-      {next.length > 0 && next.length < MIN_PASSPHRASE && (
+      {asksNew && next.length > 0 && next.length < MIN_PASSPHRASE && (
         <p className="text-xs text-slate-500">{t('cp.more_chars', { count: MIN_PASSPHRASE })}</p>
       )}
-      {confirm.length > 0 && next !== confirm && (
+      {asksNew && confirm.length > 0 && next !== confirm && (
         <p className="text-xs text-rose-300">{t('cp.mismatch')}</p>
       )}
     </form>
@@ -458,12 +510,18 @@ function mergeSummary(added: number, local: number): string {
   return t('cp.merge_some', { count: added, rest: local - added })
 }
 
-function PrivacyNote() {
+/**
+ * What protects the online copy, said honestly for each kind: without a
+ * passphrase its key is kept with the account, so "we cannot read your book"
+ * would not be true there.
+ */
+function PrivacyNote({ account }: { account: boolean }) {
   const t = useT()
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2.5 text-xs leading-relaxed text-slate-400">
       <p>
-        <strong className="font-semibold text-slate-200">{t('cp.privacy_strong')}</strong> {t('cp.privacy')}
+        <strong className="font-semibold text-slate-200">{t(account ? 'cp.privacy_account_strong' : 'cp.privacy_strong')}</strong>{' '}
+        {t(account ? 'cp.privacy_account' : 'cp.privacy')}
       </p>
     </div>
   )

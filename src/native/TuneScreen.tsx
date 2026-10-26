@@ -2,7 +2,8 @@
 // form's "Customise fields" asks for it). Every option the app has lives here
 // (the suite rule: no settings pages, all options in Tune this app), with the
 // book's own jobs — tags, backups, the PIN, deleting everything — and the
-// help and About pages under them. It replaces the website's ⚙ menu, Actions
+// help and About pages under them; the account (sign in, sign out, the
+// online copy) heads it — native/Account.tsx. It replaces the website's ⚙ menu, Actions
 // menu and SDK dialog, none of which the phone app has.
 
 import type { ReactNode } from 'react'
@@ -18,8 +19,8 @@ import { PREFERENCE_ROWS } from '../appParts'
 import { useLockStore } from '../stores/lockStore'
 import { usePanelStore, type Panel } from '../stores/panelStore'
 import { useSettingsStore } from '../stores/settingsStore'
-import { useSyncStore } from '../stores/syncStore'
 import { useThemeStore } from '../stores/themeStore'
+import { AccountGroup } from './Account'
 import { Credit } from './Credit'
 import { useT, type Key } from '../i18n'
 import { IconChevron } from './icons'
@@ -32,16 +33,8 @@ export function TuneContent() {
   const openPanel = usePanelStore((s) => s.open)
   const nav = useNativeNav()
   const locked = useLockStore((s) => s.record !== null)
-  const syncState = useSyncStore((s) => s.state)
   const resetSettings = useSettingsStore((s) => s.reset)
   const reset = useResetAppDefaults(resetSettings, useThemeStore)
-
-  const backup: Record<string, Key> = {
-    'signed-out': 'tune_backup_off',
-    off: 'tune_backup_off',
-    locked: 'tune_backup_locked',
-    on: 'tune_backup_on',
-  }
 
   const row = (panel: Panel, label: Key, opts: { value?: string; danger?: boolean } = {}) => (
     <LinkRow label={t(label)} value={opts.value} danger={opts.danger} onClick={() => openPanel(panel)} />
@@ -49,6 +42,9 @@ export function TuneContent() {
 
   return (
     <>
+      {/* First, because the account is what names the book at the top. */}
+      <AccountGroup />
+
       <Group title={t('tune_look')}>
         <div className="bb-cardpad space-y-4">
           <Appearance />
@@ -66,7 +62,6 @@ export function TuneContent() {
         {row('tags', 'tune_tags')}
         {row('templates', 'tune_templates')}
         {row('io', 'tune_backup_file')}
-        {row('cloud', 'tune_online_backup', { value: t(backup[syncState] ?? 'tune_backup_off') })}
         {row('lock', 'tune_pin_row', { value: t(locked ? 'tune_on' : 'tune_off') })}
         {row('wipe', 'tune_delete_all', { danger: true })}
       </Group>

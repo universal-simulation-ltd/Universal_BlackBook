@@ -472,6 +472,22 @@ export async function wipeDevice(): Promise<void> {
  * bookkeeping stays — `hasOnlineCopy` reads it to decide which warning the PIN
  * reset shows, and losing it would make that warning the wrong one.
  */
+/**
+ * The account whose online backup was turned off on this device, so signing
+ * in does not start it again by itself (syncStore `hydrate`). Beside the key
+ * and meta, but NOT cleared by `forgetVault`: turning it off is exactly when
+ * those go.
+ */
+export async function loadBackupOff(): Promise<string | null> {
+  const id = await tx<string | undefined>(SYNC, 'readonly', (s) => s.get('off') as IDBRequest<string | undefined>)
+  return id ?? null
+}
+
+export async function saveBackupOff(userId: string | null): Promise<void> {
+  if (userId) await tx(SYNC, 'readwrite', (s) => s.put(userId, 'off'))
+  else await tx(SYNC, 'readwrite', (s) => s.delete('off'))
+}
+
 export async function forgetVaultKey(): Promise<void> {
   await tx(SYNC, 'readwrite', (s) => s.delete('key'))
 }

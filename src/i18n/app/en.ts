@@ -290,11 +290,11 @@ export const appEn = {
   'bk.replace_warning': "This deletes the {counts} on this device and puts the backup's in their place.",
 
   // ── Online backup ─────────────────────────────────────────────────────────
-  'cp.signin_why': "Sign in with your Universal ID and BlackBook keeps an encrypted copy of your book, so it survives a lost device and opens on your phone.",
+  'cp.signin_why': "Sign in with your Universal ID and your book syncs to every device you sign in on, so it survives a lost one too.",
   'cp.signin': "Sign in with Universal ID",
   'cp.one_account': "One account across every UNI·SIM app. BlackBook works perfectly well without one — your book stays on this device, and a backup file (Backup, import & export) moves or keeps a copy without an account.",
   'cp.signed_in_as': "Signed in as ",
-  'cp.none_yet': ". There is no online copy of your book yet. Choose a passphrase to encrypt it with — it never leaves this device, and you will need it to open your book on another one.",
+  'cp.none_yet': ". Online backup is off for this book. Turn it on to sync it to every device you sign in on.",
   'cp.locked': ". Your book is backed up online — enter the passphrase you chose to download it.",
   'cp.passphrase': "Passphrase",
   'cp.again': "Passphrase again",
@@ -745,6 +745,16 @@ export const appEn = {
   'map.unplaced_other': "{count} towns are not in the list, so they are not on the map.",
   'map.contact': "Contact",
   'map.note': "Note",
+  'cp.turn_on': "Turn on online backup",
+  'cp.with_passphrase': "Protect it with a passphrase",
+  'cp.add_note': "Then only you can read it — not even UNI·SIM. You type it once on each new device, and there is no way to recover it.",
+  'cp.add': "Add a passphrase",
+  'cp.remove': "Remove the passphrase",
+  'cp.remove_note': "Your other devices then open the online copy just by signing in, and the key is kept with your account.",
+  'cp.privacy_account_strong': "Synced with your account.",
+  'cp.privacy_account': "Your book is encrypted before it leaves this device and its key is kept with your Universal ID, so signing in is all another device needs. Add a passphrase if you want nobody but you able to read it, UNI·SIM included.",
+  'sync.passphrase_added': "Passphrase added. Your other devices will ask for it once.",
+  'sync.passphrase_removed': "Passphrase removed. Your devices open the online copy by signing in.",
 } as const
 
 export type AppKey = keyof typeof appEn

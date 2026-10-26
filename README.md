@@ -107,8 +107,8 @@ reopens as a new book (with its two starting tags). It sits just below Backup,
 import & export, so you can save a backup file first.
 
 > **Your online copy is never deleted.** The dialog says whether one exists. If
-> it does, only this device is cleared, and signing in with your vault
-> passphrase brings the book back. If it does not, only a backup file you saved
+> it does, only this device is cleared, and signing in (plus the passphrase,
+> if you added one) brings the book back. If it does not, only a backup file you saved
 > can.
 
 ## New contact opens straight on the person
@@ -380,12 +380,12 @@ nobody can turn the lock off for you.
 > the phone could use it, and the lock would protect nobody. So the door opens
 > and the room behind it is emptied: the contacts, the tags, the PIN, and the
 > remembered vault key all go, which means getting the book back afterwards
-> costs a Universal ID sign-in **and** your vault passphrase. A stranger can
-> destroy your book this way; they can never read it.
+> costs a Universal ID sign-in (**and** the vault passphrase, if it has one).
+> A stranger can destroy your book this way; they can never read it.
 >
 > **So turn the online copy on, or save a backup file, before you set a PIN.**
-> With a vault, forgetting your PIN is an inconvenience — sign in, enter the
-> passphrase, and the book comes back; with a backup file, reset and open it.
+> With a vault, forgetting your PIN is an inconvenience — sign in (and enter
+> the passphrase, if you added one), and the book comes back; with a backup file, reset and open it.
 > Without either, the reset screen says so in as many words, and it is the
 > truth: there is nothing to restore from.
 

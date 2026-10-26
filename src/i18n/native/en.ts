@@ -70,7 +70,7 @@ export const en = {
 
   online_backup: 'Online backup',
   signin_title: 'Sign in',
-  signin_why: 'Sign in with your Universal ID and BlackBook keeps an encrypted copy of your book, so it survives a lost phone and opens on your other devices. Nobody but you can read it, us included.',
+  signin_why: "Sign in with your Universal ID and your book syncs to every device you sign in on, so it survives a lost phone too. Add a passphrase in Online backup if you want nobody but you able to read it, us included.",
   signin_with: 'Continue with {provider}',
   signin_or: 'or with your email',
   signin_email: 'Email address',
@@ -109,6 +109,17 @@ export const en = {
   tune_templates: "Note templates",
   about_geonames: "Country, county and town lists · CC BY 4.0",
   about_map_privacy: "The map is drawn from OpenFreeMap's free tile server, and only once you open it: that server sees the area on screen, never what is in your book. Your location, if you turn it on, is turned into a town on this phone and never kept.",
+  tune_account: "Account",
+  tune_sign_in: "Sign in",
+  tune_sign_in_note: "Your book on every device you sign in on",
+  tune_name: "Your name",
+  tune_name_note: "Names your book at the top: “{book}”.",
+  tune_email: "Email",
+  tune_sign_out: "Sign out",
+  tune_sign_out_ask: "Sign out? Your book comes off this phone and comes back when you sign in again. Anything not yet saved online stays here.",
+  tune_delete_account: "Delete my account",
+  book_of: "{name}’s Book",
+  book_mine: "My Book",
 } as const
 
 export type Key = keyof typeof en

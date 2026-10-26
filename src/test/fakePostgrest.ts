@@ -28,6 +28,7 @@ export interface FakeRow {
   ciphertext: string
   kdf_salt: string
   kdf_iterations: number
+  account_key?: string | null
   rev: number
   updated_at: string
 }

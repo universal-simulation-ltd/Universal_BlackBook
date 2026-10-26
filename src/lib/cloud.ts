@@ -3,8 +3,9 @@
 // carries the signed-in user's JWT and RLS does the authorisation.
 //
 // Nothing in this file can read a book. It moves an opaque base64 string and
-// the PBKDF2 parameters needed to re-derive the key from a passphrase; the
-// encrypt/decrypt pair lives in lib/vault.ts and never leaves the browser.
+// the PBKDF2 parameters needed to re-derive the key from a passphrase — or,
+// for a vault without one, the key itself (`account_key`, see lib/vault.ts);
+// the encrypt/decrypt pair lives in lib/vault.ts and never leaves the browser.
 
 import type { NoteTemplate } from './templates'
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -74,6 +75,12 @@ export interface VaultRow {
   ciphertext: string
   kdf_salt: string
   kdf_iterations: number
+  /**
+   * The vault's key, base64, when it has no passphrase (2026-10-26); null when
+   * a passphrase guards it. `kdf_salt` is still a fresh value either way: it
+   * is how a device notices the key changed under it.
+   */
+  account_key: string | null
   rev: number
   updated_at: string
 }
@@ -84,7 +91,7 @@ export async function fetchVault(supabase: SupabaseClient): Promise<VaultRow | n
   // "this user has no vault yet" is the normal first-run state, not a fault.
   const { data, error } = await supabase
     .from(TABLE)
-    .select('user_id, ciphertext, kdf_salt, kdf_iterations, rev, updated_at')
+    .select('user_id, ciphertext, kdf_salt, kdf_iterations, account_key, rev, updated_at')
     .maybeSingle()
   if (error) throw failure(error)
   return (data as VaultRow | null) ?? null
@@ -128,10 +135,11 @@ export async function createVault(
   ciphertext: string,
   salt: string,
   iterations: number,
+  accountKey: string | null = null,
 ): Promise<number> {
   const { error } = await supabase
     .from(TABLE)
-    .insert({ ciphertext, kdf_salt: salt, kdf_iterations: iterations, rev: 1 })
+    .insert({ ciphertext, kdf_salt: salt, kdf_iterations: iterations, account_key: accountKey, rev: 1 })
   if (error) {
     if (error.code === '23505') throw new VaultConflictError()
     throw failure(error)
@@ -160,6 +168,7 @@ export async function updateVault(
   salt: string,
   iterations: number,
   expectedRev: number,
+  accountKey: string | null = null,
 ): Promise<number> {
   const nextRev = expectedRev + 1
   const { data, error } = await supabase
@@ -168,6 +177,7 @@ export async function updateVault(
       ciphertext,
       kdf_salt: salt,
       kdf_iterations: iterations,
+      account_key: accountKey,
       rev: nextRev,
       updated_at: new Date().toISOString(),
     })

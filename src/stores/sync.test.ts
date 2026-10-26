@@ -672,3 +672,103 @@ describe('fake-indexeddb round-trips a non-extractable CryptoKey', () => {
     await expect(crypto.subtle.exportKey('raw', back!)).rejects.toThrow()
   })
 })
+
+// The passphrase became optional (James, 2026-10-26): signing in starts the
+// online copy by itself, its key kept with the account, and every device that
+// signs in opens it with nothing to type. Adding a passphrase puts back the
+// end-to-end vault the tests above cover.
+describe('without a passphrase', () => {
+  let server: FakeServer
+
+  beforeEach(() => {
+    server = newServer()
+  })
+
+  it('signing in starts the online copy, and a second device opens it just by signing in', async () => {
+    const a = await boot(server)
+    await seed(a, ['Ada'])
+    await use(a).sync.getState().hydrate(a.client, USER)
+
+    expect(use(a).sync.getState().state).toBe('on')
+    expect(use(a).sync.getState().hasPassphrase).toBe(false)
+    expect(server.row?.account_key).toBeTruthy()
+    expect(server.row?.kdf_iterations).toBe(0)
+
+    const b = await boot(server)
+    await seed(b, ['Grace'])
+    await use(b).sync.getState().hydrate(b.client, USER)
+    expect(use(b).sync.getState().state).toBe('on')
+    // B's own entry merged in and pushed, not lost.
+    expect(names(b)).toEqual(['Ada', 'Grace'])
+    expect(server.row?.account_key).toBeTruthy()
+  })
+
+  it('every save keeps the key with the row', async () => {
+    const a = await boot(server)
+    await seed(a, ['Ada'])
+    await use(a).sync.getState().hydrate(a.client, USER)
+    const key = server.row?.account_key
+    await seed(a, ['Ada', 'Grace'])
+    await use(a).sync.getState().push(a.client)
+    expect(server.row?.rev).toBe(2)
+    expect(server.row?.account_key).toBe(key)
+
+    const reloaded = await reload(server, a)
+    await use(reloaded).sync.getState().hydrate(reloaded.client, USER)
+    expect(use(reloaded).sync.getState().state).toBe('on')
+    expect(names(reloaded)).toEqual(['Ada', 'Grace'])
+  })
+
+  it('adding a passphrase takes the key off the server and locks the other devices', async () => {
+    const a = await boot(server)
+    await seed(a, ['Ada'])
+    await use(a).sync.getState().hydrate(a.client, USER)
+    const b = await boot(server)
+    await use(b).sync.getState().hydrate(b.client, USER)
+    expect(use(b).sync.getState().state).toBe('on')
+
+    expect(await use(a).sync.getState().changePassphrase(a.client, null, PASS, true)).toBe(true)
+    expect(server.row?.account_key).toBeNull()
+    expect(use(a).sync.getState().hasPassphrase).toBe(true)
+
+    // A reload of A still opens: it chose to remember the new key.
+    const reloadedA = await reload(server, a)
+    await use(reloadedA).sync.getState().hydrate(reloadedA.client, USER)
+    expect(use(reloadedA).sync.getState().state).toBe('on')
+
+    const reloadedB = await reload(server, b)
+    await use(reloadedB).sync.getState().hydrate(reloadedB.client, USER)
+    expect(use(reloadedB).sync.getState().state).toBe('locked')
+  })
+
+  it('removing the passphrase needs the current one, then opens the other devices again', async () => {
+    const { a, b } = await twoUnlockedDevices(server)
+    expect(await use(a).sync.getState().changePassphrase(a.client, 'not it at all', null)).toBe(false)
+    expect(server.row?.account_key ?? null).toBeNull()
+
+    expect(await use(a).sync.getState().changePassphrase(a.client, PASS, null)).toBe(true)
+    expect(server.row?.account_key).toBeTruthy()
+
+    // B still holds the old passphrase's key: its next save finds the new
+    // salt and reopens with the account's key instead of locking.
+    const now = Date.now()
+    await use(b).book.getState().importBook([contact('Ada'), { ...contact('Grace'), createdAt: now, updatedAt: now }], [], 'replace', null)
+    await use(b).sync.getState().push(b.client)
+    expect(use(b).sync.getState().state).toBe('on')
+    expect(use(b).sync.getState().hasPassphrase).toBe(false)
+    expect(names(b)).toEqual(['Ada', 'Grace'])
+  })
+
+  it('turned off on purpose, signing in again does not start it', async () => {
+    const a = await boot(server)
+    await seed(a, ['Ada'])
+    await use(a).sync.getState().hydrate(a.client, USER)
+    await use(a).sync.getState().disable(a.client)
+    expect(server.row).toBeNull()
+
+    const reloaded = await reload(server, a)
+    await use(reloaded).sync.getState().hydrate(reloaded.client, USER)
+    expect(use(reloaded).sync.getState().state).toBe('off')
+    expect(server.row).toBeNull()
+  })
+})

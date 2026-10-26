@@ -6,10 +6,11 @@ checked: every claim below names the file in this repository that makes it
 true, and you are welcome to go and read it.
 
 The short version: **your book lives on your own device, and works with no
-account.** To use it on several devices you can sync it with your Universal ID
-(optional): it is encrypted on your device first, with a passphrase only you
-know, and we cannot read it. Or save a backup file yourself, which never
-reaches us, and lock it with a password if you like.
+account.** Signing in with your Universal ID (optional) syncs it to every
+device you sign in on: it is encrypted on your device first, and its key is
+kept with your account — or, if you add a passphrase, with nobody but you, and
+then we cannot read it. Or save a backup file yourself, which never reaches
+us, and lock it with a password if you like.
 
 ---
 
@@ -65,22 +66,29 @@ can read your whole address book, and the app does not try.
 
 ### 1. "Save my book online" (sync with your Universal ID)
 
-This is optional, needs a Universal ID, and is off until you turn it on. It
-lets a second device, or a new phone, get your book back.
+This needs a Universal ID, and starts when you sign in (signing in is how you
+ask for your book on every device). It lets a second device, or a new phone,
+get your book back. **Online backup ▸ Turn off and delete the online copy**
+stops it, and signing in again on that device does not start it again.
 
-- **Encrypted on your device before it is sent.** AES-GCM-256, with a key made
-  from a passphrase you choose (PBKDF2-SHA-256, 600,000 rounds). The
-  passphrase is not your account password and is never sent to us. See
+- **Encrypted on your device before it is sent.** AES-GCM-256. See
   [`src/lib/vault.ts`](src/lib/vault.ts).
+- **Without a passphrase (the default)**, the key is a random one kept in the
+  same database row, so signing in is all another device needs. Database rules
+  let only your own account read that row, but **UNI·SIM could technically
+  read it**, as with most apps that sync.
+- **With a passphrase (optional — Online backup ▸ Add a passphrase)**, the key
+  is made from a passphrase you choose (PBKDF2-SHA-256, 600,000 rounds) and the
+  key is removed from the server. The passphrase is not your account password
+  and is never sent to us. **Then we cannot read it**: we hold no key, no copy
+  of your passphrase and no way to reset it. That is also why a lost
+  passphrase cannot be recovered: the book on your device is still there, but
+  the online copy is not readable by anyone. You can remove it again, which
+  puts a random key back on the server.
 - **What we store**: one row per account in the UNI·SIM platform's database
-  (Supabase): the encrypted bytes, the salt and round count needed to turn your
-  passphrase back into the key, a revision number and the time it was saved.
-  Database rules let only your own account read or change that row. See
-  [`src/lib/cloud.ts`](src/lib/cloud.ts).
-- **We cannot read it.** We hold no key, no copy of your passphrase and no
-  way to reset it. That is also why a lost passphrase cannot be recovered: the
-  book on your device is still there, but the online copy is not readable by
-  anyone.
+  (Supabase): the encrypted bytes, the key (only without a passphrase) or the
+  salt and round count needed to turn your passphrase back into it, a revision
+  number and the time it was saved. See [`src/lib/cloud.ts`](src/lib/cloud.ts).
 - **"Remember this device"** keeps the key in the device's own storage in a
   form that can be used but not read back out, so you are not asked for the
   passphrase every time.

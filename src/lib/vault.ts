@@ -26,6 +26,18 @@ import { currentT } from '../i18n'
 // hold no key, no escrow and no reset. The device that made it still has the
 // local book, which is why this is a BACKUP of a local-first app and never the
 // primary copy. Every screen that takes the passphrase says so.
+//
+// ── Without a passphrase (James, 2026-10-26) ─────────────────────────────────
+//
+// "The passphrase should be optional": BlackBook is one of the apps where the
+// account IS the feature — you use it on every device, and signing in should
+// be all a new one needs. So the passphrase is now an opt-in. Without one, the
+// vault is still AES-GCM ciphertext, but under a random key that lives in the
+// same row (`account_key`), so RLS — the account — is what guards it, as in
+// most apps that sync. UNI·SIM COULD read those rows, and the backup panel
+// says so plainly rather than repeating "we cannot read your book". Adding a
+// passphrase re-encrypts under a derived key and clears `account_key`, and
+// from then on everything above holds again.
 
 /** Bumped only for a change that makes old ciphertext unreadable. */
 export const VAULT_VERSION = 1
@@ -89,6 +101,20 @@ export async function deriveKey(passphrase: string, saltB64: string, iterations:
     false,
     ['encrypt', 'decrypt'],
   )
+}
+
+/**
+ * A fresh random key for a vault without a passphrase, and its base64 for
+ * `account_key`. The CryptoKey made from it is non-extractable like a derived
+ * one; the base64 is what the server keeps, so signing in is enough to open it.
+ */
+export async function newAccountKey(): Promise<{ key: CryptoKey; raw: string }> {
+  const raw = toBase64(crypto.getRandomValues(new Uint8Array(32)))
+  return { key: await importAccountKey(raw), raw }
+}
+
+export async function importAccountKey(raw: string): Promise<CryptoKey> {
+  return crypto.subtle.importKey('raw', fromBase64(raw) as BufferSource, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'])
 }
 
 /** Encrypt any JSON-serialisable payload. The IV is prepended to the ciphertext. */
