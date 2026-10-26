@@ -115,39 +115,39 @@ export function TodoView() {
         )}
       </div>
 
-      <ListSearch value={query} onChange={setQuery} label={t('todo.search')} />
+      <ListSearch value={query} onChange={setQuery} label={t('todo.search')} filtering={activeFilter.length > 0}>
+        {usedTags.length > 0 && (
+          <div role="group" aria-label={t('tags.filter_by')}>
+            <TagCombo
+              options={usedTags}
+              isOn={(id) => activeFilter.includes(id)}
+              chip={(t) => (
+                <TagChip
+                  name={t.name}
+                  colour={t.colour} pattern={t.pattern}
+                  selected={activeFilter.includes(t.id)}
+                  onClick={() =>
+                    setTagFilter(
+                      activeFilter.includes(t.id) ? activeFilter.filter((x) => x !== t.id) : [...activeFilter, t.id],
+                    )
+                  }
+                />
+              )}
+              suggestion={(t) => <TagChip name={t.name} colour={t.colour} pattern={t.pattern} />}
+              onPick={(id) => setTagFilter([...activeFilter, id])}
+              placeholder={t('tags.filter_by')}
+              fullLabel={t('tags.show_all')}
+            />
+            {activeFilter.length > 0 && (
+              <button type="button" className={`${btnSubtle} mt-1.5`} onClick={() => setTagFilter([])}>
+                {t('c.clear')}
+              </button>
+            )}
+          </div>
+        )}
+      </ListSearch>
       {/* What was typed, as a new to-do's title. */}
       <AddTyped text={query} onAdd={(title) => startTodo(title)} />
-
-      {usedTags.length > 0 && (
-        <div role="group" aria-label={t('tags.filter_by')}>
-          <TagCombo
-            options={usedTags}
-            isOn={(id) => activeFilter.includes(id)}
-            chip={(t) => (
-              <TagChip
-                name={t.name}
-                colour={t.colour} pattern={t.pattern}
-                selected={activeFilter.includes(t.id)}
-                onClick={() =>
-                  setTagFilter(
-                    activeFilter.includes(t.id) ? activeFilter.filter((x) => x !== t.id) : [...activeFilter, t.id],
-                  )
-                }
-              />
-            )}
-            suggestion={(t) => <TagChip name={t.name} colour={t.colour} pattern={t.pattern} />}
-            onPick={(id) => setTagFilter([...activeFilter, id])}
-            placeholder={t('tags.filter_by')}
-            fullLabel={t('tags.show_all')}
-          />
-          {activeFilter.length > 0 && (
-            <button type="button" className={`${btnSubtle} mt-1.5`} onClick={() => setTagFilter([])}>
-              {t('c.clear')}
-            </button>
-          )}
-        </div>
-      )}
 
       {loaded && todos.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-800 px-6 py-14 text-center">

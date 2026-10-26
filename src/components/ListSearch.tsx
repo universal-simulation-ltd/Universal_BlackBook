@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, type RefObject } from 'react'
+import { useCallback, useRef, useState, type ReactNode, type RefObject } from 'react'
 import {
   PullDrawer,
   TOUCH_PHONE_QUERY,
@@ -15,12 +15,39 @@ import { useT } from '../i18n'
 // (SearchDrawer): on a phone folded away above the list, pulled down to show
 // it and pulled again for the keyboard (BRANDING.md); a tap on the tab you are
 // already on opens it too. Everywhere else the box is on show.
+//
+// `children` are the tab's filters (Notes' All · Book chips, To-do's tags):
+// on the phone they fold away in the same space as the search (James,
+// 2026-10-26: "hide the chips … in the reveal space with search"), and stay
+// out while one is on, so a filtered list is never filtered by something out
+// of sight. Contacts does the same with its FilterBar (SearchDrawer).
 
 const notAPull = (e: TouchEvent) => modalIsOpen() || insideScrolledChild(e.target)
 
-export function ListSearch({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
+interface ListSearchProps {
+  value: string
+  onChange: (v: string) => void
+  label: string
+  children?: ReactNode
+  /** A filter in `children` is on: the drawer stays out. */
+  filtering?: boolean
+}
+
+export function ListSearch({ value, onChange, label, children, filtering = false }: ListSearchProps) {
   const phone = useMediaQuery(TOUCH_PHONE_QUERY)
-  return phone ? <PhoneSearch value={value} onChange={onChange} label={label} /> : <SearchBox value={value} onChange={onChange} label={label} />
+  if (phone) {
+    return (
+      <PhoneSearch value={value} onChange={onChange} label={label} filtering={filtering}>
+        {children}
+      </PhoneSearch>
+    )
+  }
+  return (
+    <>
+      <SearchBox value={value} onChange={onChange} label={label} />
+      {children}
+    </>
+  )
 }
 
 function SearchBox({
@@ -61,9 +88,9 @@ function SearchBox({
   )
 }
 
-function PhoneSearch({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
+function PhoneSearch({ value, onChange, label, children, filtering }: ListSearchProps) {
   const [pulled, setPulled] = useState(false)
-  const searching = value.trim() !== ''
+  const searching = value.trim() !== '' || Boolean(filtering)
   const input = useRef<HTMLInputElement>(null)
   const open = useCallback(() => setPulled(true), [])
   const close = useCallback(() => setPulled(false), [])
@@ -87,6 +114,7 @@ function PhoneSearch({ value, onChange, label }: { value: string; onChange: (v: 
       innerClassName="pb-1"
     >
       <SearchBox value={value} onChange={onChange} label={label} input={input} />
+      {children && <div className="mt-3">{children}</div>}
     </PullDrawer>
   )
 }

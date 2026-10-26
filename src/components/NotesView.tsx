@@ -126,13 +126,13 @@ export function NotesView() {
         </div>
       </div>
 
-      <ListSearch value={query} onChange={setQuery} label={t('notes.search')} />
+      <ListSearch value={query} onChange={setQuery} label={t('notes.search')} filtering={active !== null}>
+        {templates.length > 0 && notes.length > 0 && (
+          <TemplateFilter templates={templates} active={active} onPick={setFilter} />
+        )}
+      </ListSearch>
       {/* What was typed, as a new note's title (James, 2026-10-23). */}
       <AddTyped text={query} onAdd={(title) => startNote(title)} />
-
-      {templates.length > 0 && notes.length > 0 && (
-        <TemplateFilter templates={templates} active={active} onPick={setFilter} />
-      )}
 
       {loaded && notes.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-800 px-6 py-14 text-center">
