@@ -40,6 +40,7 @@ import { useSettingsStore } from './stores/settingsStore'
 import { useSyncStore } from './stores/syncStore'
 import { useTodoStore } from './stores/todoStore'
 import { useNoteStore } from './stores/noteStore'
+import { useSearchReset } from './stores/searchStore'
 import { usePanelStore } from './stores/panelStore'
 import { AddMenu, APP_ABOUT, availableTabs, LockLink, PREFERENCE_ROWS, REPO_URL, SyncStatus, tabName, TABS, useContactPicker, type Tab } from './appParts'
 import { currentT, useT } from './i18n'
@@ -299,6 +300,8 @@ export default function App() {
                   // is making the tab the default, so it shuts it again. Only a
                   // phone listens (SearchDrawer); elsewhere the box is on show.
                   if (t === current) requestSearch(!double)
+                  // Another tab: its search starts empty (searchStore).
+                  else useSearchReset.getState().clearAll()
                   setTab(t)
                 }}
                 // The default tab is orange: filled while you are on it, an

@@ -22,6 +22,9 @@ import { CloseGlyph, Modal } from './Modal'
 import { actionSwipe, pinSwipe, removeSwipe, SelectBar, SwipeGroup, SwipeItem, UndoBar, useHoldSelect, useUndo } from './SwipeActions'
 import type { Contact } from '../lib/types'
 import { ReminderEditor, ReminderList } from './Reminders'
+import { NoteQuickActions, type QuickButton } from './NoteQuickActions'
+import type { QuickAction } from '../lib/quickActions'
+import { growToFit, useTypingRoom } from '../lib/typingRoom'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label, textareaCls } from './ui'
 
 /**
@@ -29,14 +32,26 @@ import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label, textareaCl
  * contact's "Linked notes" can open one). NativeApp and App render this.
  */
 export function NoteLayers() {
+  const t = useT()
   const viewing = useNoteStore((s) => s.viewing)
   const editing = useNoteStore((s) => s.editing)
   const choosing = useNoteStore((s) => s.choosing)
+  // Copy and delete (a note's quick button): the view has gone by the time
+  // anyone wants it back, so the Undo is here, under every view.
+  const restoreMany = useNoteStore((s) => s.restoreMany)
+  const binned = useUndo<Note[]>(restoreMany)
   return (
     <>
-      {viewing && <NoteView key={`nv-${viewing}`} id={viewing} />}
+      {viewing && <NoteView key={`nv-${viewing}`} id={viewing} onBinned={(n) => binned.deleted([n])} />}
       {editing && <NoteForm key={`nf-${editing}`} id={editing} />}
       {choosing && <TemplateChooser />}
+      {binned.item && (
+        <UndoBar
+          title=""
+          text={t('qa.copied_deleted', { title: binned.item[0].title || t('c.untitled') })}
+          onUndo={() => void binned.undo()}
+        />
+      )}
     </>
   )
 }
@@ -130,7 +145,7 @@ function FieldInput({ field, value, onChange }: { field: TemplateField; value: s
  * then what it holds: the people, the place, the text (tap to type into it,
  * as on a contact) and its notifications.
  */
-function NoteView({ id }: { id: string }) {
+function NoteView({ id, onBinned }: { id: string; onBinned: (note: Note) => void }) {
   const t = useT()
   const kit = usePhoneKit()
   const note = useNoteStore((s) => s.notes.find((n) => n.id === id))
@@ -179,19 +194,21 @@ function NoteView({ id }: { id: string }) {
   const flushRef = useRef(flush)
   flushRef.current = flush
   const stored = note?.details ?? ''
+  // Saved from Fine-tune or by a sync: take the new text — but not our own
+  // save coming back. That is stored without trailing spaces, so taking it
+  // ate the space just typed before a pause (James, 2026-10-26: "I keep
+  // losing spaces as I type").
   useEffect(() => {
-    if (timer.current === undefined) setDraft(stored)
+    if (timer.current === undefined && stored !== draftRef.current.replace(/\s+$/, '')) setDraft(stored)
   }, [stored])
   useEffect(() => () => {
     if (timer.current !== undefined) flushRef.current()
   }, [])
   const areaRef = useRef<HTMLTextAreaElement>(null)
   useLayoutEffect(() => {
-    const el = areaRef.current
-    if (!el) return
-    el.style.height = 'auto'
-    el.style.height = `${el.scrollHeight}px`
+    if (areaRef.current) growToFit(areaRef.current)
   }, [draft, typing])
+  useTypingRoom(areaRef, Boolean(kit))
 
   const byId = useMemo(() => new Map(contacts.map((c) => [c.id, c])), [contacts])
   if (!note) return null
@@ -215,36 +232,36 @@ function NoteView({ id }: { id: string }) {
     flush()
     edit(note.id)
   }
+  // Copy and delete (James, 2026-10-26: "useful for me when I write issues
+  // down then copy them here then delete the note"): only deleted once the
+  // copy worked, and Undo brings it back (NoteLayers).
+  const copyAndDelete = async () => {
+    flush()
+    const latest = useNoteStore.getState().notes.find((n) => n.id === note.id) ?? note
+    const ok = await copyText(noteText(latest.title, draftRef.current))
+    if (!ok) {
+      if (kit) say(t('export.copy_failed'))
+      else setCopied(t('export.copy_failed'))
+      return
+    }
+    close(null)
+    onBinned(latest)
+    void useNoteStore.getState().removeMany([latest.id])
+  }
 
   // One large emoji each (James, 2026-10-25), the words as the accessible
-  // name and the tooltip. All four have a glyph in iOS's and Android's
-  // system emoji fonts.
-  const actions: { key: string; label: string; emoji: string; onClick: () => void }[] = [
-    { key: 'contacts', label: t('nlink.contact'), emoji: '\u{1F464}', onClick: () => setSheet('contacts') },
-    { key: 'place', label: t('nlink.location'), emoji: '\u{1F4CD}', onClick: () => setSheet('place') },
-    { key: 'remind', label: t('rem.add'), emoji: '\u{1F514}', onClick: () => setSheet('remind') },
-    { key: 'copy', label: t('notes.copy'), emoji: '\u{1F4CB}', onClick: () => void copy() },
-  ]
+  // name and the tooltip. All have a glyph in iOS's and Android's system
+  // emoji fonts. Which show, and in what order, is the person's
+  // (NoteQuickActions).
+  const buttons: Record<QuickAction, QuickButton> = {
+    contacts: { label: t('nlink.contact'), emoji: '\u{1F464}', onClick: () => setSheet('contacts') },
+    place: { label: t('nlink.location'), emoji: '\u{1F4CD}', onClick: () => setSheet('place') },
+    remind: { label: t('rem.add'), emoji: '\u{1F514}', onClick: () => setSheet('remind') },
+    copy: { label: t('notes.copy'), emoji: '\u{1F4CB}', onClick: () => void copy() },
+    copyDelete: { label: t('qa.copy_delete'), emoji: '\u{1F4CB}\u{1F5D1}\u{FE0F}', small: true, onClick: () => void copyAndDelete() },
+  }
 
-  const actionRow = (
-    <div className="mb-5 grid grid-cols-4 gap-2" role="group" aria-label={t('nlink.actions')}>
-      {actions.map((a) => (
-        <button
-          key={a.key}
-          type="button"
-          aria-label={a.label}
-          title={a.label}
-          onClick={a.onClick}
-          className="flex min-h-[56px] items-center justify-center rounded-2xl border border-slate-800 bg-slate-900 text-[28px] leading-none transition-colors hover:border-slate-700 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
-        >
-          <span aria-hidden>{a.emoji}</span>
-        </button>
-      ))}
-      <span className="sr-only" role="status" aria-live="polite">
-        {copied ?? ''}
-      </span>
-    </div>
-  )
+  const actionRow = <NoteQuickActions buttons={buttons} status={copied} />
 
   const body = (
     <div className="mx-auto w-full max-w-2xl space-y-5">
@@ -599,6 +616,8 @@ function NoteForm({ id }: { id: string }) {
   const [confirming, setConfirming] = useState(false)
   const titleId = useId()
   const detailsId = useId()
+  const detailsRef = useRef<HTMLTextAreaElement>(null)
+  useTypingRoom(detailsRef, Boolean(kit))
   const empty = !title.trim() && !details.trim() && !Object.values(fields).some((v) => v.trim())
 
   const done = () => {
@@ -645,6 +664,7 @@ function NoteForm({ id }: { id: string }) {
             {t('todo.details')}
           </label>
           <textarea
+            ref={detailsRef}
             id={detailsId}
             className={textareaCls}
             rows={template ? 6 : phoneScreens() ? 14 : 10}

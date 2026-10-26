@@ -39,6 +39,7 @@ import { NotesView } from '../components/NotesView'
 import { useBookStore } from '../stores/bookStore'
 import { useTodoStore } from '../stores/todoStore'
 import { useNoteStore } from '../stores/noteStore'
+import { useSearchReset } from '../stores/searchStore'
 import { usePanelStore } from '../stores/panelStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { AboutContent } from './AboutScreen'
@@ -65,8 +66,16 @@ const MapView = lazy(() => import('../components/MapView').then((m) => ({ defaul
 
 type PhoneTab = Tab | 'tune'
 
-/** The tabs a switch in Tune turns off, and that switch: what the bin can take. */
-const TAB_SWITCH: Partial<Record<Tab, 'emailLists' | 'todos' | 'notes'>> = { lists: 'emailLists', todos: 'todos', notes: 'notes' }
+/**
+ * The tabs a switch in Tune turns off, and that switch: what the bin can take.
+ * Every tab now, Contacts too (James, 2026-10-26); the last one shown stays.
+ */
+const TAB_SWITCH: Record<Tab, 'emailLists' | 'todos' | 'notes' | 'contacts'> = {
+  contacts: 'contacts',
+  lists: 'emailLists',
+  todos: 'todos',
+  notes: 'notes',
+}
 
 const TAB_LABEL: Record<PhoneTab, Key> = { contacts: 'tab_contacts', lists: 'tab_lists', todos: 'tab_todos', notes: 'tab_notes', tune: 'tab_tune' }
 const TAB_ICON: Record<PhoneTab, () => JSX.Element> = { contacts: IconBook, lists: IconLists, todos: IconTodo, notes: IconNote, tune: IconTune }
@@ -99,6 +108,7 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
   const emailLists = useSettingsStore((s) => s.emailLists)
   const todosOn = useSettingsStore((s) => s.todos)
   const notesOn = useSettingsStore((s) => s.notes)
+  const contactsOn = useSettingsStore((s) => s.contacts)
   const tuning = useSettingsStore((s) => s.tune !== null)
   const closeTune = useSettingsStore((s) => s.closeTune)
   const reopenParked = useBookStore((s) => s.reopenParked)
@@ -108,14 +118,14 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
   const [tab, setTab] = useState<PhoneTab>(tabDefault.defaultView)
   const tabOrder = useSettingsStore((s) => s.tabOrder)
   const setSettings = useSettingsStore((s) => s.set)
-  const shownTabs = availableTabs(emailLists, todosOn, notesOn, tabOrder)
+  const shownTabs = availableTabs(emailLists, todosOn, notesOn, tabOrder, contactsOn)
   // Hold a tab and drag it (James, 2026-10-25). While one is held the bar
   // shows the order it would drop into; Tune stays last. A tab that Tune can
   // switch off can also be dropped on the bin that rises above the bar, which
   // switches it off (James, 2026-10-26, a suite rule), with Undo.
   const [dragTabs, setDragTabs] = useState<{ tab: Tab; order: Tab[]; bin?: boolean } | null>(null)
   const binRef = useRef<HTMLDivElement>(null)
-  const binned = useUndo<Tab>(async (x) => setSettings({ [TAB_SWITCH[x]!]: true }))
+  const binned = useUndo<Tab>(async (x) => setSettings({ [TAB_SWITCH[x]]: true }))
   const tabs: PhoneTab[] = [...(dragTabs?.order ?? shownTabs), 'tune']
   const navRef = useRef<HTMLElement>(null)
   const tabHold = useRef<{ tab: Tab; x0: number; y0: number; active: boolean; timer: ReturnType<typeof setTimeout> } | null>(null)
@@ -199,8 +209,8 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
       setTimeout(() => document.removeEventListener('click', swallow, { capture: true }), 600)
       const d = dragRef.current
       setDragTabs(null)
-      if (d?.bin && TAB_SWITCH[d.tab]) {
-        setSettings({ [TAB_SWITCH[d.tab]!]: false })
+      if (d?.bin && shownRef.current.length > 1) {
+        setSettings({ [TAB_SWITCH[d.tab]]: false })
         binnedRef.current(d.tab)
         return
       }
@@ -215,8 +225,9 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
       document.removeEventListener('touchcancel', end, true)
     }
   }, [setSettings])
-  // A tab whose switch has since gone off opens on Contacts (the website's rule).
-  const current: PhoneTab = tabs.includes(tab) ? tab : 'contacts'
+  // A tab whose switch has since gone off opens on the first one shown
+  // (Contacts, unless that is hidden too).
+  const current: PhoneTab = tabs.includes(tab) ? tab : (shownTabs[0] ?? 'tune')
   const { canPick, picking, pick } = useContactPicker()
   const newList = useBookStore((s) => s.newList)
   const editTodo = useTodoStore((s) => s.edit)
@@ -248,10 +259,13 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
     [viewContact, openNote],
   )
 
-  // Every tab opens at its top.
+  // Every tab opens at its top, and with its search empty (searchStore).
   const lastTab = useRef(current)
   useEffect(() => {
-    if (lastTab.current !== current) window.scrollTo(0, 0)
+    if (lastTab.current !== current) {
+      window.scrollTo(0, 0)
+      useSearchReset.getState().clearAll()
+    }
     lastTab.current = current
   }, [current])
 
@@ -349,7 +363,7 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
           )}
         </main>
 
-        {dragTabs && TAB_SWITCH[dragTabs.tab] && (
+        {dragTabs && (
           <div ref={binRef} className={`bb-tabbin${dragTabs.bin ? ' hot' : ''}`} aria-hidden>
             <IconBin />
             <span>{t(dragTabs.bin ? 'tab_bin_drop' : 'tab_bin_hint')}</span>

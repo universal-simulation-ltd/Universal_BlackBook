@@ -2,6 +2,7 @@ import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type Reac
 import { LinkifiedText } from '@unisim/sdk'
 import { countdownLabel, currentAge, formatBirthday, nextBirthday, todayParts } from '../lib/birthday'
 import { usePageScrollLock } from '../lib/scrollLock'
+import { growToFit, useTypingRoom } from '../lib/typingRoom'
 import { isList } from '../lib/lists'
 import type { Tag } from '../lib/types'
 import { useBookStore } from '../stores/bookStore'
@@ -14,6 +15,7 @@ import { LinkedNotes } from './NoteView'
 import { formatWhen, nextOccurrence } from '../lib/reminders'
 import { useNativeNav } from '../native/nav'
 import { askForNotifications } from '../native/notify'
+import { phoneScreens } from '../native/shell'
 import { ListChip } from './ListChip'
 import { TagChip } from './TagChip'
 import { btnGhost, btnPrimary, inputCls, label } from './ui'
@@ -124,11 +126,9 @@ export function ContactView({ id }: { id: string }) {
   // than a box inside it. `field-sizing: content` would do this, but not on
   // the iOS Safari this mostly runs on.
   useLayoutEffect(() => {
-    const el = notesRef.current
-    if (!el) return
-    el.style.height = 'auto'
-    el.style.height = `${el.scrollHeight}px`
+    if (notesRef.current) growToFit(notesRef.current)
   }, [notes, typing])
+  useTypingRoom(notesRef, phoneScreens())
 
   const today = useMemo(() => todayParts(), [])
   const byId = useMemo(() => new Map(tags.map((t) => [t.id, t])), [tags])

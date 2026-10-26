@@ -205,9 +205,12 @@ export function useContactPicker() {
   return { canPick: where !== 'none', picking, pick: () => void pick() }
 }
 
-/** The tabs the landing screen shows, given Tune this app ▸ Email lists, ▸ To-do and ▸ Notes. */
-export function availableTabs(emailLists: boolean, todos: boolean, notes = false, order: readonly Tab[] = TABS): Tab[] {
-  const on: Record<Tab, boolean> = { contacts: true, lists: emailLists, todos, notes }
+/**
+ * The tabs the landing screen shows, given Tune this app ▸ Email lists, ▸
+ * To-do and ▸ Notes, and on the phone ▸ Contacts (the website always has it).
+ */
+export function availableTabs(emailLists: boolean, todos: boolean, notes = false, order: readonly Tab[] = TABS, contacts = true): Tab[] {
+  const on: Record<Tab, boolean> = { contacts, lists: emailLists, todos, notes }
   return order.filter((t) => on[t])
 }
 
@@ -221,8 +224,9 @@ function OpensOnPreference() {
   const todos = useSettingsStore((s) => s.todos)
   const notes = useSettingsStore((s) => s.notes)
   const order = useSettingsStore((s) => s.tabOrder)
+  const contacts = useSettingsStore((s) => s.contacts)
   const t = useT()
-  const tabs = availableTabs(emailLists, todos, notes, order)
+  const tabs = availableTabs(emailLists, todos, notes, order, !phoneScreens() || contacts)
   // The same stored default the double tap writes (useDefaultView), shown as
   // the app's own choice rows rather than the SDK's dropdown (James,
   // 2026-10-25: "the dropdown doesn't fit the style"): exactly one is on, and
@@ -230,7 +234,7 @@ function OpensOnPreference() {
   const { defaultView, setDefaultView } = useDefaultView<Tab>('tab', 'contacts', { views: TABS })
   const name = useId()
   if (tabs.length < 2) return null
-  const current = tabs.includes(defaultView) ? defaultView : 'contacts'
+  const current = tabs.includes(defaultView) ? defaultView : tabs[0]
   return (
     <fieldset className="mt-3 border-t border-slate-800 pt-3">
       <legend className="sr-only">{t('pref.opens_on')}</legend>

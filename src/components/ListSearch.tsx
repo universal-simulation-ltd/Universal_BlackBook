@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, type ReactNode, type RefObject } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode, type RefObject } from 'react'
 import {
   PullDrawer,
   TOUCH_PHONE_QUERY,
@@ -10,6 +10,7 @@ import {
 } from '@unisim/sdk'
 import { inputCls } from './ui'
 import { useT } from '../i18n'
+import { useSearchReset } from '../stores/searchStore'
 
 // Search for the Notes, To-do and Lists tabs, the way Contacts has it
 // (SearchDrawer): on a phone folded away above the list, pulled down to show
@@ -31,20 +32,36 @@ interface ListSearchProps {
   children?: ReactNode
   /** A filter in `children` is on: the drawer stays out. */
   filtering?: boolean
+  /**
+   * Return in the box (To-do: add what was typed, James 2026-10-26). Without
+   * it the keyboard's key says Search and only puts the keyboard away.
+   */
+  onEnter?: () => void
 }
 
-export function ListSearch({ value, onChange, label, children, filtering = false }: ListSearchProps) {
+export function ListSearch({ value, onChange, label, children, filtering = false, onEnter }: ListSearchProps) {
   const phone = useMediaQuery(TOUCH_PHONE_QUERY)
+  // Another tab chosen: this search empties (searchStore). Not on the first
+  // render, which is not a change of tab.
+  const epoch = useSearchReset((s) => s.epoch)
+  const seen = useRef(epoch)
+  const changeRef = useRef(onChange)
+  changeRef.current = onChange
+  useEffect(() => {
+    if (seen.current === epoch) return
+    seen.current = epoch
+    changeRef.current('')
+  }, [epoch])
   if (phone) {
     return (
-      <PhoneSearch value={value} onChange={onChange} label={label} filtering={filtering}>
+      <PhoneSearch value={value} onChange={onChange} label={label} filtering={filtering} onEnter={onEnter}>
         {children}
       </PhoneSearch>
     )
   }
   return (
     <>
-      <SearchBox value={value} onChange={onChange} label={label} />
+      <SearchBox value={value} onChange={onChange} label={label} onEnter={onEnter} />
       {children}
     </>
   )
@@ -55,18 +72,25 @@ function SearchBox({
   onChange,
   label,
   input,
+  onEnter,
 }: {
   value: string
   onChange: (v: string) => void
   label: string
   input?: RefObject<HTMLInputElement>
+  onEnter?: () => void
 }) {
+  const submit = (e: FormEvent) => {
+    e.preventDefault()
+    if (onEnter) onEnter()
+    else (e.currentTarget.querySelector('input') as HTMLInputElement | null)?.blur()
+  }
   return (
-    <div className="relative">
+    <form className="relative" role="search" onSubmit={submit}>
       <input
         ref={input}
         type="search"
-        enterKeyHint="search"
+        enterKeyHint={onEnter ? 'done' : 'search'}
         className={`${inputCls} pl-9`}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -84,19 +108,29 @@ function SearchBox({
         <circle cx="9" cy="9" r="5.5" />
         <path d="m13.5 13.5 3 3" strokeLinecap="round" />
       </svg>
-    </div>
+    </form>
   )
 }
 
-function PhoneSearch({ value, onChange, label, children, filtering }: ListSearchProps) {
+function PhoneSearch({ value, onChange, label, children, filtering, onEnter }: ListSearchProps) {
   const [pulled, setPulled] = useState(false)
   const searching = value.trim() !== '' || Boolean(filtering)
   const input = useRef<HTMLInputElement>(null)
   const open = useCallback(() => setPulled(true), [])
   const close = useCallback(() => setPulled(false), [])
   const focus = useCallback(() => input.current?.focus({ preventScroll: true }), [])
+  // Another tab chosen: fold away as well as empty (ListSearch empties it).
+  const epoch = useSearchReset((s) => s.epoch)
+  useEffect(() => {
+    setPulled(false)
+  }, [epoch])
   useSearchRequests({
-    onOpen: () => openThenFocus(() => setPulled(true), input, {}),
+    // The tab tapped again: the box, keyboard up, with what was searched last
+    // selected, so typing starts a new search (James, 2026-10-26).
+    onOpen: () => {
+      openThenFocus(() => setPulled(true), input, {})
+      input.current?.select()
+    },
     onShut: () => {
       if (searching) return
       input.current?.blur()
@@ -113,7 +147,7 @@ function PhoneSearch({ value, onChange, label, children, filtering }: ListSearch
       containOverscroll
       innerClassName="pb-1"
     >
-      <SearchBox value={value} onChange={onChange} label={label} input={input} />
+      <SearchBox value={value} onChange={onChange} label={label} input={input} onEnter={onEnter} />
       {children && <div className="mt-3">{children}</div>}
     </PullDrawer>
   )

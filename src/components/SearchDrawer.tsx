@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   PullDrawer,
   TOUCH_PHONE_QUERY,
@@ -11,6 +11,7 @@ import {
 } from '@unisim/sdk'
 import { DEFAULT_VIEW, describeView, sameView, viewOf } from '../lib/filter'
 import { useBookStore } from '../stores/bookStore'
+import { useSearchReset } from '../stores/searchStore'
 import { FilterBar } from './FilterBar'
 import { useT } from '../i18n'
 
@@ -63,6 +64,14 @@ const notAPull = (e: TouchEvent) => modalIsOpen() || insideScrolledChild(e.targe
  */
 export function SearchDrawer({ onContacts }: { onContacts: boolean }) {
   const phone = useMediaQuery(TOUCH_PHONE_QUERY)
+  // Another tab chosen: the typed search goes (searchStore); the Filters stay.
+  const epoch = useSearchReset((s) => s.epoch)
+  const seen = useRef(epoch)
+  useEffect(() => {
+    if (seen.current === epoch) return
+    seen.current = epoch
+    if (useBookStore.getState().query.text) useBookStore.getState().setQuery({ text: '' })
+  }, [epoch])
   if (!phone) {
     return (
       <div className="mb-4">
@@ -91,6 +100,10 @@ function PhoneSearch({ onContacts }: { onContacts: boolean }) {
     learn()
   }, [learn])
   const closeDrawer = useCallback(() => setPulled(false), [])
+  const epoch = useSearchReset((s) => s.epoch)
+  useEffect(() => {
+    setPulled(false)
+  }, [epoch])
   // A second pull while open: straight into the box, keyboard up. Called from
   // inside the touch's release (the SDK's PullDrawer), which is what iOS needs.
   const typeIntoSearch = useCallback(() => input.current?.focus({ preventScroll: true }), [])
@@ -114,7 +127,12 @@ function PhoneSearch({ onContacts }: { onContacts: boolean }) {
   // opens the box, keyboard up; the second tap of a double tap shuts it again.
   useSearchRequests(
     {
-      onOpen: openAndFocus,
+      // With what was searched last selected, so typing starts afresh
+      // (James, 2026-10-26).
+      onOpen: () => {
+        openAndFocus()
+        input.current?.select()
+      },
       onShut: () => {
         if (searching) return
         input.current?.blur()

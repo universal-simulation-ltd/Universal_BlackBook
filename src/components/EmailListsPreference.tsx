@@ -19,18 +19,40 @@ export function EmailListsPreference() {
   const emailLists = useSettingsStore((s) => s.emailLists)
   const todos = useSettingsStore((s) => s.todos)
   const notes = useSettingsStore((s) => s.notes)
+  const contacts = useSettingsStore((s) => s.contacts)
   const set = useSettingsStore((s) => s.set)
   const notifyDetails = useSettingsStore((s) => s.notifyDetails)
   const fillLocation = useSettingsStore((s) => s.fillLocation)
   const [locationRefused, setLocationRefused] = useState(false)
+  // On the phone a tab bar with nothing but Tune in it would be a trap, so the
+  // last tab shown can't be hidden (the website always keeps Contacts).
+  const phone = phoneScreens()
+  const shown = [phone ? contacts : true, emailLists, todos, notes].filter(Boolean).length
+  const last = (on: boolean) => phone && on && shown === 1
 
   return (
     <>
+    {phone && (
+      <label className="flex items-start gap-3 py-1 text-sm text-slate-200">
+        <input
+          type="checkbox"
+          className={`${checkboxCls} mt-0.5`}
+          checked={!contacts}
+          disabled={last(contacts)}
+          onChange={(e) => set({ contacts: !e.target.checked })}
+        />
+        <span>
+          {t('pref.contacts')}
+          <span className="mt-0.5 block text-xs text-slate-400">{t('pref.contacts_note')}</span>
+        </span>
+      </label>
+    )}
     <label className="flex items-start gap-3 py-1 text-sm text-slate-200">
       <input
         type="checkbox"
         className={`${checkboxCls} mt-0.5`}
         checked={emailLists}
+        disabled={last(emailLists)}
         onChange={(e) => set({ emailLists: e.target.checked })}
       />
       <span>
@@ -45,6 +67,7 @@ export function EmailListsPreference() {
         // Inverted: the tab is on by default and the box hides it, so the box
         // starts unticked (the suite rule) while To-do starts on.
         checked={!todos}
+        disabled={last(todos)}
         onChange={(e) => set({ todos: !e.target.checked })}
       />
       <span>
@@ -57,6 +80,7 @@ export function EmailListsPreference() {
         type="checkbox"
         className={`${checkboxCls} mt-0.5`}
         checked={!notes}
+        disabled={last(notes)}
         onChange={(e) => set({ notes: !e.target.checked })}
       />
       <span>

@@ -132,7 +132,13 @@ export function NotesView() {
         )}
       </ListSearch>
       {/* What was typed, as a new note's title (James, 2026-10-23). */}
-      <AddTyped text={query} onAdd={(title) => startNote(title)} />
+      <AddTyped
+        text={query}
+        onAdd={(title) => {
+          startNote(title)
+          setQuery('')
+        }}
+      />
 
       {loaded && notes.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-800 px-6 py-14 text-center">

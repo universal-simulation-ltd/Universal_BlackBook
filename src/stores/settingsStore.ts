@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { FORM_FIELDS, isFormField, type FormField } from '../lib/formFields'
 import { normaliseOrder, TABS, type Tab } from '../lib/tabs'
+import { DEFAULT_QUICK_ACTIONS, normaliseQuickActions, type QuickAction } from '../lib/quickActions'
 
 /**
  * The app's own switches, shown in the SDK's ⚙ menu ▸ App preferences
@@ -22,6 +23,13 @@ export interface Settings {
   todos: boolean
   /** The Notes tab beside Contacts (2026-10-23). */
   notes: boolean
+  /**
+   * The Contacts tab itself, on the phone (James, 2026-10-26: "Allow the user
+   * to hide the contacts tab too"). On by default; the book is still there —
+   * a note's linked people, Move and search all reach it. The website always
+   * shows Contacts.
+   */
+  contacts: boolean
   /**
    * The optional fields a NEW contact's form shows straight away; the rest
    * wait under "More" (owner's request, 2026-09-29: "select which fields are
@@ -47,13 +55,19 @@ export interface Settings {
    * device is (2026-10-25), worked out on the device. Off to start.
    */
   fillLocation: boolean
+  /**
+   * The buttons across the top of a note, in order (James, 2026-10-26: hold
+   * and drag to move one, drop it on the bin to take it off, "+" in an empty
+   * place to put one back). Only the ones shown are in here.
+   */
+  noteActions: QuickAction[]
 }
 
 const KEY = 'blackbook.settings'
 // To-do and Notes are ON by default, Email lists off (James, 2026-10-23: "have
 // all active as default except email lists"). Their tick boxes are worded as
 // opt-outs ("Hide the To-do tab"), so every box still starts unticked.
-const DEFAULTS: Settings = { emailLists: false, todos: true, notes: true, shownFields: [], notifyDetails: false, tabOrder: [...TABS], fillLocation: false }
+const DEFAULTS: Settings = { emailLists: false, todos: true, notes: true, contacts: true, shownFields: [], notifyDetails: false, tabOrder: [...TABS], fillLocation: false, noteActions: [...DEFAULT_QUICK_ACTIONS] }
 /**
  * The stored shape's version. 1 (no `v`) wrote every switch whenever any one
  * changed, so a stored `false` for To-do or Notes cannot be told from "never
@@ -69,6 +83,7 @@ function load(): Settings {
       // Version 2 stores the choice; version 1's `false` was the old default.
       todos: (raw as { v?: number }).v === VERSION ? raw.todos !== false : true,
       notes: (raw as { v?: number }).v === VERSION ? raw.notes !== false : true,
+      contacts: raw.contacts !== false,
       // Kept in FORM_FIELDS order whatever order they were ticked in, and
       // anything unknown (a field since removed) dropped.
       shownFields: Array.isArray(raw.shownFields)
@@ -77,6 +92,7 @@ function load(): Settings {
       notifyDetails: raw.notifyDetails === true,
       tabOrder: normaliseOrder(raw.tabOrder),
       fillLocation: raw.fillLocation === true,
+      noteActions: normaliseQuickActions(raw.noteActions),
     }
   } catch {
     return DEFAULTS
@@ -108,8 +124,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   set: (patch) => {
     set(patch)
     try {
-      const { emailLists, todos, notes, shownFields, notifyDetails, tabOrder, fillLocation } = get()
-      localStorage.setItem(KEY, JSON.stringify({ v: VERSION, emailLists, todos, notes, shownFields, notifyDetails, tabOrder, fillLocation }))
+      const { emailLists, todos, notes, contacts, shownFields, notifyDetails, tabOrder, fillLocation, noteActions } = get()
+      localStorage.setItem(
+        KEY,
+        JSON.stringify({ v: VERSION, emailLists, todos, notes, contacts, shownFields, notifyDetails, tabOrder, fillLocation, noteActions }),
+      )
     } catch {
       // See the note above: the switch still works until the app is closed.
     }
@@ -124,7 +143,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   openTune: (focus) => set({ tune: { focus: focus ?? null } }),
   closeTune: () => set({ tune: null }),
   reset: () => {
-    set({ ...DEFAULTS, tabOrder: [...TABS] })
+    set({ ...DEFAULTS, tabOrder: [...TABS], noteActions: [...DEFAULT_QUICK_ACTIONS] })
     try {
       localStorage.removeItem(KEY)
     } catch {

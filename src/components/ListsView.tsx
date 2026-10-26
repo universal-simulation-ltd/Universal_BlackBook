@@ -101,7 +101,13 @@ export function ListsView() {
 
       <ListSearch value={query} onChange={setQuery} label={t('lists.search')} />
       {/* What was typed, as a new list's name. */}
-      <AddTyped text={query} onAdd={(name) => newList(name)} />
+      <AddTyped
+        text={query}
+        onAdd={(name) => {
+          newList(name)
+          setQuery('')
+        }}
+      />
 
       {lists.length === 0 && query.trim() ? (
         <p className="rounded-2xl border border-dashed border-slate-800 px-6 py-8 text-center text-sm text-slate-400">

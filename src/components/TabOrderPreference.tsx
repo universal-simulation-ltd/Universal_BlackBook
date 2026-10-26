@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { moveTab, type Tab } from '../lib/tabs'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useT, type Key } from '../i18n'
+import { phoneScreens } from '../native/shell'
 
 const NAME: Record<Tab, Key> = { contacts: 'tab_contacts', lists: 'tab_lists', todos: 'tab_todos', notes: 'tab_notes' }
 
@@ -20,7 +21,8 @@ export function TabOrderPreference() {
   const emailLists = useSettingsStore((s) => s.emailLists)
   const todos = useSettingsStore((s) => s.todos)
   const notes = useSettingsStore((s) => s.notes)
-  const on: Record<Tab, boolean> = { contacts: true, lists: emailLists, todos, notes }
+  const contacts = useSettingsStore((s) => s.contacts)
+  const on: Record<Tab, boolean> = { contacts: !phoneScreens() || contacts, lists: emailLists, todos, notes }
   const list = useRef<HTMLOListElement>(null)
   const [held, setHeld] = useState<Tab | null>(null)
   const move = (tab: Tab, to: number) => set({ tabOrder: moveTab(order, tab, to) })

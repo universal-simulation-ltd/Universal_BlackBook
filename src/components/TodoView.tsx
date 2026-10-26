@@ -42,7 +42,17 @@ export function TodoView() {
   // The tab's search (James, 2026-10-23): pulled down on a phone, a box
   // elsewhere; never remembered.
   const [query, setQuery] = useState('')
-  const startTodo = useTodoStore((s) => s.startTodo)
+  const saveTodo = useTodoStore((s) => s.save)
+  // What was typed in the search, added as it is (James, 2026-10-26: "it
+  // should appear straight in the todo instead of the full add screen"), by
+  // its Add button or Return. The search empties, so the new one shows; + at
+  // the top is still the full form.
+  const addTyped = (text: string) => {
+    const title = text.trim().replace(/\s+/g, ' ')
+    if (!title) return
+    void saveTodo({ title, details: '', tagIds: [] })
+    setQuery('')
+  }
   const doneId = useId()
   const hintId = useId()
   const setPinned = useTodoStore((s) => s.setPinned)
@@ -118,7 +128,13 @@ export function TodoView() {
         )}
       </div>
 
-      <ListSearch value={query} onChange={setQuery} label={t('todo.search')} filtering={activeFilter.length > 0}>
+      <ListSearch
+        value={query}
+        onChange={setQuery}
+        label={t('todo.search')}
+        filtering={activeFilter.length > 0}
+        onEnter={() => addTyped(query)}
+      >
         {usedTags.length > 0 && (
           <div role="group" aria-label={t('tags.filter_by')}>
             <TagCombo
@@ -150,7 +166,7 @@ export function TodoView() {
         )}
       </ListSearch>
       {/* What was typed, as a new to-do's title. */}
-      <AddTyped text={query} onAdd={(title) => startTodo(title)} />
+      <AddTyped text={query} onAdd={addTyped} />
 
       {loaded && todos.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-800 px-6 py-14 text-center">
