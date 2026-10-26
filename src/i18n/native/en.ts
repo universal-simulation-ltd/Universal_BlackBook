@@ -82,6 +82,10 @@ export const en = {
   signin_code_wrong: 'That code is wrong or has run out. Try again, or send a new one.',
   signin_other_email: 'Use another email',
   signin_resend: 'Send a new code',
+  signin_password: 'Password',
+  signin_use_password: 'Sign in with a password instead',
+  signin_use_code: 'Email me a code instead',
+  signin_password_wrong: 'That isn’t the password for this email. Use a code instead — it works whether or not you have a password.',
   signin_one_account: 'One Universal ID works across every UNI·SIM app. BlackBook works perfectly well without one: your book stays on this phone, and a backup file moves it without an account.',
 
   about_title: 'About BlackBook',
