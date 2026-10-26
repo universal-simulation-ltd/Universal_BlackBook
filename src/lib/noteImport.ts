@@ -91,7 +91,7 @@ export function readBytes(kind: Kind, bytes: Uint8Array, file: string): Imported
   return finish([{ title: titleFromName(file), details: tidy(text), file }])
 }
 
-function decodeText(bytes: Uint8Array): string {
+export function decodeText(bytes: Uint8Array): string {
   // UTF-16 with a byte-order mark (Windows' "Unicode" .txt), else UTF-8.
   if (bytes[0] === 0xff && bytes[1] === 0xfe) return new TextDecoder('utf-16le').decode(bytes.subarray(2))
   if (bytes[0] === 0xfe && bytes[1] === 0xff) return new TextDecoder('utf-16be').decode(bytes.subarray(2))

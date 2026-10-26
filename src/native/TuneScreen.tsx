@@ -61,6 +61,8 @@ export function TuneContent() {
       <Group title={t('tune_your_book')}>
         {row('tags', 'tune_tags')}
         {row('templates', 'tune_templates')}
+        {/* Everything coming in, then everything going out (James, 2026-10-26). */}
+        {row('import', 'tune_import')}
         {row('io', 'tune_backup_file')}
         {row('lock', 'tune_pin_row', { value: t(locked ? 'tune_on' : 'tune_off') })}
         {row('wipe', 'tune_delete_all', { danger: true })}

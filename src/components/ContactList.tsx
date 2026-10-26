@@ -113,7 +113,7 @@ function showAction(contact: Contact, onAction: () => void): SwipeAction {
   }
 }
 
-/** `onImport` opens Import & export — offered from the empty book, where a
+/** `onImport` opens Import (ImportPanel) — offered from the empty book, where a
  *  newcomer who already keeps their people in a spreadsheet or another app
  *  would otherwise have to find it in the Actions menu. */
 export function ContactList({ onImport }: { onImport?: () => void } = {}) {
@@ -267,7 +267,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
           </button>
           {onImport && (
             <button type="button" className={btnGhost} onClick={onImport}>
-              {t('list.import_sheet')}
+              {t('ix.title')}
             </button>
           )}
         </div>

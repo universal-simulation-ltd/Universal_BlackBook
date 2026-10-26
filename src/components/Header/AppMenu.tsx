@@ -23,6 +23,7 @@ import { useT } from '../../i18n'
 export default function AppMenu({
   theme,
   onTags,
+  onImport,
   onImportExport,
   onBackup,
   onDeleteAll,
@@ -30,6 +31,7 @@ export default function AppMenu({
   /** The page's theme, which the SDK's menu rows are drawn for. */
   theme: 'light' | 'dark'
   onTags: () => void
+  onImport: () => void
   onImportExport: () => void
   onBackup: () => void
   onDeleteAll: () => void
@@ -60,6 +62,15 @@ export default function AppMenu({
             job of getting a book onto another device. Since 2026-10-20 it is
             also where the backup file is saved and opened (the way to move or
             keep a copy without an account), so the row says so. */}
+        {/* Import is its own door since 2026-10-26 (James: "click import
+            then choice of Contacts, Notes, ToDo, restore BlackBook backup"),
+            the same one Tune ▸ Import opens on the phone — ImportPanel. */}
+        <AdvancedMenuItem
+          theme={theme}
+          icon={<span aria-hidden>📥</span>}
+          label={t('tune_import')}
+          onSelect={onImport}
+        />
         <AdvancedMenuItem
           theme={theme}
           icon={<span aria-hidden>📄</span>}

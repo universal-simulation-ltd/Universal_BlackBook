@@ -21,6 +21,7 @@ import { ContactForm } from './components/ContactForm'
 import { ContactList } from './components/ContactList'
 import { ContactView } from './components/ContactView'
 import { ImportExport } from './components/ImportExport'
+import { ImportPanel } from './components/ImportPanel'
 import { DeleteAllData } from './components/DeleteAllData'
 import { ListsView } from './components/ListsView'
 import { SearchDrawer } from './components/SearchDrawer'
@@ -188,6 +189,7 @@ export default function App() {
           <AppMenu
             theme={theme}
             onTags={() => setPanel('tags')}
+            onImport={() => setPanel('import')}
             onImportExport={() => setPanel('io')}
             onBackup={openCloud}
             onDeleteAll={() => setPanel('wipe')}
@@ -360,7 +362,7 @@ export default function App() {
               hold the list still on screen as it folds itself away. */}
           <SearchDrawer onContacts={!offContacts} />
 
-          {loaded && <ContactList onImport={() => setPanel('io')} />}
+          {loaded && <ContactList onImport={() => setPanel('import')} />}
         </div>
       </main>
 
@@ -438,7 +440,8 @@ export default function App() {
           <MapView onClose={closePanel} />
         </Suspense>
       )}
-      {panel === 'io' && <ImportExport onClose={closePanel} />}
+      {panel === 'import' && <ImportPanel onClose={closePanel} />}
+      {panel === 'io' && <ImportExport part="export" onClose={closePanel} />}
       {panel === 'cloud' && <CloudPanel onClose={closePanel} />}
       {panel === 'lock' && <LockPanel onClose={closePanel} />}
       {panel === 'wipe' && <DeleteAllData onClose={closePanel} />}

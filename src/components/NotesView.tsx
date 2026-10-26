@@ -12,7 +12,6 @@ import { AddTyped, ListSearch } from './ListSearch'
 import { compareNotes, matchesNote, noteText, preview, type Note } from '../lib/notes'
 import { useNoteStore } from '../stores/noteStore'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, tabHeading } from './ui'
-import { NoteImportButton } from './NoteImport'
 import { usePanelStore } from '../stores/panelStore'
 import { phoneScreens } from '../native/shell'
 import { useT } from '../i18n'
@@ -115,8 +114,6 @@ export function NotesView() {
               {t('map.title')}
             </button>
           )}
-          {/* Notes ▸ Import: OneNote and other files (NoteImport). */}
-          <NoteImportButton />
           {/* On the phone the top bar's + does this. */}
           {!phoneScreens() && (
             <button type="button" className={btnPrimary} onClick={() => newNote()}>
@@ -146,8 +143,11 @@ export function NotesView() {
         </p>
       ) : (
         <>
-          {!selecting && shown.length > 0 && (
-            <div className="-mb-2 flex justify-end">
+          {/* On the phone a hold selects, as on To-do; the button sat on the
+              first card there (James, 2026-10-26: "the select button clashes
+              with a card"). */}
+          {!selecting && shown.length > 0 && !phoneScreens() && (
+            <div className="flex justify-end">
               <button type="button" className={btnSubtle} onClick={() => setSelected(new Set())}>
                 {t('nsel.select')}
               </button>

@@ -14,16 +14,20 @@ import { btnGhost, btnPrimary, label } from './ui'
 import { useT } from '../i18n'
 
 /**
- * Backup file, then CSV in and out.
+ * Contacts in, or the book out — the two halves of what was one "Backup,
+ * import & export" screen until Import became its own door (James,
+ * 2026-10-26; ImportPanel):
  *
- * The backup file (BackupSection) is the whole book, to-dos included, for
- * moving or keeping a copy without an account; signing in to sync with a
- * Universal ID (Online backup, CloudPanel) is the other way across devices.
- * The CSV is the way out to any other address book and in from one,
- * so it stays a first-class screen, and the export button says how many
- * contacts are in the file before you click it.
+ *   • `contacts` — Import ▸ Contacts: a CSV from any other address book, and
+ *     on the phone everybody in its own contacts.
+ *   • `export` — Backup & export: save the backup file (BackupSection), the
+ *     whole book, to-dos and notes included, for moving or keeping a copy
+ *     without an account; and the CSV, the way out to any other address book,
+ *     whose button says how many contacts are in the file before you click it.
+ *     Signing in to sync with a Universal ID (Online backup, CloudPanel) is
+ *     the other way across devices.
  */
-export function ImportExport({ onClose }: { onClose: () => void }) {
+export function ImportExport({ part, onClose, onBack }: { part: 'contacts' | 'export'; onClose: () => void; onBack?: () => void }) {
   const t = useT()
   const contacts = useBookStore((s) => s.contacts)
   const tags = useBookStore((s) => s.tags)
@@ -107,32 +111,27 @@ export function ImportExport({ onClose }: { onClose: () => void }) {
     }
   }
 
-  // An empty book opens on Import (owner, 2026-10-09): there is nothing to
-  // export yet, so the one useful thing goes first and Export drops to the
-  // foot. Read ONCE, at open — an import that fills the book must not swap
-  // the sections round under the pointer.
-  const [importFirst] = useState(() => contacts.length === 0)
-
-  const exportSection = (
-    <section className={importFirst ? 'space-y-2 border-t border-slate-800 pt-4' : 'space-y-2'}>
-      <h3 className="text-sm font-semibold text-slate-100">{t('io.export_title')}</h3>
-      <p className="text-sm text-slate-400">{t('io.export_body')}</p>
-      <button type="button" className={btnPrimary} onClick={download} disabled={contacts.length === 0}>
-        {t.plural('io.download', contacts.length)}
-      </button>
-    </section>
-  )
+  if (part === 'export') {
+    return (
+      <Modal title={t('io.title')} onClose={onClose}>
+        <div className="space-y-5">
+          <BackupSection part="save" onDone={onClose} />
+          <section className="space-y-2 border-t border-slate-800 pt-4">
+            <h3 className="text-sm font-semibold text-slate-100">{t('io.export_title')}</h3>
+            <p className="text-sm text-slate-400">{t('io.export_body')}</p>
+            <button type="button" className={btnPrimary} onClick={download} disabled={contacts.length === 0}>
+              {t.plural('io.download', contacts.length)}
+            </button>
+          </section>
+        </div>
+      </Modal>
+    )
+  }
 
   return (
-    <Modal title={t('io.title')} onClose={onClose}>
+    <Modal title={t('io.contacts_title')} onClose={onBack ?? onClose}>
       <div className="space-y-5">
-        <BackupSection onDone={onClose} />
-
-        <div className="border-t border-slate-800" />
-
-        {!importFirst && exportSection}
-
-        <section className={importFirst ? 'space-y-2' : 'space-y-2 border-t border-slate-800 pt-4'}>
+        <section className="space-y-2">
           <h3 className="text-sm font-semibold text-slate-100">{t('io.import_title')}</h3>
           <p className="text-sm text-slate-400">{t('io.import_body')}</p>
           <div>
@@ -191,7 +190,6 @@ export function ImportExport({ onClose }: { onClose: () => void }) {
             </button>
           </section>
         )}
-        {importFirst && exportSection}
       </div>
     </Modal>
   )

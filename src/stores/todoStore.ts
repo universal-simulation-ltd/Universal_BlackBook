@@ -44,6 +44,8 @@ interface TodoState {
   move: (id: string, targetId: string, after: boolean) => Promise<void>
   /** Undo a delete: the to-do as it was. */
   restore: (todo: Todo) => Promise<void>
+  /** Several new ones at once (Import ▸ To-dos, Move). Resolves to how many. */
+  addMany: (drafts: { title: string; details: string; due?: string; done?: boolean }[]) => Promise<number>
   /** A tag was deleted: nothing may go on pointing at it. */
   dropTag: (tagId: string) => Promise<void>
   /** The vault's or a backup file's copy (or a merge of it) becomes this device's. */
@@ -134,6 +136,23 @@ export const useTodoStore = create<TodoState>((set, get) => {
     restore: async (todo) => {
       if (get().todos.some((t) => t.id === todo.id)) return
       await commit([...get().todos, { ...todo, updatedAt: Date.now() }])
+    },
+
+    addMany: async (drafts) => {
+      await get().init()
+      const now = Date.now()
+      const added: Todo[] = drafts.map((d, i) => ({
+        id: newId(),
+        title: d.title.trim(),
+        details: d.details.trim(),
+        due: d.due || undefined,
+        tagIds: [],
+        doneAt: d.done ? now : undefined,
+        createdAt: now,
+        updatedAt: now + i,
+      }))
+      await commit([...get().todos, ...added])
+      return added.length
     },
 
     clearDone: async () => {

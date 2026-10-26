@@ -29,6 +29,7 @@ import { ContactList } from '../components/ContactList'
 import { ContactView } from '../components/ContactView'
 import { DeleteAllData } from '../components/DeleteAllData'
 import { ImportExport } from '../components/ImportExport'
+import { ImportPanel } from '../components/ImportPanel'
 import { ListsView } from '../components/ListsView'
 import { LockPanel } from '../components/Lock'
 import { SearchDrawer } from '../components/SearchDrawer'
@@ -334,7 +335,7 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
             {/* ⚠️ The list must stay the drawer's NEXT sibling: it measures it to
                 hold the list still on screen as it folds itself away. */}
             <SearchDrawer onContacts={current === 'contacts'} />
-            {loaded && <ContactList onImport={() => openPanel('io')} />}
+            {loaded && <ContactList onImport={() => openPanel('import')} />}
           </div>
 
           {current === 'lists' && loaded && <ListsView />}
@@ -398,7 +399,8 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
             <MapView onClose={closePanel} />
           </Suspense>
         )}
-        {panel === 'io' && <ImportExport onClose={closePanel} />}
+        {panel === 'import' && <ImportPanel onClose={closePanel} />}
+        {panel === 'io' && <ImportExport part="export" onClose={closePanel} />}
         {panel === 'cloud' && <CloudPanel onClose={closePanel} />}
         {panel === 'lock' && <LockPanel onClose={closePanel} />}
         {panel === 'wipe' && <DeleteAllData onClose={closePanel} />}
@@ -457,7 +459,7 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
               icon={<IconFile />}
               onClick={() => {
                 setAdding(false)
-                openPanel('io')
+                openPanel('import')
               }}
             >
               {t('add_from_file')}

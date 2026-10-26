@@ -23,6 +23,9 @@ import { useT, type Translator } from '../i18n'
  *
  * Opening is two questions at most: the password (only when the file has
  * one), then "Add to what's here" or "Replace everything" (which confirms).
+ *
+ * `part`: Save lives in Backup & export, Open in Import ▸ Restore a BlackBook
+ * backup (ImportPanel) since 2026-10-26.
  */
 type Step =
   | { kind: 'idle' }
@@ -38,7 +41,7 @@ function bookCounts(t: Translator, n: { contacts: number; todos: number; notes?:
   return new Intl.ListFormat(t.locale, { type: 'conjunction' }).format(parts)
 }
 
-export function BackupSection({ onDone }: { onDone: () => void }) {
+export function BackupSection({ part, onDone }: { part: 'save' | 'open'; onDone: () => void }) {
   const t = useT()
   const contacts = useBookStore((s) => s.contacts)
   const tags = useBookStore((s) => s.tags)
@@ -128,7 +131,7 @@ export function BackupSection({ onDone }: { onDone: () => void }) {
     multiple: false,
     clickToBrowse: false,
     pageWide: true,
-    disabled: busy || step.kind === 'choose' || step.kind === 'confirm-replace',
+    disabled: part !== 'open' || busy || step.kind === 'choose' || step.kind === 'confirm-replace',
   })
 
   const apply = async (data: BackupData, mode: 'merge' | 'replace') => {
@@ -195,10 +198,11 @@ export function BackupSection({ onDone }: { onDone: () => void }) {
       aria-label={t('bk.title')}
       className={`space-y-3 rounded-xl ${drop.over ? 'outline outline-2 outline-offset-4 outline-orange-400' : ''}`}
     >
-      <h3 className="text-sm font-semibold text-slate-100">{t('bk.title')}</h3>
+      {part === 'save' && <h3 className="text-sm font-semibold text-slate-100">{t('bk.title')}</h3>}
       <p className="text-sm text-slate-400">{t('bk.body')}</p>
 
       {/* ── Save ─────────────────────────────────────────────────────── */}
+      {part === 'save' && (
       <div className="space-y-2">
         <label className="flex items-start gap-2 text-sm text-slate-200">
           <input
@@ -257,10 +261,17 @@ export function BackupSection({ onDone }: { onDone: () => void }) {
             {saved}
           </p>
         )}
+        {error && (
+          <p className="text-sm text-rose-300" role="alert">
+            {error}
+          </p>
+        )}
       </div>
+      )}
 
       {/* ── Open ─────────────────────────────────────────────────────── */}
-      <div className="space-y-2 border-t border-slate-800 pt-3">
+      {part === 'open' && (
+      <div className="space-y-2">
         <input {...drop.inputProps} className="hidden" data-testid="backup-file-input" />
         {step.kind === 'idle' && (
           <>
@@ -365,6 +376,7 @@ export function BackupSection({ onDone }: { onDone: () => void }) {
           </p>
         )}
       </div>
+      )}
     </section>
   )
 }

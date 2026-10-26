@@ -232,6 +232,8 @@ export const useNoteStore = create<NoteState>((set, get) => {
     },
 
     addMany: async (drafts) => {
+      // From Tune ▸ Import the Notes tab may never have been opened.
+      await get().init()
       const now = Date.now()
       // `updatedAt` is NOW, whatever the page's own date: it is what tells the
       // online copy (and signing out) that these are new here.
