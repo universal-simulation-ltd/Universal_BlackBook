@@ -83,6 +83,8 @@ export function ContactForm({ id }: { id: string }) {
   const saveContact = useBookStore((s) => s.saveContact)
   const removeContact = useBookStore((s) => s.removeContact)
   const setPinned = useBookStore((s) => s.setPinned)
+  const setListHidden = useBookStore((s) => s.setListHidden)
+  const setBirthdayHidden = useBookStore((s) => s.setBirthdayHidden)
   const close = useBookStore((s) => s.edit)
   const stashDraft = useBookStore((s) => s.stashDraft)
   const clearStash = useBookStore((s) => s.clearStash)
@@ -136,10 +138,11 @@ export function ContactForm({ id }: { id: string }) {
   /** Is the "you were part way through" bar still showing? */
   const [offering, setOffering] = useState(restorable)
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const [more, setMore] = useState(false)
+  /** The folded fields opened, each on its own (2026-10-27: one fold per section, not one "More"). */
+  const [opened, setOpened] = useState<Extra[]>([])
   /** Is Notes showing on its own, full screen? */
   const [notesFull, setNotesFull] = useState(false)
-  const moreId = useId()
+  const foldId = useId()
   const formId = useId()
   const kit = usePhoneKit()
   /**
@@ -177,6 +180,11 @@ export function ContactForm({ id }: { id: string }) {
     setDraft((d) => (d.location || d.address?.trim() ? d : { ...d, location: { ...newLocation(), ...here } })),
   )
   const valid = Boolean(draft.name.trim())
+  // Fine-tune on the phone leaves out what the person's page already edits in
+  // place (James, 2026-10-27: "don't have options that can be accessed via the
+  // main view"): the name (typed into the page's title) and the note. A
+  // contact with no name yet still gets the box: Save needs one.
+  const [onPage] = useState(() => Boolean(kit && existing && existing.name.trim()))
 
   /**
    * One of the four foldable fields, wherever it happens to be rendering.
@@ -191,12 +199,14 @@ export function ContactForm({ id }: { id: string }) {
    * complements by construction (`hidden` is `EXTRAS` minus `pinned`), so a
    * duplicate id here is impossible unless that invariant is broken.
    */
-  const renderExtra = (k: Extra) => {
+  const renderExtra = (k: Extra, folded = false) => {
+    // Inside its fold the fold's own header names it; the label stays for a screen reader.
+    const lab = folded ? 'sr-only' : label
     switch (k) {
       case 'email':
         return (
           <div key={k}>
-            <label className={label} htmlFor="cf-email">
+            <label className={lab} htmlFor="cf-email">
               {fieldLabel('email')}
             </label>
             <input
@@ -220,7 +230,7 @@ export function ContactForm({ id }: { id: string }) {
       case 'company':
         return (
           <div key={k}>
-            <label className={label} htmlFor="cf-company">
+            <label className={lab} htmlFor="cf-company">
               {fieldLabel('company')}
             </label>
             <input
@@ -236,7 +246,7 @@ export function ContactForm({ id }: { id: string }) {
       case 'phone':
         return (
           <div key={k}>
-            <label className={label} htmlFor="cf-phone">
+            <label className={lab} htmlFor="cf-phone">
               {fieldLabel('phone')}
             </label>
             <input
@@ -262,7 +272,7 @@ export function ContactForm({ id }: { id: string }) {
         // suggestions); an address kept as one block reads in as the street.
         return (
           <fieldset key={k}>
-            <legend className={label}>{fieldLabel('address')}</legend>
+            <legend className={lab}>{fieldLabel('address')}</legend>
             <LocationFields
               withPlace={false}
               value={draft.location ?? (draft.address?.trim() ? { street: draft.address } : newLocation())}
@@ -272,13 +282,13 @@ export function ContactForm({ id }: { id: string }) {
         )
       case 'birthday':
         return (
-          <Field key={k} name={fieldLabel(k)}>
+          <Field key={k} folded={folded} name={fieldLabel(k)}>
             <BirthdayField value={draft.birthdate} onChange={(birthdate) => patch({ birthdate })} />
           </Field>
         )
       case 'tags':
         return (
-          <Field key={k} name={fieldLabel(k)}>
+          <Field key={k} folded={folded} name={fieldLabel(k)}>
             <TagPicker value={draft.tagIds} onChange={(tagIds) => patch({ tagIds })} />
           </Field>
         )
@@ -286,7 +296,7 @@ export function ContactForm({ id }: { id: string }) {
         return (
           // "Lists" on the More button, but the heading says what the section
           // does, in the owner's words.
-          <Field key={k} name={t('form.add_to_list')}>
+          <Field key={k} folded={folded} name={t('form.add_to_list')}>
             <TagPicker value={draft.tagIds} onChange={(tagIds) => patch({ tagIds })} kind="list" />
           </Field>
         )
@@ -383,101 +393,105 @@ export function ContactForm({ id }: { id: string }) {
           </div>
         )}
 
-        <div>
-          <label className={label} htmlFor="cf-name">
-            {t('form.name')}
-          </label>
-          <input
-            id="cf-name"
-            className={inputCls}
-            value={draft.name}
-            onChange={(e) => patch({ name: e.target.value })}
-            placeholder="Sam Okonkwo"
-            autoFocus={autoFocusOK()}
-            autoComplete="off"
-          />
-        </div>
-
-        {pinnedAbove.map(renderExtra)}
-
-        <div>
-          {/* The label and its full-screen button share a row, and BOTH carry
-              the label's own `mb-1.5` rather than the row carrying it. Putting
-              the margin on the row and cancelling it on the label with `mb-0`
-              is the version that silently does nothing: Tailwind resolves a
-              conflict by CSS source order, not by the order of the class
-              string — the same trap that made the birthday year box full
-              width (see ui.tsx). */}
-          <div className="flex items-center justify-between gap-2">
-            <label className={label} htmlFor="cf-notes">
-              {t('form.notes')}
-            </label>
-            <button
-              type="button"
-              className={`${btnSubtle} mb-1.5 flex items-center gap-1.5`}
-              onClick={() => setNotesFull(true)}
-            >
-              <ExpandGlyph />
-              {t('form.full_screen')}
-            </button>
-          </div>
-          <textarea
-            id="cf-notes"
-            className={textareaCls}
-            // ⚠️ Seven rows, up from four (owner's request, 2026-09-11). Four
-            // was chosen to keep the pickers below it in reach on a phone;
-            // those pickers are now folded behind "More" on a blank form, so
-            // the room is there — and this is the field people came to write
-            // in. `resize-y` (textareaCls) still lets it be dragged taller,
-            // and the Full screen button above is the way out for a note that
-            // has grown past any row count.
-            rows={7}
-            value={draft.notes}
-            onChange={(e) => patch({ notes: e.target.value })}
-            placeholder={t('form.notes_placeholder')}
-          />
-        </div>
-
-        {pinnedBelow.map(renderExtra)}
-
-        {hidden.length > 0 && (
+        {!onPage && (
           <div>
-            <button
-              type="button"
-              onClick={() => setMore((v) => !v)}
-              aria-expanded={more}
-              aria-controls={moreId}
-              className="flex w-full items-center justify-between gap-2 rounded-lg border border-slate-800 px-3 py-2.5 text-left transition-colors hover:border-slate-700 hover:bg-slate-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
-            >
-              <span className="text-sm font-medium text-slate-300">{t('form.more')}</span>
-              <span className="flex items-center gap-1.5 text-xs text-slate-500">
-                {/* Names what is inside rather than saying "More" twice. A
-                    disclosure that does not say what it discloses is one
-                    people never open. */}
-                {listOf(hidden.map((k) => fieldLabel(k)), t.locale)}
-                <svg
-                  viewBox="0 0 16 16"
-                  className={`h-3.5 w-3.5 shrink-0 transition-transform ${more ? 'rotate-180' : ''}`}
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  aria-hidden
-                >
-                  <path d="m4 6 4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </span>
-            </button>
+            <label className={label} htmlFor="cf-name">
+              {t('form.name')}
+            </label>
+            <input
+              id="cf-name"
+              className={inputCls}
+              value={draft.name}
+              onChange={(e) => patch({ name: e.target.value })}
+              placeholder="Sam Okonkwo"
+              autoFocus={autoFocusOK()}
+              autoComplete="off"
+            />
+          </div>
+        )}
 
-            {/* Unmounted rather than hidden with CSS. BirthdayField and
-                TagPicker both own popups and focus, and a `hidden` subtree
-                still holds tabbable children in some engines — a Tab out of
-                Notes landing in a collapsed section is the classic version of
-                this bug. */}
-            {more && (
-              <div id={moreId} className="mt-4 space-y-4">
-                {hidden.map(renderExtra)}
-              </div>
-            )}
+        {pinnedAbove.map((k) => renderExtra(k))}
+
+        {!onPage && (
+          <div>
+            {/* The label and its full-screen button share a row, and BOTH carry
+                the label's own `mb-1.5` rather than the row carrying it. Putting
+                the margin on the row and cancelling it on the label with `mb-0`
+                is the version that silently does nothing: Tailwind resolves a
+                conflict by CSS source order, not by the order of the class
+                string — the same trap that made the birthday year box full
+                width (see ui.tsx). */}
+            <div className="flex items-center justify-between gap-2">
+              <label className={label} htmlFor="cf-notes">
+                {t('form.notes')}
+              </label>
+              <button
+                type="button"
+                className={`${btnSubtle} mb-1.5 flex items-center gap-1.5`}
+                onClick={() => setNotesFull(true)}
+              >
+                <ExpandGlyph />
+                {t('form.full_screen')}
+              </button>
+            </div>
+            <textarea
+              id="cf-notes"
+              className={textareaCls}
+              // ⚠️ Seven rows, up from four (owner's request, 2026-09-11). Four
+              // was chosen to keep the pickers below it in reach on a phone;
+              // those pickers are now folded behind "More" on a blank form, so
+              // the room is there — and this is the field people came to write
+              // in. `resize-y` (textareaCls) still lets it be dragged taller,
+              // and the Full screen button above is the way out for a note that
+              // has grown past any row count.
+              rows={7}
+              value={draft.notes}
+              onChange={(e) => patch({ notes: e.target.value })}
+              placeholder={t('form.notes_placeholder')}
+            />
+          </div>
+        )}
+
+        {pinnedBelow.map((k) => renderExtra(k))}
+
+        {/* One fold per empty field, each named (James, 2026-10-27: "instead
+            of more now have collapsables for each section"), in place of the
+            single "More" that held them all. Unmounted while shut: BirthdayField
+            and TagPicker own popups and focus, and a hidden subtree can still
+            hold tabbable children in some engines. */}
+        {hidden.length > 0 && (
+          <div className="space-y-2">
+            {hidden.map((k) => {
+              const open = opened.includes(k)
+              return (
+                <div key={k} className="rounded-lg border border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setOpened((o) => (open ? o.filter((x) => x !== k) : [...o, k]))}
+                    aria-expanded={open}
+                    aria-controls={`${foldId}-${k}`}
+                    className="flex min-h-[44px] w-full items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-slate-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+                  >
+                    <span className="text-sm font-medium text-slate-300">{k === 'lists' ? t('form.add_to_list') : fieldLabel(k)}</span>
+                    <svg
+                      viewBox="0 0 16 16"
+                      className={`h-3.5 w-3.5 shrink-0 text-slate-500 transition-transform ${open ? 'rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      aria-hidden
+                    >
+                      <path d="m4 6 4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                  {open && (
+                    <div id={`${foldId}-${k}`} className="px-3 pb-3">
+                      {renderExtra(k, true)}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
 
@@ -515,7 +529,7 @@ export function ContactForm({ id }: { id: string }) {
                 ...(p.address ? { location: { street: p.address } } : {}),
                 birthdate: p.birthdate ?? draft.birthdate,
               })
-              setMore(true)
+              setOpened(hidden)
             }}
           />
         )}
@@ -538,7 +552,7 @@ export function ContactForm({ id }: { id: string }) {
                   </button>
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   {/* Pinning lives here rather than on the card (James,
                       2026-10-11: a cleaner card). It takes effect on the tap,
                       like hiding somebody, not on Save — the form's draft has
@@ -553,6 +567,18 @@ export function ContactForm({ id }: { id: string }) {
                     <PinGlyph filled={existing.pinnedAt !== undefined} />
                     {existing.pinnedAt !== undefined ? t('list.pinned') : t('form.pin')}
                   </button>
+                  {/* The phone's person page has no ⋯ any more (its "+" picks a
+                      button instead), so hiding them lives here. */}
+                  {kit && (
+                    <button type="button" className={btnSubtle} onClick={() => void setListHidden(existing.id, !existing.hideFromList)}>
+                      {existing.hideFromList ? t('row.show_list_title') : t('row.hide_list_title')}
+                    </button>
+                  )}
+                  {kit && existing.birthdate && (
+                    <button type="button" className={btnSubtle} onClick={() => void setBirthdayHidden(existing.id, !existing.hideBirthday)}>
+                      {existing.hideBirthday ? t('row.show_birthdays_title') : t('row.hide_birthdays_title')}
+                    </button>
+                  )}
                   <button type="button" className={btnDanger} onClick={() => setConfirmDelete(true)}>
                     {t('c.delete')}
                   </button>
@@ -627,25 +653,15 @@ function hasValue(k: Extra, draft: ContactDraft, tags: Tag[]): boolean {
 }
 
 /**
- * "Email, Phone, Birthday and Tags" — not "Email and Phone and Birthday and
- * Tags", which is what a plain `join(' and ')` gave once there were more than
- * two of these.
- */
-function listOf(names: string[], locale: string): string {
-  if (names.length <= 1) return names[0] ?? ''
-  return new Intl.ListFormat(locale, { type: 'conjunction' }).format(names)
-}
-
-/**
  * One labelled row. A `<span>` and not a `<label>`: neither of these wraps a
  * single form control — BirthdayField is three, TagPicker is a list of
  * buttons — and a `<label>` pointing at nothing is worse for a screen reader
  * than a plain heading is.
  */
-function Field({ name, children }: { name: string; children: ReactNode }) {
+function Field({ name, folded = false, children }: { name: string; folded?: boolean; children: ReactNode }) {
   return (
     <div>
-      <span className={label}>{name}</span>
+      <span className={folded ? 'sr-only' : label}>{name}</span>
       {children}
     </div>
   )

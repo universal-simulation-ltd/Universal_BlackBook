@@ -248,6 +248,35 @@ html.bb-phone body {
   font-weight: 700;
   color: var(--color-slate-100);
 }
+/* A title typed into where it stands (layers.tsx ▸ BarTitleEditor). */
+.bb-page .bb-titletap,
+.bb-page .bb-titleedit {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: var(--bb-title-left, 96px);
+  right: var(--bb-title-right, 96px);
+}
+.bb-page .bb-titletap {
+  background: transparent;
+  border: 0;
+}
+.bb-page .bb-titleedit {
+  min-width: 0;
+  padding: 0 10px;
+  border: 1px solid var(--color-slate-700);
+  border-radius: 10px;
+  background: var(--color-slate-900);
+  font-family: var(--bb-serif);
+  font-size: 17px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--color-slate-100);
+  outline: none;
+}
+.bb-page .bb-titleediting .unisim-phone-title {
+  visibility: hidden;
+}
 .bb-page .unisim-phone-actions {
   min-width: 44px;
   justify-content: flex-end;

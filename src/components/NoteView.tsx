@@ -22,8 +22,10 @@ import { CloseGlyph, Modal } from './Modal'
 import { actionSwipe, pinSwipe, removeSwipe, SelectBar, SwipeGroup, SwipeItem, UndoBar, useHoldSelect, useUndo } from './SwipeActions'
 import type { Contact } from '../lib/types'
 import { ReminderEditor, ReminderList } from './Reminders'
-import { NoteQuickActions, type QuickButton } from './NoteQuickActions'
-import type { QuickAction } from '../lib/quickActions'
+import { QuickActions, type QuickButton } from './QuickActions'
+import { NOTE_ACTIONS, type QuickAction } from '../lib/quickActions'
+import { shareText } from '../lib/share'
+import { useSettingsStore } from '../stores/settingsStore'
 import { growToFit, useTypingRoom } from '../lib/typingRoom'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label, textareaCls } from './ui'
 
@@ -156,6 +158,8 @@ function NoteView({ id, onBinned }: { id: string; onBinned: (note: Note) => void
   const viewContact = useBookStore((s) => s.view)
   const template = useNoteStore((s) => s.templates.find((x) => x.id === note?.templateId))
   const say = useNativeNav((s) => s.say)
+  const actionOrder = useSettingsStore((s) => s.noteActions)
+  const setSettings = useSettingsStore((s) => s.set)
   const [sheet, setSheet] = useState<'contacts' | 'place' | 'remind' | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
   const ref = useRef<HTMLDialogElement>(null)
@@ -224,6 +228,14 @@ function NoteView({ id, onBinned }: { id: string; onBinned: (note: Note) => void
     }
   }
 
+  const share = async () => {
+    flush()
+    const done = await shareText(note.title || t('c.untitled'), noteText(note.title, draftRef.current))
+    const message = done === 'copied' ? t('notes.copied') : done === 'failed' ? t('export.copy_failed') : null
+    if (message && kit) say(message)
+    else if (message) setCopied(message)
+  }
+
   const back = () => {
     flush()
     close(null)
@@ -259,9 +271,19 @@ function NoteView({ id, onBinned }: { id: string; onBinned: (note: Note) => void
     remind: { label: t('rem.add'), emoji: '\u{1F514}', onClick: () => setSheet('remind') },
     copy: { label: t('notes.copy'), emoji: '\u{1F4CB}', onClick: () => void copy() },
     copyDelete: { label: t('qa.copy_delete'), emoji: '\u{1F4CB}\u{1F5D1}\u{FE0F}', small: true, onClick: () => void copyAndDelete() },
+    share: { label: t('action_share'), emoji: '\u{1F4E4}', onClick: () => void share() },
   }
 
-  const actionRow = <NoteQuickActions buttons={buttons} status={copied} />
+  const actionRow = (
+    <QuickActions
+      buttons={buttons}
+      all={NOTE_ACTIONS}
+      order={actionOrder}
+      onChange={(noteActions) => setSettings({ noteActions })}
+      label={t('nlink.actions')}
+      status={copied}
+    />
+  )
 
   const body = (
     <div className="mx-auto w-full max-w-2xl space-y-5">
@@ -371,6 +393,12 @@ function NoteView({ id, onBinned }: { id: string; onBinned: (note: Note) => void
     return (
       <kit.Page
         title={note.title || t('c.untitled')}
+        editTitle={{
+          value: note.title,
+          label: t('notes.title'),
+          placeholder: t('notes.title_placeholder'),
+          onSave: (title) => void patch(note.id, { title }),
+        }}
         backLabel={kit.t('tab_notes')}
         onBack={back}
         actions={
@@ -619,6 +647,9 @@ function NoteForm({ id }: { id: string }) {
   const detailsRef = useRef<HTMLTextAreaElement>(null)
   useTypingRoom(detailsRef, Boolean(kit))
   const empty = !title.trim() && !details.trim() && !Object.values(fields).some((v) => v.trim())
+  // Fine-tune on the phone leaves out what the note's page edits in place
+  // (James, 2026-10-27): the title (typed into the page's bar) and the text.
+  const onPage = Boolean(kit && existing)
 
   const done = () => {
     if (empty && !existing) close(null)
@@ -638,19 +669,21 @@ function NoteForm({ id }: { id: string }) {
       backLabel={existing ? existing.title || t('c.untitled') : kit?.t('tab_notes')}
     >
       <div className="space-y-4">
-        <div>
-          <label htmlFor={titleId} className={label}>
-            {t('notes.title')}
-          </label>
-          <input
-            id={titleId}
-            className={inputCls}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder={t('notes.title_placeholder')}
-            autoFocus={autoFocusOK() && !existing}
-          />
-        </div>
+        {!onPage && (
+          <div>
+            <label htmlFor={titleId} className={label}>
+              {t('notes.title')}
+            </label>
+            <input
+              id={titleId}
+              className={inputCls}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={t('notes.title_placeholder')}
+              autoFocus={autoFocusOK() && !existing}
+            />
+          </div>
+        )}
         {template && template.fields.length > 0 && (
           <fieldset className="space-y-4 rounded-xl border border-slate-800 p-3">
             <legend className="px-1 text-xs font-semibold text-slate-400">{template.name}</legend>
@@ -659,19 +692,21 @@ function NoteForm({ id }: { id: string }) {
             ))}
           </fieldset>
         )}
-        <div>
-          <label htmlFor={detailsId} className={label}>
-            {t('todo.details')}
-          </label>
-          <textarea
-            ref={detailsRef}
-            id={detailsId}
-            className={textareaCls}
-            rows={template ? 6 : phoneScreens() ? 14 : 10}
-            value={details}
-            onChange={(e) => setDetails(e.target.value)}
-          />
-        </div>
+        {!onPage && (
+          <div>
+            <label htmlFor={detailsId} className={label}>
+              {t('todo.details')}
+            </label>
+            <textarea
+              ref={detailsRef}
+              id={detailsId}
+              className={textareaCls}
+              rows={template ? 6 : phoneScreens() ? 14 : 10}
+              value={details}
+              onChange={(e) => setDetails(e.target.value)}
+            />
+          </div>
+        )}
         <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
           {existing ? (
             <button type="button" className={btnSubtle} onClick={() => setConfirming(true)}>

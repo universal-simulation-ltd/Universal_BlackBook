@@ -19,7 +19,8 @@
 // @capacitor/app installed, back simply leaves the app from any page (seen on
 // the emulator, 2026-10-22) — keep the dependency.
 
-import { useLayoutEffect, useRef, type ReactNode, type RefObject } from 'react'
+import { useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
+import { createPortal } from 'react-dom'
 import { BottomSheet, configurePhoneLayers, PhonePage, useAnyPhoneLayerOpen } from '@unisim/sdk'
 import type { PhonePageProps, PhoneSheetProps } from './kit'
 
@@ -65,7 +66,7 @@ function useBarFit(marker: RefObject<HTMLSpanElement | null>) {
   })
 }
 
-export function Page({ title, onBack, backLabel, actions, children, bare = false }: PhonePageProps) {
+export function Page({ title, onBack, backLabel, actions, children, bare = false, editTitle }: PhonePageProps) {
   const marker = useRef<HTMLSpanElement>(null)
   useBarFit(marker)
   return (
@@ -78,8 +79,75 @@ export function Page({ title, onBack, backLabel, actions, children, bare = false
       bodyClassName={bare ? 'bb-pagebody bare' : 'bb-pagebody'}
     >
       <span ref={marker} hidden />
+      {editTitle && <BarTitleEditor marker={marker} title={title} {...editTitle} />}
       {children}
     </PhonePage>
+  )
+}
+
+/**
+ * The page's title, typed into in the bar (James, 2026-10-27: "on the main
+ * view allow the user to tap the title to edit it inline"). The SDK draws the
+ * title as text, so this lays a tap target over it, in the room useBarFit
+ * keeps for it; the tap swaps the text for a box in the same place. Saved on
+ * Done (Return) and when the box is left.
+ */
+function BarTitleEditor({
+  marker,
+  title,
+  value,
+  label,
+  placeholder,
+  onSave,
+}: { marker: RefObject<HTMLSpanElement | null>; title: string } & NonNullable<PhonePageProps['editTitle']>) {
+  const [row, setRow] = useState<HTMLElement | null>(null)
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(value)
+  useLayoutEffect(() => {
+    setRow(marker.current?.closest('.unisim-phone-page')?.querySelector<HTMLElement>('.unisim-phone-bar-row') ?? null)
+  }, [marker])
+  useLayoutEffect(() => {
+    row?.classList.toggle('bb-titleediting', editing)
+  }, [row, editing])
+  if (!row) return null
+  const save = () => {
+    setEditing(false)
+    const next = draft.trim()
+    if (next !== value) onSave(next)
+  }
+  return createPortal(
+    editing ? (
+      <input
+        className="bb-titleedit"
+        value={draft}
+        aria-label={label}
+        placeholder={placeholder}
+        autoFocus
+        enterKeyHint="done"
+        autoComplete="off"
+        onFocus={(e) => e.currentTarget.select()}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={save}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') e.currentTarget.blur()
+          if (e.key === 'Escape') {
+            setDraft(value)
+            setEditing(false)
+          }
+        }}
+      />
+    ) : (
+      <button
+        type="button"
+        className="bb-titletap"
+        aria-label={`${label}: ${title}`}
+        onClick={() => {
+          setDraft(value)
+          setEditing(true)
+        }}
+      />
+    ),
+    row,
   )
 }
 

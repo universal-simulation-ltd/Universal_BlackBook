@@ -354,12 +354,19 @@ export function ContactView({ id }: { id: string }) {
   )
 
   // The phone screens: the person as a PAGE (back to the list with the back
-  // button or a swipe from the left edge), with Call · Message · Email · Share
-  // across the top. Fine-tune is in the page's bar.
+  // button or a swipe from the left edge), with the emoji buttons across the
+  // top (Call · Message · Share · "+", the person's to arrange). The name is
+  // typed into the bar with a tap; Fine-tune is beside it.
   if (kit) {
     return (
       <kit.Page
         title={contact.name || (isFresh ? kit.t('add_new_contact') : t('c.unnamed'))}
+        editTitle={{
+          value: contact.name,
+          label: t('form.name'),
+          placeholder: t('view.name_placeholder'),
+          onSave: (name) => void patchContact(contact.id, { name }),
+        }}
         backLabel={kit.t('contact_back')}
         onBack={() => {
           flush()
@@ -379,26 +386,9 @@ export function ContactView({ id }: { id: string }) {
         }
       >
         <div className="mx-auto w-full max-w-2xl">
-          <kit.ContactActions contact={contact} onMore={() => setMore(true)} />
+          <kit.ContactActions contact={contact} onRemind={() => setRemind(true)} />
         </div>
         {details}
-        {more && (
-          <ContactMore
-            contact={contact}
-            onClose={() => setMore(false)}
-            extraRows={(closeMore) => (
-              <MoreRow
-                icon={<BellGlyph />}
-                onClick={() => {
-                  closeMore()
-                  setRemind(true)
-                }}
-              >
-                {t('rem.add')}
-              </MoreRow>
-            )}
-          />
-        )}
         {remind && (
           <ReminderEditor
             onClose={() => setRemind(false)}
