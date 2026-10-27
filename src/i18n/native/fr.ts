@@ -112,6 +112,8 @@ export const fr: Dict = {
   tune_delete_account: "Supprimer mon compte",
   book_of: "Le carnet de {name}",
   book_mine: "Mon carnet",
+  book_yours: "Votre carnet",
+  book_name_label: "Nom du carnet",
   tab_bin_hint: "Déposez ici pour masquer",
   tab_bin_drop: "Relâchez pour masquer",
   tab_binned: "Onglet {tab} masqué. Réactivez-le dans Réglages.",

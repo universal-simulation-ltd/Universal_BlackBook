@@ -123,6 +123,8 @@ export const en = {
   tune_delete_account: "Delete my account",
   book_of: "{name}’s Book",
   book_mine: "My Book",
+  book_yours: "Your Book",
+  book_name_label: "Book’s name",
   tab_bin_hint: "Drop here to hide",
   tab_bin_drop: "Let go to hide",
   tab_binned: "{tab} tab hidden. Bring it back in Tune.",

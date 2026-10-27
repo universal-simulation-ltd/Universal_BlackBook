@@ -8,9 +8,10 @@
 // (`useBookTitle`), and everything about the account — the name it shows,
 // the online copy, signing out, deleting it — is Tune ▸ Account.
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { DeleteAccountDialog, signOut, useProfile, useUniversal, useUser } from '@unisim/sdk'
 import { usePanelStore } from '../stores/panelStore'
+import { useSettingsStore } from '../stores/settingsStore'
 import { useSyncStore } from '../stores/syncStore'
 import { useEffectiveTheme } from '../stores/themeStore'
 import { useT, type Key } from '../i18n'
@@ -23,17 +24,125 @@ function firstName(displayName: string | null | undefined): string | null {
   return first ? first : null
 }
 
+/** "Bradley's Book", or "My Book" for an account with no name yet. */
+function useNamedTitle(): string {
+  const t = useT()
+  const { profile } = useProfile()
+  const name = firstName(profile?.display_name)
+  return name ? t('book_of', { name }) : t('book_mine')
+}
+
 /**
  * The top bar's name: "BlackBook" signed out, "Bradley's Book" signed in —
- * "My Book" for an account with no name yet (Tune ▸ Account sets one).
+ * "My Book" for an account with no name yet (Tune ▸ Account sets one) — or
+ * "Your Book" when that was chosen (`BookNameSheet`).
  */
 export function useBookTitle(): string {
   const t = useT()
   const { user } = useUser()
-  const { profile } = useProfile()
+  const named = useNamedTitle()
+  const yours = useSettingsStore((s) => s.bookYours)
   if (!user) return 'BlackBook'
-  const name = firstName(profile?.display_name)
-  return name ? t('book_of', { name }) : t('book_mine')
+  return yours ? t('book_yours') : named
+}
+
+/**
+ * The choice of name at the top (James, 2026-10-27: "if tap and hold on the
+ * [Name]'s book then show a choice to change to 'Your Book'"). Opened by a
+ * hold on the name, and by Tune ▸ Account ▸ Book's name.
+ */
+export function BookNameSheet({ onClose }: { onClose: () => void }) {
+  const t = useT()
+  const kit = usePhoneKit()
+  const named = useNamedTitle()
+  const yours = useSettingsStore((s) => s.bookYours)
+  const set = useSettingsStore((s) => s.set)
+  if (!kit) return null
+  const row = 'flex min-h-[52px] w-full items-center gap-3 rounded-xl px-3 text-left text-[16px] text-slate-100 active:bg-slate-800'
+  const option = (label: string, value: boolean) => (
+    <button
+      type="button"
+      className={row}
+      aria-pressed={yours === value}
+      onClick={() => {
+        set({ bookYours: value })
+        onClose()
+      }}
+    >
+      <span className="min-w-0 flex-1 truncate">{label}</span>
+      {yours === value && (
+        <span className="font-semibold text-orange-400" aria-hidden>
+          ✓
+        </span>
+      )}
+    </button>
+  )
+  return (
+    <kit.Sheet title={t('book_name_label')} onClose={onClose}>
+      {option(named, false)}
+      {option(t('book_yours'), true)}
+    </kit.Sheet>
+  )
+}
+
+/**
+ * The name in the top bar. Signed in, holding it opens `BookNameSheet`;
+ * signed out ("BlackBook") there is nothing to choose.
+ */
+export function BookTitle() {
+  const { user } = useUser()
+  const title = useBookTitle()
+  const [naming, setNaming] = useState(false)
+  const hold = useRef<{ x: number; y: number; timer: ReturnType<typeof setTimeout> } | null>(null)
+  const cancel = () => {
+    if (hold.current) clearTimeout(hold.current.timer)
+    hold.current = null
+  }
+  // The lift that ends a hold is not a tap: its click would land on the
+  // sheet's backdrop, under the finger, and shut the sheet it just opened.
+  const swallowClick = () => {
+    const swallow = (ev: Event) => {
+      ev.preventDefault()
+      ev.stopPropagation()
+    }
+    document.addEventListener('click', swallow, { capture: true, once: true })
+    setTimeout(() => document.removeEventListener('click', swallow, { capture: true }), 600)
+  }
+  useEffect(() => cancel, [])
+  return (
+    <>
+      <span
+        className="truncate select-none"
+        style={{ WebkitTouchCallout: 'none' }}
+        onContextMenu={(e) => user && e.preventDefault()}
+        onTouchStart={(e) => {
+          if (!user || e.touches.length !== 1) return
+          cancel()
+          const { clientX: x, clientY: y } = e.touches[0]
+          hold.current = {
+            x,
+            y,
+            timer: setTimeout(() => {
+              hold.current = null
+              navigator.vibrate?.(12)
+              swallowClick()
+              setNaming(true)
+            }, 450),
+          }
+        }}
+        onTouchMove={(e) => {
+          const h = hold.current
+          const p = e.touches[0]
+          if (h && p && Math.hypot(p.clientX - h.x, p.clientY - h.y) > 10) cancel()
+        }}
+        onTouchEnd={cancel}
+        onTouchCancel={cancel}
+      >
+        {title}
+      </span>
+      {naming && <BookNameSheet onClose={() => setNaming(false)} />}
+    </>
+  )
 }
 
 const BACKUP: Record<string, Key> = {
@@ -50,6 +159,8 @@ export function AccountGroup() {
   const openPanel = usePanelStore((s) => s.open)
   const syncState = useSyncStore((s) => s.state)
   const [signingIn, setSigningIn] = useState(false)
+  const [naming, setNaming] = useState(false)
+  const bookTitle = useBookTitle()
 
   if (!user) {
     return (
@@ -63,6 +174,8 @@ export function AccountGroup() {
   return (
     <Group title={t('tune_account')}>
       <NameRow />
+      <LinkRow label={t('book_name_label')} value={bookTitle} onClick={() => setNaming(true)} />
+      {naming && <BookNameSheet onClose={() => setNaming(false)} />}
       <div className="bb-row">
         <span className="min-w-0 flex-1">{t('tune_email')}</span>
         <span className="value truncate">{user.email}</span>

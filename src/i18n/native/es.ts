@@ -112,6 +112,8 @@ export const es: Dict = {
   tune_delete_account: "Eliminar mi cuenta",
   book_of: "La agenda de {name}",
   book_mine: "Mi agenda",
+  book_yours: "Tu agenda",
+  book_name_label: "Nombre de la agenda",
   tab_bin_hint: "Suelta aquí para ocultar",
   tab_bin_drop: "Suelta para ocultar",
   tab_binned: "Pestaña {tab} oculta. Vuelve a mostrarla en Ajustes.",

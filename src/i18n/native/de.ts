@@ -112,6 +112,8 @@ export const de: Dict = {
   tune_delete_account: "Mein Konto löschen",
   book_of: "Buch von {name}",
   book_mine: "Mein Buch",
+  book_yours: "Dein Buch",
+  book_name_label: "Name des Buchs",
   tab_bin_hint: "Hier ablegen zum Ausblenden",
   tab_bin_drop: "Loslassen zum Ausblenden",
   tab_binned: "Tab {tab} ausgeblendet. Unter Anpassen wieder einblenden.",

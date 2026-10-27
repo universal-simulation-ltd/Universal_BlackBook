@@ -51,7 +51,7 @@ import { ArticleBody, KnowledgeList, useArticles } from './KnowledgeScreen'
 import { Page, Sheet, SheetRow } from './layers'
 import { useNativeNav } from './nav'
 import { SignInContent } from './SignInScreen'
-import { useBookTitle } from './Account'
+import { BookTitle } from './Account'
 import { PhoneLinkified } from './PhoneLinks'
 import { TuneContent } from './TuneScreen'
 import { DueReminders, useAllReminders } from '../components/Reminders'
@@ -282,7 +282,6 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
   }
 
   const article = nav.article ? articles?.find((a) => a.id === nav.article) : undefined
-  const bookTitle = useBookTitle()
 
   return (
     <PhoneKitContext.Provider value={kit}>
@@ -292,8 +291,9 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
             <span className="bb-brand">
               <Ribbon />
               {/* Signed in, the book is named after its owner — the only sign
-                  of the account up here, in place of a profile button. */}
-              <span className="truncate">{bookTitle}</span>
+                  of the account up here, in place of a profile button. Hold
+                  it to choose "Your Book" instead. */}
+              <BookTitle />
             </span>
             {(current === 'contacts' || current === 'notes') && (
               <button type="button" className="bb-iconbtn" aria-label={t('map.title')} onClick={() => openPanel('map')}>

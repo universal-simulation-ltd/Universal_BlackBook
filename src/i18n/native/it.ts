@@ -112,6 +112,8 @@ export const it: Dict = {
   tune_delete_account: "Elimina il mio account",
   book_of: "La rubrica di {name}",
   book_mine: "La mia rubrica",
+  book_yours: "La tua rubrica",
+  book_name_label: "Nome della rubrica",
   tab_bin_hint: "Trascina qui per nascondere",
   tab_bin_drop: "Rilascia per nascondere",
   tab_binned: "Scheda {tab} nascosta. Riattivala in Regola.",
