@@ -148,7 +148,14 @@ export async function readDeviceContact(id: string): Promise<PickedContact | nul
  * plugin (ios/App/App/PhoneContactPlugin.swift, android …/PhoneContactPlugin.java),
  * since no npm plugin opens a contact by id. Resolves false when it is gone.
  */
-const PhoneContact = registerPlugin<{ open(options: { id: string }): Promise<{ opened: boolean }> }>('PhoneContact')
+const PhoneContact = registerPlugin<{
+  open(options: { id: string }): Promise<{ opened: boolean }>
+  /** WhatsApp and WhatsApp Business (lib/chatApps.ts): the same plugin, so no new native file. */
+  chatApps(): Promise<{ whatsapp: boolean; business: boolean }>
+  openChat(options: { app: 'whatsapp' | 'business'; phone: string }): Promise<{ opened: boolean }>
+}>('PhoneContact')
+
+export { PhoneContact }
 
 export async function openDeviceContact(id: string): Promise<boolean> {
   if (!Capacitor.isNativePlatform()) return false

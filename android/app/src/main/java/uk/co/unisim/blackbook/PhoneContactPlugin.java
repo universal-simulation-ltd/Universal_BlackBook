@@ -46,4 +46,42 @@ public class PhoneContactPlugin extends Plugin {
         }
         call.resolve(result);
     }
+
+    // ── WhatsApp and WhatsApp Business (James, 2026-10-27: "give choice of
+    // WhatsApp / WhatsApp business (some have both)"). Told apart by package;
+    // both must be in the manifest's <queries> or Android 11+ hides them. ───
+
+    private static final String WHATSAPP = "com.whatsapp";
+    private static final String BUSINESS = "com.whatsapp.w4b";
+
+    private boolean installed(String pkg) {
+        return getContext().getPackageManager().getLaunchIntentForPackage(pkg) != null;
+    }
+
+    /** { whatsapp, business }: which of the two are installed. */
+    @PluginMethod
+    public void chatApps(PluginCall call) {
+        JSObject result = new JSObject();
+        result.put("whatsapp", installed(WHATSAPP));
+        result.put("business", installed(BUSINESS));
+        call.resolve(result);
+    }
+
+    /** openChat({ app: 'whatsapp' | 'business', phone }): a chat with that number, in that app. */
+    @PluginMethod
+    public void openChat(PluginCall call) {
+        JSObject result = new JSObject();
+        String phone = call.getString("phone", "").replaceAll("[^0-9]", "");
+        String pkg = "business".equals(call.getString("app")) ? BUSINESS : WHATSAPP;
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/" + phone));
+        intent.setPackage(pkg);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        try {
+            getActivity().startActivity(intent);
+            result.put("opened", true);
+        } catch (ActivityNotFoundException e) {
+            result.put("opened", false);
+        }
+        call.resolve(result);
+    }
 }

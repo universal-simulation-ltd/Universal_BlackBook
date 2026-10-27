@@ -14,6 +14,7 @@ import { PhoneContactLink } from './PhoneContactLink'
 import { LocationFields } from './LocationFields'
 import { newLocation, useCurrentLocation } from './currentLocation'
 import { Modal } from './Modal'
+import { OpenSourceNote } from './OpenSourceNote'
 import { ExpandGlyph, NotesFullscreen } from './NotesFullscreen'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label, PinGlyph, textareaCls } from './ui'
 import { autoFocusOK, usePhoneKit } from '../native/kit'
@@ -635,6 +636,7 @@ export function ContactForm({ id }: { id: string }) {
           </p>
         )}
       </form>
+      {existing && <OpenSourceNote />}
 
       {/* Rendered inside the form, and it makes no difference where: a
           `showModal()` dialog is painted in the top layer, not where it sits

@@ -22,6 +22,8 @@ import { contactsAvailability, ContactsPermissionError, pickOneContact } from '.
 import { CONTACT_ACTIONS, type ContactAction } from '../lib/quickActions'
 import { copyText } from '../lib/clipboard'
 import { shareText } from '../lib/share'
+import { chatApps, openChat, whatsAppNumber, type ChatApp } from '../lib/chatApps'
+import { defaultCountry } from '../lib/geo'
 import { useBookStore } from '../stores/bookStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { IconContactsBook, IconPlus } from './icons'
@@ -55,6 +57,8 @@ export function ContactActions({ contact, onRemind }: { contact: Contact; onRemi
   // dimmed (James, 2026-10-25) — typed in, or taken from the phone's contacts.
   const [noPhone, setNoPhone] = useState<'menu' | 'add' | null>(null)
   const [addEmail, setAddEmail] = useState(false)
+  // Message, when WhatsApp or WhatsApp Business is on the phone too: which one.
+  const [chats, setChats] = useState<ChatApp[] | null>(null)
   const [addPlace, setAddPlace] = useState<Location | null>(null)
   const canPick = contactsAvailability() !== 'none'
 
@@ -80,13 +84,26 @@ export function ContactActions({ contact, onRemind }: { contact: Contact; onRemi
     window.location.href = href
   }
 
+  const message = async () => {
+    if (!phone) return setNoPhone('menu')
+    const apps = await chatApps()
+    if (apps.length === 0) return go(`sms:${dial(phone)}`)
+    setChats(apps)
+  }
+
+  const chat = async (app: ChatApp) => {
+    setChats(null)
+    const number = whatsAppNumber(phone, contact.location?.country ?? defaultCountry())
+    if (!(await openChat(app, number))) say(t('msg_failed', { app: t(app === 'business' ? 'msg_business' : 'msg_whatsapp') }))
+  }
+
   const pinned = contact.pinnedAt !== undefined
   // An address kept as one block (older contacts, imports) reads as the street.
   const place: Location | undefined = contact.location ?? (contact.address?.trim() ? { street: contact.address.trim() } : undefined)
   const located = hasLocation(place)
   const buttons: Record<ContactAction, QuickButton> = {
     call: { label: t('action_call'), emoji: '\u{1F4DE}', muted: !phone, onClick: () => (phone ? go(`tel:${dial(phone)}`) : setNoPhone('menu')) },
-    message: { label: t('action_message'), emoji: '\u{1F4AC}', muted: !phone, onClick: () => (phone ? go(`sms:${dial(phone)}`) : setNoPhone('menu')) },
+    message: { label: t('action_message'), emoji: '\u{1F4AC}', muted: !phone, onClick: () => void message() },
     email: { label: t('action_email'), emoji: '\u{2709}\u{FE0F}', muted: !email, onClick: () => (email ? go(`mailto:${email}`) : setAddEmail(true)) },
     place: {
       label: t('nlink.location_label'),
@@ -112,6 +129,21 @@ export function ContactActions({ contact, onRemind }: { contact: Contact; onRemi
   return (
     <>
       <QuickActions buttons={buttons} all={CONTACT_ACTIONS} order={order} onChange={(contactActions) => setSettings({ contactActions })} label={t('actions_label')} />
+      {chats && (
+        <Sheet title={t('action_message')} onClose={() => setChats(null)}>
+          <SheetRow icon={<span className="text-[20px] leading-none">{'\u{1F4AC}'}</span>} onClick={() => {
+            setChats(null)
+            go(`sms:${dial(phone)}`)
+          }}>
+            {t('msg_text')}
+          </SheetRow>
+          {chats.map((app) => (
+            <SheetRow key={app} icon={<span className="text-[20px] leading-none">{app === 'business' ? '\u{1F4BC}' : '\u{1F7E2}'}</span>} onClick={() => void chat(app)}>
+              {t(app === 'business' ? 'msg_business' : 'msg_whatsapp')}
+            </SheetRow>
+          ))}
+        </Sheet>
+      )}
       {noPhone === 'menu' && (
         <Sheet title={t('more.no_phone_title')} onClose={() => setNoPhone(null)}>
           <SheetRow icon={<IconPlus />} onClick={() => setNoPhone('add')}>

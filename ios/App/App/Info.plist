@@ -142,8 +142,11 @@
 		<string>unisim-converter</string>
 		<string>unisim-polling</string>
 		<string>unisim-blackbook</string>
-		<string>unisim-ai</string>
 		<string>unisim-jukebox</string>
+		<!-- This app's own, not suite apps: kept as they are by add-suite-app-links.mjs. -->
+		<string>whatsapp</string>
+		<string>whatsapp-consumer</string>
+		<string>whatsapp-smb</string>
 	</array>
 	<!-- END unisim suite app links -->
 </dict>
