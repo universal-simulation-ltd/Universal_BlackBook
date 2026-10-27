@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { hiddenActions, moveQuickAction, QUICK_SLOTS } from '../lib/quickActions'
+import { hiddenActions, moveQuickAction, type Slots } from '../lib/quickActions'
 import { useT } from '../i18n'
 import { usePhoneKit } from '../native/kit'
 import { IconBin } from '../native/icons'
@@ -20,10 +20,12 @@ export interface QuickButton {
  * The row of emoji buttons across the top of a note and of a contact (James,
  * 2026-10-27: "match up the quick actions style for contacts and notes, use
  * four buttons but only show the emojis"), in the order the person keeps
- * (lib/quickActions.ts). On the phone, hold one and drag it to a new place;
- * drag it onto a "+" (or the bin that rises in the middle of the screen) to
- * put it back among the rest, and its place becomes a "+". A "+" picks one of
- * the rest from a list.
+ * (lib/quickActions.ts). Four places, each a button or a "+". On the phone,
+ * hold a button and drag it to a new place: onto a "+" it swaps with it, so
+ * the "+" moves too (James, 2026-10-27: "change position of the + as well as
+ * opposed to a + hiding another action if dropped"). The bin that rises in the
+ * middle of the screen puts it back among the rest, leaving a "+" where it
+ * was. A "+" picks one of the rest from a list.
  */
 export function QuickActions<K extends string>({
   buttons,
@@ -36,18 +38,17 @@ export function QuickActions<K extends string>({
   buttons: Record<K, QuickButton>
   /** Every button this row can hold, in the order a "+" lists them. */
   all: readonly K[]
-  order: K[]
-  onChange: (order: K[]) => void
+  order: Slots<K>
+  onChange: (order: Slots<K>) => void
   /** The row's accessible name. */
   label: string
   status?: string | null
 }) {
   const t = useT()
   const kit = usePhoneKit()
-  const [drag, setDrag] = useState<{ key: K; order: K[]; bin?: boolean } | null>(null)
+  const [drag, setDrag] = useState<{ key: K; order: Slots<K>; bin?: boolean } | null>(null)
   const shown = drag?.order ?? order
   const hidden = hiddenActions(all, order)
-  const empty = Math.max(0, QUICK_SLOTS - shown.length)
 
   const rowRef = useRef<HTMLDivElement>(null)
   const binRef = useRef<HTMLDivElement>(null)
@@ -94,17 +95,14 @@ export function QuickActions<K extends string>({
       e.preventDefault()
       const d = dragRef.current
       if (!d || !t0) return
-      // Back among the rest: dropped on the bin, or on a "+" in the row.
-      const pluses = [...(rowRef.current?.querySelectorAll<HTMLElement>('[data-qa-plus]') ?? [])]
-      const overBin =
-        within(binRef.current?.getBoundingClientRect(), t0.clientX, t0.clientY, 18) ||
-        pluses.some((el) => within(el.getBoundingClientRect(), t0.clientX, t0.clientY, 0))
+      // Back among the rest: dropped on the bin.
+      const overBin = within(binRef.current?.getBoundingClientRect(), t0.clientX, t0.clientY, 18)
       if (overBin !== Boolean(d.bin)) {
         navigator.vibrate?.(8)
         setDrag({ ...d, bin: overBin })
       }
       if (overBin) return
-      const slots = [...(rowRef.current?.querySelectorAll<HTMLElement>('[data-qa]') ?? [])]
+      const slots = [...(rowRef.current?.querySelectorAll<HTMLElement>('[data-slot]') ?? [])]
       const at = slots.findIndex((el) => {
         const r = el.getBoundingClientRect()
         return t0.clientX >= r.left && t0.clientX <= r.right
@@ -130,7 +128,7 @@ export function QuickActions<K extends string>({
       const d = dragRef.current
       setDrag(null)
       if (!d) return
-      if (d.bin) changeRef.current(orderRef.current.filter((k) => k !== d.key))
+      if (d.bin) changeRef.current(orderRef.current.map((k) => (k === d.key ? null : k)))
       else if (d.order.join() !== orderRef.current.join()) changeRef.current(d.order)
     }
     document.addEventListener('touchmove', move, { passive: false, capture: true })
@@ -153,12 +151,47 @@ export function QuickActions<K extends string>({
           the page's own pull down (the SDK's phone kit) leaves it alone —
           without it the whole page slid down after the finger. */}
       <div ref={rowRef} className="mb-5 grid grid-cols-4 gap-2" role="group" aria-label={label} data-swipe-x>
-        {shown.map((key) => {
+        {shown.map((key, i) => {
+          if (key === null) {
+            // While a button is held, a "+" is a place it can go.
+            if (drag || hidden.length === 0) {
+              return (
+                <span key={`plus-${i}`} data-slot aria-hidden className={drag ? plus : ''}>
+                  {drag ? '+' : null}
+                </span>
+              )
+            }
+            // A real <select> over the "+": the phone's own list to pick from.
+            return (
+              <label key={`plus-${i}`} data-slot className={`${plus} cursor-pointer`}>
+                <span aria-hidden>+</span>
+                <select
+                  aria-label={t('qa.add')}
+                  value=""
+                  onChange={(e) => {
+                    const pick = e.target.value as K
+                    if (pick) onChange(order.map((k, at) => (at === i ? pick : k)))
+                  }}
+                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                >
+                  <option value="" disabled>
+                    {t('qa.add')}
+                  </option>
+                  {hidden.map((k) => (
+                    <option key={k} value={k}>
+                      {buttons[k].label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )
+          }
           const b = buttons[key]
           return (
             <button
               key={key}
               type="button"
+              data-slot
               data-qa={key}
               aria-label={b.label}
               aria-pressed={b.pressed}
@@ -175,44 +208,6 @@ export function QuickActions<K extends string>({
             </button>
           )
         })}
-        {Array.from({ length: empty }, (_, i) =>
-          drag ? (
-            // While a button is held, a "+" is where it goes back.
-            <span
-              key={`drop-${i}`}
-              data-qa-plus
-              aria-hidden
-              className={`${plus} ${drag.bin ? 'border-solid border-rose-500 bg-rose-600 text-white' : ''}`}
-            >
-              +
-            </span>
-          ) : hidden.length > 0 ? (
-            // A real <select> over the "+": the phone's own list to pick from.
-            <label key={`add-${i}`} className={`${plus} cursor-pointer`}>
-              <span aria-hidden>+</span>
-              <select
-                aria-label={t('qa.add')}
-                value=""
-                onChange={(e) => {
-                  const key = e.target.value as K
-                  if (key) onChange([...order, key])
-                }}
-                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-              >
-                <option value="" disabled>
-                  {t('qa.add')}
-                </option>
-                {hidden.map((k) => (
-                  <option key={k} value={k}>
-                    {buttons[k].label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : (
-            <span key={`gap-${i}`} aria-hidden />
-          ),
-        )}
         <span className="sr-only" role="status" aria-live="polite">
           {status ?? ''}
         </span>

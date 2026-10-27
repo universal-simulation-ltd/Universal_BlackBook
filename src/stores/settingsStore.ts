@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { FORM_FIELDS, isFormField, type FormField } from '../lib/formFields'
 import { normaliseOrder, TABS, type Tab } from '../lib/tabs'
-import { DEFAULT_CONTACT_ACTIONS, DEFAULT_QUICK_ACTIONS, normaliseContactActions, normaliseQuickActions, type ContactAction, type QuickAction } from '../lib/quickActions'
+import { normaliseContactActions, normaliseQuickActions, type ContactAction, type QuickAction, type Slots } from '../lib/quickActions'
 
 /**
  * The app's own switches, shown in the SDK's ⚙ menu ▸ App preferences
@@ -60,9 +60,9 @@ export interface Settings {
    * and drag to move one, drop it on the bin to take it off, "+" in an empty
    * place to put one back). Only the ones shown are in here.
    */
-  noteActions: QuickAction[]
+  noteActions: Slots<QuickAction>
   /** The same for a contact's row (2026-10-27): its own order and its own pick. */
-  contactActions: ContactAction[]
+  contactActions: Slots<ContactAction>
   /**
    * Signed in, the top bar says "Your Book" instead of "Bradley's Book"
    * (James, 2026-10-27: hold the name at the top to choose). Off to start.
@@ -74,7 +74,7 @@ const KEY = 'blackbook.settings'
 // To-do and Notes are ON by default, Email lists off (James, 2026-10-23: "have
 // all active as default except email lists"). Their tick boxes are worded as
 // opt-outs ("Hide the To-do tab"), so every box still starts unticked.
-const DEFAULTS: Settings = { emailLists: false, todos: true, notes: true, contacts: true, shownFields: [], notifyDetails: false, tabOrder: [...TABS], fillLocation: false, noteActions: [...DEFAULT_QUICK_ACTIONS], contactActions: [...DEFAULT_CONTACT_ACTIONS], bookYours: false }
+const DEFAULTS: Settings = { emailLists: false, todos: true, notes: true, contacts: true, shownFields: [], notifyDetails: false, tabOrder: [...TABS], fillLocation: false, noteActions: normaliseQuickActions(undefined), contactActions: normaliseContactActions(undefined), bookYours: false }
 /**
  * The stored shape's version. 1 (no `v`) wrote every switch whenever any one
  * changed, so a stored `false` for To-do or Notes cannot be told from "never
@@ -152,7 +152,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   openTune: (focus) => set({ tune: { focus: focus ?? null } }),
   closeTune: () => set({ tune: null }),
   reset: () => {
-    set({ ...DEFAULTS, tabOrder: [...TABS], noteActions: [...DEFAULT_QUICK_ACTIONS], contactActions: [...DEFAULT_CONTACT_ACTIONS] })
+    set({ ...DEFAULTS, tabOrder: [...TABS], noteActions: normaliseQuickActions(undefined), contactActions: normaliseContactActions(undefined) })
     try {
       localStorage.removeItem(KEY)
     } catch {

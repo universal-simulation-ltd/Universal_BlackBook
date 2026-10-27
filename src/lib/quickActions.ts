@@ -14,15 +14,33 @@ export const NOTE_ACTIONS = ['contacts', 'place', 'remind', 'copy', 'copyDelete'
 export type QuickAction = (typeof NOTE_ACTIONS)[number]
 export const DEFAULT_QUICK_ACTIONS: readonly QuickAction[] = ['contacts', 'place', 'remind']
 
-export const CONTACT_ACTIONS = ['call', 'message', 'email', 'share', 'remind', 'copy', 'pin'] as const
+export const CONTACT_ACTIONS = ['call', 'message', 'email', 'place', 'share', 'remind', 'copy', 'pin'] as const
 export type ContactAction = (typeof CONTACT_ACTIONS)[number]
 export const DEFAULT_CONTACT_ACTIONS: readonly ContactAction[] = ['call', 'message', 'share']
 
-/** A stored list made safe: known buttons, each once, no more than fit. Unset is the default. */
-export function normaliseActions<K extends string>(raw: unknown, all: readonly K[], fallback: readonly K[]): K[] {
-  if (!Array.isArray(raw)) return [...fallback]
-  const known = raw.filter((x): x is K => (all as readonly unknown[]).includes(x))
-  return [...new Set(known)].slice(0, QUICK_SLOTS)
+/**
+ * A row is its four places in order, a button or `null` for a "+" (James,
+ * 2026-10-27: "allow them to … change position of the + as well"), so a "+"
+ * can stand anywhere, not only at the end.
+ */
+export type Slots<K extends string> = (K | null)[]
+
+/**
+ * A stored row made safe: known buttons, each once, gaps kept where they were,
+ * four places exactly. Unset is the default. An unknown or repeated button is
+ * dropped, not left as a gap.
+ */
+export function normaliseActions<K extends string>(raw: unknown, all: readonly K[], fallback: readonly K[]): Slots<K> {
+  const list: Slots<K> = Array.isArray(raw) ? [] : [...fallback]
+  if (Array.isArray(raw)) {
+    for (const x of raw) {
+      if (x === null) list.push(null)
+      else if ((all as readonly unknown[]).includes(x) && !list.includes(x as K)) list.push(x as K)
+    }
+  }
+  const row = list.slice(0, QUICK_SLOTS)
+  while (row.length < QUICK_SLOTS) row.push(null)
+  return row
 }
 
 /**
@@ -30,20 +48,32 @@ export function normaliseActions<K extends string>(raw: unknown, all: readonly K
  * goes first when Copy and delete is there too: that was added on purpose,
  * and it copies as well.
  */
-export function normaliseQuickActions(raw: unknown): QuickAction[] {
-  const over = Array.isArray(raw) && raw.length > QUICK_SLOTS && raw.includes('copyDelete')
+export function normaliseQuickActions(raw: unknown): Slots<QuickAction> {
+  const over = Array.isArray(raw) && raw.filter((k) => k !== null).length > QUICK_SLOTS && raw.includes('copyDelete')
   return normaliseActions(over ? (raw as unknown[]).filter((k) => k !== 'copy') : raw, NOTE_ACTIONS, DEFAULT_QUICK_ACTIONS)
 }
 export const normaliseContactActions = (raw: unknown) => normaliseActions(raw, CONTACT_ACTIONS, DEFAULT_CONTACT_ACTIONS)
 
-/** One button moved to a new place among those shown. */
-export function moveQuickAction<K extends string>(shown: K[], key: K, to: number): K[] {
-  const rest = shown.filter((k) => k !== key)
-  rest.splice(Math.max(0, Math.min(to, rest.length)), 0, key)
-  return rest
+/**
+ * A held button taken to place `to`. Onto a "+", the two swap: the button
+ * goes there and the "+" takes the place it left. Onto another button, it
+ * slides in there and the rest close up behind it.
+ */
+export function moveQuickAction<K extends string>(slots: Slots<K>, key: K, to: number): Slots<K> {
+  const from = slots.indexOf(key)
+  if (from < 0 || from === to || to < 0 || to >= slots.length) return slots
+  const next = [...slots]
+  if (next[to] === null) {
+    next[to] = key
+    next[from] = null
+    return next
+  }
+  next.splice(from, 1)
+  next.splice(to, 0, key)
+  return next
 }
 
 /** The buttons not shown, in their usual order: what a "+" offers. */
-export function hiddenActions<K extends string>(all: readonly K[], shown: K[]): K[] {
+export function hiddenActions<K extends string>(all: readonly K[], shown: Slots<K>): K[] {
   return all.filter((k) => !shown.includes(k))
 }

@@ -6,10 +6,17 @@
 // same emoji row as a note's (components/QuickActions): four places, Call ·
 // Message · Share and a "+" to start, the person's own pick and order after
 // that. With no number, Call and Message stay where they are, fainter, and
-// offer to add one; Email the same with no address.
+// offer to add one; Email the same with no address, and 📍 Location (James,
+// 2026-10-27) opens the address in the phone's maps, or offers to add one.
 
 import { useState } from 'react'
+import { Capacitor } from '@capacitor/core'
 import { AddField } from '../components/ContactMore'
+import { LocationFields } from '../components/LocationFields'
+import { newLocation } from '../components/currentLocation'
+import { btnGhost, btnPrimary } from '../components/ui'
+import { hasLocation, locationText, type Location } from '../lib/geo'
+import { mapsUrl } from '../lib/notes'
 import { QuickActions, type QuickButton } from '../components/QuickActions'
 import { contactsAvailability, ContactsPermissionError, pickOneContact } from '../lib/deviceContacts'
 import { CONTACT_ACTIONS, type ContactAction } from '../lib/quickActions'
@@ -48,6 +55,7 @@ export function ContactActions({ contact, onRemind }: { contact: Contact; onRemi
   // dimmed (James, 2026-10-25) — typed in, or taken from the phone's contacts.
   const [noPhone, setNoPhone] = useState<'menu' | 'add' | null>(null)
   const [addEmail, setAddEmail] = useState(false)
+  const [addPlace, setAddPlace] = useState<Location | null>(null)
   const canPick = contactsAvailability() !== 'none'
 
   const importPhone = async () => {
@@ -73,10 +81,19 @@ export function ContactActions({ contact, onRemind }: { contact: Contact; onRemi
   }
 
   const pinned = contact.pinnedAt !== undefined
+  // An address kept as one block (older contacts, imports) reads as the street.
+  const place: Location | undefined = contact.location ?? (contact.address?.trim() ? { street: contact.address.trim() } : undefined)
+  const located = hasLocation(place)
   const buttons: Record<ContactAction, QuickButton> = {
     call: { label: t('action_call'), emoji: '\u{1F4DE}', muted: !phone, onClick: () => (phone ? go(`tel:${dial(phone)}`) : setNoPhone('menu')) },
     message: { label: t('action_message'), emoji: '\u{1F4AC}', muted: !phone, onClick: () => (phone ? go(`sms:${dial(phone)}`) : setNoPhone('menu')) },
     email: { label: t('action_email'), emoji: '\u{2709}\u{FE0F}', muted: !email, onClick: () => (email ? go(`mailto:${email}`) : setAddEmail(true)) },
+    place: {
+      label: t('nlink.location_label'),
+      emoji: '\u{1F4CD}',
+      muted: !located,
+      onClick: () => (located ? go(mapsUrl(place, Capacitor.getPlatform(), t.locale)) : setAddPlace(newLocation())),
+    },
     share: { label: t('action_share'), emoji: '\u{1F4E4}', onClick: () => void share() },
     remind: { label: t('rem.add'), emoji: '\u{1F514}', onClick: onRemind },
     copy: {
@@ -118,6 +135,28 @@ export function ContactActions({ contact, onRemind }: { contact: Contact; onRemi
               void patch(contact.id, { phone: v })
             }}
           />
+        </Sheet>
+      )}
+      {addPlace && (
+        <Sheet title={t('field.address')} onClose={() => setAddPlace(null)}>
+          <form
+            className="space-y-4"
+            onSubmit={(e) => {
+              e.preventDefault()
+              setAddPlace(null)
+              void patch(contact.id, { location: addPlace, address: locationText(addPlace, t.locale) || undefined })
+            }}
+          >
+            <LocationFields withPlace={false} value={addPlace} onChange={setAddPlace} />
+            <div className="flex justify-end gap-2 pt-1">
+              <button type="button" className={btnGhost} onClick={() => setAddPlace(null)}>
+                {t('c.cancel')}
+              </button>
+              <button type="submit" className={btnPrimary} disabled={!hasLocation(addPlace)}>
+                {t('c.save')}
+              </button>
+            </div>
+          </form>
         </Sheet>
       )}
       {addEmail && (
