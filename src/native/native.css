@@ -134,14 +134,20 @@ html.bb-phone body {
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
   transition: transform 120ms ease-out;
 }
-/* The bin a held tab can be dropped on, to switch it off (2026-10-26). */
+/* The bin a held tab or note button can be dropped on, to switch it off
+   (2026-10-26). It sits halfway between the top bar and the tab bar, the same
+   distance from each (James, 2026-10-27). */
 .bb-tabbin {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: calc(env(safe-area-inset-bottom) + var(--bb-tabs-h) + 18px);
+  top: calc(
+    (100dvh + env(safe-area-inset-top) + var(--bb-bar-h) - env(safe-area-inset-bottom) - var(--bb-tabs-h)) / 2
+  );
   z-index: 60;
-  /* Centred by margin, not a transform: bb-rise animates the transform. */
+  /* Centred by margin and `translate`, not a transform: bb-rise animates the
+     transform and .hot scales it. */
+  translate: 0 -50%;
   width: max-content;
   margin-inline: auto;
   display: flex;

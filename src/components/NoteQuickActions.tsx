@@ -16,7 +16,7 @@ export interface QuickButton {
 /**
  * The buttons across the top of a note, in the order Tune keeps
  * (`noteActions`, lib/quickActions.ts). On the phone, hold one and drag it to
- * a new place, or onto the bin that rises at the foot of the screen to take it
+ * a new place, or onto the bin that rises in the middle of the screen to take it
  * off (the tabs' gesture, James 2026-10-26); an empty place shows "+", which
  * picks one of the rest from a list.
  */
