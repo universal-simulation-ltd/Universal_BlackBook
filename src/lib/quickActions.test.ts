@@ -4,7 +4,7 @@ import {
   DEFAULT_CONTACT_ACTIONS,
   DEFAULT_QUICK_ACTIONS,
   hiddenActions,
-  moveQuickAction,
+  moveSlot,
   NOTE_ACTIONS,
   normaliseContactActions,
   normaliseQuickActions,
@@ -31,9 +31,14 @@ describe('quick buttons', () => {
   })
 
   it('slide in among the buttons, and swap places with a +', () => {
-    expect(moveQuickAction(['contacts', 'place', 'remind', 'copy'], 'copy', 0)).toEqual(['copy', 'contacts', 'place', 'remind'])
-    expect(moveQuickAction(['call', 'message', 'share', null], 'call', 3)).toEqual([null, 'message', 'share', 'call'])
-    expect(moveQuickAction([null, 'message', 'share', 'call'], 'share', 0)).toEqual(['share', 'message', null, 'call'])
-    expect(moveQuickAction(['call', 'message', null, 'share'], 'share', 0)).toEqual(['share', 'call', 'message', null])
+    expect(moveSlot(['contacts', 'place', 'remind', 'copy'], 3, 0)).toEqual(['copy', 'contacts', 'place', 'remind'])
+    expect(moveSlot(['call', 'message', 'share', null], 0, 3)).toEqual([null, 'message', 'share', 'call'])
+    expect(moveSlot([null, 'message', 'share', 'call'], 2, 0)).toEqual(['share', 'message', null, 'call'])
+    expect(moveSlot(['call', 'message', null, 'share'], 3, 0)).toEqual(['share', 'call', 'message', null])
+  })
+
+  it('move a + itself along the row', () => {
+    expect(moveSlot(['call', 'message', 'share', null], 3, 0)).toEqual([null, 'call', 'message', 'share'])
+    expect(moveSlot(['call', null, 'share', null], 1, 3)).toEqual(['call', null, 'share', null])
   })
 })

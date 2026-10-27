@@ -55,21 +55,20 @@ export function normaliseQuickActions(raw: unknown): Slots<QuickAction> {
 export const normaliseContactActions = (raw: unknown) => normaliseActions(raw, CONTACT_ACTIONS, DEFAULT_CONTACT_ACTIONS)
 
 /**
- * A held button taken to place `to`. Onto a "+", the two swap: the button
- * goes there and the "+" takes the place it left. Onto another button, it
- * slides in there and the rest close up behind it.
+ * The held place (a button, or a "+": James, 2026-10-27 "tap and hold to drag
+ * a + also") taken to place `to`. Onto a "+", the two swap, so a button
+ * dropped there leaves a "+" where it was. Onto a button, it slides in there
+ * and the rest close up behind it.
  */
-export function moveQuickAction<K extends string>(slots: Slots<K>, key: K, to: number): Slots<K> {
-  const from = slots.indexOf(key)
-  if (from < 0 || from === to || to < 0 || to >= slots.length) return slots
+export function moveSlot<K extends string>(slots: Slots<K>, from: number, to: number): Slots<K> {
+  if (from === to || from < 0 || to < 0 || from >= slots.length || to >= slots.length) return slots
   const next = [...slots]
   if (next[to] === null) {
-    next[to] = key
-    next[from] = null
+    ;[next[from], next[to]] = [next[to], next[from]]
     return next
   }
-  next.splice(from, 1)
-  next.splice(to, 0, key)
+  const [held] = next.splice(from, 1)
+  next.splice(to, 0, held)
   return next
 }
 

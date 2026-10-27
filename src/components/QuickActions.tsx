@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { hiddenActions, moveQuickAction, type Slots } from '../lib/quickActions'
+import { hiddenActions, moveSlot, type Slots } from '../lib/quickActions'
 import { useT } from '../i18n'
 import { usePhoneKit } from '../native/kit'
 import { IconBin } from '../native/icons'
@@ -21,11 +21,12 @@ export interface QuickButton {
  * 2026-10-27: "match up the quick actions style for contacts and notes, use
  * four buttons but only show the emojis"), in the order the person keeps
  * (lib/quickActions.ts). Four places, each a button or a "+". On the phone,
- * hold a button and drag it to a new place: onto a "+" it swaps with it, so
- * the "+" moves too (James, 2026-10-27: "change position of the + as well as
- * opposed to a + hiding another action if dropped"). The bin that rises in the
- * middle of the screen puts it back among the rest, leaving a "+" where it
- * was. A "+" picks one of the rest from a list.
+ * hold a button or a "+" and drag it to a new place: onto a "+" the two
+ * swap, onto a button it slides in (James, 2026-10-27: "change position of the
+ * + as well as opposed to a + hiding another action if dropped", "tap and
+ * hold to drag a + also"). The bin that rises in the middle of the screen puts
+ * a button back among the rest, leaving a "+" where it was. A tap on a "+"
+ * picks one of the rest from a list.
  */
 export function QuickActions<K extends string>({
   buttons,
@@ -46,13 +47,17 @@ export function QuickActions<K extends string>({
 }) {
   const t = useT()
   const kit = usePhoneKit()
-  const [drag, setDrag] = useState<{ key: K; order: Slots<K>; bin?: boolean } | null>(null)
+  /** The place held (`at`, where it is now in `order`) and the row as it is being rearranged. */
+  const [drag, setDrag] = useState<{ at: number; order: Slots<K>; bin?: boolean } | null>(null)
+  // Just let go: the lift's click must not open a "+"'s list.
+  const [settling, setSettling] = useState(false)
   const shown = drag?.order ?? order
+  const heldIsButton = drag !== null && drag.order[drag.at] !== null
   const hidden = hiddenActions(all, order)
 
   const rowRef = useRef<HTMLDivElement>(null)
   const binRef = useRef<HTMLDivElement>(null)
-  const hold = useRef<{ key: K; x0: number; y0: number; active: boolean; timer: ReturnType<typeof setTimeout> } | null>(null)
+  const hold = useRef<{ x0: number; y0: number; active: boolean; timer: ReturnType<typeof setTimeout> } | null>(null)
   const dragRef = useRef(drag)
   dragRef.current = drag
   const orderRef = useRef(order)
@@ -60,18 +65,17 @@ export function QuickActions<K extends string>({
   const changeRef = useRef(onChange)
   changeRef.current = onChange
 
-  const startHold = (key: K) => (e: React.TouchEvent) => {
+  const startHold = (at: number) => (e: React.TouchEvent) => {
     if (!kit || e.touches.length !== 1) return
     const t0 = e.touches[0]
     const h = {
-      key,
       x0: t0.clientX,
       y0: t0.clientY,
       active: false,
       timer: setTimeout(() => {
         h.active = true
         navigator.vibrate?.(12)
-        setDrag({ key, order: orderRef.current })
+        setDrag({ at, order: orderRef.current })
       }, 450),
     }
     if (hold.current) clearTimeout(hold.current.timer)
@@ -95,8 +99,8 @@ export function QuickActions<K extends string>({
       e.preventDefault()
       const d = dragRef.current
       if (!d || !t0) return
-      // Back among the rest: dropped on the bin.
-      const overBin = within(binRef.current?.getBoundingClientRect(), t0.clientX, t0.clientY, 18)
+      // Back among the rest: a button dropped on the bin (a "+" has no bin).
+      const overBin = d.order[d.at] !== null && within(binRef.current?.getBoundingClientRect(), t0.clientX, t0.clientY, 18)
       if (overBin !== Boolean(d.bin)) {
         navigator.vibrate?.(8)
         setDrag({ ...d, bin: overBin })
@@ -108,8 +112,9 @@ export function QuickActions<K extends string>({
         return t0.clientX >= r.left && t0.clientX <= r.right
       })
       if (at < 0) return
-      const next = moveQuickAction(d.order, d.key, at)
-      if (next.join() !== d.order.join()) setDrag({ ...d, order: next })
+      if (at === d.at) return
+      const next = moveSlot(d.order, d.at, at)
+      setDrag({ ...d, at, order: next })
     }
     const end = () => {
       const h = hold.current
@@ -127,8 +132,10 @@ export function QuickActions<K extends string>({
       setTimeout(() => document.removeEventListener('click', swallow, { capture: true }), 600)
       const d = dragRef.current
       setDrag(null)
+      setSettling(true)
+      setTimeout(() => setSettling(false), 500)
       if (!d) return
-      if (d.bin) changeRef.current(orderRef.current.map((k) => (k === d.key ? null : k)))
+      if (d.bin) changeRef.current(d.order.map((k, i) => (i === d.at ? null : k)))
       else if (d.order.join() !== orderRef.current.join()) changeRef.current(d.order)
     }
     document.addEventListener('touchmove', move, { passive: false, capture: true })
@@ -153,36 +160,44 @@ export function QuickActions<K extends string>({
       <div ref={rowRef} className="mb-5 grid grid-cols-4 gap-2" role="group" aria-label={label} data-swipe-x>
         {shown.map((key, i) => {
           if (key === null) {
-            // While a button is held, a "+" is a place it can go.
-            if (drag || hidden.length === 0) {
-              return (
-                <span key={`plus-${i}`} data-slot aria-hidden className={drag ? plus : ''}>
-                  {drag ? '+' : null}
-                </span>
-              )
-            }
+            const held = drag?.at === i
+            // Keyed by which "+" it is, not by place: a held "+" is moved, never
+            // remounted, or the finger's touch would be lost with the old node.
+            const nth = shown.slice(0, i).filter((k) => k === null).length
             // A real <select> over the "+": the phone's own list to pick from.
+            // Shut while anything is held, and for a moment after.
+            const picking = hidden.length > 0 && !drag && !settling
             return (
-              <label key={`plus-${i}`} data-slot className={`${plus} cursor-pointer`}>
+              <label
+                key={`plus-${nth}`}
+                data-slot
+                onTouchStart={startHold(i)}
+                onContextMenu={(e) => kit && e.preventDefault()}
+                style={{ WebkitTouchCallout: 'none' }}
+                className={`${plus} select-none ${picking ? 'cursor-pointer' : ''} ${held ? 'scale-110 border-orange-500 shadow-lg' : ''}`}
+              >
                 <span aria-hidden>+</span>
-                <select
-                  aria-label={t('qa.add')}
-                  value=""
-                  onChange={(e) => {
-                    const pick = e.target.value as K
-                    if (pick) onChange(order.map((k, at) => (at === i ? pick : k)))
-                  }}
-                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                >
-                  <option value="" disabled>
-                    {t('qa.add')}
-                  </option>
-                  {hidden.map((k) => (
-                    <option key={k} value={k}>
-                      {buttons[k].label}
+                {hidden.length > 0 && (
+                  <select
+                    aria-label={t('qa.add')}
+                    value=""
+                    disabled={!picking}
+                    onChange={(e) => {
+                      const pick = e.target.value as K
+                      if (pick) onChange(order.map((k, at) => (at === i ? pick : k)))
+                    }}
+                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                  >
+                    <option value="" disabled>
+                      {t('qa.add')}
                     </option>
-                  ))}
-                </select>
+                    {hidden.map((k) => (
+                      <option key={k} value={k}>
+                        {buttons[k].label}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </label>
             )
           }
@@ -197,12 +212,12 @@ export function QuickActions<K extends string>({
               aria-pressed={b.pressed}
               title={b.label}
               onClick={b.onClick}
-              onTouchStart={startHold(key)}
+              onTouchStart={startHold(i)}
               onContextMenu={(e) => kit && e.preventDefault()}
               style={{ WebkitTouchCallout: 'none' }}
               className={`${box} select-none ${b.small ? 'text-[19px]' : 'text-[28px]'} ${b.muted ? 'opacity-40' : ''} ${
                 b.pressed ? 'border-orange-500/70' : ''
-              } ${drag?.key === key ? 'scale-110 border-orange-500 shadow-lg' : ''}`}
+              } ${drag?.at === i ? 'scale-110 border-orange-500 shadow-lg' : ''}`}
             >
               <span aria-hidden>{b.emoji}</span>
             </button>
@@ -212,7 +227,7 @@ export function QuickActions<K extends string>({
           {status ?? ''}
         </span>
       </div>
-      {drag && kit && (
+      {heldIsButton && kit && (
         <div ref={binRef} className={`bb-tabbin${drag.bin ? ' hot' : ''}`} aria-hidden>
           <IconBin />
           <span>{kit.t(drag.bin ? 'tab_bin_drop' : 'tab_bin_hint')}</span>
