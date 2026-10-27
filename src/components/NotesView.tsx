@@ -16,6 +16,8 @@ import { btnDanger, btnGhost, btnPrimary, btnSubtle, tabHeading } from './ui'
 import { usePanelStore } from '../stores/panelStore'
 import { phoneScreens } from '../native/shell'
 import { useT } from '../i18n'
+import { hasLocation } from '../lib/geo'
+import { DetailMarks } from './DetailMarks'
 
 /**
  * The Notes tab (James, 2026-10-23), there only with Tune this app ▸ Notes
@@ -353,6 +355,13 @@ function NoteRow({
         {template && (
           <span className="shrink-0 rounded-full border border-slate-700 px-2 py-0.5 text-[11px] font-medium text-slate-400">{template.name}</span>
         )}
+        <DetailMarks
+          marks={[
+            { emoji: '\u{1F464}', label: t('nlink.contacts_label'), on: (note.contactIds?.length ?? 0) > 0 },
+            { emoji: '\u{1F4CD}', label: t('nlink.location_label'), on: hasLocation(note.location) },
+            { emoji: '\u{1F514}', label: t('rem.section'), on: (note.reminders?.length ?? 0) > 0 },
+          ]}
+        />
       </p>
       {line && <p className="truncate text-sm text-slate-400">{line}</p>}
     </button>

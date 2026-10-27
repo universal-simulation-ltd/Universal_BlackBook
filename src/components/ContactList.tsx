@@ -28,6 +28,8 @@ import { TagPicker } from './TagPicker'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, TuneGlyph } from './ui'
 import { currentT, useT } from '../i18n'
 import { usePhoneKit } from '../native/kit'
+import { hasLocation } from '../lib/geo'
+import { DetailMarks } from './DetailMarks'
 
 // The glyphs the swipe actions carry. SVG and not emoji: 🗑 is one of the
 // codepoints with no glyph in iOS's system font (see Modal's CloseGlyph), and
@@ -1068,6 +1070,14 @@ export function ContactRow({
                 ))}
               </span>
             )}
+            <DetailMarks
+              marks={[
+                { emoji: '\u{1F4DE}', label: t('field.phone'), on: Boolean(contact.phone.trim()) },
+                { emoji: '\u{2709}\u{FE0F}', label: t('field.email'), on: Boolean(contact.email.trim()) },
+                { emoji: '\u{1F4CD}', label: t('nlink.location_label'), on: hasLocation(contact.location) || Boolean(contact.address?.trim()) },
+                { emoji: '\u{1F514}', label: t('rem.section'), on: (contact.reminders?.length ?? 0) > 0 },
+              ]}
+            />
           </div>
           {contact.company && <p className="truncate text-sm text-slate-300">{contact.company}</p>}
           {contact.email && <p className="truncate text-sm text-slate-400">{contact.email}</p>}

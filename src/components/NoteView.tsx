@@ -635,6 +635,12 @@ function NoteForm({ id }: { id: string }) {
   const existing = useNoteStore((s) => (id === 'new' ? undefined : s.notes.find((n) => n.id === id)))
   const save = useNoteStore((s) => s.save)
   const remove = useNoteStore((s) => s.remove)
+  const patchNote = useNoteStore((s) => s.patch)
+  // Location as a fold of its own (James, 2026-10-27: "in fine tune give
+  // location a collapsible"); open from the start when there is one.
+  const [loc, setLoc] = useState<Location>(() => existing?.location ?? newLocation())
+  const [locOpen, setLocOpen] = useState(() => hasLocation(existing?.location))
+  const locId = useId()
   const close = useNoteStore((s) => s.edit)
   const [title, setTitle] = useState(() => existing?.title ?? useNoteStore.getState().prefillTitle ?? '')
   const [details, setDetails] = useState(existing?.details ?? '')
@@ -658,7 +664,10 @@ function NoteForm({ id }: { id: string }) {
       // A note from a template with no title of its own takes its first text
       // field's value ("Middlemarch" for a Book), so the list has a name for it.
       const first = template?.fields.find((f) => f.type === 'text' && fields[f.id]?.trim())
-      void save({ id: existing?.id, title: title.trim() || (first ? fields[first.id].trim() : ''), details, templateId, fields })
+      const saved = save({ id: existing?.id, title: title.trim() || (first ? fields[first.id].trim() : ''), details, templateId, fields })
+      // After the save, which writes the note as it was read: the place on top.
+      const place = hasLocation(loc) ? loc : undefined
+      if (existing && JSON.stringify(place) !== JSON.stringify(existing.location)) void saved.then(() => patchNote(existing.id, { location: place }))
     }
   }
 
@@ -705,6 +714,34 @@ function NoteForm({ id }: { id: string }) {
               value={details}
               onChange={(e) => setDetails(e.target.value)}
             />
+          </div>
+        )}
+        {existing && (
+          <div className="rounded-lg border border-slate-800">
+            <button
+              type="button"
+              onClick={() => setLocOpen((o) => !o)}
+              aria-expanded={locOpen}
+              aria-controls={locId}
+              className="flex min-h-[44px] w-full items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-slate-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+            >
+              <span className="text-sm font-medium text-slate-300">{t('nlink.location_label')}</span>
+              <svg
+                viewBox="0 0 16 16"
+                className={`h-3.5 w-3.5 shrink-0 text-slate-500 transition-transform ${locOpen ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                aria-hidden
+              >
+                <path d="m4 6 4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            {locOpen && (
+              <div id={locId} className="px-3 pb-3">
+                <LocationFields value={loc} onChange={setLoc} />
+              </div>
+            )}
           </div>
         )}
         <div className="flex flex-wrap items-center justify-between gap-2 pt-1">

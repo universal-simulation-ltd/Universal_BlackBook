@@ -2,6 +2,8 @@ import { useEffect, useId, useState, type FormEvent, type ReactNode } from 'reac
 import { blankDraft, draftIsEmpty, useBookStore, type ContactDraft } from '../stores/bookStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { isList, listIdsOf } from '../lib/lists'
+import { locationText } from '../lib/geo'
+import { formatBirthday } from '../lib/birthday'
 import { ABOVE_NOTES, fieldLabel, FORM_FIELDS, type FormField } from '../lib/formFields'
 import { useT } from '../i18n'
 import type { Tag } from '../lib/types'
@@ -167,10 +169,14 @@ export function ContactForm({ id }: { id: string }) {
   })
   // Lists only offer themselves with App preferences ▸ Email lists on — but a
   // contact already ON a list shows it regardless, by the content rule above.
-  const hidden = EXTRAS.filter((k) => !pinned.includes(k) && (k !== 'lists' || emailLists))
+  // On the phone every field is a fold, filled or not (James, 2026-10-27: the
+  // address of a contact that had one showed open with no fold), each saying
+  // what it holds while shut. The website keeps filled fields out in the open.
+  const allFolded = Boolean(kit)
+  const hidden = EXTRAS.filter((k) => (allFolded || !pinned.includes(k)) && (k !== 'lists' || emailLists || pinned.includes(k)))
   // Rendered either side of Notes, in the order they were always in.
-  const pinnedAbove = pinned.filter((k) => ABOVE_NOTES.includes(k))
-  const pinnedBelow = pinned.filter((k) => !ABOVE_NOTES.includes(k))
+  const pinnedAbove = allFolded ? [] : pinned.filter((k) => ABOVE_NOTES.includes(k))
+  const pinnedBelow = allFolded ? [] : pinned.filter((k) => !ABOVE_NOTES.includes(k))
 
   const patch = (p: Partial<ContactDraft>) => setDraft((d) => ({ ...d, ...p }))
   // A new contact's address starts at the nearest town, with Tune this app ▸
@@ -300,6 +306,30 @@ export function ContactForm({ id }: { id: string }) {
             <TagPicker value={draft.tagIds} onChange={(tagIds) => patch({ tagIds })} kind="list" />
           </Field>
         )
+    }
+  }
+
+  /** What a shut fold holds, on its header: "Guildford, Surrey". */
+  const summary = (k: Extra): string => {
+    switch (k) {
+      case 'email':
+        return draft.email.trim()
+      case 'company':
+        return draft.company?.trim() ?? ''
+      case 'phone':
+        return draft.phone.trim()
+      case 'address':
+        return draft.location ? locationText(draft.location, t.locale).replace(/\n+/g, ', ') : (draft.address?.trim().replace(/\n+/g, ', ') ?? '')
+      case 'birthday':
+        return draft.birthdate ? formatBirthday(draft.birthdate) : ''
+      case 'tags':
+      case 'lists': {
+        const lists = listIdsOf(tags)
+        return tags
+          .filter((x) => draft.tagIds.includes(x.id) && (k === 'lists') === lists.has(x.id))
+          .map((x) => x.name)
+          .join(', ')
+      }
     }
   }
 
@@ -472,7 +502,10 @@ export function ContactForm({ id }: { id: string }) {
                     aria-controls={`${foldId}-${k}`}
                     className="flex min-h-[44px] w-full items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-slate-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
                   >
-                    <span className="text-sm font-medium text-slate-300">{k === 'lists' ? t('form.add_to_list') : fieldLabel(k)}</span>
+                    <span className="flex min-w-0 items-baseline gap-2">
+                      <span className="shrink-0 text-sm font-medium text-slate-300">{k === 'lists' ? t('form.add_to_list') : fieldLabel(k)}</span>
+                      {!open && summary(k) && <span className="min-w-0 truncate text-sm text-slate-500">{summary(k)}</span>}
+                    </span>
                     <svg
                       viewBox="0 0 16 16"
                       className={`h-3.5 w-3.5 shrink-0 text-slate-500 transition-transform ${open ? 'rotate-180' : ''}`}
