@@ -21,6 +21,7 @@ import { usePanelStore, type Panel } from '../stores/panelStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useThemeStore } from '../stores/themeStore'
 import { AccountGroup } from './Account'
+import { OpenSourceNote } from '../components/OpenSourceNote'
 import { Credit } from './Credit'
 import { useT, type Key } from '../i18n'
 import { IconChevron } from './icons'
@@ -72,6 +73,8 @@ export function TuneContent() {
         <LinkRow label={t('kb_title')} onClick={() => nav.setKb(true)} />
         <LinkRow label={t('about_title')} onClick={() => nav.setAbout(true)} />
       </Group>
+
+      <OpenSourceNote />
 
       <div className="mt-6 flex justify-center">
         <button

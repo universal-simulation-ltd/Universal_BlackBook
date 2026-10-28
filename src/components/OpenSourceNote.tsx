@@ -4,10 +4,12 @@ import { useT } from '../i18n'
 export const REPO_URL = 'https://github.com/universal-simulation-ltd/Universal_BlackBook'
 
 /**
- * At the foot of Fine-tune (James, 2026-10-27: "You can customise this app.
+ * At the foot of Tune this app (James, 2026-10-27: "You can customise this app.
  * Access the open source code, change it and deploy it" — "concise but clear
  * and motivate a casual user to look and understand how code works"). Quiet,
- * below everything the page is for: an invitation, not a banner.
+ * below everything the page is for: an invitation, not a banner. It first sat
+ * under each contact, note and to-do's own form; James, 2026-10-28: "This
+ * should be in the app tuning not a note or contact etc finetuning".
  */
 export function OpenSourceNote() {
   const t = useT()

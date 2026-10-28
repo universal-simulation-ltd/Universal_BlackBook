@@ -10,6 +10,7 @@ import { EmailListsPreference } from './components/EmailListsPreference'
 import { FormFieldsPreference } from './components/FormFieldsPreference'
 import { TemplatesPreference } from './components/TemplateManager'
 import { TabOrderPreference } from './components/TabOrderPreference'
+import { OpenSourceNote } from './components/OpenSourceNote'
 import { phoneScreens } from './native/shell'
 import { contactsAvailability, ContactsPermissionError, pickOneContact } from './lib/deviceContacts'
 import { useBookStore } from './stores/bookStore'
@@ -43,6 +44,8 @@ export const PREFERENCE_ROWS = (
     <FormFieldsPreference />
     {/* The phone has its own row in Tune ▸ Your book. */}
     {!phoneScreens() && <TemplatesPreference />}
+    {/* Last, under everything Tune is for. The phone puts it under Help (TuneScreen). */}
+    {!phoneScreens() && <OpenSourceNote />}
   </>
 )
 

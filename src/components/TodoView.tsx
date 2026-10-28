@@ -1,4 +1,3 @@
-import { OpenSourceNote } from './OpenSourceNote'
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type FormEvent, type ReactNode, type TouchEvent as ReactTouchEvent } from 'react'
 import { SwipeRow } from './SwipeRow'
 import { useMove } from './MoveTo'
@@ -692,7 +691,6 @@ function TodoForm({ id }: { id: string }) {
           </div>
         </div>
       </form>
-      {existing && <OpenSourceNote />}
     </Modal>
   )
 }

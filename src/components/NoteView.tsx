@@ -23,7 +23,6 @@ import { actionSwipe, pinSwipe, removeSwipe, SelectBar, SwipeGroup, SwipeItem, U
 import type { Contact } from '../lib/types'
 import { ReminderEditor, ReminderList } from './Reminders'
 import { QuickActions, type QuickButton } from './QuickActions'
-import { OpenSourceNote } from './OpenSourceNote'
 import { NOTE_ACTIONS, type QuickAction } from '../lib/quickActions'
 import { shareText } from '../lib/share'
 import { useSettingsStore } from '../stores/settingsStore'
@@ -758,7 +757,6 @@ function NoteForm({ id }: { id: string }) {
           </button>
         </div>
       </div>
-      {existing && <OpenSourceNote />}
       {confirming && existing && (
         <Modal phone="sheet" title={t('notes.delete_title')} onClose={() => setConfirming(false)}>
           <p className="text-sm text-slate-300">
