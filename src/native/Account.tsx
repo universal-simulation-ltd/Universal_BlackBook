@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components -- useBookTitle lives beside the Account group that sets the name it reads */
 // The account, on the phone (James, 2026-10-26): "If signed in it should be
 // clear from the personalisation — 'Bradley's Book' — as opposed to the
 // traditional profile button. On the tuning page there should be an account
@@ -6,10 +5,12 @@
 //
 // So there is no avatar anywhere: the top bar's name IS the signed-in state
 // (`useBookTitle`), and everything about the account — the name it shows,
-// the online copy, signing out, deleting it — is Tune ▸ Account.
+// the online copy, signing out, deleting it — is Tune ▸ Account. The title
+// and its choice are shared with the website (../components/bookTitle.ts).
 
 import { useEffect, useRef, useState } from 'react'
-import { DeleteAccountDialog, signOut, useProfile, useUniversal, useUser } from '@unisim/sdk'
+import { DeleteAccountDialog, signOut, useAppTitleChoice, useProfile, useUniversal, useUser, type AppTitleChoice } from '@unisim/sdk'
+import { personalBookTitle, useBookTitle, useNamedTitle } from '../components/bookTitle'
 import { usePanelStore } from '../stores/panelStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useSyncStore } from '../stores/syncStore'
@@ -24,53 +25,37 @@ function firstName(displayName: string | null | undefined): string | null {
   return first ? first : null
 }
 
-/** "Bradley's Book", or "My Book" for an account with no name yet. */
-function useNamedTitle(): string {
-  const t = useT()
-  const { profile } = useProfile()
-  const name = firstName(profile?.display_name)
-  return name ? t('book_of', { name }) : t('book_mine')
-}
-
-/**
- * The top bar's name: "BlackBook" signed out, "Bradley's Book" signed in —
- * "My Book" for an account with no name yet (Tune ▸ Account sets one) — or
- * "Your Book" when that was chosen (`BookNameSheet`).
- */
-export function useBookTitle(): string {
-  const t = useT()
-  const { user } = useUser()
-  const named = useNamedTitle()
-  const yours = useSettingsStore((s) => s.bookYours)
-  if (!user) return 'BlackBook'
-  return yours ? t('book_yours') : named
-}
-
 /**
  * The choice of name at the top (James, 2026-10-27: "if tap and hold on the
  * [Name]'s book then show a choice to change to 'Your Book'"). Opened by a
  * hold on the name, and by Tune ▸ Account ▸ Book's name.
  */
-export function BookNameSheet({ onClose }: { onClose: () => void }) {
+// ⚠️ `choice` comes from the opener, which stays mounted. The SDK saves a
+// choice inside a state updater (useUserPrefs), and the sheet unmounts in the
+// same tap that picks — so with its own useAppTitleChoice the pick was lost.
+export function BookNameSheet({ choice, onClose }: { choice: AppTitleChoice; onClose: () => void }) {
   const t = useT()
   const kit = usePhoneKit()
   const named = useNamedTitle()
-  const yours = useSettingsStore((s) => s.bookYours)
-  const set = useSettingsStore((s) => s.set)
+  const yours = t('book_yours')
+  const { mode, custom, setMode, setCustom } = choice
   if (!kit) return null
+  // "Your Book" is App name's typed name, in the words of the language it was
+  // picked in, so the website (which offers typing one) shows the same.
+  const picked = mode === 'custom' && custom.trim() ? custom.trim() : null
   const row = 'flex min-h-[52px] w-full items-center gap-3 rounded-xl px-3 text-left text-[16px] text-slate-100 active:bg-slate-800'
-  const option = (label: string, value: boolean) => (
+  const option = (label: string, on: boolean, choose: () => void) => (
     <button
       type="button"
       className={row}
-      aria-pressed={yours === value}
+      aria-pressed={on}
       onClick={() => {
-        set({ bookYours: value })
+        choose()
         onClose()
       }}
     >
       <span className="min-w-0 flex-1 truncate">{label}</span>
-      {yours === value && (
+      {on && (
         <span className="font-semibold text-orange-400" aria-hidden>
           ✓
         </span>
@@ -79,8 +64,14 @@ export function BookNameSheet({ onClose }: { onClose: () => void }) {
   )
   return (
     <kit.Sheet title={t('book_name_label')} onClose={onClose}>
-      {option(named, false)}
-      {option(t('book_yours'), true)}
+      {option(named, mode === 'personal' || (mode === 'custom' && !picked), () => setMode('personal'))}
+      {option(yours, picked === yours, () => {
+        setCustom(yours)
+        setMode('custom')
+      })}
+      {/* A name typed on the website, kept as one of the choices. */}
+      {picked && picked !== yours && option(picked, true, () => setMode('custom'))}
+      {option('BlackBook', mode === 'product', () => setMode('product'))}
     </kit.Sheet>
   )
 }
@@ -93,6 +84,8 @@ export function BookTitle() {
   const { user } = useUser()
   const title = useBookTitle()
   const [naming, setNaming] = useState(false)
+  const choice = useAppTitleChoice()
+  useCarryYourBook(choice)
   const hold = useRef<{ x: number; y: number; timer: ReturnType<typeof setTimeout> } | null>(null)
   const cancel = () => {
     if (hold.current) clearTimeout(hold.current.timer)
@@ -140,9 +133,29 @@ export function BookTitle() {
       >
         {title}
       </span>
-      {naming && <BookNameSheet onClose={() => setNaming(false)} />}
+      {naming && <BookNameSheet choice={choice} onClose={() => setNaming(false)} />}
     </>
   )
+}
+
+/**
+ * "Your Book" was a setting on this phone alone until the website got the
+ * title too (2026-10-30). Once signed in, an old pick moves to App name — the
+ * choice that follows the account — unless one was made there already.
+ */
+function useCarryYourBook({ mode, setMode, setCustom }: AppTitleChoice) {
+  const t = useT()
+  const { user } = useUser()
+  const old = useSettingsStore((s) => s.bookYours)
+  const set = useSettingsStore((s) => s.set)
+  useEffect(() => {
+    if (!user || !old) return
+    if (mode === 'personal') {
+      setCustom(t('book_yours'))
+      setMode('custom')
+    }
+    set({ bookYours: false })
+  }, [user, old, mode, set, setCustom, setMode, t])
 }
 
 const BACKUP: Record<string, Key> = {
@@ -160,6 +173,7 @@ export function AccountGroup() {
   const syncState = useSyncStore((s) => s.state)
   const [signingIn, setSigningIn] = useState(false)
   const [naming, setNaming] = useState(false)
+  const choice = useAppTitleChoice()
   const bookTitle = useBookTitle()
 
   if (!user) {
@@ -175,7 +189,7 @@ export function AccountGroup() {
     <Group title={t('tune_account')}>
       <NameRow />
       <LinkRow label={t('book_name_label')} value={bookTitle} onClick={() => setNaming(true)} />
-      {naming && <BookNameSheet onClose={() => setNaming(false)} />}
+      {naming && <BookNameSheet choice={choice} onClose={() => setNaming(false)} />}
       <div className="bb-row">
         <span className="min-w-0 flex-1">{t('tune_email')}</span>
         <span className="value truncate">{user.email}</span>
@@ -217,7 +231,7 @@ function NameRow() {
         }}
       />
       <span className="mt-1.5 block text-[13px] text-slate-500">
-        {t('tune_name_note', { book: firstName(name) ? t('book_of', { name: firstName(name)! }) : t('book_mine') })}
+        {t('tune_name_note', { book: personalBookTitle(t, firstName(name) ?? undefined) })}
       </span>
     </label>
   )

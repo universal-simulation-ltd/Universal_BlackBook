@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import {
   PreferencesDialog,
   requestSearch,
+  SignInDialog,
   UniversalAppsNavBar,
   UpdateNotice,
   useDefaultView,
@@ -45,6 +46,7 @@ import { useSearchReset } from './stores/searchStore'
 import { usePanelStore } from './stores/panelStore'
 import { AddMenu, APP_ABOUT, availableTabs, LockLink, PREFERENCE_ROWS, REPO_URL, SyncStatus, tabName, TABS, useContactPicker, type Tab } from './appParts'
 import { currentT, useT } from './i18n'
+import { personalBookTitle, useNamedTitle } from './components/bookTitle'
 import { useEffectiveTheme, useThemeStore } from './stores/themeStore'
 import { phoneScreens } from './native/shell'
 import { followThemeWithStatusBar } from './native/systemBars'
@@ -217,6 +219,12 @@ export default function App() {
         // kept in IndexedDB) are left alone.
         onResetDefaults={resetSettings}
         suiteSwitcherIconSrc={`${import.meta.env.BASE_URL}unisim-icon.png`}
+        // Signed in, the bar says "Bradley's Book" where the product's name
+        // was, and there is no profile button: the account is Tune this app ▸
+        // Your Universal ID, with the App name choice the phone shares
+        // (components/bookTitle.ts; James, 2026-10-30: "Website too").
+        accountInTune
+        personalTitle={(name) => personalBookTitle(tr, name)}
       />
       {/* The footer's job, on a phone (owner's call, 2026-08-30): below 40rem
           the footer is gone entirely and its two links become one small line
@@ -737,7 +745,13 @@ function TuneThisApp() {
   const resetSettings = useSettingsStore((s) => s.reset)
   const { splitPreferences } = useUniversal()
   const theme = useEffectiveTheme()
+  // The account area the navbar's copy has (`accountInTune`, `personalTitle`).
+  const { user } = useUser()
+  const named = useNamedTitle()
+  const [signingIn, setSigningIn] = useState(false)
   return (
+    <>
+    <SignInDialog open={signingIn} onClose={() => setSigningIn(false)} />
     <PreferencesDialog
       kind="app"
       open={open}
@@ -750,9 +764,13 @@ function TuneThisApp() {
       combined={!splitPreferences}
       about={APP_ABOUT}
       onResetDefaults={resetSettings}
+      showAccount
+      personalTitle={user ? named : undefined}
+      onSignIn={() => setSigningIn(true)}
     >
       {PREFERENCE_ROWS}
     </PreferencesDialog>
+    </>
   )
 }
 
