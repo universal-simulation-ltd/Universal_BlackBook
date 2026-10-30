@@ -47,6 +47,7 @@ import { usePanelStore } from './stores/panelStore'
 import { AddMenu, APP_ABOUT, availableTabs, LockLink, PREFERENCE_ROWS, REPO_URL, SyncStatus, tabName, TABS, useContactPicker, type Tab } from './appParts'
 import { currentT, useT } from './i18n'
 import { personalBookTitle, useNamedTitle } from './components/bookTitle'
+import { useTuneLook } from './components/tuneLook'
 import { useEffectiveTheme, useThemeStore } from './stores/themeStore'
 import { phoneScreens } from './native/shell'
 import { followThemeWithStatusBar } from './native/systemBars'
@@ -86,6 +87,8 @@ export default function App() {
   // First, so everything rendered below — and the lib/ helpers it calls —
   // answers in the language on screen (see i18n/index.ts).
   const tr = useT()
+  // Tune this app's look follows the account like the rest of Tune.
+  useTuneLook()
   const init = useBookStore((s) => s.init)
   const loaded = useBookStore((s) => s.loaded)
   const editing = useBookStore((s) => s.editing)
@@ -615,8 +618,8 @@ function useCloudSync(openPanel: () => void) {
   const todos = useTodoStore((s) => s.todos)
   const pages = useNoteStore((s) => s.notes)
   const templates = useNoteStore((s) => s.templates)
-  // The tabs' layout goes up with the book (2026-10-30, lib/tabs.ts TabLayout).
-  const tabsAt = useSettingsStore((s) => s.tabsAt)
+  // Tune this app goes up with the book (2026-10-30, lib/tuning.ts).
+  const tunedAt = useSettingsStore((s) => s.tunedAt)
   const loaded = useBookStore((s) => s.loaded)
   const hydrate = useSyncStore((s) => s.hydrate)
   const push = useSyncStore((s) => s.push)
@@ -676,7 +679,7 @@ function useCloudSync(openPanel: () => void) {
   // Only a CHANGE of book marks it unsynced — not this effect re-running
   // because sync turned on or the page loaded, which would show "Syncing…"
   // over a book that is already up there.
-  const lastBook = useRef<{ contacts: unknown; tags: unknown; todos: unknown; pages: unknown; templates: unknown; tabsAt: number } | null>(null)
+  const lastBook = useRef<{ contacts: unknown; tags: unknown; todos: unknown; pages: unknown; templates: unknown; tunedAt: number } | null>(null)
   useEffect(() => {
     if (!loaded || state !== 'on') {
       lastBook.current = null
@@ -689,12 +692,12 @@ function useCloudSync(openPanel: () => void) {
         lastBook.current.todos !== todos ||
         lastBook.current.pages !== pages ||
         lastBook.current.templates !== templates ||
-        lastBook.current.tabsAt !== tabsAt)
-    lastBook.current = { contacts, tags, todos, pages, templates, tabsAt }
+        lastBook.current.tunedAt !== tunedAt)
+    lastBook.current = { contacts, tags, todos, pages, templates, tunedAt }
     if (changed) useSyncStore.getState().markDirty()
     const t = setTimeout(() => void push(supabase), AUTOSAVE_DELAY)
     return () => clearTimeout(t)
-  }, [contacts, tags, todos, pages, templates, tabsAt, loaded, state, push, supabase])
+  }, [contacts, tags, todos, pages, templates, tunedAt, loaded, state, push, supabase])
 
   // A save that failed for want of a network is tried again, rather than
   // sitting there until somebody opens the panel and taps Save now (owner's

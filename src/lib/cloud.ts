@@ -13,6 +13,7 @@ import type { Contact, Tag } from './types'
 import type { Todo } from './todos'
 import type { Note } from './notes'
 import type { TabLayout } from './tabs'
+import type { Tuning } from './tuning'
 
 export const TABLE = 'blackbook_vaults'
 
@@ -62,6 +63,11 @@ export interface VaultPayload {
    * `parseTabLayout`, never trusted as it stands.
    */
   tabs?: TabLayout
+  /**
+   * The rest of Tune this app (2026-10-30), stamped like `tabs` and written
+   * with it. Read through `parseTuning`. Absent: says nothing.
+   */
+  tune?: Tuning
   /**
    * The book's shape, as the backup file's schema (lib/backup.ts): 3 since
    * 2026-10-25 (reminders, links, templates, to-do order, tag patterns, all

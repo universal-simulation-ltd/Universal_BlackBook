@@ -1,18 +1,18 @@
 import { create } from 'zustand'
-import { FORM_FIELDS, isFormField, type FormField } from '../lib/formFields'
+import { FORM_FIELDS, type FormField } from '../lib/formFields'
 import { normaliseOrder, TABS, type Tab } from '../lib/tabs'
 import { normaliseContactActions, normaliseQuickActions, type ContactAction, type QuickAction, type Slots } from '../lib/quickActions'
+import { normaliseShownFields, parseLook, type Look } from '../lib/tuning'
 
 /**
  * The app's own switches, shown in the SDK's ⚙ menu ▸ App preferences
  * (owner's request, 2026-09-17).
  *
- * Device-local, in localStorage: a preference about how THIS device shows the
- * app, not a fact about the address book, so it stays out of the vault (a backup
- * file carries it, but only "Replace everything" restores it) — the
- * same call as the saved "Opens on" view. ⚠️ Except the tabs: which are shown
- * and their order go up with the online copy (`tabsAt`, 2026-10-30). Unreadable storage (private window,
- * blocked site data) just means the defaults.
+ * Kept in localStorage, and — signed in with the online copy on — carried to
+ * the account's other devices with it (James, 2026-10-30: "My settings should
+ * be synced from mobile to web, everything on tune this app"): the newest
+ * change wins, by `tunedAt` (lib/tuning.ts, lib/tabs.ts). Unreadable storage
+ * (private window, blocked site data) just means the defaults.
  *
  * ⚠️ Every TICK BOX starts unticked: Email lists is off by default; To-do and
  * Notes are on, and their boxes say "Hide …", bound inverted (2026-10-23).
@@ -70,28 +70,38 @@ export interface Settings {
    */
   bookYours: boolean
   /**
-   * When the tabs last changed here — their order, or Lists / To-do / Notes /
-   * Contacts turned on or off (James, 2026-10-30). The online copy carries the
-   * layout with this stamp and the newer one wins (lib/tabs.ts `TabLayout`).
-   * 0: never changed on this device, so any synced layout beats the defaults.
+   * This app's colour scheme and language (its own, over the suite's) and the
+   * tab it opens on, as last seen here — the SDK keeps the live values
+   * (useTuneLook in App.tsx copies them in and out). Null until first seen.
    */
-  tabsAt: number
+  look: Look | null
+  /**
+   * When anything in Tune this app last changed here (James, 2026-10-30; the
+   * tabs alone, as `tabsAt`, until the rest joined them the same day). The
+   * online copy carries the settings with this stamp and the newer side wins.
+   * 0: never changed on this device, so any synced settings beat the defaults.
+   */
+  tunedAt: number
 }
 
-/** The switches that make up the synced tab layout. */
-const TAB_KEYS = ['tabOrder', 'emailLists', 'todos', 'notes', 'contacts'] as const
+/** The switches that go to the account's other devices; a change to one is stamped. */
+const SYNCED_KEYS = ['tabOrder', 'emailLists', 'todos', 'notes', 'contacts', 'shownFields', 'notifyDetails', 'fillLocation', 'noteActions', 'contactActions', 'look'] as const
 
 const KEY = 'blackbook.settings'
 // To-do and Notes are ON by default, Email lists off (James, 2026-10-23: "have
 // all active as default except email lists"). Their tick boxes are worded as
 // opt-outs ("Hide the To-do tab"), so every box still starts unticked.
-const DEFAULTS: Settings = { emailLists: false, todos: true, notes: true, contacts: true, shownFields: [], notifyDetails: false, tabOrder: [...TABS], fillLocation: false, noteActions: normaliseQuickActions(undefined), contactActions: normaliseContactActions(undefined), bookYours: false, tabsAt: 0 }
+const DEFAULTS: Settings = { emailLists: false, todos: true, notes: true, contacts: true, shownFields: [], notifyDetails: false, tabOrder: [...TABS], fillLocation: false, noteActions: normaliseQuickActions(undefined), contactActions: normaliseContactActions(undefined), bookYours: false, look: null, tunedAt: 0 }
 /**
  * The stored shape's version. 1 (no `v`) wrote every switch whenever any one
  * changed, so a stored `false` for To-do or Notes cannot be told from "never
  * touched": both read as unset now, i.e. on. A stored `true` stays on.
  */
 const VERSION = 2
+
+function stamp(v: unknown): number | undefined {
+  return typeof v === 'number' && Number.isFinite(v) ? v : undefined
+}
 
 function load(): Settings {
   try {
@@ -104,16 +114,15 @@ function load(): Settings {
       contacts: raw.contacts !== false,
       // Kept in FORM_FIELDS order whatever order they were ticked in, and
       // anything unknown (a field since removed) dropped.
-      shownFields: Array.isArray(raw.shownFields)
-        ? FORM_FIELDS.filter((f) => raw.shownFields!.filter(isFormField).includes(f))
-        : [],
+      shownFields: normaliseShownFields(raw.shownFields),
       notifyDetails: raw.notifyDetails === true,
       tabOrder: normaliseOrder(raw.tabOrder),
       fillLocation: raw.fillLocation === true,
       noteActions: normaliseQuickActions(raw.noteActions),
       contactActions: normaliseContactActions(raw.contactActions),
       bookYours: raw.bookYours === true,
-      tabsAt: typeof raw.tabsAt === 'number' && Number.isFinite(raw.tabsAt) ? raw.tabsAt : 0,
+      look: parseLook(raw.look) ?? null,
+      tunedAt: stamp(raw.tunedAt) ?? stamp((raw as { tabsAt?: unknown }).tabsAt) ?? 0,
     }
   } catch {
     return DEFAULTS
@@ -143,15 +152,15 @@ interface SettingsState extends Settings {
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   ...load(),
   set: (patch) => {
-    // A tab change made here is stamped so it wins over an older layout from
-    // another device; one arriving FROM another device brings its own stamp.
-    const tabs = patch.tabsAt === undefined && TAB_KEYS.some((k) => k in patch)
-    set(tabs ? { ...patch, tabsAt: Date.now() } : patch)
+    // A change made here is stamped so it wins over older settings from
+    // another device; settings arriving FROM another device bring their own.
+    const tuned = patch.tunedAt === undefined && SYNCED_KEYS.some((k) => k in patch)
+    set(tuned ? { ...patch, tunedAt: Date.now() } : patch)
     try {
-      const { emailLists, todos, notes, contacts, shownFields, notifyDetails, tabOrder, fillLocation, noteActions, contactActions, bookYours, tabsAt } = get()
+      const { emailLists, todos, notes, contacts, shownFields, notifyDetails, tabOrder, fillLocation, noteActions, contactActions, bookYours, look, tunedAt } = get()
       localStorage.setItem(
         KEY,
-        JSON.stringify({ v: VERSION, emailLists, todos, notes, contacts, shownFields, notifyDetails, tabOrder, fillLocation, noteActions, contactActions, bookYours, tabsAt }),
+        JSON.stringify({ v: VERSION, emailLists, todos, notes, contacts, shownFields, notifyDetails, tabOrder, fillLocation, noteActions, contactActions, bookYours, look, tunedAt }),
       )
     } catch {
       // See the note above: the switch still works until the app is closed.
@@ -173,8 +182,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     } catch {
       // Unreadable storage already means the defaults.
     }
-    // The default tabs are a layout like any other: stamped, so they go to
-    // the other devices rather than being overwritten by an older one.
-    get().set({ tabsAt: Date.now() })
+    // The defaults are settings like any other: stamped, so they go to the
+    // other devices rather than being overwritten by older ones.
+    get().set({ tunedAt: Date.now() })
   },
 }))

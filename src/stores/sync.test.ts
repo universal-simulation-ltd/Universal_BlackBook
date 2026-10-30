@@ -62,6 +62,8 @@ interface Device {
   disk: IDBFactory
   sync: typeof import('./syncStore').useSyncStore
   book: typeof import('./bookStore').useBookStore
+  /** Its own Tune this app. Taken at boot: an import later gets the LAST device's. */
+  settings: typeof import('./settingsStore').useSettingsStore
   client: SupabaseClient
 }
 
@@ -89,7 +91,8 @@ async function boot(server: FakeServer, disk = new IDBFactory()): Promise<Device
   vi.resetModules()
   const { useSyncStore } = await import('./syncStore')
   const { useBookStore } = await import('./bookStore')
-  return { disk, sync: useSyncStore, book: useBookStore, client: fakeClient(server, USER) }
+  const { useSettingsStore } = await import('./settingsStore')
+  return { disk, sync: useSyncStore, book: useBookStore, settings: useSettingsStore, client: fakeClient(server, USER) }
 }
 
 /** Reload a device: its disk survives, everything in memory does not. */
@@ -780,35 +783,34 @@ describe('the tabs travel with the book (2026-10-30)', () => {
     server = newServer()
   })
 
-  const settings = async () => (await import('./settingsStore')).useSettingsStore
 
   it('tabs hidden and moved on the phone show the same on the website', async () => {
     const { a, b } = await twoUnlockedDevices(server)
     use(a)
     // The phone: Lists on, Notes hidden, Notes' slot moved to the front.
-    const phone = await settings()
+    const phone = a.settings
     phone.getState().set({ emailLists: true, notes: false, tabOrder: ['todos', 'lists', 'contacts', 'notes'] })
     await use(a).sync.getState().push(a.client)
 
     use(b)
-    const web = await settings()
+    const web = b.settings
     await use(b).sync.getState().pull(b.client)
     expect(web.getState().tabOrder).toEqual(['todos', 'lists', 'contacts', 'notes'])
     expect(web.getState().emailLists).toBe(true)
     expect(web.getState().notes).toBe(false)
-    expect(web.getState().tabsAt).toBe(phone.getState().tabsAt)
+    expect(web.getState().tunedAt).toBe(phone.getState().tunedAt)
   })
 
   it('an older layout online does not undo a newer one here', async () => {
     const { a, b } = await twoUnlockedDevices(server)
     use(a)
-    const phone = await settings()
-    phone.getState().set({ todos: false, tabsAt: 1_000 })
+    const phone = a.settings
+    phone.getState().set({ todos: false, tunedAt: 1_000 })
     await use(a).sync.getState().push(a.client)
 
     use(b)
-    const web = await settings()
-    web.getState().set({ todos: true, tabOrder: ['notes', 'contacts', 'lists', 'todos'], tabsAt: 2_000 })
+    const web = b.settings
+    web.getState().set({ todos: true, tabOrder: ['notes', 'contacts', 'lists', 'todos'], tunedAt: 2_000 })
     await use(b).sync.getState().pull(b.client)
     expect(web.getState().todos).toBe(true)
     expect(web.getState().tabOrder[0]).toBe('notes')
@@ -817,6 +819,56 @@ describe('the tabs travel with the book (2026-10-30)', () => {
   it('a device that never touched its tabs says nothing about them', async () => {
     const { a } = await twoUnlockedDevices(server)
     use(a)
-    expect((await settings()).getState().tabsAt).toBe(0)
+    expect(a.settings.getState().tunedAt).toBe(0)
+  })
+})
+
+describe('everything in Tune this app travels with the book (2026-10-30)', () => {
+  let server: FakeServer
+
+  beforeEach(() => {
+    server = newServer()
+  })
+
+
+  it('the phone\'s settings show the same on the website', async () => {
+    const { a, b } = await twoUnlockedDevices(server)
+    use(a)
+    const phone = a.settings
+    phone.getState().set({
+      shownFields: ['phone', 'email'],
+      notifyDetails: true,
+      fillLocation: true,
+      noteActions: ['share', null, 'copy', null],
+      contactActions: ['email', 'call', null, null],
+      look: { scheme: 'dark', language: 'fr', opensOn: 'notes' },
+    })
+    await use(a).sync.getState().push(a.client)
+
+    use(b)
+    const web = b.settings
+    await use(b).sync.getState().pull(b.client)
+    const got = web.getState()
+    expect(got.shownFields).toEqual(['email', 'phone'])
+    expect(got.notifyDetails).toBe(true)
+    expect(got.fillLocation).toBe(true)
+    expect(got.noteActions).toEqual(phone.getState().noteActions)
+    expect(got.contactActions).toEqual(phone.getState().contactActions)
+    expect(got.look).toEqual({ scheme: 'dark', language: 'fr', opensOn: 'notes' })
+    expect(got.tunedAt).toBe(phone.getState().tunedAt)
+  })
+
+  it('older settings online do not undo newer ones here', async () => {
+    const { a, b } = await twoUnlockedDevices(server)
+    use(a)
+    ;a.settings.getState().set({ fillLocation: true, tunedAt: 1_000 })
+    await use(a).sync.getState().push(a.client)
+
+    use(b)
+    const web = b.settings
+    web.getState().set({ fillLocation: false, shownFields: ['birthday'], tunedAt: 2_000 })
+    await use(b).sync.getState().pull(b.client)
+    expect(web.getState().fillLocation).toBe(false)
+    expect(web.getState().shownFields).toEqual(['birthday'])
   })
 })

@@ -44,6 +44,7 @@ import { BACKUP_SCHEMA } from '../lib/backup'
 import { mergeTemplates, toTemplates } from '../lib/templates'
 import { mergeTodos, toTodos } from '../lib/todos'
 import { parseTabLayout } from '../lib/tabs'
+import { parseTuning } from '../lib/tuning'
 import { useSettingsStore } from './settingsStore'
 
 /**
@@ -144,37 +145,56 @@ function bookPayload(): VaultPayload {
     categories: tags,
     ...(todo.loaded && { todos: todo.todos }),
     ...(note.loaded && { pages: note.notes, templates: note.templates }),
-    ...tabLayout(),
+    ...tuning(),
     savedAt: Date.now(),
   }
 }
 
 /**
- * This device's tabs for the online copy — only once they have been changed
- * here. A device still on the defaults says nothing, so it cannot undo a
- * layout chosen on the phone just by being opened.
+ * This device's Tune this app for the online copy — only once something has
+ * been changed here. A device still on the defaults says nothing, so it
+ * cannot undo settings chosen on the phone just by being opened. The tabs
+ * stay a block of their own, which phones on older builds read.
  */
-function tabLayout(): Pick<VaultPayload, 'tabs'> {
+function tuning(): Pick<VaultPayload, 'tabs' | 'tune'> {
   const s = useSettingsStore.getState()
-  if (!s.tabsAt) return {}
-  return { tabs: { order: s.tabOrder, lists: s.emailLists, todos: s.todos, notes: s.notes, contacts: s.contacts, at: s.tabsAt } }
+  if (!s.tunedAt) return {}
+  return {
+    tabs: { order: s.tabOrder, lists: s.emailLists, todos: s.todos, notes: s.notes, contacts: s.contacts, at: s.tunedAt },
+    tune: {
+      shownFields: s.shownFields,
+      notifyDetails: s.notifyDetails,
+      fillLocation: s.fillLocation,
+      noteActions: s.noteActions,
+      contactActions: s.contactActions,
+      ...(s.look && { look: s.look }),
+      at: s.tunedAt,
+    },
+  }
 }
 
 /**
- * Take the online copy's tabs when they were changed more recently than this
- * device's (2026-10-30). Older or absent: ours stand, and the next push carries
- * them up.
+ * Take the online copy's settings when they were changed more recently than
+ * this device's (2026-10-30). Older or absent: ours stand, and the next push
+ * carries them up. An older phone build sends the tabs alone; the rest of
+ * this device's settings are then left as they are.
  */
-function adoptTabs(payload: VaultPayload) {
+function adoptTuning(payload: VaultPayload) {
   const tabs = parseTabLayout(payload.tabs)
-  if (!tabs || tabs.at <= useSettingsStore.getState().tabsAt) return
+  const tune = parseTuning(payload.tune)
+  const at = Math.max(tabs?.at ?? 0, tune?.at ?? 0)
+  if (!at || at <= useSettingsStore.getState().tunedAt) return
   useSettingsStore.getState().set({
-    tabOrder: tabs.order,
-    emailLists: tabs.lists,
-    todos: tabs.todos,
-    notes: tabs.notes,
-    contacts: tabs.contacts,
-    tabsAt: tabs.at,
+    ...(tabs && { tabOrder: tabs.order, emailLists: tabs.lists, todos: tabs.todos, notes: tabs.notes, contacts: tabs.contacts }),
+    ...(tune && {
+      shownFields: tune.shownFields,
+      notifyDetails: tune.notifyDetails,
+      fillLocation: tune.fillLocation,
+      noteActions: tune.noteActions,
+      contactActions: tune.contactActions,
+      ...(tune.look && { look: tune.look }),
+    }),
+    tunedAt: at,
   })
 }
 
@@ -194,7 +214,7 @@ async function adopt(payload: VaultPayload) {
   if (Array.isArray(payload.todos)) await useTodoStore.getState().replace(toTodos(payload.todos))
   if (Array.isArray(payload.pages)) await useNoteStore.getState().replace(toNotes(payload.pages))
   if (Array.isArray(payload.templates)) await useNoteStore.getState().replaceTemplates(toTemplates(payload.templates))
-  adoptTabs(payload)
+  adoptTuning(payload)
 }
 
 /**
@@ -220,7 +240,7 @@ async function mergeIn(payload: VaultPayload) {
   await useNoteStore.getState().init()
   await useNoteStore.getState().replace(mergeNotes(toNotes(payload.pages), useNoteStore.getState().notes))
   await useNoteStore.getState().replaceTemplates(mergeTemplates(toTemplates(payload.templates), useNoteStore.getState().templates))
-  adoptTabs(payload)
+  adoptTuning(payload)
 }
 
 /**
