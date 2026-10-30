@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type FormEvent, type ReactNode, type TouchEvent as ReactTouchEvent } from 'react'
+import { GrowingTextarea } from './GrowingTextarea'
 import { SwipeRow } from './SwipeRow'
 import { useMove } from './MoveTo'
 import { actionSwipe, deleteSwipe, FocusActions, pinSwipe, SelectBar, SwipeGroup, SwipeItem, UndoBar, useHoldSelect, useUndo } from './SwipeActions'
@@ -6,7 +7,8 @@ import { usePhoneKit } from '../native/kit'
 import type { Side } from '../lib/swipe'
 import { todayParts } from '../lib/birthday'
 import { isList } from '../lib/lists'
-import { compareDone, compareOpen, daysUntil, dueLabel, matchesTodoTags, type Todo } from '../lib/todos'
+import { compareDone, compareOpen, daysUntil, dueLabel, groupProgress, matchesTodoTags, type Todo, type TodoItem } from '../lib/todos'
+import { newId } from '../lib/id'
 import type { Tag } from '../lib/types'
 import { useBookStore } from '../stores/bookStore'
 import { useTodoStore, type TodoDraft } from '../stores/todoStore'
@@ -97,14 +99,14 @@ export function TodoView() {
   const open = useMemo(
     () =>
       todos
-        .filter((t) => !t.doneAt && matchesTodoTags(t, activeFilter) && matchesNote(t, query))
+        .filter((t) => !t.doneAt && matchesTodoTags(t, activeFilter) && matchesTodo(t, query))
         .sort(compareOpen),
     [todos, activeFilter, query],
   )
   const done = useMemo(
     () =>
       todos
-        .filter((t) => t.doneAt && matchesTodoTags(t, activeFilter) && matchesNote(t, query))
+        .filter((t) => t.doneAt && matchesTodoTags(t, activeFilter) && matchesTodo(t, query))
         .sort(compareDone),
     [todos, activeFilter, query],
   )
@@ -493,11 +495,16 @@ function TodoRow({
   const done = todo.doneAt !== undefined
   const chips = todo.tagIds.map((id) => byId.get(id)).filter((t): t is Tag => Boolean(t) && !isList(t!))
   const days = todo.due ? daysUntil(todo.due, today) : null
+  const progress = groupProgress(todo)
+  // A group's items have tick boxes of their own, and a button cannot hold
+  // them: the card is drawn by the box around both, the items under the button.
+  const grouped = Boolean(todo.items?.length)
+  const edge = lifted ? 'border-orange-400 shadow-2xl' : 'border-slate-800'
 
   return (
     // The tick box is a SIBLING of the card button, never inside it — a button
     // in a button is invalid HTML (see ContactRow).
-    <div className="relative h-full" onTouchStart={onTouchStart}>
+    <div className={`relative h-full ${grouped ? `flex flex-col rounded-xl border bg-slate-900 ${edge}` : ''}`} onTouchStart={onTouchStart}>
       <button
         type="button"
         onClick={() => edit(todo.id)}
@@ -511,9 +518,9 @@ function TodoRow({
           void useTodoStore.getState().move(todo.id, sib.dataset.todo, e.key === 'ArrowDown')
           requestAnimationFrame(() => (document.querySelector(`li[data-todo="${todo.id}"] button`) as HTMLElement | null)?.focus())
         }}
-        className={`flex h-full w-full flex-col gap-1.5 rounded-xl border bg-slate-900 py-3 pl-12 ${onGripDown ? 'pr-9' : 'pr-3.5'} text-left transition-colors hover:border-slate-700 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+        className={`flex w-full flex-col gap-1.5 rounded-xl py-3 pl-12 ${onGripDown ? 'pr-9' : 'pr-3.5'} text-left transition-colors hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
           done ? 'opacity-60' : ''
-        } ${lifted ? 'border-orange-400 shadow-2xl' : 'border-slate-800'}`}
+        } ${grouped ? 'rounded-b-none' : `h-full border bg-slate-900 hover:border-slate-700 ${edge}`}`}
       >
         <p className={`flex items-start gap-1.5 font-semibold text-slate-100 ${done ? 'line-through decoration-slate-500' : ''}`}>
           {todo.pinnedAt && !done && (
@@ -527,6 +534,9 @@ function TodoRow({
           <span className="min-w-0 break-words">{todo.title || t('c.untitled')}</span>
         </p>
         {todo.details && <p className="line-clamp-2 whitespace-pre-wrap break-words text-sm text-slate-400">{todo.details}</p>}
+        {progress && progress.count > 0 && (
+          <p className="text-xs font-medium tabular-nums text-slate-500">{t('todo.group_count', { done: progress.done, count: progress.count })}</p>
+        )}
         {todo.due && !done && (
           <p
             className={`text-sm font-medium tabular-nums ${
@@ -552,19 +562,9 @@ function TodoRow({
         onClick={() => void setDone(todo.id, !done)}
         className="absolute left-1.5 top-1.5 flex h-10 w-10 items-center justify-center rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
       >
-        <span
-          aria-hidden
-          className={`flex h-5 w-5 items-center justify-center rounded-md border ${
-            done ? 'border-orange-500 bg-orange-500 text-slate-950' : 'border-slate-500 bg-slate-950 hover:border-orange-400'
-          }`}
-        >
-          {done && (
-            <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.25">
-              <path d="m3.5 8.5 3 3 6-7" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          )}
-        </span>
+        <Tick on={done} />
       </button>
+      {todo.items && todo.items.length > 0 && <GroupItems todo={todo} />}
       {/* The website's drag handle (mouse); a touch screen holds the row instead. */}
       {onGripDown && !done && (
         <span
@@ -584,9 +584,138 @@ function TodoRow({
   )
 }
 
+/** A to-do's search: its name, its text and, for a group, what is in it. */
+function matchesTodo(todo: Todo, query: string): boolean {
+  const items = todo.items?.map((i) => i.title).join('\n') ?? ''
+  return matchesNote({ ...todo, details: items ? `${todo.details}\n${items}` : todo.details } as Parameters<typeof matchesNote>[0], query)
+}
+
 /**
- * Add or edit one to-do: name, details, deadline, tags — the whole of it, on
- * purpose (owner's spec). Delete lives here for an existing one.
+ * A group's items, each with its own tick box, under the group's card
+ * (2026-10-30). Ticking the last one ticks the group off.
+ */
+function GroupItems({ todo }: { todo: Todo }) {
+  const t = useT()
+  const setItemDone = useTodoStore((s) => s.setItemDone)
+  return (
+    <ul className={`space-y-0.5 px-1.5 pb-2 ${todo.doneAt ? 'opacity-60' : ''}`}>
+      {todo.items!.map((item) => {
+        const on = item.doneAt !== undefined
+        return (
+          <li key={item.id}>
+            <button
+              type="button"
+              role="checkbox"
+              aria-checked={on}
+              aria-label={on ? t('todo.mark_undone', { title: item.title }) : t('todo.mark_done', { title: item.title })}
+              onClick={() => void setItemDone(todo.id, item.id, !on)}
+              className="flex min-h-[40px] w-full items-center gap-3 rounded-lg px-2 text-left text-sm transition-colors hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+            >
+              <Tick on={on} />
+              <span className={`min-w-0 break-words ${on ? 'text-slate-500 line-through decoration-slate-500' : 'text-slate-200'}`}>{item.title}</span>
+            </button>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
+/** The tick box's square, for a to-do and for an item of a group. */
+function Tick({ on }: { on: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
+        on ? 'border-orange-500 bg-orange-500 text-slate-950' : 'border-slate-500 bg-slate-950 hover:border-orange-400'
+      }`}
+    >
+      {on && (
+        <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.25">
+          <path d="m3.5 8.5 3 3 6-7" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )}
+    </span>
+  )
+}
+
+/**
+ * A group's items in the form (2026-10-30): each one's name to change or take
+ * out, and a box under them that adds one on Return and stays put for the
+ * next. "Not a group" only while nothing is in it, so a list is never lost to
+ * one tap.
+ */
+function GroupEditor({ items, onChange, onUngroup }: { items: TodoItem[]; onChange: (items: TodoItem[]) => void; onUngroup: () => void }) {
+  const t = useT()
+  const [next, setNext] = useState('')
+  const addId = useId()
+  const add = () => {
+    const title = next.trim().replace(/\s+/g, ' ')
+    if (!title) return
+    onChange([...items, { id: newId(), title }])
+    setNext('')
+  }
+  return (
+    <fieldset className="space-y-2 rounded-xl border border-slate-800 p-3">
+      <legend className="px-1 text-xs font-semibold text-slate-400">{t('todo.group_items')}</legend>
+      {items.length > 0 && (
+        <ul className="space-y-1.5">
+          {items.map((item) => (
+            <li key={item.id} className="flex items-center gap-2">
+              <input
+                className={inputCls}
+                value={item.title}
+                aria-label={t('todo.group_item_name')}
+                onChange={(e) => onChange(items.map((i) => (i.id === item.id ? { ...i, title: e.target.value } : i)))}
+              />
+              <button
+                type="button"
+                className="h-10 w-10 shrink-0 rounded-md text-slate-400 hover:bg-slate-800 hover:text-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+                aria-label={t('todo.group_remove', { title: item.title })}
+                onClick={() => onChange(items.filter((i) => i.id !== item.id))}
+              >
+                <svg viewBox="0 0 16 16" className="mx-auto h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
+                  <path d="m4 4 8 8M12 4l-8 8" strokeLinecap="round" />
+                </svg>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="flex items-center gap-2">
+        <input
+          id={addId}
+          className={inputCls}
+          value={next}
+          placeholder={t('todo.group_add')}
+          aria-label={t('todo.group_add')}
+          enterKeyHint="enter"
+          onChange={(e) => setNext(e.target.value)}
+          onKeyDown={(e) => {
+            // Return adds and stays in the box (not the form's Save).
+            if (e.key !== 'Enter' || e.nativeEvent.isComposing) return
+            e.preventDefault()
+            add()
+          }}
+          onBlur={add}
+        />
+        <button type="button" className={btnGhost} onClick={add} disabled={!next.trim()}>
+          {t('c.add')}
+        </button>
+      </div>
+      {items.length === 0 && (
+        <button type="button" className={btnSubtle} onClick={onUngroup}>
+          {t('todo.group_ungroup')}
+        </button>
+      )}
+    </fieldset>
+  )
+}
+
+/**
+ * Add or edit one to-do. A new one asks for its name, its text and whether it
+ * is a group; Fine-tune adds the deadline and the tags (James, 2026-10-30).
+ * Delete lives here for an existing one.
  */
 function TodoForm({ id }: { id: string }) {
   const t = useT()
@@ -600,6 +729,7 @@ function TodoForm({ id }: { id: string }) {
     details: existing?.details ?? '',
     due: existing?.due,
     tagIds: existing?.tagIds ?? [],
+    ...(existing?.items ? { items: existing.items } : {}),
   }))
   const [confirming, setConfirming] = useState(false)
   const titleId = useId()
@@ -634,7 +764,7 @@ function TodoForm({ id }: { id: string }) {
           <label htmlFor={detailsId} className={label}>
             {t('todo.details')}
           </label>
-          <textarea
+          <GrowingTextarea
             id={detailsId}
             className={textareaCls}
             rows={3}
@@ -642,6 +772,17 @@ function TodoForm({ id }: { id: string }) {
             onChange={(e) => patch({ details: e.target.value })}
           />
         </div>
+        {draft.items ? (
+          <GroupEditor items={draft.items} onChange={(items) => patch({ items })} onUngroup={() => patch({ items: undefined })} />
+        ) : (
+          <button type="button" className={btnGhost} onClick={() => patch({ items: [] })}>
+            {t('todo.group_make')}
+          </button>
+        )}
+        {/* A new one is its name, its text and maybe a group (James,
+            2026-10-30); the deadline and the tags are Fine-tune's. */}
+        {existing && (
+        <>
         <div>
           <label htmlFor={dueId} className={label}>
             {t('todo.deadline')}
@@ -666,6 +807,8 @@ function TodoForm({ id }: { id: string }) {
           <span className={label}>{t('field.tags')}</span>
           <TagPicker value={draft.tagIds} onChange={(tagIds) => patch({ tagIds })} />
         </div>
+        </>
+        )}
 
         <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
           {existing ? (

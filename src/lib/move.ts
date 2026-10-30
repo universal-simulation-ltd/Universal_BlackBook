@@ -65,7 +65,9 @@ export function fromNote(n: Note, template: NoteTemplate | undefined, w: MoveWor
 export function fromTodo(x: Todo, w: MoveWords): Moved {
   return {
     title: x.title.trim() || w.untitled,
-    details: x.details,
+    // A group's items go along as lines of its text: nothing else that it
+    // can be moved to holds a list of to-dos.
+    details: x.items?.length ? para(x.details, x.items.map((i) => `${i.doneAt ? '☑' : '☐'} ${i.title}`).join('\n')) : x.details,
     tagIds: x.tagIds,
     due: x.due,
     done: x.doneAt !== undefined,

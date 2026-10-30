@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { newId } from '../lib/id'
 import { loadTodos, saveTodos } from '../lib/store'
-import { moveTodo, type Todo } from '../lib/todos'
+import { moveTodo, withItemDone, type Todo, type TodoItem } from '../lib/todos'
 
 /** What the To-do form hands back. */
 export interface TodoDraft {
@@ -10,6 +10,8 @@ export interface TodoDraft {
   details: string
   due?: string
   tagIds: string[]
+  /** Present (even empty) makes it a group — see `Todo.items`. */
+  items?: TodoItem[]
 }
 
 /**
@@ -36,6 +38,8 @@ interface TodoState {
   edit: (id: string | null) => void
   save: (draft: TodoDraft) => Promise<void>
   setDone: (id: string, done: boolean) => Promise<void>
+  /** Tick one item of a group (lib/todos.ts ▸ withItemDone). */
+  setItemDone: (id: string, itemId: string, done: boolean) => Promise<void>
   remove: (id: string) => Promise<void>
   clearDone: () => Promise<void>
   /** Pin to the top, or unpin. */
@@ -90,6 +94,7 @@ export const useTodoStore = create<TodoState>((set, get) => {
         doneAt: existing?.doneAt,
         ...(existing?.pinnedAt ? { pinnedAt: existing.pinnedAt } : {}),
         ...(existing?.rank !== undefined ? { rank: existing.rank } : {}),
+        ...(draft.items ? { items: draft.items.map((i) => ({ ...i, title: i.title.trim() })).filter((i) => i.title) } : {}),
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,
       }
@@ -105,8 +110,17 @@ export const useTodoStore = create<TodoState>((set, get) => {
     setDone: async (id, done) => {
       const now = Date.now()
       await commit(
-        get().todos.map((t) => (t.id === id ? { ...t, doneAt: done ? now : undefined, updatedAt: now } : t)),
+        get().todos.map((t) => {
+          if (t.id !== id) return t
+          // A group ticked off whole ticks off what is in it, too.
+          const items = done && t.items ? t.items.map((i) => (i.doneAt ? i : { ...i, doneAt: now })) : t.items
+          return { ...t, ...(items ? { items } : {}), doneAt: done ? now : undefined, updatedAt: now }
+        }),
       )
+    },
+
+    setItemDone: async (id, itemId, done) => {
+      await commit(get().todos.map((t) => (t.id === id ? withItemDone(t, itemId, done) : t)))
     },
 
     remove: async (id) => {

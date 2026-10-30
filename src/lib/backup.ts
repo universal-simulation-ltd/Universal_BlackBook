@@ -98,6 +98,7 @@ export const LIMITS = {
   notes: 100_000,
   tagName: 100,
   todoTitle: 1_000,
+  todoItems: 1_000,
   todoDetails: 20_000,
   pageTitle: 1_000,
   pageDetails: 100_000,
@@ -288,8 +289,13 @@ function parseTodo(raw: unknown, known: Set<string>): Todo | null {
   const title = str(raw.title, LIMITS.todoTitle)
   if (!todoId || !title.trim()) return null
   // toTodo checks the deadline is a real calendar date; the rest is ours.
-  const base = toTodo({ id: todoId, title, due: raw.due })
+  const base = toTodo({ id: todoId, title, due: raw.due, items: raw.items })
   const createdAt = time(raw.createdAt, EARLIEST)
+  // A group's items (2026-10-30), held to the same lengths as a to-do's name.
+  const items = base?.items
+    ?.slice(0, LIMITS.todoItems)
+    .map((i) => ({ ...i, title: str(i.title, LIMITS.todoTitle) }))
+    .filter((i) => i.title.trim())
   return {
     id: todoId,
     title,
@@ -299,6 +305,7 @@ function parseTodo(raw: unknown, known: Set<string>): Todo | null {
     doneAt: optTime(raw.doneAt),
     ...(optTime(raw.pinnedAt) ? { pinnedAt: optTime(raw.pinnedAt) } : {}),
     ...(typeof raw.rank === 'number' && Number.isFinite(raw.rank) && Math.abs(raw.rank) <= 1e6 ? { rank: Math.round(raw.rank) } : {}),
+    ...(items ? { items } : {}),
     createdAt,
     updatedAt: time(raw.updatedAt, createdAt),
   }

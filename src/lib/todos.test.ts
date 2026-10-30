@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { compareOpen, daysUntil, dueLabel, mergeTodos, moveTodo, toTodo, toTodos, type Todo } from './todos'
+import { compareOpen, daysUntil, dueLabel, groupProgress, mergeTodos, moveTodo, toTodo, toTodos, withItemDone, type Todo } from './todos'
 import { parseBackup } from './backup'
 
 const today = { year: 2026, month: 9, day: 27 }
@@ -105,5 +105,32 @@ describe('to-do order and pins (2026-10-25)', () => {
     expect(toTodo({ id: 'x', title: 'X', pinnedAt: 'no', rank: NaN })).not.toHaveProperty('rank')
     const data = parseBackup({ contacts: [], todos: [{ id: 't1', title: 'T', pinnedAt: Date.UTC(2026, 0, 1), rank: 3 }] })!
     expect(data.todos[0]).toMatchObject({ pinnedAt: Date.UTC(2026, 0, 1), rank: 3 })
+  })
+})
+
+describe('groups (2026-10-30)', () => {
+  const group = todo({ items: [{ id: 'a', title: 'Bread' }, { id: 'b', title: 'Milk' }] })
+
+  it('reads its items, and an ordinary to-do stays one', () => {
+    const read = toTodo({ ...group, items: [...group.items!, { id: '', title: 'x' }, 'junk'] })!
+    expect(read.items).toEqual(group.items)
+    expect(toTodo(todo())).not.toHaveProperty('items')
+    expect(toTodo({ ...todo(), items: [] })!.items).toEqual([])
+  })
+
+  it('the last item ticked ticks the group; unticking one opens it again', () => {
+    const one = withItemDone(group, 'a', true, 10)
+    expect(one.doneAt).toBeUndefined()
+    expect(groupProgress(one)).toEqual({ done: 1, count: 2 })
+    const both = withItemDone(one, 'b', true, 20)
+    expect(both.doneAt).toBe(20)
+    const reopened = withItemDone(both, 'a', false, 30)
+    expect(reopened.doneAt).toBeUndefined()
+    expect(reopened.items![0]).not.toHaveProperty('doneAt')
+  })
+
+  it('travels in a backup file', () => {
+    const data = parseBackup({ contacts: [], todos: [group] })!
+    expect(data.todos[0].items).toEqual(group.items)
   })
 })

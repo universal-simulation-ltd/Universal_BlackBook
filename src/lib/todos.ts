@@ -9,6 +9,14 @@ import { currentT } from '../i18n'
 
 import { daysInMonth, type Today } from './birthday'
 
+/** One to-do inside a group (2026-10-30): a name, and whether it is done. */
+export interface TodoItem {
+  id: string
+  title: string
+  /** Epoch ms it was ticked off; absent while it is still to do. */
+  doneAt?: number
+}
+
 export interface Todo {
   id: string
   /** What it is. The only required field. */
@@ -32,8 +40,48 @@ export interface Todo {
    * shows at the top.
    */
   rank?: number
+  /**
+   * A group (James, 2026-10-30: "a title with multiple todos within it"):
+   * present, even empty, makes this to-do a group of these. Absent on an
+   * ordinary one, and on every to-do written before groups — an older build
+   * reading a group simply sees its title and details. The items live inside
+   * their group, so syncing, merging, Undo and Move all keep treating a
+   * group as one to-do.
+   */
+  items?: TodoItem[]
   createdAt: number
   updatedAt: number
+}
+
+/** A group's items from storage, or undefined when it is not a group. */
+function toItems(v: unknown): TodoItem[] | undefined {
+  if (!Array.isArray(v)) return undefined
+  return v
+    .filter((x): x is Record<string, unknown> => Boolean(x) && typeof x === 'object')
+    .filter((x) => typeof x.id === 'string' && x.id !== '' && typeof x.title === 'string')
+    .map((x): TodoItem => ({
+      id: x.id as string,
+      title: x.title as string,
+      ...(typeof x.doneAt === 'number' && Number.isFinite(x.doneAt) ? { doneAt: x.doneAt } : {}),
+    }))
+}
+
+/** How many of a group's items are done, and of how many. */
+export function groupProgress(todo: Todo): { done: number; count: number } | null {
+  if (!todo.items) return null
+  return { done: todo.items.filter((i) => i.doneAt !== undefined).length, count: todo.items.length }
+}
+
+/** Tick one item of a group. The last one ticks the group; unticking one opens it again. */
+export function withItemDone(todo: Todo, itemId: string, done: boolean, now = Date.now()): Todo {
+  const items = (todo.items ?? []).map((i): TodoItem => {
+    if (i.id !== itemId) return i
+    const { doneAt: _d, ...rest } = i
+    void _d
+    return done ? { ...rest, doneAt: now } : rest
+  })
+  const all = items.length > 0 && items.every((i) => i.doneAt !== undefined)
+  return { ...todo, items, doneAt: all ? (todo.doneAt ?? now) : done ? todo.doneAt : undefined, updatedAt: now }
 }
 
 /** A calendar date, strictly. Anything else is dropped rather than shown wrong. */
@@ -60,6 +108,7 @@ export function toTodo(raw: unknown): Todo | null {
     doneAt: typeof r.doneAt === 'number' ? r.doneAt : undefined,
     ...(typeof r.pinnedAt === 'number' && Number.isFinite(r.pinnedAt) ? { pinnedAt: r.pinnedAt } : {}),
     ...(typeof r.rank === 'number' && Number.isFinite(r.rank) ? { rank: r.rank } : {}),
+    ...(toItems(r.items) ? { items: toItems(r.items) } : {}),
     createdAt: typeof r.createdAt === 'number' ? r.createdAt : Date.now(),
     updatedAt: typeof r.updatedAt === 'number' ? r.updatedAt : Date.now(),
   }
