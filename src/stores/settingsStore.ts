@@ -10,7 +10,8 @@ import { normaliseContactActions, normaliseQuickActions, type ContactAction, typ
  * Device-local, in localStorage: a preference about how THIS device shows the
  * app, not a fact about the address book, so it stays out of the vault (a backup
  * file carries it, but only "Replace everything" restores it) — the
- * same call as the saved "Opens on" view. Unreadable storage (private window,
+ * same call as the saved "Opens on" view. ⚠️ Except the tabs: which are shown
+ * and their order go up with the online copy (`tabsAt`, 2026-10-30). Unreadable storage (private window,
  * blocked site data) just means the defaults.
  *
  * ⚠️ Every TICK BOX starts unticked: Email lists is off by default; To-do and
@@ -68,13 +69,23 @@ export interface Settings {
    * (James, 2026-10-27: hold the name at the top to choose). Off to start.
    */
   bookYours: boolean
+  /**
+   * When the tabs last changed here — their order, or Lists / To-do / Notes /
+   * Contacts turned on or off (James, 2026-10-30). The online copy carries the
+   * layout with this stamp and the newer one wins (lib/tabs.ts `TabLayout`).
+   * 0: never changed on this device, so any synced layout beats the defaults.
+   */
+  tabsAt: number
 }
+
+/** The switches that make up the synced tab layout. */
+const TAB_KEYS = ['tabOrder', 'emailLists', 'todos', 'notes', 'contacts'] as const
 
 const KEY = 'blackbook.settings'
 // To-do and Notes are ON by default, Email lists off (James, 2026-10-23: "have
 // all active as default except email lists"). Their tick boxes are worded as
 // opt-outs ("Hide the To-do tab"), so every box still starts unticked.
-const DEFAULTS: Settings = { emailLists: false, todos: true, notes: true, contacts: true, shownFields: [], notifyDetails: false, tabOrder: [...TABS], fillLocation: false, noteActions: normaliseQuickActions(undefined), contactActions: normaliseContactActions(undefined), bookYours: false }
+const DEFAULTS: Settings = { emailLists: false, todos: true, notes: true, contacts: true, shownFields: [], notifyDetails: false, tabOrder: [...TABS], fillLocation: false, noteActions: normaliseQuickActions(undefined), contactActions: normaliseContactActions(undefined), bookYours: false, tabsAt: 0 }
 /**
  * The stored shape's version. 1 (no `v`) wrote every switch whenever any one
  * changed, so a stored `false` for To-do or Notes cannot be told from "never
@@ -102,6 +113,7 @@ function load(): Settings {
       noteActions: normaliseQuickActions(raw.noteActions),
       contactActions: normaliseContactActions(raw.contactActions),
       bookYours: raw.bookYours === true,
+      tabsAt: typeof raw.tabsAt === 'number' && Number.isFinite(raw.tabsAt) ? raw.tabsAt : 0,
     }
   } catch {
     return DEFAULTS
@@ -131,12 +143,15 @@ interface SettingsState extends Settings {
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   ...load(),
   set: (patch) => {
-    set(patch)
+    // A tab change made here is stamped so it wins over an older layout from
+    // another device; one arriving FROM another device brings its own stamp.
+    const tabs = patch.tabsAt === undefined && TAB_KEYS.some((k) => k in patch)
+    set(tabs ? { ...patch, tabsAt: Date.now() } : patch)
     try {
-      const { emailLists, todos, notes, contacts, shownFields, notifyDetails, tabOrder, fillLocation, noteActions, contactActions, bookYours } = get()
+      const { emailLists, todos, notes, contacts, shownFields, notifyDetails, tabOrder, fillLocation, noteActions, contactActions, bookYours, tabsAt } = get()
       localStorage.setItem(
         KEY,
-        JSON.stringify({ v: VERSION, emailLists, todos, notes, contacts, shownFields, notifyDetails, tabOrder, fillLocation, noteActions, contactActions, bookYours }),
+        JSON.stringify({ v: VERSION, emailLists, todos, notes, contacts, shownFields, notifyDetails, tabOrder, fillLocation, noteActions, contactActions, bookYours, tabsAt }),
       )
     } catch {
       // See the note above: the switch still works until the app is closed.
@@ -158,5 +173,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     } catch {
       // Unreadable storage already means the defaults.
     }
+    // The default tabs are a layout like any other: stamped, so they go to
+    // the other devices rather than being overwritten by an older one.
+    get().set({ tabsAt: Date.now() })
   },
 }))

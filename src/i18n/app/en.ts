@@ -747,7 +747,7 @@ export const appEn = {
   'tpl.remove': "Remove",
   'tpl.up': "Move up",
   'pref.tab_order': "Tab order",
-  'pref.tab_order_note': "Drag the grips or use the arrows. On the phone you can also hold a tab and drag it along the bar. Tune stays last.",
+  'pref.tab_order_note': "Drag the grips or use the arrows. You can also drag a tab along the bar itself (on the phone, hold it first). Signed in, the order and hidden tabs follow you to your other devices. Tune stays last.",
   'pref.tab_hidden': "hidden",
   'pref.tab_up': "Move {name} earlier",
   'pref.tab_down': "Move {name} later",

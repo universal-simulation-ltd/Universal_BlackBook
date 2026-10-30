@@ -684,7 +684,7 @@ export const appDe: Partial<Record<AppKey, string>> = {
   'tpl.remove': "Entfernen",
   'tpl.up': "Nach oben",
   'pref.tab_order': "Reihenfolge der Tabs",
-  'pref.tab_order_note': "Zieh an den Griffen oder nutze die Pfeile. Auf dem Telefon kannst du auch einen Tab gedrückt halten und in der Leiste verschieben. Anpassen bleibt am Ende.",
+  'pref.tab_order_note': "Zieh an den Griffen oder nutze die Pfeile. Du kannst einen Tab auch direkt in der Leiste verschieben (auf dem Telefon erst gedrückt halten). Angemeldet folgen Reihenfolge und ausgeblendete Tabs dir auf deine anderen Geräte. Anpassen bleibt am Ende.",
   'pref.tab_hidden': "ausgeblendet",
   'pref.tab_up': "{name} nach vorn",
   'pref.tab_down': "{name} nach hinten",

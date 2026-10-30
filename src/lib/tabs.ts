@@ -45,3 +45,37 @@ export function withShownOrder(full: Tab[], shown: Tab[]): Tab[] {
   let k = 0
   return full.map((t) => (on.has(t) ? shown[k++] : t))
 }
+
+/**
+ * Which tabs are shown and in what order, as it travels in the online copy
+ * (James, 2026-10-30: "sync from mobile app which tabs are hidden … and their
+ * order and reflect that on web"). `at` is when it was last changed on the
+ * device that wrote it; the newer one wins, the same as two devices'
+ * edits to one contact would.
+ *
+ * `contacts` is the phone's switch. The website always shows Contacts, so it
+ * carries the value through without acting on it.
+ */
+export interface TabLayout {
+  order: Tab[]
+  lists: boolean
+  todos: boolean
+  notes: boolean
+  contacts: boolean
+  at: number
+}
+
+/** A layout out of a vault, or null when the blob says nothing usable. */
+export function parseTabLayout(raw: unknown): TabLayout | null {
+  if (!raw || typeof raw !== 'object') return null
+  const r = raw as Record<string, unknown>
+  if (typeof r.at !== 'number' || !Number.isFinite(r.at)) return null
+  return {
+    order: normaliseOrder(r.order),
+    lists: r.lists === true,
+    todos: r.todos !== false,
+    notes: r.notes !== false,
+    contacts: r.contacts !== false,
+    at: r.at,
+  }
+}

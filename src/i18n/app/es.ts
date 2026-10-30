@@ -684,7 +684,7 @@ export const appEs: Partial<Record<AppKey, string>> = {
   'tpl.remove': "Quitar",
   'tpl.up': "Subir",
   'pref.tab_order': "Orden de las pestañas",
-  'pref.tab_order_note': "Arrastra las asas o usa las flechas. En el teléfono también puedes mantener pulsada una pestaña y arrastrarla por la barra. Ajustar queda al final.",
+  'pref.tab_order_note': "Arrastra las asas o usa las flechas. También puedes arrastrar una pestaña por la propia barra (en el teléfono, mantenla pulsada antes). Con la sesión iniciada, el orden y las pestañas ocultas te siguen a tus otros dispositivos. Ajustar queda al final.",
   'pref.tab_hidden': "oculta",
   'pref.tab_up': "Mover {name} antes",
   'pref.tab_down': "Mover {name} después",

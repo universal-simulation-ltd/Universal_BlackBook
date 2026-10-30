@@ -33,6 +33,7 @@ import { NoteLayers } from './components/NoteView'
 import { TemplateManager } from './components/TemplateManager'
 import { btnGhost, btnPrimary } from './components/ui'
 import { allOnline } from './lib/merge'
+import { moveTab, withShownOrder } from './lib/tabs'
 import { forgetVault, loadSyncMeta } from './lib/store'
 import { useBookStore } from './stores/bookStore'
 import { useLockStore } from './stores/lockStore'
@@ -116,7 +117,18 @@ export default function App() {
   const onNotes = notesOn && tab === 'notes'
   const offContacts = onLists || onTodos || onNotes
   const tabOrder = useSettingsStore((s) => s.tabOrder)
-  const tabs = availableTabs(emailLists, todosOn, notesOn, tabOrder)
+  const shownTabs = availableTabs(emailLists, todosOn, notesOn, tabOrder)
+  // Drag a tab along the bar to move it (James, 2026-10-30), as a hold and a
+  // drag does on the phone. While one is held the bar shows where it would
+  // land; letting go writes it back into the whole order, so hidden tabs keep
+  // their slots (withShownOrder). Tune ▸ Tab order is the way without a mouse.
+  const setSettings = useSettingsStore((s) => s.set)
+  const [dragTabs, setDragTabs] = useState<{ tab: Tab; order: Tab[] } | null>(null)
+  const tabs = dragTabs?.order ?? shownTabs
+  const dropTabs = () => {
+    if (dragTabs && dragTabs.order.join() !== shownTabs.join()) setSettings({ tabOrder: withShownOrder(tabOrder, dragTabs.order) })
+    setDragTabs(null)
+  }
   const current = offContacts ? tab : 'contacts'
   const initTodos = useTodoStore((s) => s.init)
   const initNotes = useNoteStore((s) => s.init)
@@ -281,6 +293,18 @@ export default function App() {
           <div
             role="tablist"
             aria-label={tr('app.tabs')}
+            // Both, or the browser never takes the bar as a drop target: an
+            // uncancelled dragenter sends the drag on to the page behind it.
+            onDragEnter={(e) => {
+              if (dragTabs) e.preventDefault()
+            }}
+            onDragOver={(e) => {
+              if (dragTabs) e.preventDefault()
+            }}
+            onDrop={(e) => {
+              e.preventDefault()
+              dropTabs()
+            }}
             className={`mb-5 grid gap-1 rounded-lg border border-slate-800 bg-slate-900 p-1 ${
               tabs.length === 4 ? 'grid-cols-4 sm:max-w-md' : tabs.length === 3 ? 'grid-cols-3 sm:max-w-sm' : 'grid-cols-2 sm:max-w-xs'
             }`}
@@ -292,6 +316,18 @@ export default function App() {
                 role="tab"
                 aria-selected={t === current}
                 {...tabDefault.buttonProps(t, tabName(tr, t))}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.effectAllowed = 'move'
+                  // Firefox starts no drag without some data.
+                  e.dataTransfer.setData('text/plain', tabName(tr, t))
+                  setDragTabs({ tab: t, order: shownTabs })
+                }}
+                onDragEnter={() => {
+                  if (dragTabs && dragTabs.tab !== t) setDragTabs({ ...dragTabs, order: moveTab(dragTabs.order, dragTabs.tab, dragTabs.order.indexOf(t)) })
+                }}
+                // Dropped outside the bar, or Escape: nothing moves.
+                onDragEnd={() => setDragTabs(null)}
                 onClick={() => {
                   const double = tabDefault.tap(t)
                   // Contacts tapped while already on it: open the search, keyboard
@@ -307,7 +343,9 @@ export default function App() {
                 // The default tab is orange: filled while you are on it, an
                 // orange ring while you are not (Jukebox's look, SDK README ▸
                 // Default views).
-                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+                className={`cursor-grab rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+                  dragTabs?.tab === t ? 'opacity-50 ' : ''
+                }${
                   t === current
                     ? 'bg-orange-500/15 text-orange-300 data-[default-view=true]:bg-gradient-to-br data-[default-view=true]:from-[#FE8C01] data-[default-view=true]:to-[#E05504] data-[default-view=true]:text-white'
                     : 'text-slate-400 hover:text-slate-200 data-[default-view=true]:text-orange-400 data-[default-view=true]:ring-1 data-[default-view=true]:ring-inset data-[default-view=true]:ring-orange-400/70'
@@ -569,6 +607,8 @@ function useCloudSync(openPanel: () => void) {
   const todos = useTodoStore((s) => s.todos)
   const pages = useNoteStore((s) => s.notes)
   const templates = useNoteStore((s) => s.templates)
+  // The tabs' layout goes up with the book (2026-10-30, lib/tabs.ts TabLayout).
+  const tabsAt = useSettingsStore((s) => s.tabsAt)
   const loaded = useBookStore((s) => s.loaded)
   const hydrate = useSyncStore((s) => s.hydrate)
   const push = useSyncStore((s) => s.push)
@@ -628,7 +668,7 @@ function useCloudSync(openPanel: () => void) {
   // Only a CHANGE of book marks it unsynced — not this effect re-running
   // because sync turned on or the page loaded, which would show "Syncing…"
   // over a book that is already up there.
-  const lastBook = useRef<{ contacts: unknown; tags: unknown; todos: unknown; pages: unknown; templates: unknown } | null>(null)
+  const lastBook = useRef<{ contacts: unknown; tags: unknown; todos: unknown; pages: unknown; templates: unknown; tabsAt: number } | null>(null)
   useEffect(() => {
     if (!loaded || state !== 'on') {
       lastBook.current = null
@@ -640,12 +680,13 @@ function useCloudSync(openPanel: () => void) {
         lastBook.current.tags !== tags ||
         lastBook.current.todos !== todos ||
         lastBook.current.pages !== pages ||
-        lastBook.current.templates !== templates)
-    lastBook.current = { contacts, tags, todos, pages, templates }
+        lastBook.current.templates !== templates ||
+        lastBook.current.tabsAt !== tabsAt)
+    lastBook.current = { contacts, tags, todos, pages, templates, tabsAt }
     if (changed) useSyncStore.getState().markDirty()
     const t = setTimeout(() => void push(supabase), AUTOSAVE_DELAY)
     return () => clearTimeout(t)
-  }, [contacts, tags, todos, pages, templates, loaded, state, push, supabase])
+  }, [contacts, tags, todos, pages, templates, tabsAt, loaded, state, push, supabase])
 
   // A save that failed for want of a network is tried again, rather than
   // sitting there until somebody opens the panel and taps Save now (owner's

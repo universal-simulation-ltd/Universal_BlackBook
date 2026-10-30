@@ -684,7 +684,7 @@ export const appFr: Partial<Record<AppKey, string>> = {
   'tpl.remove': "Retirer",
   'tpl.up': "Monter",
   'pref.tab_order': "Ordre des onglets",
-  'pref.tab_order_note': "Fais glisser les poignées ou utilise les flèches. Sur le téléphone, tu peux aussi maintenir un onglet et le déplacer dans la barre. Réglages reste en dernier.",
+  'pref.tab_order_note': "Fais glisser les poignées ou utilise les flèches. Tu peux aussi faire glisser un onglet directement dans la barre (sur le téléphone, maintiens-le d'abord). Connecté, l'ordre et les onglets masqués te suivent sur tes autres appareils. Réglages reste en dernier.",
   'pref.tab_hidden': "masqué",
   'pref.tab_up': "Avancer {name}",
   'pref.tab_down': "Reculer {name}",

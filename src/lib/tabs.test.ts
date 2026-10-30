@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isDefaultOrder, moveTab, normaliseOrder, TABS, withShownOrder } from './tabs'
+import { isDefaultOrder, moveTab, normaliseOrder, parseTabLayout, TABS, withShownOrder } from './tabs'
 import { parseBackup } from './backup'
 import { availableTabs } from '../appParts'
 
@@ -27,5 +27,20 @@ describe('tab order (2026-10-25)', () => {
     const data = parseBackup({ contacts: [], settings: { emailLists: false, shownFields: [], tabOrder: ['notes', 'x'] } })!
     expect(data.settings?.tabOrder).toEqual(['contacts', 'lists', 'todos', 'notes'])
     expect(parseBackup({ contacts: [], settings: { emailLists: false, shownFields: [] } })!.settings).not.toHaveProperty('tabOrder')
+  })
+})
+
+describe('the synced tab layout (2026-10-30)', () => {
+  it('reads a layout whole, and refuses one without a stamp', () => {
+    expect(parseTabLayout({ order: ['notes'], lists: true, todos: false, at: 5 })).toEqual({
+      order: normaliseOrder(['notes']),
+      lists: true,
+      todos: false,
+      notes: true,
+      contacts: true,
+      at: 5,
+    })
+    expect(parseTabLayout({ order: [] })).toBeNull()
+    expect(parseTabLayout(undefined)).toBeNull()
   })
 })

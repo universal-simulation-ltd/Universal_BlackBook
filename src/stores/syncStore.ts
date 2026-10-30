@@ -43,6 +43,8 @@ import { mergeNotes, toNotes } from '../lib/notes'
 import { BACKUP_SCHEMA } from '../lib/backup'
 import { mergeTemplates, toTemplates } from '../lib/templates'
 import { mergeTodos, toTodos } from '../lib/todos'
+import { parseTabLayout } from '../lib/tabs'
+import { useSettingsStore } from './settingsStore'
 
 /**
  * Where this device stands with the online copy.
@@ -142,8 +144,38 @@ function bookPayload(): VaultPayload {
     categories: tags,
     ...(todo.loaded && { todos: todo.todos }),
     ...(note.loaded && { pages: note.notes, templates: note.templates }),
+    ...tabLayout(),
     savedAt: Date.now(),
   }
+}
+
+/**
+ * This device's tabs for the online copy — only once they have been changed
+ * here. A device still on the defaults says nothing, so it cannot undo a
+ * layout chosen on the phone just by being opened.
+ */
+function tabLayout(): Pick<VaultPayload, 'tabs'> {
+  const s = useSettingsStore.getState()
+  if (!s.tabsAt) return {}
+  return { tabs: { order: s.tabOrder, lists: s.emailLists, todos: s.todos, notes: s.notes, contacts: s.contacts, at: s.tabsAt } }
+}
+
+/**
+ * Take the online copy's tabs when they were changed more recently than this
+ * device's (2026-10-30). Older or absent: ours stand, and the next push carries
+ * them up.
+ */
+function adoptTabs(payload: VaultPayload) {
+  const tabs = parseTabLayout(payload.tabs)
+  if (!tabs || tabs.at <= useSettingsStore.getState().tabsAt) return
+  useSettingsStore.getState().set({
+    tabOrder: tabs.order,
+    emailLists: tabs.lists,
+    todos: tabs.todos,
+    notes: tabs.notes,
+    contacts: tabs.contacts,
+    tabsAt: tabs.at,
+  })
 }
 
 /**
@@ -162,6 +194,7 @@ async function adopt(payload: VaultPayload) {
   if (Array.isArray(payload.todos)) await useTodoStore.getState().replace(toTodos(payload.todos))
   if (Array.isArray(payload.pages)) await useNoteStore.getState().replace(toNotes(payload.pages))
   if (Array.isArray(payload.templates)) await useNoteStore.getState().replaceTemplates(toTemplates(payload.templates))
+  adoptTabs(payload)
 }
 
 /**
@@ -187,6 +220,7 @@ async function mergeIn(payload: VaultPayload) {
   await useNoteStore.getState().init()
   await useNoteStore.getState().replace(mergeNotes(toNotes(payload.pages), useNoteStore.getState().notes))
   await useNoteStore.getState().replaceTemplates(mergeTemplates(toTemplates(payload.templates), useNoteStore.getState().templates))
+  adoptTabs(payload)
 }
 
 /**

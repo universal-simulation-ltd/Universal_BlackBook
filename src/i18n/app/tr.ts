@@ -684,7 +684,7 @@ export const appTr: Partial<Record<AppKey, string>> = {
   'tpl.remove': "Kaldır",
   'tpl.up': "Yukarı",
   'pref.tab_order': "Sekme sırası",
-  'pref.tab_order_note': "Tutamaçları sürükleyin veya okları kullanın. Telefonda bir sekmeye basılı tutup çubukta da sürükleyebilirsiniz. Ayarla en sonda kalır.",
+  'pref.tab_order_note': "Tutamaçları sürükleyin veya okları kullanın. Bir sekmeyi doğrudan çubukta da sürükleyebilirsiniz (telefonda önce basılı tutun). Oturum açıkken sıralama ve gizli sekmeler diğer cihazlarınızda da geçerli olur. Ayarla en sonda kalır.",
   'pref.tab_hidden': "gizli",
   'pref.tab_up': "{name} öne al",
   'pref.tab_down': "{name} geriye al",

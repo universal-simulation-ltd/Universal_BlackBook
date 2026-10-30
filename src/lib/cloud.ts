@@ -12,6 +12,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Contact, Tag } from './types'
 import type { Todo } from './todos'
 import type { Note } from './notes'
+import type { TabLayout } from './tabs'
 
 export const TABLE = 'blackbook_vaults'
 
@@ -54,6 +55,13 @@ export interface VaultPayload {
   pages?: Note[]
   /** Note templates (2026-10-25). Absent means "says nothing about them", as `pages`. */
   templates?: NoteTemplate[]
+  /**
+   * Which tabs are shown and their order (2026-10-30), so a tab hidden or
+   * moved on the phone is hidden or moved on the website too. Absent means
+   * "says nothing about tabs": each device keeps its own. Read through
+   * `parseTabLayout`, never trusted as it stands.
+   */
+  tabs?: TabLayout
   /**
    * The book's shape, as the backup file's schema (lib/backup.ts): 3 since
    * 2026-10-25 (reminders, links, templates, to-do order, tag patterns, all
