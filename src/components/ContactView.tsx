@@ -100,7 +100,9 @@ export function ContactView({ id }: { id: string }) {
   // after typing stops, on blur, and before anything else can read the store:
   // Fine-tune (the form reads `contact.notes` when it mounts) and closing.
   const [notes, setDraft] = useState(contact?.notes ?? '')
-  const [typing, setTyping] = useState(false)
+  // Made from a search: the note is typed into at once (see the effect below).
+  const [typeNote] = useState(() => useBookStore.getState().typeNote === id)
+  const [typing, setTyping] = useState(typeNote)
   const notesRef = useRef<HTMLTextAreaElement>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const draftRef = useRef(notes)
@@ -129,6 +131,17 @@ export function ContactView({ id }: { id: string }) {
     if (notesRef.current) growToFit(notesRef.current)
   }, [notes, typing])
   useTypingRoom(notesRef, phoneScreens())
+  // After the effect above that opens the dialog, which moves the focus: the
+  // caller flushes this inside the key press, so on the phone the keyboard
+  // goes straight from the search to the note.
+  useEffect(() => {
+    if (!typeNote) return
+    // Typing on again too: a dialog closed and reopened under it (StrictMode
+    // does exactly that in development) blurs the box, which stops typing.
+    setTyping(true)
+    notesRef.current?.focus()
+    useBookStore.setState({ typeNote: null })
+  }, [typeNote])
 
   const today = useMemo(() => todayParts(), [])
   const byId = useMemo(() => new Map(tags.map((t) => [t.id, t])), [tags])
@@ -166,7 +179,7 @@ export function ContactView({ id }: { id: string }) {
             value={contact.name}
             placeholder={t('view.name_placeholder')}
             autoComplete="off"
-            autoFocus={autoFocusOK()}
+            autoFocus={autoFocusOK() && !typeNote}
             onChange={(e) => void patchContact(contact.id, { name: e.target.value })}
             onBlur={(e) => {
               const v = e.target.value.trim()

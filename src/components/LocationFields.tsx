@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from 'react'
+import { GrowingTextarea } from './GrowingTextarea'
 import {
   countryName,
   divisionWord,
@@ -67,7 +68,7 @@ export function LocationFields({ value, onChange, withPlace = true }: { value: L
         <label htmlFor={`${ids}-s`} className={label}>
           {t('loc.street')}
         </label>
-        <textarea id={`${ids}-s`} className={textareaCls} rows={2} value={value.street ?? ''} onChange={(e) => set({ street: e.target.value })} />
+        <GrowingTextarea id={`${ids}-s`} className={textareaCls} rows={2} value={value.street ?? ''} onChange={(e) => set({ street: e.target.value })} />
       </div>
       <SuggestInput
         id={`${ids}-c`}

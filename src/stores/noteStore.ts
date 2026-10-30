@@ -31,6 +31,11 @@ interface NoteState {
   query: string
   /** A new note's title, typed into the search first ("Add “…”"). */
   prefillTitle: string | null
+  /**
+   * The new note opens with its text box focused, the title already given
+   * (James, 2026-10-30: search, Return, type). Read once by the form.
+   */
+  focusDetails: boolean
   init: () => Promise<void>
   edit: (id: string | null) => void
   /** Open a note's view, or close it with null. */
@@ -88,6 +93,7 @@ export const useNoteStore = create<NoteState>((set, get) => {
     choosing: false,
     query: '',
     prefillTitle: null,
+    focusDetails: false,
 
     init: async () => {
       if (get().loaded) return
@@ -109,13 +115,13 @@ export const useNoteStore = create<NoteState>((set, get) => {
       set({ notes, templates, loaded: true })
     },
 
-    edit: (editing) => set({ editing, prefillTitle: null, newTemplate: null }),
-    startFrom: (newTemplate) => set({ editing: 'new', prefillTitle: null, newTemplate, choosing: false }),
+    edit: (editing) => set({ editing, prefillTitle: null, newTemplate: null, focusDetails: false }),
+    startFrom: (newTemplate) => set({ editing: 'new', prefillTitle: null, newTemplate, choosing: false, focusDetails: false }),
     newNote: () => (get().templates.length ? set({ choosing: true }) : get().edit('new')),
     stopChoosing: () => set({ choosing: false }),
     setTemplateFilter: (templateFilter) => set({ templateFilter }),
     view: (viewing) => set((s) => ({ viewing, editing: viewing === null ? s.editing : s.editing === 'new' ? null : s.editing })),
-    startNote: (title) => set({ editing: 'new', prefillTitle: title }),
+    startNote: (title) => set({ editing: 'new', prefillTitle: title, focusDetails: true }),
     setQuery: (query) => set({ query }),
 
     save: async (draft) => {

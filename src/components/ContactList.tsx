@@ -1,4 +1,5 @@
 import { useId, useMemo, useRef, useState } from 'react'
+import { addContactFromSearch } from './addFromSearch'
 import { saveBlob } from '@unisim/media/save'
 import {
   countdownLabel,
@@ -689,17 +690,12 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
  */
 function AddFromSearch({ text, className = '' }: { text: string; className?: string }) {
   const t = useT()
-  const newContact = useBookStore((s) => s.newContact)
   const seed = searchSeed(text)
   if (!seed.value) return null
   return (
     <button
       type="button"
-      onClick={() => {
-        void newContact({ [seed.field]: seed.value })
-        // Added: the search has done its job (James, 2026-10-26).
-        useBookStore.getState().setQuery({ text: '' })
-      }}
+      onClick={() => addContactFromSearch(text)}
       className={`flex w-full items-center gap-2 rounded-xl border border-dashed border-slate-700 px-4 py-3 text-left text-sm text-slate-300 transition-colors hover:border-orange-500/60 hover:bg-orange-500/10 hover:text-orange-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${className}`}
     >
       <span aria-hidden className="text-lg leading-none text-orange-400">＋</span>

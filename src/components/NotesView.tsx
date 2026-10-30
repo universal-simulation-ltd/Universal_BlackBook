@@ -1,4 +1,5 @@
 import { useId, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { SwipeRow } from './SwipeRow'
 import { useMove } from './MoveTo'
 import { deleteSwipe, FocusActions, pinSwipe, UndoBar, useHold, useLeaveSelection, useUndo } from './SwipeActions'
@@ -41,6 +42,15 @@ export function NotesView() {
   const query = useNoteStore((s) => s.query)
   const setQuery = useNoteStore((s) => s.setQuery)
   const startNote = useNoteStore((s) => s.startNote)
+  // What was typed, as a new note's title, by its Add button or Return (James,
+  // 2026-10-23 / 2026-10-30), the text box focused. Flushed inside the tap or
+  // key press so the phone's keyboard moves straight to the text box.
+  const addTyped = (text: string) => {
+    const title = text.trim().replace(/\s+/g, ' ')
+    if (!title) return
+    flushSync(() => startNote(title))
+    setQuery('')
+  }
 
   const sorted = useMemo(() => [...notes].sort(compareNotes), [notes])
   // A filter for a template since deleted shows everything.
@@ -128,19 +138,13 @@ export function NotesView() {
         </div>
       </div>
 
-      <ListSearch value={query} onChange={setQuery} label={t('notes.search')} filtering={active !== null}>
+      <ListSearch value={query} onChange={setQuery} label={t('notes.search')} filtering={active !== null} onEnter={() => addTyped(query)}>
         {templates.length > 0 && notes.length > 0 && (
           <TemplateFilter templates={templates} active={active} onPick={setFilter} />
         )}
       </ListSearch>
       {/* What was typed, as a new note's title (James, 2026-10-23). */}
-      <AddTyped
-        text={query}
-        onAdd={(title) => {
-          startNote(title)
-          setQuery('')
-        }}
-      />
+      <AddTyped text={query} onAdd={addTyped} />
 
       {loaded && notes.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-800 px-6 py-14 text-center">

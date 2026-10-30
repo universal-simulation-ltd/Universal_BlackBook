@@ -1,4 +1,5 @@
 import { useEffect, useId, useState, type FormEvent, type ReactNode } from 'react'
+import { GrowingTextarea } from './GrowingTextarea'
 import { blankDraft, draftIsEmpty, useBookStore, type ContactDraft } from '../stores/bookStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { isList, listIdsOf } from '../lib/lists'
@@ -464,7 +465,7 @@ export function ContactForm({ id }: { id: string }) {
                 {t('form.full_screen')}
               </button>
             </div>
-            <textarea
+            <GrowingTextarea
               id="cf-notes"
               className={textareaCls}
               // ⚠️ Seven rows, up from four (owner's request, 2026-09-11). Four

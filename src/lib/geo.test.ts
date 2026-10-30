@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { beforeAll, describe, expect, it } from 'vitest'
 import {
+  hasLocation,
   countryName,
   divisionWord,
   locationText,
@@ -62,5 +63,18 @@ describe('places, offline (GeoNames)', () => {
     expect(toLocation({ name: 'The Crown', address: '1 High St', lat: 51, lng: 0 })).toEqual({ place: 'The Crown', street: '1 High St' })
     expect(toLocation({ lat: 1, lng: 2 })).toBeUndefined()
     expect(locationText({ street: '1 High St', city: 'Guildford', county: 'Surrey', country: 'GB' }, 'en-GB')).toBe('1 High St\nGuildford, Surrey\nUnited Kingdom')
+  })
+})
+
+describe('a location is recorded from a town down (2026-10-30)', () => {
+  it('a country or county on its own is not a location', () => {
+    expect(hasLocation({ country: 'GB' })).toBe(false)
+    expect(hasLocation({ county: 'Kent', country: 'GB' })).toBe(false)
+    expect(hasLocation({ city: ' ' })).toBe(false)
+  })
+  it('a town, a street or a place name is', () => {
+    expect(hasLocation({ city: 'Canterbury', country: 'GB' })).toBe(true)
+    expect(hasLocation({ street: '1 High St' })).toBe(true)
+    expect(hasLocation({ place: "Mum's" })).toBe(true)
   })
 })

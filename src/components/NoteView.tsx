@@ -1,4 +1,5 @@
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { GrowingTextarea } from './GrowingTextarea'
 import { Capacitor } from '@capacitor/core'
 import { LinkifiedText } from '@unisim/sdk'
 import { copyText } from '../lib/clipboard'
@@ -651,7 +652,14 @@ function NoteForm({ id }: { id: string }) {
   const titleId = useId()
   const detailsId = useId()
   const detailsRef = useRef<HTMLTextAreaElement>(null)
-  useTypingRoom(detailsRef, Boolean(kit))
+  // Made from a search (its title is what was typed): straight to the text,
+  // on the phone too — Return was the asking (James, 2026-10-30). After the
+  // Modal's own effect, which opens the dialog and would move the focus; the
+  // caller flushes this inside the key press so the keyboard stays up.
+  const [focusDetails] = useState(() => !existing && useNoteStore.getState().focusDetails)
+  useEffect(() => {
+    if (focusDetails) detailsRef.current?.focus()
+  }, [focusDetails])
   const empty = !title.trim() && !details.trim() && !Object.values(fields).some((v) => v.trim())
   // Fine-tune on the phone leaves out what the note's page edits in place
   // (James, 2026-10-27): the title (typed into the page's bar) and the text.
@@ -689,7 +697,7 @@ function NoteForm({ id }: { id: string }) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={t('notes.title_placeholder')}
-              autoFocus={autoFocusOK() && !existing}
+              autoFocus={autoFocusOK() && !existing && !focusDetails}
             />
           </div>
         )}
@@ -706,8 +714,8 @@ function NoteForm({ id }: { id: string }) {
             <label htmlFor={detailsId} className={label}>
               {t('todo.details')}
             </label>
-            <textarea
-              ref={detailsRef}
+            <GrowingTextarea
+              textareaRef={detailsRef}
               id={detailsId}
               className={textareaCls}
               rows={template ? 6 : phoneScreens() ? 14 : 10}

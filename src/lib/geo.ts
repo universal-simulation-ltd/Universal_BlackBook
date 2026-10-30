@@ -61,9 +61,16 @@ export function toLocation(raw: unknown): Location | undefined {
   return Object.keys(loc).length ? loc : undefined
 }
 
-/** Is there anything in it? */
+/**
+ * Is it a place worth recording — a town at least (James, 2026-10-30: "only
+ * record a location if it's at least town level, not just country")? A
+ * country or a county on its own is not: every new location starts with the
+ * device's country filled in (`newLocation`), so counting it would record
+ * one on everything. A street or a place name of your own is finer than a
+ * town, so either of those counts too. Anything less is dropped on save.
+ */
 export function hasLocation(loc?: Location): loc is Location {
-  return Boolean(loc && (loc.place || loc.street || loc.city || loc.county || loc.country))
+  return Boolean(loc && (loc.place?.trim() || loc.street?.trim() || loc.city?.trim()))
 }
 
 /** A country code's name in the language on screen; free text as it is. */

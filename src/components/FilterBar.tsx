@@ -12,6 +12,7 @@ import {
 } from '../lib/filter'
 import { isList } from '../lib/lists'
 import { useBookStore } from '../stores/bookStore'
+import { addContactFromSearch } from './addFromSearch'
 import { usePhoneKit } from '../native/kit'
 import { TagChip } from './TagChip'
 import { TagCombo } from './TagCombo'
@@ -289,10 +290,16 @@ export function FilterBar({
             onChange={(e) => setQuery({ text: e.target.value })}
             onKeyDown={(e) => {
               if (e.key === 'Escape' && onClose && !open) onClose()
+              // Return adds what was typed as a new contact, its note ready to
+              // type into (James, 2026-10-30), as the Add "…" row does.
+              if (e.key === 'Enter' && !e.nativeEvent.isComposing && query.text.trim()) {
+                e.preventDefault()
+                addContactFromSearch(query.text)
+              }
             }}
             placeholder={t('search.placeholder')}
             aria-label={t('search.label')}
-            enterKeyHint="search"
+            enterKeyHint={query.text.trim() ? 'done' : 'search'}
           />
           {onClose && (
             <button

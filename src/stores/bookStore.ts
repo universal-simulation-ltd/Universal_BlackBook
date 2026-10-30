@@ -81,13 +81,19 @@ interface BookState {
    */
   fresh: string | null
   /**
+   * The contact whose view opens with its note being typed into — one made
+   * from a search (James, 2026-10-30: search, Return, type). Read once by the
+   * view.
+   */
+  typeNote: string | null
+  /**
    * A new contact, straight into its own clean view rather than the full form
    * (James, 2026-10-25): the name typed at the top, the number and email
    * added from Call / Message / More, the note tapped into, and Fine-tune for
    * the rest. `seed` fills in what is already known — a search typed, a
    * person picked from the phone's contacts.
    */
-  newContact: (seed?: Partial<ContactDraft> & { deviceContactId?: string }) => Promise<string>
+  newContact: (seed?: Partial<ContactDraft> & { deviceContactId?: string }, opts?: { typeNote?: boolean }) => Promise<string>
   /** Change some fields of one contact, as typed in its view. */
   patchContact: (id: string, patch: Partial<Omit<Contact, 'id' | 'createdAt' | 'updatedAt'>>) => Promise<void>
 
@@ -267,6 +273,7 @@ export const useBookStore = create<BookState>((set, get) => ({
   listMode: false,
   notice: null,
   fresh: null,
+  typeNote: null,
 
   init: async () => {
     if (get().loaded) return
@@ -334,7 +341,7 @@ export const useBookStore = create<BookState>((set, get) => ({
     set((s) => ({ viewing: id, editing: id === null ? s.editing : null, fresh: id === s.fresh ? s.fresh : null }))
   },
 
-  newContact: async (seed = {}) => {
+  newContact: async (seed = {}, opts = {}) => {
     requestPersistentStorage()
     const now = Date.now()
     const contact: Contact = {
@@ -360,6 +367,7 @@ export const useBookStore = create<BookState>((set, get) => ({
       viewing: contact.id,
       editing: null,
       fresh: contact.id,
+      typeNote: opts.typeNote ? contact.id : null,
       query:
         s.query.text || (s.query.tagIds.length > 0 && !s.query.tagIds.includes(UNTAGGED)) || s.query.hiddenTagIds.includes(UNTAGGED)
           ? {
