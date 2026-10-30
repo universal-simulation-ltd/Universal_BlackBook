@@ -36,7 +36,7 @@
     "@capacitor/local-notifications": "^8.3.1",
     "@capacitor/share": "^8.0.2",
     "@unisim/media": "^0.7.0",
-    "@unisim/sdk": "^0.203.1",
+    "@unisim/sdk": "^0.213.0",
     "fflate": "^0.8.3",
     "maplibre-gl": "^5.24.0",
     "react": "^18.3.1",
