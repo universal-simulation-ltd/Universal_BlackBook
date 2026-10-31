@@ -111,7 +111,18 @@ export function TemplateManager({ onClose }: { onClose: () => void }) {
   )
 }
 
-function TemplateForm({ template, onClose }: { template: NoteTemplate | null; onClose: () => void }) {
+/** One template's form; New note's chooser opens it too, and starts a note from what's saved (`onSaved`). */
+export function TemplateForm({
+  template,
+  onClose,
+  onSaved,
+  backLabel,
+}: {
+  template: NoteTemplate | null
+  onClose: () => void
+  onSaved?: (id: string) => void
+  backLabel?: string
+}) {
   const t = useT()
   const ids = useId()
   const saveTemplate = useNoteStore((s) => s.saveTemplate)
@@ -153,21 +164,23 @@ function TemplateForm({ template, onClose }: { template: NoteTemplate | null; on
   const save = () => {
     if (!ok) return
     const now = Date.now()
+    const id = template?.id ?? newId()
     void saveTemplate({
-      id: template?.id ?? newId(),
+      id,
       name: name.trim().slice(0, TEMPLATE_LIMITS.name),
       fields: fields.filter((f) => f.label.trim()).map((f) => ({ ...f, label: f.label.trim().slice(0, TEMPLATE_LIMITS.label) })),
       createdAt: template?.createdAt ?? now,
       updatedAt: now,
     })
     onClose()
+    onSaved?.(id)
   }
 
   return (
     <Modal
       title={template ? template.name : t('tpl.new')}
       onClose={onClose}
-      backLabel={t('tpl.manage')}
+      backLabel={backLabel ?? t('tpl.manage')}
       phoneActions={
         <button type="button" className="min-h-[44px] px-2 text-[16px] font-semibold text-orange-400 disabled:opacity-40" disabled={!ok} onClick={save}>
           {t('c.save')}

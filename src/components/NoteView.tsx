@@ -23,6 +23,7 @@ import { CloseGlyph, Modal } from './Modal'
 import { actionSwipe, pinSwipe, removeSwipe, SelectBar, SwipeGroup, SwipeItem, UndoBar, useHoldSelect, useUndo } from './SwipeActions'
 import type { Contact } from '../lib/types'
 import { ReminderEditor, ReminderList } from './Reminders'
+import { TemplateForm } from './TemplateManager'
 import { QuickActions, type QuickButton } from './QuickActions'
 import { NOTE_ACTIONS, type QuickAction } from '../lib/quickActions'
 import { shareText } from '../lib/share'
@@ -59,13 +60,17 @@ export function NoteLayers() {
   )
 }
 
-/** A new note: plain, or from one of the templates (James, 2026-10-25). */
+/**
+ * A new note: plain, or from one of the templates (James, 2026-10-25), or
+ * from a template added here (2026-10-31): saving it starts the note.
+ */
 function TemplateChooser() {
   const t = useT()
   const kit = usePhoneKit()
   const templates = useNoteStore((s) => s.templates)
   const startFrom = useNoteStore((s) => s.startFrom)
   const stop = useNoteStore((s) => s.stopChoosing)
+  const [adding, setAdding] = useState(false)
   const row = kit
     ? 'bb-sheetrow'
     : 'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-slate-200 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400'
@@ -89,7 +94,14 @@ function TemplateChooser() {
             </span>
           </button>
         ))}
+        <button type="button" className={row} onClick={() => setAdding(true)}>
+          <span className={kit ? 'bb-sheetrow-icon' : 'text-orange-400'} aria-hidden>
+            <PlusGlyph />
+          </span>
+          <span className="min-w-0 flex-1 text-left">{t('tpl.add')}</span>
+        </button>
       </div>
+      {adding && <TemplateForm template={null} backLabel={t('tpl.new_note')} onClose={() => setAdding(false)} onSaved={startFrom} />}
     </Modal>
   )
 }
@@ -996,6 +1008,11 @@ const PinMapGlyph = ({ small }: { small?: boolean }) => (
 const NoteGlyph = () => (
   <svg {...g()}>
     <path d="M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5" />
+  </svg>
+)
+const PlusGlyph = () => (
+  <svg {...g()}>
+    <path d="M12 5v14M5 12h14" />
   </svg>
 )
 const TemplateGlyph = () => (
