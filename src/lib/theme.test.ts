@@ -41,7 +41,9 @@ describe('the pre-paint theme script', () => {
   it('is allowed by its hash in the Content-Security-Policy', () => {
     const headers = read('public/_headers')
     for (const script of inlineScripts()) {
-      const hash = createHash('sha256').update(script).digest('base64')
+      // Hash the script as deployed: the site builds from git, where index.html
+      // is LF (.gitattributes pins it; an older Windows checkout may hold CRLF).
+      const hash = createHash('sha256').update(script.replace(/\r\n/g, '\n')).digest('base64')
       expect(headers).toContain(`'sha256-${hash}'`)
     }
   })
