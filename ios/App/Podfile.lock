@@ -20,7 +20,7 @@ PODS:
     - Capacitor
   - IONFilesystemLib (1.1.2)
   - IONGeolocationLib (3.0.0)
-  - UnisimSdk (0.203.1):
+  - UnisimSdk (0.213.0):
     - Capacitor
 
 DEPENDENCIES:
@@ -74,7 +74,7 @@ SPEC CHECKSUMS:
   CapacitorShare: 2fde721d06a6f83ff5c7578e6a91b190d341ac6a
   IONFilesystemLib: 21a63377696b2d8fab5632ecfb7d2ac67bddb68a
   IONGeolocationLib: a125d4f91ea353652026e5da6e5bee0414a57d37
-  UnisimSdk: 122d9ec49e2b16b56fb90c1c569e409733047dd4
+  UnisimSdk: f294438647b20905d95f73acb8ca0ea71560daeb
 
 PODFILE CHECKSUM: 50e5c7a6a523c990166c022313b5eea403faf5ab
 
