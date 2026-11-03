@@ -82,6 +82,14 @@ html.bb-phone body {
   padding: calc(env(safe-area-inset-top) + var(--bb-bar-h) + 14px) max(16px, env(safe-area-inset-right))
     calc(env(safe-area-inset-bottom) + var(--bb-tabs-h) + 24px) max(16px, env(safe-area-inset-left));
 }
+/* A list's select bar (Pin, Move, Delete, Done) is `sticky top-0`, which on
+   the phone is UNDER the fixed top bar: after a hold further down the list
+   it was out of sight (James, 2026-11-03: "need to see the menu e.g. move
+   even if you are scrolled down"). It sticks just below the bar instead.
+   Pages are portalled to <body>, so their own select bars are not moved. */
+.bb-main .bb-selectbar {
+  top: calc(env(safe-area-inset-top) + var(--bb-bar-h) + 8px);
+}
 .bb-h1 {
   font-family: var(--bb-serif);
   font-size: 30px;

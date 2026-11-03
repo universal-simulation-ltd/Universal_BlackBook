@@ -368,7 +368,7 @@ export function SelectBar({
   const count = select.picked.length
   const act = `${btnSubtle} disabled:cursor-not-allowed disabled:opacity-40`
   return (
-    <div className="sticky top-0 z-30 -mx-1 mb-2 flex flex-wrap items-center gap-x-1 gap-y-1 rounded-xl border border-slate-800 bg-slate-900 px-2 py-1.5">
+    <div className="bb-selectbar sticky top-0 z-30 -mx-1 mb-2 flex flex-wrap items-center gap-x-1 gap-y-1 rounded-xl border border-slate-800 bg-slate-900 px-2 py-1.5">
       <p className="mr-auto px-1 text-sm font-medium tabular-nums text-slate-200" aria-live="polite">
         {t('sel.count', { count })}
       </p>

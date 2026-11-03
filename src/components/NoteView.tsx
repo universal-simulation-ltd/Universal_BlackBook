@@ -226,6 +226,26 @@ function NoteView({ id, onBinned }: { id: string; onBinned: (note: Note) => void
     if (areaRef.current) growToFit(areaRef.current)
   }, [draft, typing])
   useTypingRoom(areaRef, Boolean(kit))
+  // A tap anywhere in the page's empty room types into the text, not only a
+  // tap on the words already there (James, 2026-11-03: "clicking anywhere
+  // below the title should open the details"). Empty room is the scroller
+  // itself (its padding and everything under the last block), the body's
+  // gaps, and what is marked `data-blank`. A native listener on the scroller,
+  // because a React one would also hear taps inside the sheets, which are
+  // portals of this tree.
+  const bodyRef = useRef<HTMLDivElement>(null)
+  const hasNote = note !== undefined
+  useEffect(() => {
+    const body = bodyRef.current
+    const scroller = body?.parentElement
+    if (!body || !scroller) return
+    const onClick = (e: MouseEvent) => {
+      const el = e.target as HTMLElement
+      if (el === scroller || el === body || el.dataset.blank !== undefined) setTyping(true)
+    }
+    scroller.addEventListener('click', onClick)
+    return () => scroller.removeEventListener('click', onClick)
+  }, [hasNote])
 
   const byId = useMemo(() => new Map(contacts.map((c) => [c.id, c])), [contacts])
   if (!note) return null
@@ -299,7 +319,7 @@ function NoteView({ id, onBinned }: { id: string; onBinned: (note: Note) => void
   )
 
   const body = (
-    <div className="mx-auto w-full max-w-2xl space-y-5">
+    <div ref={bodyRef} className="mx-auto w-full max-w-2xl space-y-5">
       {actionRow}
 
       {template && (
@@ -320,8 +340,10 @@ function NoteView({ id, onBinned }: { id: string; onBinned: (note: Note) => void
 
       {note.location && hasLocation(note.location) && <LocationBlock loc={note.location} />}
 
-      <div>
-        <span className={label}>{t('todo.details')}</span>
+      <div data-blank>
+        <span data-blank className={label}>
+          {t('todo.details')}
+        </span>
         {typing ? (
           <textarea
             ref={areaRef}
@@ -673,8 +695,10 @@ function NoteForm({ id }: { id: string }) {
     if (focusDetails) detailsRef.current?.focus()
   }, [focusDetails])
   const empty = !title.trim() && !details.trim() && !Object.values(fields).some((v) => v.trim())
-  // Fine-tune on the phone leaves out what the note's page edits in place
-  // (James, 2026-10-27): the title (typed into the page's bar) and the text.
+  // Fine-tune on the phone leaves out the text, which the note's page edits in
+  // place (James, 2026-10-27). The title stays, though the bar edits it too
+  // (James, 2026-11-03: "in case they didn't realise you could do it on the
+  // open page").
   const onPage = Boolean(kit && existing)
 
   const done = () => {
@@ -698,21 +722,19 @@ function NoteForm({ id }: { id: string }) {
       backLabel={existing ? existing.title || t('c.untitled') : kit?.t('tab_notes')}
     >
       <div className="space-y-4">
-        {!onPage && (
-          <div>
-            <label htmlFor={titleId} className={label}>
-              {t('notes.title')}
-            </label>
-            <input
-              id={titleId}
-              className={inputCls}
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder={t('notes.title_placeholder')}
-              autoFocus={autoFocusOK() && !existing && !focusDetails}
-            />
-          </div>
-        )}
+        <div>
+          <label htmlFor={titleId} className={label}>
+            {t('notes.title')}
+          </label>
+          <input
+            id={titleId}
+            className={inputCls}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder={t('notes.title_placeholder')}
+            autoFocus={autoFocusOK() && !existing && !focusDetails}
+          />
+        </div>
         {template && template.fields.length > 0 && (
           <fieldset className="space-y-4 rounded-xl border border-slate-800 p-3">
             <legend className="px-1 text-xs font-semibold text-slate-400">{template.name}</legend>

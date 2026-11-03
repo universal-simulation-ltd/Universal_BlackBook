@@ -187,10 +187,11 @@ export function ContactForm({ id }: { id: string }) {
     setDraft((d) => (d.location || d.address?.trim() ? d : { ...d, location: { ...newLocation(), ...here } })),
   )
   const valid = Boolean(draft.name.trim())
-  // Fine-tune on the phone leaves out what the person's page already edits in
-  // place (James, 2026-10-27: "don't have options that can be accessed via the
-  // main view"): the name (typed into the page's title) and the note. A
-  // contact with no name yet still gets the box: Save needs one.
+  // Fine-tune on the phone leaves out the note, which the person's page already
+  // edits in place (James, 2026-10-27: "don't have options that can be
+  // accessed via the main view"). The name stays, though the page's title
+  // edits it too (James, 2026-11-03: "in case they didn't realise you could
+  // do it on the open page"); it is not focused there, so the keyboard waits.
   const [onPage] = useState(() => Boolean(kit && existing && existing.name.trim()))
 
   /**
@@ -424,22 +425,20 @@ export function ContactForm({ id }: { id: string }) {
           </div>
         )}
 
-        {!onPage && (
-          <div>
-            <label className={label} htmlFor="cf-name">
-              {t('form.name')}
-            </label>
-            <input
-              id="cf-name"
-              className={inputCls}
-              value={draft.name}
-              onChange={(e) => patch({ name: e.target.value })}
-              placeholder="Sam Okonkwo"
-              autoFocus={autoFocusOK()}
-              autoComplete="off"
-            />
-          </div>
-        )}
+        <div>
+          <label className={label} htmlFor="cf-name">
+            {t('form.name')}
+          </label>
+          <input
+            id="cf-name"
+            className={inputCls}
+            value={draft.name}
+            onChange={(e) => patch({ name: e.target.value })}
+            placeholder="Sam Okonkwo"
+            autoFocus={autoFocusOK() && !onPage}
+            autoComplete="off"
+          />
+        </div>
 
         {pinnedAbove.map((k) => renderExtra(k))}
 

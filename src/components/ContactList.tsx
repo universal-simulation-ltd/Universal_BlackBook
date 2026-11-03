@@ -756,7 +756,7 @@ function ConfirmDelete({
  * The strip that replaces nothing and sits over the list while selecting.
  *
  * `sticky top-0`, so the actions stay in reach while you scroll down ticking
- * people.
+ * people (below the phone's fixed top bar: native.css ▸ `.bb-selectbar`).
  */
 function SelectBar({
   count,
@@ -783,7 +783,7 @@ function SelectBar({
   const none = count === 0
   const act = `${btnSubtle} disabled:cursor-not-allowed disabled:opacity-40`
   return (
-    <div className="sticky top-0 z-30 -mx-1 mb-2 flex flex-wrap items-center gap-x-1 gap-y-1 rounded-xl border border-slate-800 bg-slate-900 px-2 py-1.5">
+    <div className="bb-selectbar sticky top-0 z-30 -mx-1 mb-2 flex flex-wrap items-center gap-x-1 gap-y-1 rounded-xl border border-slate-800 bg-slate-900 px-2 py-1.5">
       <p className="mr-auto px-1 text-sm font-medium text-slate-200 tabular-nums" aria-live="polite">
         {t('sel.count', { count })}
       </p>
