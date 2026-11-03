@@ -35,13 +35,13 @@ Les tableurs reformatent parfois ce qu’ils ouvrent, en transformant une date d
     title: 'Où votre carnet est conservé',
     summary: 'Sur cet appareil, sans compte nécessaire — et ce que cela implique pour vous.',
     group: 'Les bases',
-    body: `BlackBook conserve votre carnet d’adresses sur l’appareil que vous utilisez. Dans un navigateur, il se trouve dans l’espace de stockage que ce navigateur réserve à ce site ; dans l’application pour téléphone, il se trouve dans le stockage propre à l’application. Rien de vos contacts n’est envoyé nulle part, sauf si vous vous connectez, ce qui active la sauvegarde en ligne.
+    body: `BlackBook conserve votre carnet d’adresses sur l’appareil que vous utilisez. Dans un navigateur, il se trouve dans l’espace de stockage que ce navigateur réserve à ce site ; dans l’application pour téléphone, il se trouve dans le stockage propre à l’application. Rien sur les personnes de votre carnet n’est envoyé nulle part, sauf si vous vous connectez, ce qui active la sauvegarde en ligne.
 
 Vous n’avez pas besoin de compte pour utiliser BlackBook. Tout fonctionne sans être connecté.
 
 ## Ce que cela signifie concrètement
 
-- **Chaque appareil a son propre carnet.** Les contacts ajoutés sur votre ordinateur n’apparaissent pas d’eux-mêmes sur votre téléphone. C’est la sauvegarde en ligne qui les relie. C’est avec un fichier de sauvegarde que vous les y transférez.
+- **Chaque appareil a son propre carnet.** Les personnes ajoutées sur votre ordinateur n’apparaissent pas d’eux-mêmes sur votre téléphone. C’est la sauvegarde en ligne qui les relie. C’est avec un fichier de sauvegarde que vous les y transférez.
 - **Vider le navigateur peut vider le carnet.** Supprimer les données ou l’historique de ce site, utiliser une fenêtre de navigation privée ou désinstaller l’application efface le carnet qui y était conservé.
 - **Les contacts de votre appareil sont à part.** BlackBook n’ajoute rien au carnet d’adresses intégré à votre téléphone, ne le modifie pas et ne se synchronise pas avec lui.
 
@@ -59,14 +59,15 @@ Les choix sur l’apparence et le comportement de l’application sur cet appare
   },
   {
     id: 'importing-and-exporting',
-    title: 'Faire entrer et sortir des contacts',
-    summary: 'Un seul Importer pour les contacts, les notes, les tâches et les sauvegardes, et un export CSV.',
+    title: 'Faire entrer et sortir des personnes',
+    summary: 'Un seul Importer pour les personnes, les notes, les tâches et les sauvegardes, et un export CSV.',
     group: 'Fonctionnement',
     body: `## Une porte pour entrer, une pour sortir
 
-Tout ce qui entre dans BlackBook passe par **Importer** : Réglages, puis Importer dans l’application pour téléphone, ou Actions, puis Avancé, puis Importer sur le site web. Quatre choix y sont proposés :
+Tout ce qui entre dans BlackBook passe par **Importer** : Réglages, puis Importer dans l’application pour téléphone, ou Actions, puis Avancé, puis Importer sur le site web. Cinq choix y sont proposés :
 
-- **Contacts**, depuis un fichier CSV et, dans l’application pour téléphone, depuis les contacts de votre téléphone.
+- **Personnes**, depuis un fichier CSV et, dans l’application pour téléphone, depuis les contacts de votre téléphone.
+- **Personnes depuis OneNote**, une personne pour chaque page. Voir Rapatrier vos notes de OneNote.
 - **Notes**, depuis des fichiers Word, des pages web (.html, .htm, .mht), du texte brut ou du Markdown. Voir Rapatrier vos notes de OneNote.
 - **Tâches**, depuis une liste dans un fichier texte, Markdown, tableur ou agenda (voir plus bas).
 - **Restaurer une sauvegarde BlackBook**, qui ouvre un fichier de sauvegarde que vous avez enregistré (voir Votre fichier de sauvegarde).
@@ -75,11 +76,11 @@ Tout ce qui sort se trouve dans **Sauvegarde et export** : Réglages, puis Sauve
 
 ## Exporter
 
-L’export enregistre tout votre carnet dans un fichier CSV portant la date du jour. Il comporte une colonne pour le nom, l’e-mail, les étiquettes, les notes, l’anniversaire, le téléphone, l’entreprise, et pour indiquer si l’anniversaire ou la fiche d’une personne est masqué : le réimporter restaure donc vos contacts tels que vous les aviez laissés. Le fichier s’ouvre dans n’importe quel tableur. Il laisse de côté vos tâches : pour une copie complète, enregistrez plutôt un fichier de sauvegarde (voir Votre fichier de sauvegarde).
+L’export enregistre tout votre carnet dans un fichier CSV portant la date du jour. Il comporte une colonne pour le nom, l’e-mail, les étiquettes, les notes, l’anniversaire, le téléphone, l’entreprise, et pour indiquer si l’anniversaire ou la fiche d’une personne est masqué : le réimporter restaure donc vos personnes tels que vous les aviez laissés. Le fichier s’ouvre dans n’importe quel tableur. Il laisse de côté vos tâches : pour une copie complète, enregistrez plutôt un fichier de sauvegarde (voir Votre fichier de sauvegarde).
 
 ## Importer un fichier CSV
 
-Choisissez Importer, puis Contacts. Vous pouvez importer un fichier CSV exporté depuis BlackBook ou depuis un autre carnet d’adresses. Vous choisissez d’**ajouter** les personnes du fichier à votre carnet ou de **remplacer** votre carnet par elles.
+Choisissez Importer, puis Personnes. Vous pouvez importer un fichier CSV exporté depuis BlackBook ou depuis un autre carnet d’adresses. Vous choisissez d’**ajouter** les personnes du fichier à votre carnet ou de **remplacer** votre carnet par elles.
 
 BlackBook comprend les noms de colonnes utilisés par Google Contacts et Outlook. Par exemple :
 
@@ -95,7 +96,7 @@ Les dates d’anniversaire sont acceptées sous la forme 1990-06-04, 4 June 1990
 
 ## Depuis les contacts de votre téléphone
 
-Dans l’application pour téléphone, vous pouvez choisir une personne dans les contacts de votre téléphone pour remplir une nouvelle fiche, ou importer tout le carnet de votre téléphone d’un coup avec Importer, puis Contacts. L’import complet ignore les personnes déjà présentes dans votre carnet : vous pouvez donc le relancer plus tard sans risque. Dans Chrome sur Android, le sélecteur de contacts du navigateur propose la même chose pour un nom, un e-mail et un numéro.
+Dans l’application pour téléphone, vous pouvez choisir une personne dans les contacts de votre téléphone pour remplir une nouvelle fiche, ou importer tout le carnet de votre téléphone d’un coup avec Importer, puis Personnes. L’import complet ignore les personnes déjà présentes dans votre carnet : vous pouvez donc le relancer plus tard sans risque. Dans Chrome sur Android, le sélecteur de contacts du navigateur propose la même chose pour un nom, un e-mail et un numéro.
 
 BlackBook ne lit les contacts de votre téléphone que lorsque vous le lui demandez, et n’y écrit jamais rien. La note de la fiche de contact de votre téléphone n’est pas copiée.
 
@@ -197,7 +198,7 @@ Avec une phrase secrète, vous pouvez demander à un appareil de mémoriser la c
 
 Changer de phrase secrète, ou choisir Retirer la phrase secrète, exige la phrase actuelle, même sur un appareil qui la mémorise, et chiffre à nouveau la sauvegarde en une seule étape. La retirer remet une clé aléatoire avec votre compte : vos appareils ouvrent alors la copie en ligne simplement en se reconnectant. Désactiver et supprimer la copie en ligne supprime entièrement la copie en ligne, laisse le carnet de votre appareil tel quel, et fait qu’une nouvelle connexion sur cet appareil ne réactive pas la sauvegarde. Supprimer votre Universal ID supprime aussi la copie en ligne.
 
-La sauvegarde est limitée à environ 2 Mo de données chiffrées, soit plusieurs milliers de contacts. Ce sont généralement des notes très longues qui font atteindre cette limite.`,
+La sauvegarde est limitée à environ 2 Mo de données chiffrées, soit plusieurs milliers de personnes. Ce sont généralement des notes très longues qui font atteindre cette limite.`,
   },
   {
     id: 'backup-file',
@@ -245,9 +246,9 @@ BlackBook vérifie chaque champ d’un fichier avant de l’utiliser : un fichie
 
 1. Connectez-vous avec votre Universal ID (dans l’application pour téléphone, depuis Réglages, puis Compte).
 2. Si vous avez protégé la sauvegarde par une phrase secrète, saisissez-la. Sans phrase secrète, la connexion suffit.
-3. Si cet appareil a déjà ses propres contacts ou tâches, par exemple ceux ajoutés avant de vous connecter, BlackBook les fusionne dans la copie en ligne et l’enregistre aussitôt. Vous n’avez rien à choisir.
+3. Si cet appareil a déjà ses propres personnes ou tâches, par exemple ceux ajoutés avant de vous connecter, BlackBook les fusionne dans la copie en ligne et l’enregistre aussitôt. Vous n’avez rien à choisir.
 
-Lors d’une fusion, la copie en ligne sert de base et les contacts de cet appareil y sont ajoutés. Une personne déjà présente, reconnue comme la même fiche ou par le même nom avec le même e-mail ou numéro, n’est pas ajoutée deux fois. Les étiquettes portant le même nom ne forment plus qu’une. La fusion ne fait qu’ajouter : une personne supprimée sur un autre appareil peut donc revenir depuis un appareil qui l’a encore. Pour reprendre plutôt la copie en ligne exactement telle qu’elle est, ouvrez Sauvegarde en ligne (Réglages, puis Compte, puis Sauvegarde en ligne dans l’application pour téléphone ; Actions, puis Avancé, puis Sauvegarde en ligne sur le site web) et choisissez Récupérer la copie en ligne.
+Lors d’une fusion, la copie en ligne sert de base et les personnes de cet appareil y sont ajoutés. Une personne déjà présente, reconnue comme la même fiche ou par le même nom avec le même e-mail ou numéro, n’est pas ajoutée deux fois. Les étiquettes portant le même nom ne forment plus qu’une. La fusion ne fait qu’ajouter : une personne supprimée sur un autre appareil peut donc revenir depuis un appareil qui l’a encore. Pour reprendre plutôt la copie en ligne exactement telle qu’elle est, ouvrez Sauvegarde en ligne (Réglages, puis Compte, puis Sauvegarde en ligne dans l’application pour téléphone ; Actions, puis Avancé, puis Sauvegarde en ligne sur le site web) et choisissez Récupérer la copie en ligne.
 
 ## Enregistrement
 
@@ -259,7 +260,7 @@ La copie en ligne est enregistrée comme un carnet entier. Si deux appareils ont
 
 ## Après un changement de phrase secrète
 
-Quand vous ajoutez ou changez la phrase secrète sur un appareil, vos autres appareils cessent d’enregistrer et vous la demandent une fois. Rien n’y est perdu, et lorsque vous les déverrouillez, ils proposent de fusionner à nouveau leurs contacts. Un appareil qui a encore l’ancienne clé ne peut pas écraser le changement. Quand vous retirez la phrase secrète, vos autres appareils rouvrent la copie en ligne d’eux-mêmes.
+Quand vous ajoutez ou changez la phrase secrète sur un appareil, vos autres appareils cessent d’enregistrer et vous la demandent une fois. Rien n’y est perdu, et lorsque vous les déverrouillez, ils proposent de fusionner à nouveau leurs personnes. Un appareil qui a encore l’ancienne clé ne peut pas écraser le changement. Quand vous retirez la phrase secrète, vos autres appareils rouvrent la copie en ligne d’eux-mêmes.
 
 ## Transférer votre carnet sans compte
 
@@ -267,12 +268,12 @@ Quand vous ajoutez ou changez la phrase secrète sur un appareil, vos autres app
 2. Faites parvenir le fichier sur l’autre appareil, par exemple avec AirDrop, un stockage en ligne ou un e-mail.
 3. Sur l’autre appareil, ouvrez BlackBook, choisissez Importer, puis Restaurer une sauvegarde BlackBook, et sélectionnez le fichier.
 
-Si l’autre appareil est neuf, choisissez Tout remplacer. S’il contient déjà ses propres contacts, choisissez Ajouter à l’existant et les deux carnets sont fusionnés.`,
+Si l’autre appareil est neuf, choisissez Tout remplacer. S’il contient déjà ses propres personnes, choisissez Ajouter à l’existant et les deux carnets sont fusionnés.`,
   },
   {
     id: 'notes-from-onenote',
     title: "Rapatrier vos notes de OneNote",
-    summary: "Exportez des pages de OneNote, puis importez les fichiers dans Notes.",
+    summary: "Exportez des pages de OneNote, puis importez-les en notes, ou en personnes avec une page chacune.",
     group: "Fonctionnement",
     body: `BlackBook ne peut pas ouvrir lui-même un bloc-notes OneNote, mais il lit les fichiers que OneNote exporte. Tout est lu sur votre appareil ; rien n’est envoyé.
 
@@ -299,7 +300,21 @@ Choisissez **Importer** ▸ **Notes** : dans l’application pour téléphone, I
 - Le texte arrive en texte brut : paragraphes et listes sont conservés ; la mise en forme, les images, les dessins et les pièces jointes ne le sont pas.
 - Si OneNote a écrit la date de la page sous son titre, elle devient la date de la note.
 
-Vous voyez ce qui a été trouvé avant que quoi que ce soit soit ajouté, et vous pouvez écarter n’importe quel élément d’un balayage. L’import active l’onglet Notes.`,
+Vous voyez ce qui a été trouvé avant que quoi que ce soit soit ajouté, et vous pouvez écarter n’importe quel élément d’un balayage. L’import active l’onglet Notes.
+
+## Une page par personne
+
+Si vous tenez une page par personne, comme dans une section Personnes, choisissez plutôt **Importer** ▸ **Personnes depuis OneNote**. Chaque page devient une personne dans Personnes :
+
+- Le titre de la page est son nom, et le texte de la page va dans ses notes.
+- La date que OneNote écrit sous le titre devient le jour de son ajout.
+- Une personne déjà présente dans votre carnet sous ce nom garde ce qu’elle a, et la page est ajoutée sous ses notes. Importer deux fois la même page n’ajoute rien.
+
+Avant que quoi que ce soit soit ajouté, vous voyez toutes les pages et pouvez écarter d’un balayage celles qui ne concernent pas une personne. Vous choisissez aussi comment les étiqueter :
+
+- **Par section** : tous ceux d’un fichier de section reçoivent son nom comme étiquette ; exporter la section People - James les étiquette donc « People - James ». Cela suppose que le fichier garde le nom donné par OneNote.
+- **Une étiquette pour tout le monde** : saisissez une étiquette, nouvelle ou déjà existante.
+- **Aucune étiquette**.`,
   },
 ]
 

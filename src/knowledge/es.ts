@@ -35,13 +35,13 @@ Las hojas de cálculo a veces cambian el formato de lo que abren y convierten un
     title: 'Dónde se guarda su libreta',
     summary: 'En este dispositivo, sin necesidad de cuenta, y lo que eso significa para usted.',
     group: 'Lo básico',
-    body: `BlackBook guarda su libreta de direcciones en el dispositivo que está usando. En un navegador, vive en el almacenamiento que ese navegador reserva para este sitio; en la aplicación del teléfono, vive en el almacenamiento propio de la aplicación. Nada sobre sus contactos se envía a ningún sitio, salvo que inicie sesión, lo que activa la copia de seguridad en línea.
+    body: `BlackBook guarda su libreta de direcciones en el dispositivo que está usando. En un navegador, vive en el almacenamiento que ese navegador reserva para este sitio; en la aplicación del teléfono, vive en el almacenamiento propio de la aplicación. Nada sobre las personas de su libreta se envía a ningún sitio, salvo que inicie sesión, lo que activa la copia de seguridad en línea.
 
 No necesita una cuenta para usar BlackBook. Todo funciona sin iniciar sesión.
 
 ## Qué significa en la práctica
 
-- **Cada dispositivo tiene su propia libreta.** Los contactos que añade en el portátil no aparecen solos en el teléfono. La copia de seguridad en línea es lo que los une. Un archivo de copia de seguridad es la forma de pasarlos de uno a otro.
+- **Cada dispositivo tiene su propia libreta.** Las personas que añade en el portátil no aparecen solos en el teléfono. La copia de seguridad en línea es lo que los une. Un archivo de copia de seguridad es la forma de pasarlos de uno a otro.
 - **Borrar el navegador puede borrar la libreta.** Eliminar los datos o el historial de este sitio, usar una ventana privada o desinstalar la aplicación elimina la libreta guardada allí.
 - **Los contactos del dispositivo son aparte.** BlackBook no añade nada, no modifica ni se sincroniza con la libreta de direcciones integrada en su teléfono.
 
@@ -59,14 +59,15 @@ Las opciones sobre el aspecto y el funcionamiento de la aplicación en este disp
   },
   {
     id: 'importing-and-exporting',
-    title: 'Añadir contactos y sacarlos',
-    summary: 'Un solo Importar para contactos, notas, tareas y copias de seguridad, y una exportación CSV.',
+    title: 'Añadir personas y sacarlas',
+    summary: 'Un solo Importar para personas, notas, tareas y copias de seguridad, y una exportación CSV.',
     group: 'Cómo funciona',
     body: `## Una puerta para entrar y otra para salir
 
-Todo lo que entra en BlackBook pasa por **Importar**: Ajustes y luego Importar en la aplicación del teléfono, o Acciones, luego Avanzado y luego Importar en el sitio web. Ofrece cuatro opciones:
+Todo lo que entra en BlackBook pasa por **Importar**: Ajustes y luego Importar en la aplicación del teléfono, o Acciones, luego Avanzado y luego Importar en el sitio web. Ofrece cinco opciones:
 
-- **Contactos**, desde un archivo CSV y, en la aplicación del teléfono, desde los contactos de su teléfono.
+- **Personas**, desde un archivo CSV y, en la aplicación del teléfono, desde los contactos de su teléfono.
+- **Personas desde OneNote**, una persona por cada página. Consulte Trae tus notas de OneNote.
 - **Notas**, desde archivos de Word, páginas web (.html, .htm, .mht), texto sin formato o Markdown. Consulte Trae tus notas de OneNote.
 - **Tareas**, desde una lista en un archivo de texto, Markdown, hoja de cálculo o calendario (más abajo).
 - **Restaurar una copia de BlackBook**, que abre un archivo de copia de seguridad que usted guardó (consulte Su archivo de copia de seguridad).
@@ -75,11 +76,11 @@ Todo lo que sale está en **Copia y exportar**: Ajustes y luego Copia y exportar
 
 ## Exportar
 
-La exportación guarda toda su libreta en un archivo CSV con la fecha de hoy en el nombre. Tiene una columna para el nombre, el correo, las etiquetas, las notas, el cumpleaños, el teléfono, la empresa y para indicar si el cumpleaños o la ficha de una persona están ocultos, de modo que volver a importarlo restaura sus contactos tal como los dejó. El archivo se abre en cualquier hoja de cálculo. Deja fuera sus tareas: para una copia completa, guarde mejor un archivo de copia de seguridad (consulte Su archivo de copia de seguridad).
+La exportación guarda toda su libreta en un archivo CSV con la fecha de hoy en el nombre. Tiene una columna para el nombre, el correo, las etiquetas, las notas, el cumpleaños, el teléfono, la empresa y para indicar si el cumpleaños o la ficha de una persona están ocultos, de modo que volver a importarlo restaura a sus personas tal como las dejó. El archivo se abre en cualquier hoja de cálculo. Deja fuera sus tareas: para una copia completa, guarde mejor un archivo de copia de seguridad (consulte Su archivo de copia de seguridad).
 
 ## Importar un archivo CSV
 
-Elija Importar y luego Contactos. Puede importar un archivo CSV exportado desde BlackBook o desde otra libreta de direcciones. Usted elige si **añadir** las personas del archivo a su libreta o **sustituir** su libreta por ellas.
+Elija Importar y luego Personas. Puede importar un archivo CSV exportado desde BlackBook o desde otra libreta de direcciones. Usted elige si **añadir** las personas del archivo a su libreta o **sustituir** su libreta por ellas.
 
 BlackBook entiende los nombres de columna que usan Google Contacts y Outlook. Por ejemplo:
 
@@ -95,7 +96,7 @@ Los cumpleaños se aceptan como 1990-06-04, 4 June 1990, June 4 o --06-04 (un cu
 
 ## Desde los contactos de su teléfono
 
-En la aplicación del teléfono, puede elegir a una persona de los contactos del teléfono para rellenar una ficha nueva, o importar toda la libreta del teléfono de una vez con Importar y luego Contactos. La importación completa omite a quien ya está en su libreta, así que puede repetirla más adelante sin problema. En Chrome para Android, el selector de contactos del navegador ofrece lo mismo para un nombre, un correo y un número.
+En la aplicación del teléfono, puede elegir a una persona de los contactos del teléfono para rellenar una ficha nueva, o importar toda la libreta del teléfono de una vez con Importar y luego Personas. La importación completa omite a quien ya está en su libreta, así que puede repetirla más adelante sin problema. En Chrome para Android, el selector de contactos del navegador ofrece lo mismo para un nombre, un correo y un número.
 
 BlackBook solo lee los contactos de su teléfono cuando usted lo pide y nunca escribe nada en ellos. La nota de la ficha de contacto del teléfono no se copia.
 
@@ -197,7 +198,7 @@ Con una frase de contraseña, puede pedir a un dispositivo que recuerde la clave
 
 Cambiar la frase de contraseña, o elegir Quitar la frase de contraseña, exige la actual, incluso en un dispositivo que la recuerda, y vuelve a cifrar la copia en un solo paso. Quitarla vuelve a guardar una clave aleatoria con su cuenta, de modo que sus dispositivos abren la copia en línea solo con volver a iniciar sesión. Desactivar y eliminar la copia en línea borra por completo la copia en línea, deja la libreta de su dispositivo tal como está y hace que volver a iniciar sesión en ese dispositivo no vuelva a activar la copia. Si elimina su Universal ID, la copia en línea se elimina con él.
 
-La copia de seguridad tiene un límite de unos 2 MB de datos cifrados, lo que equivale a muchos miles de contactos. Las notas muy largas suelen ser la causa cuando una libreta lo alcanza.`,
+La copia de seguridad tiene un límite de unos 2 MB de datos cifrados, lo que equivale a muchos miles de personas. Las notas muy largas suelen ser la causa cuando una libreta lo alcanza.`,
   },
   {
     id: 'backup-file',
@@ -208,7 +209,7 @@ La copia de seguridad tiene un límite de unos 2 MB de datos cifrados, lo que eq
 
 ## Qué contiene
 
-- Cada contacto, con todos sus campos: nombre, correo, teléfono, empresa, dirección, cumpleaños, notas, etiquetas, fijados y quién está oculto.
+- Cada persona, con todos sus campos: nombre, correo, teléfono, empresa, dirección, cumpleaños, notas, etiquetas, fijados y quién está oculto.
 - Sus etiquetas y listas de correo.
 - Su lista de tareas.
 - Sus opciones en Ajustar esta app y la vista con la que se abre la lista.
@@ -245,9 +246,9 @@ BlackBook comprueba cada campo de un archivo antes de usarlo, así que un archiv
 
 1. Inicie sesión con su Universal ID (en la aplicación del teléfono, desde Ajustes y luego Cuenta).
 2. Si protegió la copia con una frase de contraseña, introdúzcala. Sin ella, basta con iniciar sesión.
-3. Si este dispositivo ya tiene contactos o tareas propios, como los que añadió antes de iniciar sesión, BlackBook los fusiona con la copia en línea y la guarda de inmediato. No tiene que elegir nada.
+3. Si este dispositivo ya tiene personas o tareas propias, como los que añadió antes de iniciar sesión, BlackBook los fusiona con la copia en línea y la guarda de inmediato. No tiene que elegir nada.
 
-Al fusionar, la copia en línea es el punto de partida y se le añaden los contactos de este dispositivo. Quien ya esté allí, reconocido como la misma ficha o por el mismo nombre con el mismo correo o teléfono, no se añade dos veces. Las etiquetas con el mismo nombre se convierten en una sola. Fusionar solo añade, así que alguien a quien borró en otro dispositivo puede volver desde un dispositivo que todavía lo tenga. Para quedarse en cambio con la copia en línea tal como está, abra Copia en línea (Ajustes, luego Cuenta y luego Copia en línea en la aplicación del teléfono; Acciones, luego Avanzado y luego Copia en línea en el sitio web) y elija Traer la copia en línea.
+Al fusionar, la copia en línea es el punto de partida y se le añaden las personas de este dispositivo. Quien ya esté allí, reconocido como la misma ficha o por el mismo nombre con el mismo correo o teléfono, no se añade dos veces. Las etiquetas con el mismo nombre se convierten en una sola. Fusionar solo añade, así que alguien a quien borró en otro dispositivo puede volver desde un dispositivo que todavía lo tenga. Para quedarse en cambio con la copia en línea tal como está, abra Copia en línea (Ajustes, luego Cuenta y luego Copia en línea en la aplicación del teléfono; Acciones, luego Avanzado y luego Copia en línea en el sitio web) y elija Traer la copia en línea.
 
 ## Guardado
 
@@ -259,7 +260,7 @@ La copia en línea se guarda como una libreta completa. Si dos dispositivos han 
 
 ## Después de cambiar la frase de contraseña
 
-Cuando añade o cambia la frase de contraseña en un dispositivo, los demás dejan de guardar y se la piden una vez. No se pierde nada en ellos, y al desbloquearlos ofrecen volver a fusionar sus contactos. Un dispositivo que todavía tenga la clave antigua no puede sobrescribir el cambio. Cuando quita la frase de contraseña, sus otros dispositivos vuelven a abrir la copia en línea por sí solos.
+Cuando añade o cambia la frase de contraseña en un dispositivo, los demás dejan de guardar y se la piden una vez. No se pierde nada en ellos, y al desbloquearlos ofrecen volver a fusionar sus personas. Un dispositivo que todavía tenga la clave antigua no puede sobrescribir el cambio. Cuando quita la frase de contraseña, sus otros dispositivos vuelven a abrir la copia en línea por sí solos.
 
 ## Pasar su libreta sin cuenta
 
@@ -267,12 +268,12 @@ Cuando añade o cambia la frase de contraseña en un dispositivo, los demás dej
 2. Lleve el archivo al otro dispositivo, por ejemplo con AirDrop, una nube o el correo.
 3. En el otro dispositivo, abra BlackBook, elija Importar y luego Restaurar una copia de BlackBook, y seleccione el archivo.
 
-Si el otro dispositivo es nuevo, elija Sustituir todo. Si ya tiene contactos propios, elija Añadir a lo que hay y las dos libretas se fusionarán.`,
+Si el otro dispositivo es nuevo, elija Sustituir todo. Si ya tiene personas propias, elija Añadir a lo que hay y las dos libretas se fusionarán.`,
   },
   {
     id: 'notes-from-onenote',
     title: "Trae tus notas de OneNote",
-    summary: "Exporta páginas de OneNote e importa los archivos en Notas.",
+    summary: "Exporta páginas de OneNote e importa los archivos como notas, o como personas con una página cada una.",
     group: "Cómo funciona",
     body: `BlackBook no puede abrir un bloc de notas de OneNote por sí mismo, pero lee los archivos que OneNote exporta. Todo se lee en su dispositivo; no se sube nada.
 
@@ -299,7 +300,21 @@ Elija **Importar** ▸ **Notas**: en la aplicación del teléfono, Importar est�
 - El texto llega como texto sin formato: se conservan los párrafos y las listas; no el formato, las imágenes, los dibujos ni los adjuntos.
 - Si OneNote escribió la fecha de la página bajo su título, esa será la fecha de la nota.
 
-Verá lo que se ha encontrado antes de que se añada nada, y puede quitar cualquier elemento deslizándolo. Importar activa la pestaña Notas.`,
+Verá lo que se ha encontrado antes de que se añada nada, y puede quitar cualquier elemento deslizándolo. Importar activa la pestaña Notas.
+
+## Una página por persona
+
+Si guarda una página por cada persona, como en una sección Personas, elija **Importar** ▸ **Personas desde OneNote**. Cada página pasa a ser una persona en Personas:
+
+- El título de la página es su nombre, y el texto de la página va a sus notas.
+- La fecha que OneNote escribe bajo el título pasa a ser el día en que se añadió a la persona.
+- Quien ya esté en su libreta con ese nombre conserva lo que tiene, y la página se añade bajo sus notas. Importar otra vez la misma página no añade nada.
+
+Antes de que se añada nada verá todas las páginas y podrá quitar deslizando las que no sean de una persona. También elige cómo ponerles etiqueta:
+
+- **Por sección**: todas las personas del archivo de una sección reciben su nombre como etiqueta, así que al exportar la sección People - James quedan con la etiqueta "People - James". Para esto el archivo debe conservar el nombre que le dio OneNote.
+- **Una etiqueta para todos**: escriba una etiqueta, nueva o una que ya tenga.
+- **Sin etiqueta**.`,
   },
 ]
 

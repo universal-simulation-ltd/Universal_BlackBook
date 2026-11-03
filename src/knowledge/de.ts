@@ -35,13 +35,13 @@ Tabellenprogramme formatieren manchmal um, was sie öffnen, und machen aus einem
     title: 'Wo Ihr Adressbuch gespeichert ist',
     summary: 'Auf diesem Gerät, ohne Konto – und was das für Sie bedeutet.',
     group: 'Grundlagen',
-    body: `BlackBook speichert Ihr Adressbuch auf dem Gerät, das Sie gerade verwenden. Im Browser liegt es im Speicher, den dieser Browser für diese Website vorsieht; in der App auf dem Telefon liegt es im eigenen Speicher der App. Nichts über Ihre Kontakte wird irgendwohin gesendet, es sei denn, Sie melden sich an; dadurch wird die Online-Sicherung eingeschaltet.
+    body: `BlackBook speichert Ihr Adressbuch auf dem Gerät, das Sie gerade verwenden. Im Browser liegt es im Speicher, den dieser Browser für diese Website vorsieht; in der App auf dem Telefon liegt es im eigenen Speicher der App. Nichts über die Personen in Ihrem Adressbuch wird irgendwohin gesendet, es sei denn, Sie melden sich an; dadurch wird die Online-Sicherung eingeschaltet.
 
 Sie brauchen kein Konto, um BlackBook zu nutzen. Alles funktioniert auch ohne Anmeldung.
 
 ## Was das praktisch bedeutet
 
-- **Jedes Gerät hat sein eigenes Adressbuch.** Kontakte, die Sie am Laptop hinzufügen, erscheinen nicht von selbst auf dem Telefon. Die Online-Sicherung verbindet sie. Mit einer Sicherungsdatei bringen Sie sie hinüber.
+- **Jedes Gerät hat sein eigenes Adressbuch.** Personen, die Sie am Laptop hinzufügen, erscheinen nicht von selbst auf dem Telefon. Die Online-Sicherung verbindet sie. Mit einer Sicherungsdatei bringen Sie sie hinüber.
 - **Browserdaten löschen kann das Adressbuch löschen.** Wenn Sie Website-Daten oder den Verlauf dieser Website löschen, ein privates Fenster verwenden oder die App deinstallieren, wird das dort gespeicherte Adressbuch entfernt.
 - **Die Kontakte Ihres Geräts sind getrennt.** BlackBook fügt dem eingebauten Adressbuch Ihres Telefons nichts hinzu, ändert es nicht und synchronisiert sich nicht damit.
 
@@ -59,14 +59,15 @@ Einstellungen dazu, wie die App auf diesem Gerät aussieht und sich verhält, et
   },
   {
     id: 'importing-and-exporting',
-    title: 'Kontakte hinein- und hinausbringen',
-    summary: 'Ein Import für Kontakte, Notizen, Aufgaben und Sicherungen sowie ein CSV-Export.',
+    title: 'Personen hinein- und hinausbringen',
+    summary: 'Ein Import für Personen, Notizen, Aufgaben und Sicherungen sowie ein CSV-Export.',
     group: 'So funktioniert es',
     body: `## Eine Tür hinein, eine hinaus
 
-Alles, was in BlackBook hineinkommt, läuft über **Importieren**: in der App auf dem Telefon „Anpassen“, dann „Importieren“, auf der Website „Aktionen“, dann „Erweitert“, dann „Importieren“. Dort gibt es vier Möglichkeiten:
+Alles, was in BlackBook hineinkommt, läuft über **Importieren**: in der App auf dem Telefon „Anpassen“, dann „Importieren“, auf der Website „Aktionen“, dann „Erweitert“, dann „Importieren“. Dort gibt es fünf Möglichkeiten:
 
-- **Kontakte** aus einer CSV-Datei und in der App auf dem Telefon aus den eigenen Kontakten Ihres Telefons.
+- **Personen** aus einer CSV-Datei und in der App auf dem Telefon aus den eigenen Kontakten Ihres Telefons.
+- **Personen aus OneNote**, eine Person für jede Seite. Siehe „Notizen aus OneNote übernehmen“.
 - **Notizen** aus Word-Dateien, Webseiten (.html, .htm, .mht), reinem Text oder Markdown. Siehe „Notizen aus OneNote übernehmen“.
 - **Aufgaben** aus einer Liste in einer Text-, Markdown-, Tabellen- oder Kalenderdatei (siehe unten).
 - **BlackBook-Sicherung wiederherstellen** öffnet eine Sicherungsdatei, die Sie gespeichert haben (siehe „Ihre Sicherungsdatei“).
@@ -75,11 +76,11 @@ Alles, was hinausgeht, finden Sie unter **Sicherung & Export**: in der App auf d
 
 ## Exportieren
 
-Der Export speichert Ihr gesamtes Adressbuch als CSV-Datei mit dem heutigen Datum im Namen. Sie enthält je eine Spalte für Name, E-Mail, Schlagwörter, Notizen, Geburtstag, Telefon, Firma sowie dafür, ob der Geburtstag oder die Karte einer Person ausgeblendet ist. Wenn Sie die Datei wieder importieren, sind Ihre Kontakte also so wie zuvor. Die Datei lässt sich in jedem Tabellenprogramm öffnen. Ihre Aufgaben sind nicht enthalten: Für eine vollständige Kopie speichern Sie stattdessen eine Sicherungsdatei (siehe „Ihre Sicherungsdatei“).
+Der Export speichert Ihr gesamtes Adressbuch als CSV-Datei mit dem heutigen Datum im Namen. Sie enthält je eine Spalte für Name, E-Mail, Schlagwörter, Notizen, Geburtstag, Telefon, Firma sowie dafür, ob der Geburtstag oder die Karte einer Person ausgeblendet ist. Wenn Sie die Datei wieder importieren, sind Ihre Personen also so wie zuvor. Die Datei lässt sich in jedem Tabellenprogramm öffnen. Ihre Aufgaben sind nicht enthalten: Für eine vollständige Kopie speichern Sie stattdessen eine Sicherungsdatei (siehe „Ihre Sicherungsdatei“).
 
 ## Eine CSV-Datei importieren
 
-Wählen Sie „Importieren“, dann „Kontakte“. Sie können eine CSV-Datei importieren, die aus BlackBook oder aus einem anderen Adressbuch exportiert wurde. Sie wählen, ob die Personen aus der Datei Ihrem Adressbuch **hinzugefügt** werden oder ob sie Ihr Adressbuch **ersetzen**.
+Wählen Sie „Importieren“, dann „Personen“. Sie können eine CSV-Datei importieren, die aus BlackBook oder aus einem anderen Adressbuch exportiert wurde. Sie wählen, ob die Personen aus der Datei Ihrem Adressbuch **hinzugefügt** werden oder ob sie Ihr Adressbuch **ersetzen**.
 
 BlackBook versteht die Spaltennamen, die Google Contacts und Outlook verwenden. Zum Beispiel:
 
@@ -95,7 +96,7 @@ Geburtstage werden als 1990-06-04, 4 June 1990, June 4 oder --06-04 (ein Geburts
 
 ## Aus den Kontakten Ihres Telefons
 
-In der App auf dem Telefon können Sie eine Person aus den Kontakten Ihres Telefons wählen, um eine neue Karte auszufüllen, oder mit „Importieren“, dann „Kontakte“ das ganze Telefonbuch auf einmal importieren. Der Gesamtimport überspringt alle, die schon in Ihrem Adressbuch stehen, Sie können ihn also später gefahrlos wiederholen. In Chrome unter Android bietet die Kontaktauswahl des Browsers dasselbe für einen Namen, eine E-Mail-Adresse und eine Nummer.
+In der App auf dem Telefon können Sie eine Person aus den Kontakten Ihres Telefons wählen, um eine neue Karte auszufüllen, oder mit „Importieren“, dann „Personen“ das ganze Telefonbuch auf einmal importieren. Der Gesamtimport überspringt alle, die schon in Ihrem Adressbuch stehen, Sie können ihn also später gefahrlos wiederholen. In Chrome unter Android bietet die Kontaktauswahl des Browsers dasselbe für einen Namen, eine E-Mail-Adresse und eine Nummer.
 
 BlackBook liest die Kontakte Ihres Telefons nur, wenn Sie es darum bitten, und schreibt nie etwas zurück. Die Notiz auf der Kontaktkarte Ihres Telefons wird nicht übernommen.
 
@@ -197,7 +198,7 @@ Mit einer Passphrase können Sie ein Gerät den Schlüssel merken lassen, damit 
 
 Zum Ändern der Passphrase oder für „Passphrase entfernen“ brauchen Sie die aktuelle, auch auf einem Gerät, das sie sich merkt. Die Sicherung wird dann in einem Schritt neu verschlüsselt. Wenn Sie sie entfernen, liegt wieder ein zufälliger Schlüssel bei Ihrem Konto, und Ihre Geräte öffnen die Online-Kopie allein durch die Anmeldung. „Ausschalten und Online-Kopie löschen“ löscht die Online-Kopie vollständig, lässt das Adressbuch auf Ihrem Gerät, wie es ist, und sorgt dafür, dass eine erneute Anmeldung auf diesem Gerät die Sicherung nicht wieder einschaltet. Wenn Sie Ihre Universal ID löschen, wird die Online-Kopie mitgelöscht.
 
-Die Sicherung ist auf etwa 2 MB verschlüsselte Daten begrenzt, das sind viele Tausend Kontakte. Meist sind sehr lange Notizen der Grund, wenn ein Adressbuch diese Grenze erreicht.`,
+Die Sicherung ist auf etwa 2 MB verschlüsselte Daten begrenzt, das sind viele Tausend Personen. Meist sind sehr lange Notizen der Grund, wenn ein Adressbuch diese Grenze erreicht.`,
   },
   {
     id: 'backup-file',
@@ -208,7 +209,7 @@ Die Sicherung ist auf etwa 2 MB verschlüsselte Daten begrenzt, das sind viele T
 
 ## Was sie enthält
 
-- Jeden Kontakt mit allen Feldern: Name, E-Mail, Telefon, Firma, Adresse, Geburtstag, Notizen, Schlagwörter, wer angeheftet und wer ausgeblendet ist.
+- Jede Person mit allen Feldern: Name, E-Mail, Telefon, Firma, Adresse, Geburtstag, Notizen, Schlagwörter, wer angeheftet und wer ausgeblendet ist.
 - Ihre Schlagwörter und E-Mail-Listen.
 - Ihre Aufgabenliste.
 - Ihre Einstellungen unter „Diese App anpassen“ und die Ansicht, mit der die Liste öffnet.
@@ -245,9 +246,9 @@ BlackBook prüft jedes Feld einer Datei, bevor es sie verwendet. Eine beschädig
 
 1. Melden Sie sich mit Ihrer Universal ID an (in der App auf dem Telefon unter „Anpassen“, dann „Konto“).
 2. Wenn Sie die Sicherung mit einer Passphrase geschützt haben, geben Sie sie ein. Ohne Passphrase genügt die Anmeldung.
-3. Hat dieses Gerät schon eigene Kontakte oder Aufgaben, etwa solche, die Sie vor der Anmeldung hinzugefügt haben, führt BlackBook sie in die Online-Kopie zusammen und speichert diese sofort. Sie müssen nichts auswählen.
+3. Hat dieses Gerät schon eigene Personen oder Aufgaben, etwa solche, die Sie vor der Anmeldung hinzugefügt haben, führt BlackBook sie in die Online-Kopie zusammen und speichert diese sofort. Sie müssen nichts auswählen.
 
-Beim Zusammenführen ist die Online-Kopie die Grundlage, und die Kontakte dieses Geräts werden ergänzt. Wer schon vorhanden ist – als dieselbe Karte oder mit demselben Namen und derselben E-Mail-Adresse oder Telefonnummer –, wird nicht doppelt hinzugefügt. Schlagwörter mit gleichem Namen werden zu einem. Zusammenführen fügt immer nur hinzu: Jemand, den Sie auf einem anderen Gerät gelöscht haben, kann also von einem Gerät zurückkommen, auf dem er noch steht. Um stattdessen die Online-Kopie genau so zu übernehmen, wie sie ist, öffnen Sie „Online-Sicherung“ (in der App auf dem Telefon „Anpassen“, dann „Konto“, dann „Online-Sicherung“; auf der Website „Aktionen“, dann „Erweitert“, dann „Online-Sicherung“) und wählen Sie „Online-Kopie abrufen“.
+Beim Zusammenführen ist die Online-Kopie die Grundlage, und die Personen dieses Geräts werden ergänzt. Wer schon vorhanden ist – als dieselbe Karte oder mit demselben Namen und derselben E-Mail-Adresse oder Telefonnummer –, wird nicht doppelt hinzugefügt. Schlagwörter mit gleichem Namen werden zu einem. Zusammenführen fügt immer nur hinzu: Jemand, den Sie auf einem anderen Gerät gelöscht haben, kann also von einem Gerät zurückkommen, auf dem er noch steht. Um stattdessen die Online-Kopie genau so zu übernehmen, wie sie ist, öffnen Sie „Online-Sicherung“ (in der App auf dem Telefon „Anpassen“, dann „Konto“, dann „Online-Sicherung“; auf der Website „Aktionen“, dann „Erweitert“, dann „Online-Sicherung“) und wählen Sie „Online-Kopie abrufen“.
 
 ## Speichern
 
@@ -259,7 +260,7 @@ Die Online-Kopie wird als ganzes Adressbuch gespeichert. Haben zwei Geräte das 
 
 ## Nach einer Änderung der Passphrase
 
-Wenn Sie auf einem Gerät eine Passphrase hinzufügen oder sie ändern, hören Ihre anderen Geräte auf zu speichern und fragen einmal danach. Auf ihnen geht nichts verloren, und beim Entsperren bieten sie an, ihre Kontakte wieder zusammenzuführen. Ein Gerät mit dem alten Schlüssel kann die Änderung nicht überschreiben. Wenn Sie die Passphrase entfernen, öffnen Ihre anderen Geräte die Online-Kopie wieder von selbst.
+Wenn Sie auf einem Gerät eine Passphrase hinzufügen oder sie ändern, hören Ihre anderen Geräte auf zu speichern und fragen einmal danach. Auf ihnen geht nichts verloren, und beim Entsperren bieten sie an, ihre Personen wieder zusammenzuführen. Ein Gerät mit dem alten Schlüssel kann die Änderung nicht überschreiben. Wenn Sie die Passphrase entfernen, öffnen Ihre anderen Geräte die Online-Kopie wieder von selbst.
 
 ## Ihr Adressbuch ohne Konto umziehen
 
@@ -272,7 +273,7 @@ Ist das andere Gerät neu, wählen Sie „Alles ersetzen“. Hat es schon eigene
   {
     id: 'notes-from-onenote',
     title: "Notizen aus OneNote übernehmen",
-    summary: "Seiten aus OneNote exportieren und die Dateien in Notizen importieren.",
+    summary: "Seiten aus OneNote exportieren und als Notizen importieren – oder als Personen mit je einer Seite.",
     group: "So funktioniert es",
     body: `BlackBook kann ein OneNote-Notizbuch nicht selbst öffnen, liest aber die Dateien, die OneNote exportiert. Alles wird auf Ihrem Gerät gelesen; nichts wird hochgeladen.
 
@@ -299,7 +300,21 @@ Wählen Sie **Importieren** ▸ **Notizen**: In der App auf dem Telefon finden S
 - Der Text kommt als reiner Text: Absätze und Listen bleiben erhalten, Formatierung, Bilder, Zeichnungen und Anhänge nicht.
 - Hat OneNote das Datum der Seite unter den Titel geschrieben, wird es zum Datum der Notiz.
 
-Sie sehen, was gefunden wurde, bevor etwas hinzugefügt wird, und können jeden Eintrag wegwischen. Der Import schaltet den Tab „Notizen“ ein.`,
+Sie sehen, was gefunden wurde, bevor etwas hinzugefügt wird, und können jeden Eintrag wegwischen. Der Import schaltet den Tab „Notizen“ ein.
+
+## Eine Seite pro Person
+
+Wenn Sie für jede Person eine eigene Seite führen, etwa in einem Abschnitt „Personen“, wählen Sie stattdessen **Importieren** ▸ **Personen aus OneNote**. Jede Seite wird zu einer Person unter „Personen“:
+
+- Der Seitentitel ist ihr Name, und der Text der Seite kommt in ihre Notizen.
+- Das Datum, das OneNote unter den Titel schreibt, wird zum Tag, an dem sie hinzugefügt wurde.
+- Wer mit diesem Namen schon in Ihrem Adressbuch steht, behält, was er hat, und die Seite wird unter seinen Notizen angefügt. Dieselbe Seite noch einmal zu importieren fügt nichts hinzu.
+
+Bevor etwas hinzugefügt wird, sehen Sie jede Seite und können alle wegwischen, die nicht von einer Person handeln. Außerdem wählen Sie, wie sie mit Schlagwörtern versehen werden:
+
+- **Nach Abschnitt**: Alle aus der Datei eines Abschnitts erhalten dessen Namen als Schlagwort; exportieren Sie den Abschnitt „People - James“, erhalten sie das Schlagwort „People - James“. Dafür muss die Datei den Namen behalten, den OneNote ihr gegeben hat.
+- **Ein Schlagwort für alle**: Geben Sie ein Schlagwort ein, neu oder eines, das Sie schon haben.
+- **Kein Schlagwort**.`,
   },
 ]
 

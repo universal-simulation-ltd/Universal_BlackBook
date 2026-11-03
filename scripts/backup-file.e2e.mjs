@@ -249,7 +249,7 @@ try {
   await page.getByRole('tab', { name: 'To-do' }).click()
   await page.getByText('Ring Ada').first().waitFor()
   check(true, 'to-dos are back (and the To-do tab with them)')
-  await page.getByRole('tab', { name: 'Contacts' }).click()
+  await page.getByRole('tab', { name: 'People' }).click()
 
   // ── 7. Add the plain backup to what is here: nothing is duplicated ─────────
   await openPanel()

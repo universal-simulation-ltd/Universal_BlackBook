@@ -8,7 +8,7 @@ export const en = {
   save: 'Save',
 
   tabs_label: 'BlackBook',
-  tab_contacts: 'Contacts',
+  tab_contacts: 'People',
   tab_lists: 'Lists',
   tab_todos: 'To-do',
   tab_notes: 'Notes',
@@ -17,7 +17,7 @@ export const en = {
   add_contact: 'Add someone',
   from_my_contacts: 'From my contacts',
   add_new: 'Add new',
-  add_new_contact: 'New contact',
+  add_new_contact: 'New person',
   add_from_file: 'From a spreadsheet or backup',
   add_list: 'New list',
   add_todo: 'New to-do',
@@ -26,7 +26,7 @@ export const en = {
   add_quoted_after: '',
   picking_hint: 'Waiting for the contact you pick. Closed it without choosing anybody? Tap again.',
 
-  contact_back: 'Contacts',
+  contact_back: 'People',
   fine_tune: 'Fine-tune',
   back_to_form: 'Form',
   notes_title: 'Notes',

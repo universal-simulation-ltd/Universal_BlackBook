@@ -35,13 +35,13 @@ Spreadsheet programs sometimes "helpfully" reformat what they open, turning a bi
     title: 'Where your book is kept',
     summary: 'On this device, with no account needed — and what that means for you.',
     group: 'The basics',
-    body: `BlackBook keeps your address book on the device you are using. In a web browser it lives in that browser's own storage for this site; in the phone app it lives in the app's own storage. Nothing about your contacts is sent anywhere unless you sign in, which turns on the online backup.
+    body: `BlackBook keeps your address book on the device you are using. In a web browser it lives in that browser's own storage for this site; in the phone app it lives in the app's own storage. Nothing about the people in your book is sent anywhere unless you sign in, which turns on the online backup.
 
 You do not need an account to use BlackBook. Everything works signed out.
 
 ## What that means in practice
 
-- **Each device has its own book.** Contacts added on your laptop do not appear on your phone by themselves. The online backup is what joins them up. A backup file is how you move them across.
+- **Each device has its own book.** People added on your laptop do not appear on your phone by themselves. The online backup is what joins them up. A backup file is how you move them across.
 - **Clearing the browser can clear the book.** Deleting site data or browsing history for this site, using a private window, or uninstalling the app removes the book stored there.
 - **Your device's own contacts are separate.** BlackBook does not add to, change or sync with the address book built into your phone.
 
@@ -60,13 +60,14 @@ Choices about how the app looks and behaves on this device, such as which tabs a
   {
     id: 'importing-and-exporting',
     title: 'Bringing people in and taking them out',
-    summary: 'One Import for contacts, notes, to-dos and backups, and a CSV export.',
+    summary: 'One Import for people, notes, to-dos and backups, and a CSV export.',
     group: 'How it works',
     body: `## One door in, one door out
 
-Everything coming into BlackBook goes through **Import**: Tune, then Import in the phone app, or Actions, then Advanced, then Import on the website. It offers four choices:
+Everything coming into BlackBook goes through **Import**: Tune, then Import in the phone app, or Actions, then Advanced, then Import on the website. It offers five choices:
 
-- **Contacts**, from a CSV file, and in the phone app from your phone's own contacts.
+- **People**, from a CSV file, and in the phone app from your phone's own contacts.
+- **People from OneNote**, a person for each page. See Bring your notes from OneNote.
 - **Notes**, from Word, web pages (.html, .htm, .mht), plain text or Markdown files. See Bring your notes from OneNote.
 - **To-dos**, from a list in a text, Markdown, spreadsheet or calendar file (below).
 - **Restore a BlackBook backup**, which opens a backup file you saved (see Your backup file).
@@ -75,11 +76,11 @@ Everything going out is in **Backup & export**: Tune, then Backup & export in th
 
 ## Exporting
 
-Export saves your whole book as a CSV file named with today's date. It has one column each for name, email, tags, notes, birthday, phone, company, and whether a person's birthday or card is hidden, so importing it back restores your contacts as you left them. The file opens in any spreadsheet program. It leaves out your to-dos: for a complete copy, save a backup file instead (see Your backup file).
+Export saves your whole book as a CSV file named with today's date. It has one column each for name, email, tags, notes, birthday, phone, company, and whether a person's birthday or card is hidden, so importing it back restores your people as you left them. The file opens in any spreadsheet program. It leaves out your to-dos: for a complete copy, save a backup file instead (see Your backup file).
 
 ## Importing a CSV file
 
-Choose Import, then Contacts. You can import a CSV file exported from BlackBook or from another address book. You choose whether to **add** the people in the file to your book or to **replace** your book with them.
+Choose Import, then People. You can import a CSV file exported from BlackBook or from another address book. You choose whether to **add** the people in the file to your book or to **replace** your book with them.
 
 BlackBook understands the column names that Google Contacts and Outlook use. For example:
 
@@ -95,7 +96,7 @@ Birthdays are accepted as 1990-06-04, 4 June 1990, June 4 or --06-04 (a birthday
 
 ## From your phone's contacts
 
-In the phone app, you can pick one person from your phone's contacts to fill in a new card, or import your whole phone address book at once with Import, then Contacts. The bulk import skips anyone already in your book, so it is safe to run again later. In Chrome on Android, the browser's contact picker offers the same for a name, an email and a number.
+In the phone app, you can pick one person from your phone's contacts to fill in a new card, or import your whole phone address book at once with Import, then People. The bulk import skips anyone already in your book, so it is safe to run again later. In Chrome on Android, the browser's contact picker offers the same for a name, an email and a number.
 
 BlackBook only reads your phone's contacts when you ask it to, and never writes anything back to them. The note on your phone's own contact card is not copied across.
 
@@ -197,7 +198,7 @@ With a passphrase, you can ask a device to remember the key so you are not asked
 
 Changing your passphrase, or choosing Remove the passphrase, needs the current one, even on a device that remembers it, and re-encrypts the backup in one step. Removing it puts a random key back with your account, so your devices open the online copy just by signing in again. Turn off and delete the online copy deletes the online copy completely, leaves the book on your device as it is, and stops signing in on that device from turning the backup on again. Deleting your Universal ID deletes the online copy with it.
 
-The backup has a size limit of about 2 MB of encrypted data, which is many thousands of contacts. Very long notes are the usual reason a book reaches it.`,
+The backup has a size limit of about 2 MB of encrypted data, which is many thousands of people. Very long notes are the usual reason a book reaches it.`,
   },
   {
     id: 'backup-file',
@@ -208,7 +209,7 @@ The backup has a size limit of about 2 MB of encrypted data, which is many thous
 
 ## What is in it
 
-- Every contact, with every field: name, email, phone, company, address, birthday, notes, tags, pins and who is hidden.
+- Every person, with every field: name, email, phone, company, address, birthday, notes, tags, pins and who is hidden.
 - Your tags and email lists.
 - Your to-do list.
 - Your choices in Tune this app, and the view the list opens on.
@@ -245,9 +246,9 @@ BlackBook checks every field in a file before using it, so a damaged or edited f
 
 1. Sign in with your Universal ID (in the phone app, from Tune, then Account).
 2. If you protected the backup with a passphrase, enter it. Without one, signing in is all it takes.
-3. If this device already has contacts or to-dos of its own, such as ones you added before signing in, BlackBook merges them into the online copy and saves it straight away. There is nothing to choose.
+3. If this device already has people or to-dos of its own, such as ones you added before signing in, BlackBook merges them into the online copy and saves it straight away. There is nothing to choose.
 
-When merging, the online copy is the starting point and this device's contacts are added to it. Someone who is already there, matched by the same card or by the same name with the same email or phone number, is not added twice. Tags with the same name become one tag. Merging only ever adds, so someone you deleted on another device can come back from a device that still has them. To take the online copy exactly as it is instead, open Online backup (Tune, then Account, then Online backup in the phone app; Actions, then Advanced, then Online backup on the website) and choose Fetch online copy.
+When merging, the online copy is the starting point and this device's people are added to it. Someone who is already there, matched by the same card or by the same name with the same email or phone number, is not added twice. Tags with the same name become one tag. Merging only ever adds, so someone you deleted on another device can come back from a device that still has them. To take the online copy exactly as it is instead, open Online backup (Tune, then Account, then Online backup in the phone app; Actions, then Advanced, then Online backup on the website) and choose Fetch online copy.
 
 ## Saving
 
@@ -259,7 +260,7 @@ The online copy is saved as a whole book. If two devices have both changed the b
 
 ## After a passphrase change
 
-When you add or change the passphrase on one device, your other devices stop saving and ask for it once. Nothing on them is lost, and when you unlock them their contacts are merged back in. A device still holding the old key cannot write over the change. When you remove the passphrase, your other devices open the online copy again by themselves.
+When you add or change the passphrase on one device, your other devices stop saving and ask for it once. Nothing on them is lost, and when you unlock them their people are merged back in. A device still holding the old key cannot write over the change. When you remove the passphrase, your other devices open the online copy again by themselves.
 
 ## Moving your book without an account
 
@@ -272,7 +273,7 @@ If the other device is new, choose Replace everything. If it already has people 
   {
     id: 'notes-from-onenote',
     title: "Bring your notes from OneNote",
-    summary: "Export pages from OneNote, then import the files into Notes.",
+    summary: "Export pages from OneNote, then import them as notes, or as people with a page each.",
     group: "How it works",
     body: `BlackBook cannot open a OneNote notebook itself, but it reads the files OneNote exports. Everything is read on your device; nothing is uploaded.
 
@@ -299,7 +300,21 @@ Choose **Import** ▸ **Notes**: in the phone app, Import is in **Tune**; on the
 - The text comes across as plain text: paragraphs and lists are kept; formatting, pictures, drawings and attachments are not.
 - When OneNote wrote the page's date under its title, that becomes the note's date.
 
-You see what was found before anything is added, and you can swipe any of it out. Importing turns the Notes tab on.`,
+You see what was found before anything is added, and you can swipe any of it out. Importing turns the Notes tab on.
+
+## A page per person
+
+If you keep a page for each person, as in a People section, choose **Import** ▸ **People from OneNote** instead. Each page becomes a person in People:
+
+- The page title is their name, and the page's text goes in their notes.
+- OneNote's date under the title becomes the day they were added.
+- Somebody already in your book with that name keeps what they have, and the page is added under their notes. Importing the same page again adds nothing.
+
+Before anything is added you see every page, and can swipe out any that are not about a person. You also choose how to tag them:
+
+- **By section**: everybody from a section's file is tagged with its name, so exporting the section People - James tags them "People - James". This needs the file to keep the name OneNote gave it.
+- **One tag for everybody**: type a tag, new or one you already have.
+- **No tag**.`,
   },
 ]
 

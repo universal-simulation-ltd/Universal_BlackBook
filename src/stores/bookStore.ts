@@ -9,6 +9,7 @@ import { nextSwatch, SWATCHES } from '../lib/palette'
 import type { Pattern } from '../lib/patterns'
 import { hasLocation, locationText, type Location } from '../lib/geo'
 import { planListImport, type ListRow } from '../lib/emailListImport'
+import type { PeopleImport } from '../lib/peopleImport'
 import {
   clearDefaultView as dbClearDefaultView,
   deleteTag as dbDeleteTag,
@@ -188,6 +189,8 @@ interface BookState {
    * lib/emailListImport.ts.
    */
   saveEmailList: (listName: string, rows: ListRow[], listTagIds?: string[]) => Promise<void>
+  /** OneNote pages as people (lib/peopleImport.ts): the new and the changed, saved. */
+  importPeople: (plan: Pick<PeopleImport, 'added' | 'updated'>) => Promise<void>
   setNotice: (notice: string | null) => void
 }
 
@@ -810,6 +813,13 @@ export const useBookStore = create<BookState>((set, get) => ({
       notice: t('el.notice', { name: tag.name, text: bits.join(', ') || t('el.nothing_new') }),
     }))
     await Promise.all([...tagged, ...added].map(putContact))
+  },
+
+  importPeople: async ({ added, updated }) => {
+    requestPersistentStorage()
+    const byId = new Map(updated.map((c) => [c.id, c]))
+    set((s) => ({ contacts: [...s.contacts.map((c) => byId.get(c.id) ?? c), ...added] }))
+    await Promise.all([...updated, ...added].map(putContact))
   },
 
   setNotice: (notice) => set({ notice }),

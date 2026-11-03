@@ -35,13 +35,13 @@ Programas de planilha às vezes mudam o formato do que abrem, transformando um a
     title: 'Onde sua agenda fica guardada',
     summary: 'Neste aparelho, sem precisar de conta, e o que isso significa para você.',
     group: 'O básico',
-    body: `O BlackBook guarda sua agenda no aparelho que você está usando. No navegador, ela fica no armazenamento que esse navegador reserva para este site; no aplicativo do celular, fica no armazenamento do próprio aplicativo. Nada sobre seus contatos é enviado a lugar nenhum, a menos que você faça login, o que liga o backup on-line.
+    body: `O BlackBook guarda sua agenda no aparelho que você está usando. No navegador, ela fica no armazenamento que esse navegador reserva para este site; no aplicativo do celular, fica no armazenamento do próprio aplicativo. Nada sobre as pessoas da sua agenda é enviado a lugar nenhum, a menos que você faça login, o que liga o backup on-line.
 
 Você não precisa de conta para usar o BlackBook. Tudo funciona sem fazer login.
 
 ## O que isso significa na prática
 
-- **Cada aparelho tem sua própria agenda.** Contatos adicionados no notebook não aparecem sozinhos no celular. É o backup on-line que junta tudo. Um arquivo de backup é o jeito de levá-los de um para o outro.
+- **Cada aparelho tem sua própria agenda.** Pessoas adicionadas no notebook não aparecem sozinhos no celular. É o backup on-line que junta tudo. Um arquivo de backup é o jeito de levá-los de um para o outro.
 - **Limpar o navegador pode apagar a agenda.** Apagar os dados ou o histórico deste site, usar uma janela anônima ou desinstalar o aplicativo remove a agenda guardada ali.
 - **Os contatos do aparelho são separados.** O BlackBook não adiciona nada, não altera e não sincroniza com a agenda embutida do seu celular.
 
@@ -60,13 +60,14 @@ As escolhas sobre a aparência e o comportamento do aplicativo neste aparelho, c
   {
     id: 'importing-and-exporting',
     title: 'Colocando contatos para dentro e para fora',
-    summary: 'Um só Importar para contatos, notas, tarefas e backups, e uma exportação CSV.',
+    summary: 'Um só Importar para pessoas, notas, tarefas e backups, e uma exportação CSV.',
     group: 'Como funciona',
     body: `## Uma porta para entrar, uma para sair
 
-Tudo o que entra no BlackBook passa por **Importar**: Ajustar, depois Importar no aplicativo do celular, ou Ações, depois Avançado, depois Importar no site. Há quatro opções:
+Tudo o que entra no BlackBook passa por **Importar**: Ajustar, depois Importar no aplicativo do celular, ou Ações, depois Avançado, depois Importar no site. Há cinco opções:
 
-- **Contatos**, de um arquivo CSV e, no aplicativo do celular, dos contatos do próprio celular.
+- **Pessoas**, de um arquivo CSV e, no aplicativo do celular, dos contatos do próprio celular.
+- **Pessoas do OneNote**, uma pessoa para cada página. Veja Traga suas notas do OneNote.
 - **Notas**, de arquivos do Word, páginas da web (.html, .htm, .mht), texto simples ou Markdown. Veja Traga suas notas do OneNote.
 - **Tarefas**, de uma lista em um arquivo de texto, Markdown, planilha ou calendário (veja abaixo).
 - **Restaurar um backup do BlackBook**, que abre um arquivo de backup que você salvou (veja Seu arquivo de backup).
@@ -75,11 +76,11 @@ Tudo o que sai fica em **Backup e exportar**: Ajustar, depois Backup e exportar 
 
 ## Exportar
 
-A exportação salva toda a sua agenda em um arquivo CSV com a data de hoje no nome. Ele tem uma coluna para nome, e-mail, etiquetas, anotações, aniversário, telefone, empresa e para indicar se o aniversário ou o cartão de uma pessoa está oculto, então importá-lo de volta restaura seus contatos como você os deixou. O arquivo abre em qualquer programa de planilha. Ele deixa suas tarefas de fora: para uma cópia completa, salve um arquivo de backup (veja Seu arquivo de backup).
+A exportação salva toda a sua agenda em um arquivo CSV com a data de hoje no nome. Ele tem uma coluna para nome, e-mail, etiquetas, anotações, aniversário, telefone, empresa e para indicar se o aniversário ou o cartão de uma pessoa está oculto, então importá-lo de volta restaura suas pessoas como você as deixou. O arquivo abre em qualquer programa de planilha. Ele deixa suas tarefas de fora: para uma cópia completa, salve um arquivo de backup (veja Seu arquivo de backup).
 
 ## Importar um arquivo CSV
 
-Escolha Importar, depois Contatos. Você pode importar um arquivo CSV exportado do BlackBook ou de outra agenda. Você escolhe se quer **adicionar** as pessoas do arquivo à sua agenda ou **substituir** a agenda por elas.
+Escolha Importar, depois Pessoas. Você pode importar um arquivo CSV exportado do BlackBook ou de outra agenda. Você escolhe se quer **adicionar** as pessoas do arquivo à sua agenda ou **substituir** a agenda por elas.
 
 O BlackBook entende os nomes de coluna usados pelo Google Contacts e pelo Outlook. Por exemplo:
 
@@ -95,7 +96,7 @@ Os aniversários são aceitos como 1990-06-04, 4 June 1990, June 4 ou --06-04 (u
 
 ## Dos contatos do seu celular
 
-No aplicativo do celular, você pode escolher uma pessoa dos contatos do celular para preencher um novo cartão ou importar toda a agenda do celular de uma vez com Importar, depois Contatos. A importação completa pula quem já está na sua agenda, então você pode repeti-la depois sem problema. No Chrome para Android, o seletor de contatos do navegador oferece o mesmo para um nome, um e-mail e um número.
+No aplicativo do celular, você pode escolher uma pessoa dos contatos do celular para preencher um novo cartão ou importar toda a agenda do celular de uma vez com Importar, depois Pessoas. A importação completa pula quem já está na sua agenda, então você pode repeti-la depois sem problema. No Chrome para Android, o seletor de contatos do navegador oferece o mesmo para um nome, um e-mail e um número.
 
 O BlackBook só lê os contatos do celular quando você pede e nunca grava nada neles. A anotação do cartão de contato do celular não é copiada.
 
@@ -197,7 +198,7 @@ Com uma frase secreta, você pode pedir que um aparelho lembre a chave, para nã
 
 Para mudar a frase secreta, ou para escolher Remover a frase secreta, é preciso informar a atual, mesmo em um aparelho que a lembra, e o backup é criptografado de novo em uma única etapa. Remover a frase coloca de volta uma chave aleatória com a sua conta, e seus aparelhos abrem a cópia on-line só fazendo login de novo. Desativar e apagar a cópia on-line apaga completamente a cópia on-line, deixa a agenda do seu aparelho como está e faz com que um novo login nesse aparelho não ligue o backup de novo. Excluir seu Universal ID exclui junto a cópia on-line.
 
-O backup tem um limite de cerca de 2 MB de dados criptografados, o que equivale a muitos milhares de contatos. Anotações muito longas costumam ser o motivo quando uma agenda chega a esse limite.`,
+O backup tem um limite de cerca de 2 MB de dados criptografados, o que equivale a muitos milhares de pessoas. Anotações muito longas costumam ser o motivo quando uma agenda chega a esse limite.`,
   },
   {
     id: 'backup-file',
@@ -208,7 +209,7 @@ O backup tem um limite de cerca de 2 MB de dados criptografados, o que equivale 
 
 ## O que tem nele
 
-- Todos os contatos, com todos os campos: nome, e-mail, telefone, empresa, endereço, aniversário, anotações, etiquetas, fixados e quem está oculto.
+- Todas as pessoas, com todos os campos: nome, e-mail, telefone, empresa, endereço, aniversário, anotações, etiquetas, fixados e quem está oculto.
 - Suas etiquetas e listas de e-mail.
 - Sua lista de tarefas.
 - Suas escolhas em Ajustar este app e a visualização com que a lista abre.
@@ -245,9 +246,9 @@ O BlackBook confere cada campo de um arquivo antes de usá-lo, então um arquivo
 
 1. Faça login com seu Universal ID (no aplicativo do celular, em Ajustar, depois Conta).
 2. Se você protegeu o backup com uma frase secreta, digite-a. Sem ela, basta fazer login.
-3. Se este aparelho já tiver contatos ou tarefas próprios, como os que você adicionou antes de fazer login, o BlackBook os mescla na cópia on-line e a salva na hora. Não há nada para escolher.
+3. Se este aparelho já tiver pessoas ou tarefas próprios, como os que você adicionou antes de fazer login, o BlackBook os mescla na cópia on-line e a salva na hora. Não há nada para escolher.
 
-Ao mesclar, a cópia on-line é o ponto de partida e os contatos deste aparelho são adicionados a ela. Quem já está lá, reconhecido como o mesmo cartão ou pelo mesmo nome com o mesmo e-mail ou telefone, não é adicionado duas vezes. Etiquetas com o mesmo nome viram uma só. Mesclar só adiciona, então alguém que você apagou em outro aparelho pode voltar de um aparelho que ainda o tenha. Para ficar com a cópia on-line exatamente como está, abra Backup on-line (Ajustar, depois Conta, depois Backup on-line no aplicativo do celular; Ações, depois Avançado, depois Backup on-line no site) e escolha Buscar cópia on-line.
+Ao mesclar, a cópia on-line é o ponto de partida e as pessoas deste aparelho são adicionadas a ela. Quem já está lá, reconhecido como o mesmo cartão ou pelo mesmo nome com o mesmo e-mail ou telefone, não é adicionado duas vezes. Etiquetas com o mesmo nome viram uma só. Mesclar só adiciona, então alguém que você apagou em outro aparelho pode voltar de um aparelho que ainda o tenha. Para ficar com a cópia on-line exatamente como está, abra Backup on-line (Ajustar, depois Conta, depois Backup on-line no aplicativo do celular; Ações, depois Avançado, depois Backup on-line no site) e escolha Buscar cópia on-line.
 
 ## Salvamento
 
@@ -259,7 +260,7 @@ A cópia on-line é salva como uma agenda inteira. Se dois aparelhos alteraram a
 
 ## Depois de mudar a frase secreta
 
-Quando você adiciona ou muda a frase secreta em um aparelho, os outros param de salvar e pedem a frase uma vez. Nada se perde neles, e ao desbloqueá-los eles oferecem mesclar de novo seus contatos. Um aparelho que ainda tenha a chave antiga não consegue sobrescrever a mudança. Quando você remove a frase secreta, os outros aparelhos voltam a abrir a cópia on-line sozinhos.
+Quando você adiciona ou muda a frase secreta em um aparelho, os outros param de salvar e pedem a frase uma vez. Nada se perde neles, e ao desbloqueá-los eles oferecem mesclar de novo suas pessoas. Um aparelho que ainda tenha a chave antiga não consegue sobrescrever a mudança. Quando você remove a frase secreta, os outros aparelhos voltam a abrir a cópia on-line sozinhos.
 
 ## Levando sua agenda sem conta
 
@@ -272,7 +273,7 @@ Se o outro aparelho for novo, escolha Substituir tudo. Se ele já tiver pessoas 
   {
     id: 'notes-from-onenote',
     title: "Traga suas notas do OneNote",
-    summary: "Exporte páginas do OneNote e importe os arquivos em Notas.",
+    summary: "Exporte páginas do OneNote e importe-as como notas, ou como pessoas com uma página cada.",
     group: "Como funciona",
     body: `O BlackBook não abre um bloco de anotações do OneNote sozinho, mas lê os arquivos que o OneNote exporta. Tudo é lido no seu aparelho; nada é enviado.
 
@@ -299,7 +300,21 @@ Escolha **Importar** ▸ **Notas**: no aplicativo do celular, Importar fica em *
 - O texto chega como texto simples: parágrafos e listas são mantidos; formatação, imagens, desenhos e anexos, não.
 - Se o OneNote escreveu a data da página sob o título, ela vira a data da nota.
 
-Você vê o que foi encontrado antes de qualquer coisa ser adicionada e pode tirar qualquer item deslizando. A importação liga a aba Notas.`,
+Você vê o que foi encontrado antes de qualquer coisa ser adicionada e pode tirar qualquer item deslizando. A importação liga a aba Notas.
+
+## Uma página por pessoa
+
+Se você mantém uma página para cada pessoa, como numa seção Pessoas, escolha **Importar** ▸ **Pessoas do OneNote**. Cada página vira uma pessoa em Pessoas:
+
+- O título da página é o nome da pessoa, e o texto da página vai para as notas dela.
+- A data que o OneNote põe sob o título vira o dia em que a pessoa foi adicionada.
+- Quem já está na sua agenda com esse nome mantém o que tem, e a página é acrescentada embaixo das notas. Importar a mesma página de novo não adiciona nada.
+
+Antes de qualquer coisa ser adicionada, você vê todas as páginas e pode tirar deslizando as que não são sobre uma pessoa. Você também escolhe como etiquetá-las:
+
+- **Por seção**: todos os de um arquivo de seção recebem o nome dela como etiqueta, então exportar a seção People - James etiqueta todos com "People - James". Isso exige que o arquivo mantenha o nome que o OneNote lhe deu.
+- **Uma etiqueta para todos**: digite uma etiqueta, nova ou que você já tenha.
+- **Sem etiqueta**.`,
   },
 ]
 

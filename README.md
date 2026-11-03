@@ -29,7 +29,7 @@ and the tag filter — sits behind one **⚙️ Filters** button beside the sear
 box, so the search field is the whole row. On a phone that row is **folded
 away above the list**: pull down from the top of the page to bring it out, and
 pull down again to start typing, keyboard up. Scroll it out of sight and it
-folds away again (unless you've typed a search). Tapping the Contacts tab while
+folds away again (unless you've typed a search). Tapping the People tab while
 you're on it opens it too, and keyboard and screen-reader users get a "Search
 contacts" button in its place. While it's folded, a filtered or reordered list
 says so under the title.
@@ -111,7 +111,7 @@ import & export, so you can save a backup file first.
 > if you added one) brings the book back. If it does not, only a backup file you saved
 > can.
 
-## New contact opens straight on the person
+## New person opens straight on their card
 
 **New contact** (the phone's + ▸ New contact, the website's Add new), **Add “…”**
 over search results, and **From my contacts** all make the person at once and
@@ -163,7 +163,7 @@ time and an ✕ to remove it. Notes have the same (see Notes).
 
 ## To-do
 
-A **To-do** tab sits beside Contacts from the start (Tune this app ▸ **Hide the To-do tab** puts it away): a name,
+A **To-do** tab sits beside People from the start (Tune this app ▸ **Hide the To-do tab** puts it away): a name,
 details, a deadline and your tags — the same tags your contacts use. Open ones
 sort by deadline (overdue first, in red), then a "done" drawer. Adding a tagged
 to-do filters the tab to its tags, as contacts do. To-dos live on this device and
@@ -184,7 +184,7 @@ Alt+↓ on the website.
 
 ## Notes
 
-A **Notes** tab sits beside Contacts from the start (Tune this app ▸ **Hide the Notes tab** puts it away): notes of your own,
+A **Notes** tab sits beside People from the start (Tune this app ▸ **Hide the Notes tab** puts it away): notes of your own,
 each a title and the details, newest edited first. Tap one to open it; it saves
 itself as you close it, and an empty new note is not kept. Search them from the
 box above the list (pulled down from the top on a phone, like the contacts'); what you
@@ -196,6 +196,20 @@ Hiding the tab keeps the notes. To-do and Notes on, Email lists off, are the
 defaults since 2026-10-23; the tick boxes say "Hide …" so they still start unticked,
 and a device that never touched the old switches gets the new defaults.
 
+### People from OneNote (2026-11-03)
+
+**Import ▸ People from OneNote** reads the same files as the Notes import
+(Word, .mht, .html, text, Markdown; a section exported to Word splits into its
+pages) and makes a **person** of each page: the page title is the name, the
+page text their Notes, OneNote's date under the title the day they were added.
+A title matching somebody already in the book (case and spacing ignored) adds
+the page under their notes instead, and only once, so a re-import adds nothing.
+The review lists every page (swipe out the ones that are not people) and asks
+how to tag them: **By section** (a file of several pages is a section, named
+after itself, so `People - James.docx` tags "People - James"; the default when
+there is one), **One tag for everybody** (typed, new or existing), or **No tag**.
+`src/lib/peopleImport.ts`; the screen is `ImportPanel.tsx`.
+
 ### Every deletable list swipes (suite rule, 2026-10-25)
 
 BRANDING.md ▸ "A deletable row swipes": every list whose items can be deleted
@@ -206,7 +220,7 @@ keyboard. All of it is `src/components/SwipeActions.tsx` (`SwipeGroup`,
 
 | List | Swipe left | Swipe right |
 |---|---|---|
-| Contacts (and the hidden-people / hidden-birthdays drawers) | Delete, with Undo (was: a confirm) | Hide / Show (as before) |
+| People (and the hidden-people / hidden-birthdays drawers) | Delete, with Undo (was: a confirm) | Hide / Show (as before) |
 | To-do (open) | Delete, with Undo | Pin / Unpin |
 | To-do (done) | Delete, with Undo | Not done |
 | Notes | Delete, with Undo | Pin / Unpin (hold to select) |
@@ -222,7 +236,7 @@ keyboard. All of it is `src/components/SwipeActions.tsx` (`SwipeGroup`,
 
 **Hold to select** (same day): in every one of these lists a still finger for
 half a second selects the row and opens a bar with "N selected", Select all and
-the list's bulk actions (Contacts: Tag, Hide/Show, Delete; To-do: Pin, Done,
+the list's bulk actions (People: Tag, Hide/Show, Delete; To-do: Pin, Done,
 Delete; done To-dos: Not done, Delete; Notes: Pin/Unpin, Copy, Delete; Lists:
 Copy emails, Delete; a list's people: Take off; Tags, Note templates and
 notifications: Delete; template fields: Remove; linked notes: Pin, Unlink;
@@ -339,11 +353,11 @@ stored. iOS: `NSLocationWhenInUseUsageDescription` in 8 languages
 
 ### The map
 
-**Map** (the map icon in the phone's top bar on Contacts and Notes; a Map
+**Map** (the map icon in the phone's top bar on People and Notes; a Map
 button on the website) shows contacts and notes by town: a pin per town with
 how many are there, placed at the town's position from the bundled list (no
 coordinates are stored, so town-level is the precision). Tap a pin for a sheet
-of who and what is there; filter by Contacts / Notes, tag and template (a row
+of who and what is there; filter by People / Notes, tag and template (a row
 that scrolls). MapLibre GL JS (BSD-3-Clause) draws OpenFreeMap's free tiles
 (no key, no account; positron for Light, dark for Dark), credited on the map.
 **Both load only when the map is opened**: MapLibre is its own chunk (1.06 MB,
@@ -445,7 +459,7 @@ so.
 **Your phone's own contacts** *(the iPhone app)* — **From my contacts** opens
 the system picker, and the person you choose arrives in the Add form with their
 name, email, number, postal address and birthday already filled in, ready for the part that is
-actually yours. **Tune ▸ Import ▸ Contacts ▸ Import my phone contacts** does the whole
+actually yours. **Tune ▸ Import ▸ People ▸ Import my phone contacts** does the whole
 address book at once, skipping anybody already in your book so you can run it
 again whenever you add someone to your phone.
 
@@ -519,7 +533,7 @@ choice too.
 
 The iPhone and Android app has screens of its own rather than the website in a
 frame (`src/native/`, loaded only in the app): the book's paper and black
-leather look with a red ribbon, a tab bar (Contacts, then Lists and To-do when
+leather look with a red ribbon, a tab bar (People, then Lists and To-do when
 you turn them on, then Tune), and its own icon.
 
 - **Everything opens the phone's way.** A person, the form, the panels, About
@@ -532,7 +546,7 @@ you turn them on, then Tune), and its own icon.
   rest: Email (or Add email address), pin to Last added, hide from the list or
   the birthdays, Delete. The website has the same ⋯ beside Fine-tune.
 - **Pull down from the top of the list for search**, and again for the
-  keyboard. Tapping Contacts while you are on it does the same.
+  keyboard. Tapping People while you are on it does the same.
 - **Tune** holds every option: Light / Dark / Match my device, the language,
   BlackBook's switches (all off to start), tags, backups, the PIN, Delete all
   data, help, About and Reset to defaults. Double-tap a tab to make it the one

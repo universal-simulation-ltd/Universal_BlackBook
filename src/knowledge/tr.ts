@@ -35,7 +35,7 @@ Tablo programları bazen açtıkları içeriğin biçimini değiştirir ve bir d
     title: 'Rehberiniz nerede saklanır',
     summary: 'Bu cihazda, hesap gerekmeden; bunun sizin için anlamı.',
     group: 'Temel bilgiler',
-    body: `BlackBook adres defterinizi kullandığınız cihazda saklar. Bir tarayıcıda, o tarayıcının bu site için ayırdığı depolama alanında durur; telefon uygulamasında ise uygulamanın kendi depolama alanında durur. Oturum açmadığınız sürece kişilerinizle ilgili hiçbir şey hiçbir yere gönderilmez; oturum açmak çevrimiçi yedeklemeyi açar.
+    body: `BlackBook adres defterinizi kullandığınız cihazda saklar. Bir tarayıcıda, o tarayıcının bu site için ayırdığı depolama alanında durur; telefon uygulamasında ise uygulamanın kendi depolama alanında durur. Oturum açmadığınız sürece defterinizdeki kişilerle ilgili hiçbir şey hiçbir yere gönderilmez; oturum açmak çevrimiçi yedeklemeyi açar.
 
 BlackBook’u kullanmak için hesaba ihtiyacınız yoktur. Oturum açmadan her şey çalışır.
 
@@ -64,9 +64,10 @@ Uygulamanın bu cihazdaki görünümü ve davranışıyla ilgili seçimler, örn
     group: 'Nasıl çalışır',
     body: `## İçeri tek kapı, dışarı tek kapı
 
-BlackBook’a giren her şey **İçe aktar** üzerinden gelir: telefon uygulamasında "Ayarla", ardından "İçe aktar"; web sitesinde "Eylemler", ardından "Gelişmiş", ardından "İçe aktar". Burada dört seçenek vardır:
+BlackBook’a giren her şey **İçe aktar** üzerinden gelir: telefon uygulamasında "Ayarla", ardından "İçe aktar"; web sitesinde "Eylemler", ardından "Gelişmiş", ardından "İçe aktar". Burada beş seçenek vardır:
 
 - **Kişiler**: bir CSV dosyasından ve telefon uygulamasında telefonunuzun kendi kişilerinden.
+- **OneNote’tan kişiler**: her sayfa için bir kişi. "Notlarınızı OneNote’tan getirin" makalesine bakın.
 - **Notlar**: Word dosyalarından, web sayfalarından (.html, .htm, .mht), düz metinden veya Markdown’dan. "Notlarınızı OneNote’tan getirin" makalesine bakın.
 - **Yapılacaklar**: bir metin, Markdown, tablo veya takvim dosyasındaki listeden (aşağıya bakın).
 - **BlackBook yedeğini geri yükle**: kaydettiğiniz bir yedek dosyasını açar ("Yedek dosyanız" makalesine bakın).
@@ -272,7 +273,7 @@ Diğer cihaz yeniyse "Her şeyi değiştir" seçeneğini seçin. Cihazda zaten k
   {
     id: 'notes-from-onenote',
     title: "Notlarınızı OneNote’tan getirin",
-    summary: "OneNote’tan sayfaları dışa aktarın, sonra dosyaları Notlar’a içe aktarın.",
+    summary: "OneNote’tan sayfaları dışa aktarın, sonra not olarak ya da sayfa başına bir kişi olarak içe aktarın.",
     group: "Nasıl çalışır",
     body: `BlackBook bir OneNote not defterini kendisi açamaz, ancak OneNote’un dışa aktardığı dosyaları okur. Her şey cihazınızda okunur; hiçbir şey yüklenmez.
 
@@ -299,7 +300,21 @@ Microsoft’a göre Mac için OneNote ve web için OneNote henüz sayfa dışa a
 - Metin düz metin olarak gelir: paragraflar ve listeler korunur; biçimlendirme, resimler, çizimler ve ekler korunmaz.
 - OneNote sayfanın tarihini başlığın altına yazdıysa, bu notun tarihi olur.
 
-Bir şey eklenmeden önce nelerin bulunduğunu görürsünüz ve herhangi birini kaydırarak çıkarabilirsiniz. İçe aktarma "Notlar" sekmesini açar.`,
+Bir şey eklenmeden önce nelerin bulunduğunu görürsünüz ve herhangi birini kaydırarak çıkarabilirsiniz. İçe aktarma "Notlar" sekmesini açar.
+
+## Kişi başına bir sayfa
+
+Her kişi için bir sayfa tutuyorsanız, örneğin bir Kişiler bölümünde, bunun yerine **İçe aktar** ▸ **OneNote’tan kişiler** seçeneğini seçin. Her sayfa Kişiler’de bir kişi olur:
+
+- Sayfa başlığı kişinin adı olur, sayfanın metni de notlarına girer.
+- OneNote’un başlığın altındaki tarihi, kişinin eklendiği gün olur.
+- Defterinizde bu adla zaten olan biri sahip olduklarını korur ve sayfa notlarının altına eklenir. Aynı sayfayı yeniden içe aktarmak hiçbir şey eklemez.
+
+Bir şey eklenmeden önce her sayfayı görürsünüz ve bir kişiyle ilgili olmayanları kaydırarak çıkarabilirsiniz. Ayrıca kişileri nasıl etiketleyeceğinizi seçersiniz:
+
+- **Bölüme göre**: bir bölümün dosyasındaki herkes bölümün adıyla etiketlenir; yani People - James bölümünü dışa aktarırsanız hepsi "People - James" etiketini alır. Bunun için dosyanın OneNote'un verdiği adı koruması gerekir.
+- **Herkes için tek etiket**: yeni ya da zaten sahip olduğunuz bir etiket yazın.
+- **Etiket yok**.`,
   },
 ]
 

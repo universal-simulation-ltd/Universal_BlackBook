@@ -35,13 +35,13 @@ Os programas de folha de cálculo por vezes mudam o formato do que abrem, transf
     title: 'Onde a sua agenda é guardada',
     summary: 'Neste dispositivo, sem precisar de conta, e o que isso significa para si.',
     group: 'O essencial',
-    body: `O BlackBook guarda a sua agenda no dispositivo que está a usar. Num navegador, fica no armazenamento que esse navegador reserva a este site; na aplicação para telemóvel, fica no armazenamento da própria aplicação. Nada sobre os seus contactos é enviado para lado nenhum, a menos que inicie sessão, o que liga a cópia de segurança online.
+    body: `O BlackBook guarda a sua agenda no dispositivo que está a usar. Num navegador, fica no armazenamento que esse navegador reserva a este site; na aplicação para telemóvel, fica no armazenamento da própria aplicação. Nada sobre as pessoas da sua agenda é enviado para lado nenhum, a menos que inicie sessão, o que liga a cópia de segurança online.
 
 Não precisa de conta para usar o BlackBook. Tudo funciona sem iniciar sessão.
 
 ## O que isto significa na prática
 
-- **Cada dispositivo tem a sua própria agenda.** Os contactos adicionados no portátil não aparecem sozinhos no telemóvel. É a cópia de segurança online que os liga. É com um ficheiro de cópia de segurança que os passa de um para o outro.
+- **Cada dispositivo tem a sua própria agenda.** As pessoas adicionadas no portátil não aparecem sozinhos no telemóvel. É a cópia de segurança online que os liga. É com um ficheiro de cópia de segurança que os passa de um para o outro.
 - **Limpar o navegador pode apagar a agenda.** Eliminar os dados ou o histórico deste site, usar uma janela privada ou desinstalar a aplicação remove a agenda ali guardada.
 - **Os contactos do dispositivo são à parte.** O BlackBook não acrescenta nada, não altera nem sincroniza com a agenda integrada do seu telemóvel.
 
@@ -59,14 +59,15 @@ As escolhas sobre o aspeto e o comportamento da aplicação neste dispositivo, c
   },
   {
     id: 'importing-and-exporting',
-    title: 'Trazer contactos para dentro e levá-los para fora',
-    summary: 'Um só Importar para contactos, notas, tarefas e cópias de segurança, e uma exportação CSV.',
+    title: 'Trazer pessoas para dentro e levá-las para fora',
+    summary: 'Um só Importar para pessoas, notas, tarefas e cópias de segurança, e uma exportação CSV.',
     group: 'Como funciona',
     body: `## Uma porta para entrar, uma para sair
 
-Tudo o que entra no BlackBook passa por **Importar**: Afinar, depois Importar na aplicação para telemóvel, ou Ações, depois Avançado, depois Importar no site. Há quatro opções:
+Tudo o que entra no BlackBook passa por **Importar**: Afinar, depois Importar na aplicação para telemóvel, ou Ações, depois Avançado, depois Importar no site. Há cinco opções:
 
-- **Contactos**, a partir de um ficheiro CSV e, na aplicação para telemóvel, dos contactos do próprio telemóvel.
+- **Pessoas**, a partir de um ficheiro CSV e, na aplicação para telemóvel, dos contactos do próprio telemóvel.
+- **Pessoas do OneNote**, uma pessoa por cada página. Consulte Traga as suas notas do OneNote.
 - **Notas**, a partir de ficheiros Word, páginas web (.html, .htm, .mht), texto simples ou Markdown. Consulte Traga as suas notas do OneNote.
 - **Tarefas**, a partir de uma lista num ficheiro de texto, Markdown, folha de cálculo ou calendário (mais abaixo).
 - **Restaurar uma cópia do BlackBook**, que abre um ficheiro de cópia de segurança que guardou (consulte O seu ficheiro de cópia de segurança).
@@ -75,11 +76,11 @@ Tudo o que sai está em **Cópia e exportar**: Afinar, depois Cópia e exportar 
 
 ## Exportar
 
-A exportação guarda toda a sua agenda num ficheiro CSV com a data de hoje no nome. Tem uma coluna para o nome, o email, as etiquetas, as notas, o aniversário, o telefone, a empresa e para indicar se o aniversário ou o cartão de uma pessoa está oculto, pelo que voltar a importá-lo repõe os seus contactos tal como os deixou. O ficheiro abre em qualquer programa de folha de cálculo. Deixa de fora as suas tarefas: para uma cópia completa, guarde antes um ficheiro de cópia de segurança (consulte O seu ficheiro de cópia de segurança).
+A exportação guarda toda a sua agenda num ficheiro CSV com a data de hoje no nome. Tem uma coluna para o nome, o email, as etiquetas, as notas, o aniversário, o telefone, a empresa e para indicar se o aniversário ou o cartão de uma pessoa está oculto, pelo que voltar a importá-lo repõe as suas pessoas tal como os deixou. O ficheiro abre em qualquer programa de folha de cálculo. Deixa de fora as suas tarefas: para uma cópia completa, guarde antes um ficheiro de cópia de segurança (consulte O seu ficheiro de cópia de segurança).
 
 ## Importar um ficheiro CSV
 
-Escolha Importar, depois Contactos. Pode importar um ficheiro CSV exportado do BlackBook ou de outra agenda. Escolhe se quer **acrescentar** as pessoas do ficheiro à sua agenda ou **substituir** a agenda por elas.
+Escolha Importar, depois Pessoas. Pode importar um ficheiro CSV exportado do BlackBook ou de outra agenda. Escolhe se quer **acrescentar** as pessoas do ficheiro à sua agenda ou **substituir** a agenda por elas.
 
 O BlackBook entende os nomes de coluna usados pelo Google Contacts e pelo Outlook. Por exemplo:
 
@@ -95,7 +96,7 @@ Os aniversários são aceites como 1990-06-04, 4 June 1990, June 4 ou --06-04 (u
 
 ## A partir dos contactos do telemóvel
 
-Na aplicação para telemóvel, pode escolher uma pessoa dos contactos do telemóvel para preencher um novo cartão, ou importar de uma só vez toda a agenda do telemóvel com Importar, depois Contactos. A importação completa ignora quem já está na sua agenda, por isso pode repeti-la mais tarde sem problemas. No Chrome para Android, o seletor de contactos do navegador oferece o mesmo para um nome, um email e um número.
+Na aplicação para telemóvel, pode escolher uma pessoa dos contactos do telemóvel para preencher um novo cartão, ou importar de uma só vez toda a agenda do telemóvel com Importar, depois Pessoas. A importação completa ignora quem já está na sua agenda, por isso pode repeti-la mais tarde sem problemas. No Chrome para Android, o seletor de contactos do navegador oferece o mesmo para um nome, um email e um número.
 
 O BlackBook só lê os contactos do telemóvel quando lho pede e nunca escreve nada neles. A nota do cartão de contacto do telemóvel não é copiada.
 
@@ -197,7 +198,7 @@ Com uma frase de acesso, pode pedir a um dispositivo que memorize a chave, para 
 
 Alterar a frase de acesso, ou escolher Remover a frase-passe, exige a atual, mesmo num dispositivo que a memoriza, e volta a encriptar a cópia de segurança num único passo. Removê-la volta a guardar uma chave aleatória com a sua conta, e os seus dispositivos abrem a cópia online apenas ao iniciar sessão de novo. Desligar e apagar a cópia online elimina por completo a cópia online, deixa a agenda do seu dispositivo como está e faz com que iniciar sessão de novo nesse dispositivo não volte a ligar a cópia. Eliminar o seu Universal ID elimina também a cópia online.
 
-A cópia de segurança tem um limite de cerca de 2 MB de dados encriptados, o que equivale a muitos milhares de contactos. Notas muito longas são normalmente a razão quando uma agenda atinge esse limite.`,
+A cópia de segurança tem um limite de cerca de 2 MB de dados encriptados, o que equivale a muitos milhares de pessoas. Notas muito longas são normalmente a razão quando uma agenda atinge esse limite.`,
   },
   {
     id: 'backup-file',
@@ -208,7 +209,7 @@ A cópia de segurança tem um limite de cerca de 2 MB de dados encriptados, o qu
 
 ## O que contém
 
-- Todos os contactos, com todos os campos: nome, email, telefone, empresa, morada, aniversário, notas, etiquetas, fixações e quem está oculto.
+- Todas as pessoas, com todos os campos: nome, email, telefone, empresa, morada, aniversário, notas, etiquetas, fixações e quem está oculto.
 - As suas etiquetas e listas de email.
 - A sua lista de tarefas.
 - As suas escolhas em Ajustar esta aplicação e a vista com que a lista abre.
@@ -245,9 +246,9 @@ O BlackBook verifica cada campo de um ficheiro antes de o usar, por isso um fich
 
 1. Inicie sessão com o seu Universal ID (na aplicação para telemóvel, em Afinar, depois Conta).
 2. Se protegeu a cópia de segurança com uma frase de acesso, introduza-a. Sem ela, basta iniciar sessão.
-3. Se este dispositivo já tiver contactos ou tarefas próprios, como os que acrescentou antes de iniciar sessão, o BlackBook funde-os na cópia online e guarda-a de imediato. Não há nada para escolher.
+3. Se este dispositivo já tiver pessoas ou tarefas próprios, como os que acrescentou antes de iniciar sessão, o BlackBook funde-os na cópia online e guarda-a de imediato. Não há nada para escolher.
 
-Ao fundir, a cópia online é o ponto de partida e os contactos deste dispositivo são-lhe acrescentados. Quem já lá estiver, reconhecido como o mesmo cartão ou pelo mesmo nome com o mesmo email ou telefone, não é acrescentado duas vezes. As etiquetas com o mesmo nome passam a ser uma só. Fundir só acrescenta, por isso alguém que eliminou noutro dispositivo pode voltar a partir de um dispositivo que ainda o tenha. Para ficar antes com a cópia online exatamente como está, abra Cópia online (Afinar, depois Conta, depois Cópia online na aplicação para telemóvel; Ações, depois Avançado, depois Cópia online no site) e escolha Obter a cópia online.
+Ao fundir, a cópia online é o ponto de partida e as pessoas deste dispositivo são-lhe acrescentados. Quem já lá estiver, reconhecido como o mesmo cartão ou pelo mesmo nome com o mesmo email ou telefone, não é acrescentado duas vezes. As etiquetas com o mesmo nome passam a ser uma só. Fundir só acrescenta, por isso alguém que eliminou noutro dispositivo pode voltar a partir de um dispositivo que ainda o tenha. Para ficar antes com a cópia online exatamente como está, abra Cópia online (Afinar, depois Conta, depois Cópia online na aplicação para telemóvel; Ações, depois Avançado, depois Cópia online no site) e escolha Obter a cópia online.
 
 ## Guardar
 
@@ -259,7 +260,7 @@ A cópia online é guardada como uma agenda inteira. Se dois dispositivos altera
 
 ## Depois de alterar a frase de acesso
 
-Quando acrescenta ou altera a frase de acesso num dispositivo, os outros deixam de guardar e pedem-na uma vez. Nada se perde neles, e ao desbloqueá-los oferecem-se para voltar a fundir os seus contactos. Um dispositivo que ainda tenha a chave antiga não consegue sobrepor-se à alteração. Quando remove a frase de acesso, os outros dispositivos voltam a abrir a cópia online sozinhos.
+Quando acrescenta ou altera a frase de acesso num dispositivo, os outros deixam de guardar e pedem-na uma vez. Nada se perde neles, e ao desbloqueá-los oferecem-se para voltar a fundir as suas pessoas. Um dispositivo que ainda tenha a chave antiga não consegue sobrepor-se à alteração. Quando remove a frase de acesso, os outros dispositivos voltam a abrir a cópia online sozinhos.
 
 ## Passar a sua agenda sem conta
 
@@ -272,7 +273,7 @@ Se o outro dispositivo for novo, escolha Substituir tudo. Se já tiver pessoas p
   {
     id: 'notes-from-onenote',
     title: "Traga as suas notas do OneNote",
-    summary: "Exporte páginas do OneNote e importe os ficheiros em Notas.",
+    summary: "Exporte páginas do OneNote e importe-as como notas ou como pessoas, com uma página para cada.",
     group: "Como funciona",
     body: `O BlackBook não consegue abrir sozinho um bloco de notas do OneNote, mas lê os ficheiros que o OneNote exporta. Tudo é lido no seu dispositivo; nada é enviado.
 
@@ -299,7 +300,21 @@ Escolha **Importar** ▸ **Notas**: na aplicação para telemóvel, Importar est
 - O texto chega como texto simples: parágrafos e listas mantêm-se; formatação, imagens, desenhos e anexos não.
 - Se o OneNote escreveu a data da página por baixo do título, essa passa a ser a data da nota.
 
-Vê o que foi encontrado antes de se acrescentar alguma coisa e pode retirar qualquer item deslizando-o. A importação liga o separador Notas.`,
+Vê o que foi encontrado antes de se acrescentar alguma coisa e pode retirar qualquer item deslizando-o. A importação liga o separador Notas.
+
+## Uma página por pessoa
+
+Se tem uma página para cada pessoa, como numa secção Pessoas, escolha antes **Importar** ▸ **Pessoas do OneNote**. Cada página passa a ser uma pessoa em Pessoas:
+
+- O título da página é o nome da pessoa e o texto da página vai para as notas dela.
+- A data que o OneNote escreve por baixo do título passa a ser o dia em que a pessoa foi adicionada.
+- Quem já está na sua agenda com esse nome mantém o que tem, e a página é acrescentada por baixo das notas. Importar a mesma página outra vez não acrescenta nada.
+
+Antes de se acrescentar alguma coisa, vê todas as páginas e pode retirar deslizando as que não são sobre uma pessoa. Escolhe também como etiquetá-las:
+
+- **Por secção**: todos os de um ficheiro de secção são etiquetados com o nome dela, por isso exportar a secção People - James etiqueta-os com "People - James". Para isso, o ficheiro tem de manter o nome que o OneNote lhe deu.
+- **Uma etiqueta para todos**: escreva uma etiqueta, nova ou uma que já tenha.
+- **Sem etiqueta**.`,
   },
 ]
 

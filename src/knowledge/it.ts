@@ -35,13 +35,13 @@ I fogli di calcolo a volte cambiano il formato di ciò che aprono, trasformando 
     title: 'Dove viene conservata la tua rubrica',
     summary: 'Su questo dispositivo, senza bisogno di un account, e cosa significa per te.',
     group: 'Le basi',
-    body: `BlackBook conserva la tua rubrica sul dispositivo che stai usando. In un browser si trova nello spazio che quel browser riserva a questo sito; nell’app per telefono si trova nello spazio di archiviazione dell’app. Nulla dei tuoi contatti viene inviato da nessuna parte, a meno che tu non acceda, cosa che attiva il backup online.
+    body: `BlackBook conserva la tua rubrica sul dispositivo che stai usando. In un browser si trova nello spazio che quel browser riserva a questo sito; nell’app per telefono si trova nello spazio di archiviazione dell’app. Nulla delle persone nella tua rubrica viene inviato da nessuna parte, a meno che tu non acceda, cosa che attiva il backup online.
 
 Non ti serve un account per usare BlackBook. Tutto funziona senza accedere.
 
 ## Cosa significa in pratica
 
-- **Ogni dispositivo ha la sua rubrica.** I contatti aggiunti sul portatile non compaiono da soli sul telefono. È il backup online a collegarli. Per spostarli serve un file di backup.
+- **Ogni dispositivo ha la sua rubrica.** Le persone aggiunte sul portatile non compaiono da soli sul telefono. È il backup online a collegarli. Per spostarli serve un file di backup.
 - **Svuotare il browser può svuotare la rubrica.** Eliminare i dati o la cronologia di questo sito, usare una finestra privata o disinstallare l’app cancella la rubrica conservata lì.
 - **I contatti del dispositivo sono separati.** BlackBook non aggiunge nulla, non modifica e non si sincronizza con la rubrica integrata nel telefono.
 
@@ -59,14 +59,15 @@ Le scelte sull’aspetto e sul comportamento dell’app su questo dispositivo, c
   },
   {
     id: 'importing-and-exporting',
-    title: 'Far entrare e uscire i contatti',
-    summary: 'Un solo Importa per contatti, note, attività e backup, e un’esportazione CSV.',
+    title: 'Far entrare e uscire le persone',
+    summary: 'Un solo Importa per persone, note, attività e backup, e un’esportazione CSV.',
     group: 'Come funziona',
     body: `## Una porta per entrare, una per uscire
 
-Tutto ciò che entra in BlackBook passa da **Importa**: Regola, poi Importa nell’app per telefono, oppure Azioni, poi Avanzate, poi Importa sul sito web. Ci sono quattro scelte:
+Tutto ciò che entra in BlackBook passa da **Importa**: Regola, poi Importa nell’app per telefono, oppure Azioni, poi Avanzate, poi Importa sul sito web. Ci sono cinque scelte:
 
-- **Contatti**, da un file CSV e, nell’app per telefono, dai contatti del telefono.
+- **Persone**, da un file CSV e, nell’app per telefono, dai contatti del telefono.
+- **Persone da OneNote**, una persona per ogni pagina. Vedi Porta le tue note da OneNote.
 - **Note**, da file Word, pagine web (.html, .htm, .mht), testo semplice o Markdown. Vedi Porta le tue note da OneNote.
 - **Cose da fare**, da un elenco in un file di testo, Markdown, foglio di calcolo o calendario (più sotto).
 - **Ripristina un backup di BlackBook**, che apre un file di backup che hai salvato (vedi Il tuo file di backup).
@@ -75,11 +76,11 @@ Tutto ciò che esce è in **Backup ed esportazione**: Regola, poi Backup ed espo
 
 ## Esportare
 
-L’esportazione salva tutta la rubrica in un file CSV con la data di oggi nel nome. Ha una colonna per nome, email, etichette, note, compleanno, telefono, azienda e per indicare se il compleanno o la scheda di una persona sono nascosti, così reimportarlo ripristina i tuoi contatti come li avevi lasciati. Il file si apre in qualsiasi foglio di calcolo. Esclude le tue attività: per una copia completa, salva invece un file di backup (vedi Il tuo file di backup).
+L’esportazione salva tutta la rubrica in un file CSV con la data di oggi nel nome. Ha una colonna per nome, email, etichette, note, compleanno, telefono, azienda e per indicare se il compleanno o la scheda di una persona sono nascosti, così reimportarlo ripristina le tue persone come li avevi lasciati. Il file si apre in qualsiasi foglio di calcolo. Esclude le tue attività: per una copia completa, salva invece un file di backup (vedi Il tuo file di backup).
 
 ## Importare un file CSV
 
-Scegli Importa, poi Contatti. Puoi importare un file CSV esportato da BlackBook o da un’altra rubrica. Scegli tu se **aggiungere** le persone del file alla tua rubrica o **sostituire** la rubrica con loro.
+Scegli Importa, poi Persone. Puoi importare un file CSV esportato da BlackBook o da un’altra rubrica. Scegli tu se **aggiungere** le persone del file alla tua rubrica o **sostituire** la rubrica con loro.
 
 BlackBook riconosce i nomi di colonna usati da Google Contacts e Outlook. Per esempio:
 
@@ -95,7 +96,7 @@ I compleanni sono accettati come 1990-06-04, 4 June 1990, June 4 o --06-04 (un c
 
 ## Dai contatti del telefono
 
-Nell’app per telefono puoi scegliere una persona dai contatti del telefono per compilare una nuova scheda, oppure importare in una volta tutta la rubrica del telefono con Importa, poi Contatti. L’importazione completa salta chi è già nella tua rubrica, quindi puoi ripeterla più avanti senza problemi. In Chrome su Android, il selettore di contatti del browser offre lo stesso per un nome, un’email e un numero.
+Nell’app per telefono puoi scegliere una persona dai contatti del telefono per compilare una nuova scheda, oppure importare in una volta tutta la rubrica del telefono con Importa, poi Persone. L’importazione completa salta chi è già nella tua rubrica, quindi puoi ripeterla più avanti senza problemi. In Chrome su Android, il selettore di contatti del browser offre lo stesso per un nome, un’email e un numero.
 
 BlackBook legge i contatti del telefono solo quando glielo chiedi e non vi scrive mai nulla. La nota della scheda contatto del telefono non viene copiata.
 
@@ -197,7 +198,7 @@ Con una passphrase, puoi chiedere a un dispositivo di ricordare la chiave, così
 
 Per cambiare la passphrase, o per scegliere Rimuovi la passphrase, serve quella attuale, anche su un dispositivo che la ricorda, e il backup viene crittografato di nuovo in un solo passaggio. Rimuoverla rimette una chiave casuale con il tuo account, così i tuoi dispositivi aprono la copia online semplicemente accedendo di nuovo. Disattiva ed elimina la copia online elimina completamente la copia online, lascia la rubrica sul dispositivo com’è e fa sì che accedere di nuovo su quel dispositivo non riattivi il backup. Eliminare il tuo Universal ID elimina anche la copia online.
 
-Il backup ha un limite di circa 2 MB di dati crittografati, pari a molte migliaia di contatti. Di solito sono le note molto lunghe a far raggiungere il limite.`,
+Il backup ha un limite di circa 2 MB di dati crittografati, pari a molte migliaia di persone. Di solito sono le note molto lunghe a far raggiungere il limite.`,
   },
   {
     id: 'backup-file',
@@ -208,7 +209,7 @@ Il backup ha un limite di circa 2 MB di dati crittografati, pari a molte migliai
 
 ## Cosa contiene
 
-- Ogni contatto, con tutti i campi: nome, email, telefono, azienda, indirizzo, compleanno, note, etichette, contatti fissati e chi è nascosto.
+- Ogni persona, con tutti i campi: nome, email, telefono, azienda, indirizzo, compleanno, note, etichette, persone fissate e chi è nascosto.
 - Le tue etichette e liste email.
 - La tua lista di attività.
 - Le tue scelte in Regola questa app e la vista con cui si apre l’elenco.
@@ -245,9 +246,9 @@ BlackBook controlla ogni campo di un file prima di usarlo, così un file dannegg
 
 1. Accedi con il tuo Universal ID (nell’app per telefono, da Regola, poi Account).
 2. Se hai protetto il backup con una passphrase, inseriscila. Senza, basta accedere.
-3. Se questo dispositivo ha già dei contatti o delle attività suoi, per esempio quelli aggiunti prima di accedere, BlackBook li unisce alla copia online e la salva subito. Non c’è nulla da scegliere.
+3. Se questo dispositivo ha già delle persone o delle attività sue, per esempio quelli aggiunti prima di accedere, BlackBook li unisce alla copia online e la salva subito. Non c’è nulla da scegliere.
 
-Nell’unione, la copia online è il punto di partenza e vi si aggiungono i contatti di questo dispositivo. Chi c’è già, riconosciuto come la stessa scheda oppure per lo stesso nome con la stessa email o lo stesso numero, non viene aggiunto due volte. Le etichette con lo stesso nome diventano una sola. L’unione aggiunge soltanto, quindi qualcuno che hai eliminato su un altro dispositivo può tornare da un dispositivo che lo ha ancora. Per prendere invece la copia online esattamente com’è, apri Backup online (Regola, poi Account, poi Backup online nell’app per telefono; Azioni, poi Avanzate, poi Backup online sul sito web) e scegli Recupera la copia online.
+Nell’unione, la copia online è il punto di partenza e vi si aggiungono le persone di questo dispositivo. Chi c’è già, riconosciuto come la stessa scheda oppure per lo stesso nome con la stessa email o lo stesso numero, non viene aggiunto due volte. Le etichette con lo stesso nome diventano una sola. L’unione aggiunge soltanto, quindi qualcuno che hai eliminato su un altro dispositivo può tornare da un dispositivo che lo ha ancora. Per prendere invece la copia online esattamente com’è, apri Backup online (Regola, poi Account, poi Backup online nell’app per telefono; Azioni, poi Avanzate, poi Backup online sul sito web) e scegli Recupera la copia online.
 
 ## Salvataggio
 
@@ -259,7 +260,7 @@ La copia online viene salvata come rubrica intera. Se due dispositivi hanno entr
 
 ## Dopo il cambio della passphrase
 
-Quando aggiungi o cambi la passphrase su un dispositivo, gli altri smettono di salvare e te la chiedono una volta. Su di essi non si perde nulla, e quando li sblocchi propongono di unire di nuovo i loro contatti. Un dispositivo che ha ancora la vecchia chiave non può sovrascrivere il cambiamento. Quando rimuovi la passphrase, gli altri dispositivi riaprono da soli la copia online.
+Quando aggiungi o cambi la passphrase su un dispositivo, gli altri smettono di salvare e te la chiedono una volta. Su di essi non si perde nulla, e quando li sblocchi propongono di unire di nuovo le loro persone. Un dispositivo che ha ancora la vecchia chiave non può sovrascrivere il cambiamento. Quando rimuovi la passphrase, gli altri dispositivi riaprono da soli la copia online.
 
 ## Spostare la rubrica senza account
 
@@ -272,7 +273,7 @@ Se l’altro dispositivo è nuovo, scegli Sostituisci tutto. Se ha già dei cont
   {
     id: 'notes-from-onenote',
     title: "Porta le tue note da OneNote",
-    summary: "Esporta le pagine da OneNote, poi importa i file in Note.",
+    summary: "Esporta le pagine da OneNote, poi importale come note, o come persone con una pagina ciascuna.",
     group: "Come funziona",
     body: `BlackBook non può aprire da solo un blocco appunti di OneNote, ma legge i file che OneNote esporta. Tutto viene letto sul tuo dispositivo; nulla viene caricato.
 
@@ -299,7 +300,21 @@ Scegli **Importa** ▸ **Note**: nell’app per telefono Importa è in **Regola*
 - Il testo arriva come testo semplice: paragrafi ed elenchi restano; formattazione, immagini, disegni e allegati no.
 - Se OneNote ha scritto la data della pagina sotto il titolo, diventa la data della nota.
 
-Vedi cosa è stato trovato prima che venga aggiunto qualcosa, e puoi togliere qualsiasi elemento scorrendolo. L’importazione attiva la scheda Note.`,
+Vedi cosa è stato trovato prima che venga aggiunto qualcosa, e puoi togliere qualsiasi elemento scorrendolo. L’importazione attiva la scheda Note.
+
+## Una pagina per persona
+
+Se tieni una pagina per ogni persona, come in una sezione Persone, scegli invece **Importa** ▸ **Persone da OneNote**. Ogni pagina diventa una persona in Persone:
+
+- Il titolo della pagina è il nome e il testo della pagina va nelle sue note.
+- La data che OneNote scrive sotto il titolo diventa il giorno in cui è stata aggiunta.
+- Chi è già nella tua rubrica con quel nome tiene ciò che ha, e la pagina viene aggiunta sotto le sue note. Importare di nuovo la stessa pagina non aggiunge nulla.
+
+Prima che venga aggiunto qualcosa vedi tutte le pagine e puoi togliere scorrendo quelle che non riguardano una persona. Scegli anche come etichettarle:
+
+- **Per sezione**: tutti quelli del file di una sezione ricevono come etichetta il suo nome, quindi esportando la sezione People - James li etichetti "People - James". Serve che il file mantenga il nome dato da OneNote.
+- **Un’etichetta per tutti**: scrivi un’etichetta, nuova o una che hai già.
+- **Nessuna etichetta**.`,
   },
 ]
 
