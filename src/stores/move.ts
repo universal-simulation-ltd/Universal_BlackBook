@@ -72,14 +72,19 @@ export async function moveItems(from: MoveKind, to: MoveKind, ids: string[], t: 
     await useBookStore.getState().restoreContacts(contacts)
     created = contacts.map((c) => c.id)
   } else if (to === 'notes') {
-    const notes: Note[] = moved.map((m, i) => ({
+    const tags = useBookStore.getState().tags
+    const notes: Note[] = moved.map((m, i) => {
+      const tagIds = tagsForTodo(m.tagIds, tags)
+      return {
       id: newId(),
       title: m.title.trim(),
       details: withDue(m, w),
       ...(m.location ? { location: m.location } : {}),
+      ...(tagIds.length ? { tagIds } : {}),
       createdAt: now,
       updatedAt: now + i,
-    }))
+      }
+    })
     await useNoteStore.getState().restoreMany(notes)
     useSettingsStore.getState().set({ notes: true })
     created = notes.map((n) => n.id)

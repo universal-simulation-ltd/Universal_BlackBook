@@ -11,9 +11,14 @@ import { useNativeNav } from '../native/nav'
 import { useScrollHint } from '@unisim/sdk'
 import { showValue, type NoteTemplate } from '../lib/templates'
 import { AddTyped, ListSearch } from './ListSearch'
-import { compareNotes, matchesNote, noteText, preview, type Note } from '../lib/notes'
+import { compareNotes, matchesNote, matchesNoteTags, noteText, preview, type Note } from '../lib/notes'
+import { isList } from '../lib/lists'
+import type { Tag } from '../lib/types'
 import { useNoteStore } from '../stores/noteStore'
-import { btnDanger, btnGhost, btnPrimary, btnSubtle, tabHeading } from './ui'
+import { useBookStore } from '../stores/bookStore'
+import { TagChip, TagDot } from './TagChip'
+import { TagCombo } from './TagCombo'
+import { btnDanger, btnGhost, btnPrimary, btnSubtle, tabHeading, TuneGlyph } from './ui'
 import { usePanelStore } from '../stores/panelStore'
 import { phoneScreens } from '../native/shell'
 import { useT } from '../i18n'
@@ -55,9 +60,21 @@ export function NotesView() {
   const sorted = useMemo(() => [...notes].sort(compareNotes), [notes])
   // A filter for a template since deleted shows everything.
   const active = templates.some((x) => x.id === filter) ? filter : null
+  // Tags, as on To-do (2026-11-03): the book's, and only those some note
+  // carries are offered as a filter.
+  const tags = useBookStore((s) => s.tags)
+  const tagById = useMemo(() => new Map(tags.map((x) => [x.id, x])), [tags])
+  const tagFilter = useNoteStore((s) => s.tagFilter)
+  const setTagFilter = useNoteStore((s) => s.setTagFilter)
+  const usedTags = useMemo(() => {
+    const used = new Set(notes.flatMap((n) => n.tagIds ?? []))
+    return tags.filter((x) => !isList(x) && used.has(x.id))
+  }, [notes, tags])
+  const activeTags = tagFilter.filter((id) => usedTags.some((x) => x.id === id))
   const shown = useMemo(
-    () => sorted.filter((n) => (!active || n.templateId === active) && matchesNote(n, query)),
-    [sorted, query, active],
+    () => sorted.filter((n) => (!active || n.templateId === active) && matchesNoteTags(n, activeTags) && matchesNote(n, query)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- activeTags is derived each render; its content is the key
+    [sorted, query, active, activeTags.join(',')],
   )
   const byTemplate = useMemo(() => new Map(templates.map((x) => [x.id, x])), [templates])
   const searching = query.trim() !== ''
@@ -85,6 +102,10 @@ export function NotesView() {
   const selecting = selected !== null
   const picked = useMemo(() => (selected ? shown.filter((n) => selected.has(n.id)) : []), [selected, shown])
   const [confirming, setConfirming] = useState(false)
+  // Select ▸ Convert (James, 2026-11-03): the choice of template.
+  const [converting, setConverting] = useState(false)
+  const convert = useNoteStore((s) => s.convert)
+  const edit = useNoteStore((s) => s.edit)
   const [copied, setCopied] = useState(false)
   const lastIndex = useRef<number | null>(null)
   const toggle = (id: string, index: number, range: boolean) => {
@@ -138,9 +159,41 @@ export function NotesView() {
         </div>
       </div>
 
-      <ListSearch value={query} onChange={setQuery} label={t('notes.search')} filtering={active !== null} onEnter={() => addTyped(query)}>
+      <ListSearch
+        value={query}
+        onChange={setQuery}
+        label={t('notes.search')}
+        filtering={active !== null || activeTags.length > 0}
+        onEnter={() => addTyped(query)}
+      >
         {templates.length > 0 && notes.length > 0 && (
           <TemplateFilter templates={templates} active={active} onPick={setFilter} />
+        )}
+        {usedTags.length > 0 && (
+          <div role="group" aria-label={t('tags.filter_by')}>
+            <TagCombo
+              options={usedTags}
+              isOn={(id) => activeTags.includes(id)}
+              chip={(x) => (
+                <TagChip
+                  name={x.name}
+                  colour={x.colour}
+                  pattern={x.pattern}
+                  selected={activeTags.includes(x.id)}
+                  onClick={() => setTagFilter(activeTags.includes(x.id) ? activeTags.filter((y) => y !== x.id) : [...activeTags, x.id])}
+                />
+              )}
+              suggestion={(x) => <TagChip name={x.name} colour={x.colour} pattern={x.pattern} />}
+              onPick={(id) => setTagFilter([...activeTags, id])}
+              placeholder={t('tags.filter_by')}
+              fullLabel={t('tags.show_all')}
+            />
+            {activeTags.length > 0 && (
+              <button type="button" className={`${btnSubtle} mt-1.5`} onClick={() => setTagFilter([])}>
+                {t('c.clear')}
+              </button>
+            )}
+          </div>
         )}
       </ListSearch>
       {/* What was typed, as a new note's title (James, 2026-10-23). */}
@@ -152,9 +205,9 @@ export function NotesView() {
             {phoneScreens() ? t('notes.none_phone') : t('notes.none')}
           </p>
         </div>
-      ) : shown.length === 0 && (searching || active) ? (
+      ) : shown.length === 0 && (searching || active || activeTags.length > 0) ? (
         <p className="rounded-2xl border border-dashed border-slate-800 px-6 py-8 text-center text-sm text-slate-400">
-          {searching ? t('notes.no_match') : t('tpl.filter_none')}
+          {searching ? t('notes.no_match') : active ? t('tpl.filter_none') : t('todo.none_tagged')}
         </p>
       ) : (
         <>
@@ -183,6 +236,7 @@ export function NotesView() {
                 moveTo.start(picked.map((n) => n.id))
                 setSelected(null)
               }}
+              onConvert={templates.length > 0 ? () => setConverting(true) : undefined}
               onDelete={() => setConfirming(true)}
               onDone={() => setSelected(null)}
               copied={copied}
@@ -197,6 +251,7 @@ export function NotesView() {
                     <NoteRow
                       note={n}
                       template={tpl}
+                      tags={tagById}
                       selected={selected.has(n.id)}
                       onOpen={(e) => toggle(n.id, i, e?.shiftKey === true)}
                     />
@@ -214,7 +269,7 @@ export function NotesView() {
                       })}
                     >
                       <div className="relative h-full">
-                        <NoteRow note={n} template={tpl} onOpen={() => view(n.id)} />
+                        <NoteRow note={n} template={tpl} tags={tagById} onOpen={() => view(n.id)} onFineTune={() => edit(n.id)} />
                         <FocusActions
                           actions={[
                             { label: t('nsel.select_label', { title: n.title || t('c.untitled') }), onClick: () => setSelected(new Set([n.id])) },
@@ -243,6 +298,22 @@ export function NotesView() {
           title={undo.item.length === 1 ? undo.item[0].title : ''}
           text={undo.item.length === 1 ? undefined : t.plural('nsel.deleted', undo.item.length)}
           onUndo={() => void undo.undo()}
+        />
+      )}
+      {converting && (
+        <ConvertSheet
+          templates={templates}
+          picked={picked}
+          onClose={() => setConverting(false)}
+          onPick={(templateId) => {
+            setConverting(false)
+            const ids = picked.map((n) => n.id)
+            setSelected(null)
+            void convert(ids, templateId).then((count) => {
+              const name = templateId ? templates.find((x) => x.id === templateId)?.name ?? '' : t('tpl.plain')
+              if (kit && count) say(t.plural('nsel.converted', count, { name }))
+            })
+          }}
         />
       )}
       {confirming && (
@@ -307,16 +378,27 @@ function TemplateFilter({ templates, active, onPick }: { templates: NoteTemplate
 function NoteRow({
   note,
   template,
+  tags,
   onOpen,
+  onFineTune,
   selected,
 }: {
   note: Note
   template?: NoteTemplate
+  tags: Map<string, Tag>
   onOpen: (e?: React.MouseEvent) => void
+  /**
+   * Straight to the note's form, from the sliders in the card's corner, as on
+   * a contact's card (James, 2026-11-03: "the same formatting in notes").
+   * Not while selecting: then the whole card is the tick box.
+   */
+  onFineTune?: () => void
   /** In selection mode: whether it is ticked (the card is the tick box). */
   selected?: boolean
 }) {
   const t = useT()
+  // The tags ride on the title as lights, as on a contact's card (TagDot).
+  const dots = (note.tagIds ?? []).map((id) => tags.get(id)).filter((x): x is Tag => Boolean(x) && !isList(x!))
   // A templated note shows its fields' values ("Middlemarch · George Eliot")
   // where a plain one shows its first line.
   const values = template
@@ -324,13 +406,16 @@ function NoteRow({
     : ''
   const line = values || preview(note)
   return (
+    // `relative`: the Fine-tune button is a SIBLING over the card's corner,
+    // never inside it (a button in a button is invalid HTML; see ContactRow).
+    <div className="relative h-full">
     <button
       type="button"
       onClick={(e) => onOpen(e)}
       {...(selected !== undefined ? { role: 'checkbox', 'aria-checked': selected } : {})}
       className={`relative flex h-full w-full flex-col gap-1 rounded-xl border bg-slate-900 p-3.5 text-left transition-colors hover:border-slate-700 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
         selected ? 'border-orange-500 bg-orange-500/10' : 'border-slate-800'
-      } ${selected !== undefined ? 'pl-11' : ''}`}
+      } ${selected !== undefined ? 'pl-11' : ''} ${onFineTune ? 'pr-11' : ''}`}
     >
       {selected !== undefined && (
         <span
@@ -356,6 +441,13 @@ function NoteRow({
           </span>
         )}
         <span className="min-w-0 truncate font-semibold text-slate-100">{note.title || t('c.untitled')}</span>
+        {dots.length > 0 && (
+          <span className="-my-0.5 -ml-1 flex shrink-0 items-center">
+            {dots.map((x) => (
+              <TagDot key={x.id} name={x.name} colour={x.colour} pattern={x.pattern} />
+            ))}
+          </span>
+        )}
         {template && (
           <span className="shrink-0 rounded-full border border-slate-700 px-2 py-0.5 text-[11px] font-medium text-slate-400">{template.name}</span>
         )}
@@ -369,6 +461,18 @@ function NoteRow({
       </p>
       {line && <p className="truncate text-sm text-slate-400">{line}</p>}
     </button>
+    {onFineTune && (
+      <button
+        type="button"
+        onClick={onFineTune}
+        aria-label={t('row.fine_tune_label', { name: note.title || t('c.untitled') })}
+        title={t('row.fine_tune')}
+        className="absolute right-1 top-1 inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+      >
+        <TuneGlyph />
+      </button>
+    )}
+    </div>
   )
 }
 
@@ -381,6 +485,7 @@ function NoteSelectBar({
   onPin,
   onCopy,
   onMove,
+  onConvert,
   onDelete,
   onDone,
   copied,
@@ -392,6 +497,8 @@ function NoteSelectBar({
   onPin: (pin: boolean) => void
   onCopy: () => void
   onMove: () => void
+  /** Only when the book has templates to convert to. */
+  onConvert?: () => void
   onDelete: () => void
   onDone: () => void
   copied: boolean
@@ -416,6 +523,11 @@ function NoteSelectBar({
       <button type="button" className={act} onClick={onMove} disabled={none}>
         {t('sel.move')}
       </button>
+      {onConvert && (
+        <button type="button" className={act} onClick={onConvert} disabled={none}>
+          {t('nsel.convert')}
+        </button>
+      )}
       <button type="button" className={`${act} text-rose-300 hover:bg-rose-950 hover:text-rose-200`} onClick={onDelete} disabled={none}>
         {t('c.delete')}
       </button>
@@ -423,5 +535,54 @@ function NoteSelectBar({
         {t('c.done')}
       </button>
     </div>
+  )
+}
+
+/**
+ * Select ▸ Convert (James, 2026-11-03): the picked notes onto one of the
+ * templates, or back to a plain note. What they hold comes along
+ * (lib/templates.ts `convertNote`): a field with the same name moves across,
+ * anything else is written into the text, and "Label: value" lines in the text
+ * fill the new template's fields. The current choice is ticked when every
+ * picked note is already on it.
+ */
+function ConvertSheet({
+  templates,
+  picked,
+  onPick,
+  onClose,
+}: {
+  templates: NoteTemplate[]
+  picked: Note[]
+  onPick: (templateId: string | null) => void
+  onClose: () => void
+}) {
+  const t = useT()
+  const kit = usePhoneKit()
+  const on = (id: string | null) => picked.length > 0 && picked.every((n) => (n.templateId ?? null) === id)
+  const row = kit
+    ? 'bb-sheetrow'
+    : 'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-slate-200 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 aria-pressed:text-orange-300'
+  const choice = (id: string | null, name: string, hint?: string) => (
+    <button key={id ?? 'plain'} type="button" className={row} aria-pressed={on(id)} onClick={() => onPick(id)}>
+      <span className="min-w-0 flex-1 text-left">
+        <span className="block">{name}</span>
+        {hint && <span className="block truncate text-xs text-slate-500">{hint}</span>}
+      </span>
+      {on(id) && (
+        <svg viewBox="0 0 20 20" className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="m4.5 10.5 3.5 3.5 7.5-8" />
+        </svg>
+      )}
+    </button>
+  )
+  return (
+    <Modal phone="sheet" title={t.plural('nsel.convert_title', picked.length)} onClose={onClose}>
+      <p className="mb-2 text-sm text-slate-400">{t('nsel.convert_body')}</p>
+      <div className="flex flex-col">
+        {choice(null, t('tpl.plain'))}
+        {templates.map((x) => choice(x.id, x.name, x.fields.map((f) => f.label).join(' · ')))}
+      </div>
+    </Modal>
   )
 }

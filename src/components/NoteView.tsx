@@ -23,6 +23,10 @@ import { CloseGlyph, Modal } from './Modal'
 import { actionSwipe, pinSwipe, removeSwipe, SelectBar, SwipeGroup, SwipeItem, UndoBar, useHoldSelect, useUndo } from './SwipeActions'
 import type { Contact } from '../lib/types'
 import { ReminderEditor, ReminderList } from './Reminders'
+import { TagPicker } from './TagPicker'
+import { TagChip } from './TagChip'
+import { isList } from '../lib/lists'
+import type { Tag } from '../lib/types'
 import { TemplateForm } from './TemplateManager'
 import { QuickActions, type QuickButton } from './QuickActions'
 import { NOTE_ACTIONS, type QuickAction } from '../lib/quickActions'
@@ -248,7 +252,9 @@ function NoteView({ id, onBinned }: { id: string; onBinned: (note: Note) => void
   }, [hasNote])
 
   const byId = useMemo(() => new Map(contacts.map((c) => [c.id, c])), [contacts])
+  const allTags = useBookStore((s) => s.tags)
   if (!note) return null
+  const noteTags = (note.tagIds ?? []).map((tid) => allTags.find((x) => x.id === tid)).filter((x): x is Tag => Boolean(x) && !isList(x!))
   const people = (note.contactIds ?? []).map((cid) => byId.get(cid)).filter((c) => c !== undefined)
 
   const copy = async () => {
@@ -321,6 +327,15 @@ function NoteView({ id, onBinned }: { id: string; onBinned: (note: Note) => void
   const body = (
     <div ref={bodyRef} className="mx-auto w-full max-w-2xl space-y-5">
       {actionRow}
+
+      {/* Its tags, as chips; Fine-tune changes them. */}
+      {noteTags.length > 0 && (
+        <div data-blank className="flex flex-wrap gap-1.5">
+          {noteTags.map((x) => (
+            <TagChip key={x.id} name={x.name} colour={x.colour} pattern={x.pattern} />
+          ))}
+        </div>
+      )}
 
       {template && (
         <div className="space-y-2">
@@ -682,6 +697,8 @@ function NoteForm({ id }: { id: string }) {
   const [templateId] = useState(() => existing?.templateId ?? useNoteStore.getState().newTemplate ?? undefined)
   const template = useNoteStore((s) => s.templates.find((x) => x.id === templateId))
   const [fields, setFields] = useState<Record<string, string>>(() => ({ ...(existing?.fields ?? {}) }))
+  // The book's tags, as on a to-do (2026-11-03).
+  const [tagIds, setTagIds] = useState<string[]>(() => existing?.tagIds ?? [])
   const [confirming, setConfirming] = useState(false)
   const titleId = useId()
   const detailsId = useId()
@@ -694,7 +711,7 @@ function NoteForm({ id }: { id: string }) {
   useEffect(() => {
     if (focusDetails) detailsRef.current?.focus()
   }, [focusDetails])
-  const empty = !title.trim() && !details.trim() && !Object.values(fields).some((v) => v.trim())
+  const empty = !title.trim() && !details.trim() && !Object.values(fields).some((v) => v.trim()) && tagIds.length === 0
   // Fine-tune on the phone leaves out the text, which the note's page edits in
   // place (James, 2026-10-27). The title stays, though the bar edits it too
   // (James, 2026-11-03: "in case they didn't realise you could do it on the
@@ -708,7 +725,7 @@ function NoteForm({ id }: { id: string }) {
       // A note from a template with no title of its own takes its first text
       // field's value ("Middlemarch" for a Book), so the list has a name for it.
       const first = template?.fields.find((f) => f.type === 'text' && fields[f.id]?.trim())
-      const saved = save({ id: existing?.id, title: title.trim() || (first ? fields[first.id].trim() : ''), details, templateId, fields })
+      const saved = save({ id: existing?.id, title: title.trim() || (first ? fields[first.id].trim() : ''), details, templateId, fields, tagIds })
       // After the save, which writes the note as it was read: the place on top.
       const place = hasLocation(loc) ? loc : undefined
       if (existing && JSON.stringify(place) !== JSON.stringify(existing.location)) void saved.then(() => patchNote(existing.id, { location: place }))
@@ -758,6 +775,10 @@ function NoteForm({ id }: { id: string }) {
             />
           </div>
         )}
+        <div>
+          <span className={label}>{t('field.tags')}</span>
+          <TagPicker value={tagIds} onChange={setTagIds} />
+        </div>
         {existing && (
           <div className="rounded-lg border border-slate-800">
             <button

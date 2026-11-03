@@ -62,6 +62,12 @@ export interface Note {
   templateId?: string
   /** That template's fields, filled in: field id → the value as typed. */
   fields?: Record<string, string>
+  /**
+   * The book's tags, as on a contact or a to-do (James, 2026-11-03: "colour
+   * for tags, ability to add tags to an item"). Never a list. Absent = none,
+   * so every note written before this reads as untagged.
+   */
+  tagIds?: string[]
   createdAt: number
   updatedAt: number
 }
@@ -84,9 +90,22 @@ export function toNote(raw: unknown): Note | null {
     ...(typeof r.templateId === 'string' && LINK_ID.test(r.templateId) ? { templateId: r.templateId } : {}),
     ...(typeof r.pinnedAt === 'number' && Number.isFinite(r.pinnedAt) ? { pinnedAt: r.pinnedAt } : {}),
     ...(toFieldValues(r.fields) ? { fields: toFieldValues(r.fields) } : {}),
+    ...(toNoteTagIds(r.tagIds) ? { tagIds: toNoteTagIds(r.tagIds) } : {}),
     createdAt: typeof r.createdAt === 'number' ? r.createdAt : Date.now(),
     updatedAt: typeof r.updatedAt === 'number' ? r.updatedAt : Date.now(),
   }
+}
+
+/** Tag ids from storage or a file: strings, unique. Undefined when there are none. */
+export function toNoteTagIds(raw: unknown): string[] | undefined {
+  if (!Array.isArray(raw)) return undefined
+  const out = [...new Set(raw.filter((v): v is string => typeof v === 'string' && LINK_ID.test(v)))]
+  return out.length ? out : undefined
+}
+
+/** OR across the chosen tags, as the to-do and contact lists filter. */
+export function matchesNoteTags(note: Note, tagIds: string[]): boolean {
+  return tagIds.length === 0 || (note.tagIds ?? []).some((id) => tagIds.includes(id))
 }
 
 export function toNotes(raw: unknown): Note[] {
@@ -120,11 +139,16 @@ export function preview(note: Note): string {
   return note.details.split('\n').find((l) => l.trim())?.trim() ?? ''
 }
 
-/** Two devices' notes into one, by id, the newer edit winning (as `mergeTodos`). */
-export function mergeNotes(online: Note[], local: Note[]): Note[] {
+/**
+ * Two devices' notes into one, by id, the newer edit winning (as `mergeTodos`).
+ * `remap` is the contact merge's tag remapping, so a local note keeps pointing
+ * at the tag its contacts now point at.
+ */
+export function mergeNotes(online: Note[], local: Note[], remap: Map<string, string> = new Map()): Note[] {
   const out = [...online]
   const index = new Map(out.map((n, i) => [n.id, i]))
-  for (const n of local) {
+  for (const raw of local) {
+    const n = remap.size && raw.tagIds ? { ...raw, tagIds: [...new Set(raw.tagIds.map((id) => remap.get(id) ?? id))] } : raw
     const at = index.get(n.id)
     if (at === undefined) {
       index.set(n.id, out.length)

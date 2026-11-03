@@ -156,3 +156,70 @@ export function retireFields(notes: Note[], template: NoteTemplate, fieldIds: st
   }
   return changed
 }
+
+const foldLabel = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase()
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+/** Would this be a sensible value for a field of this kind? A date box only takes YYYY-MM-DD. */
+function fits(type: FieldType, value: string): boolean {
+  if (type === 'date') return /^\d{4}-\d{2}-\d{2}$/.test(value)
+  if (type === 'number') return /^[-+]?[\d\s.,]+$/.test(value)
+  return true
+}
+
+/**
+ * Convert a note to another template, or to a plain note with `to` null
+ * (James, 2026-11-03: "an existing item as a note that I want to convert to
+ * the movies template I made"). Nothing typed is lost:
+ *
+ *  • a value whose field has a namesake in the new template (same label,
+ *    case and accents aside) moves into it;
+ *  • any other value is written into the text as "Label: value", the way
+ *    `retireFields` does when a field leaves a template;
+ *  • a "Label: value" line in the text whose label is one of the new
+ *    template's empty fields moves into that field and out of the text — so a
+ *    note converted to plain and back gets its fields back, and a plain note
+ *    with "Director: Nolan" in it fills the Director field.
+ *
+ * Title, tags, links, place, reminders and pin are kept. Returns the note
+ * unchanged when it is already on that template.
+ */
+export function convertNote(note: Note, from: NoteTemplate | undefined, to: NoteTemplate | null, now = Date.now()): Note {
+  if ((note.templateId ?? null) === (to?.id ?? null)) return note
+  const target = to?.fields ?? []
+  const fields: Record<string, string> = {}
+  const leftOver: string[] = []
+  for (const f of from?.fields ?? []) {
+    const v = note.fields?.[f.id]?.trim()
+    if (!v) continue
+    const twin = target.find((x) => !fields[x.id] && foldLabel(x.label) === foldLabel(f.label) && foldLabel(f.label) && fits(x.type, v))
+    if (twin) fields[twin.id] = v
+    else leftOver.push(`${f.label || '…'}: ${v}`)
+  }
+  // Values of a template the book no longer has (or a note whose fields
+  // point nowhere) cannot be named: keep them in the text, unlabelled.
+  const named = new Set((from?.fields ?? []).map((f) => f.id))
+  for (const [k, v] of Object.entries(note.fields ?? {})) if (!named.has(k) && v.trim()) leftOver.push(v.trim())
+
+  let lines = note.details.replace(/\s+$/, '').split('\n')
+  for (const f of target) {
+    if (fields[f.id] || !foldLabel(f.label)) continue
+    const re = new RegExp(`^\\s*${escapeRe(f.label.trim())}\\s*:\\s*(.+?)\\s*$`, 'i')
+    const at = lines.findIndex((l) => {
+      const m = re.exec(l.normalize('NFC'))
+      return m !== null && fits(f.type, m[1])
+    })
+    if (at < 0) continue
+    fields[f.id] = re.exec(lines[at].normalize('NFC'))![1]
+    lines = [...lines.slice(0, at), ...lines.slice(at + 1)]
+  }
+  const kept = lines.join('\n').replace(/\n{3,}/g, '\n\n').trim()
+  const details = [kept, leftOver.join('\n')].filter(Boolean).join('\n\n')
+
+  const next: Note = { ...note, details, updatedAt: now }
+  delete next.templateId
+  delete next.fields
+  if (to) next.templateId = to.id
+  if (Object.keys(fields).length) next.fields = fields
+  return next
+}

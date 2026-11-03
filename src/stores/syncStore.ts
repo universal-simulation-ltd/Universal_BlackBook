@@ -238,7 +238,7 @@ async function mergeIn(payload: VaultPayload) {
     .getState()
     .replace(mergeTodos(toTodos(payload.todos), useTodoStore.getState().todos, merged.remap))
   await useNoteStore.getState().init()
-  await useNoteStore.getState().replace(mergeNotes(toNotes(payload.pages), useNoteStore.getState().notes))
+  await useNoteStore.getState().replace(mergeNotes(toNotes(payload.pages), useNoteStore.getState().notes, merged.remap))
   await useNoteStore.getState().replaceTemplates(mergeTemplates(toTemplates(payload.templates), useNoteStore.getState().templates))
   adoptTuning(payload)
 }

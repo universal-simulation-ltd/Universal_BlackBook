@@ -311,7 +311,7 @@ function parseTodo(raw: unknown, known: Set<string>): Todo | null {
   }
 }
 
-function parseNote(raw: unknown): Note | null {
+function parseNote(raw: unknown, known: Set<string>): Note | null {
   if (!isRecord(raw)) return null
   const noteId = id(raw.id)
   const title = str(raw.title, LIMITS.pageTitle)
@@ -323,6 +323,7 @@ function parseNote(raw: unknown): Note | null {
   const location = toLocation(raw.location ?? raw.place)
   const fields = toFieldValues(raw.fields)
   const templateId = id(raw.templateId)
+  const tagIds = ids(raw.tagIds, known)
   return {
     id: noteId,
     title,
@@ -332,6 +333,7 @@ function parseNote(raw: unknown): Note | null {
     ...(location ? { location } : {}),
     ...(templateId ? { templateId } : {}),
     ...(fields ? { fields } : {}),
+    ...(tagIds.length ? { tagIds } : {}),
     ...(optTime(raw.pinnedAt) ? { pinnedAt: optTime(raw.pinnedAt) } : {}),
     createdAt,
     updatedAt: time(raw.updatedAt, createdAt),
@@ -419,7 +421,7 @@ export function parseBackup(raw: unknown): BackupData | null {
   const pages: Note[] = []
   const seenPages = new Set<string>()
   for (const r of rawPages) {
-    const n = parseNote(r)
+    const n = parseNote(r, plain)
     if (n && !seenPages.has(n.id)) {
       pages.push(n)
       seenPages.add(n.id)
@@ -479,6 +481,7 @@ export function mergeBackup(
   const pages = mergeNotes(
     here.pages,
     file.pages.filter((n) => herePageIds.has(n.id) || !herePageKeys.has(sameNote(n))),
+    book.remap,
   )
   const pagesBefore = new Map(here.pages.map((n) => [n.id, n.updatedAt]))
   for (const n of pages) {

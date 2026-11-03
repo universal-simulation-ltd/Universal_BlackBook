@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { newId } from '../lib/id'
 import type { Note } from '../lib/notes'
 import { loadPages, loadTemplates, loadTemplatesSeeded, markTemplatesSeeded, savePages, saveTemplates } from '../lib/store'
-import { bookTemplate, retireFields, type NoteTemplate } from '../lib/templates'
+import { bookTemplate, convertNote, retireFields, type NoteTemplate } from '../lib/templates'
 import { currentT } from '../i18n'
 
 /** What the note page hands back. */
@@ -13,6 +13,8 @@ export interface NoteDraft {
   /** A new note's template; an existing note keeps its own. */
   templateId?: string
   fields?: Record<string, string>
+  /** The book's tags (2026-11-03). Left out = keep the note's own. */
+  tagIds?: string[]
 }
 
 /**
@@ -62,6 +64,15 @@ interface NoteState {
   /** The Notes tab's filter: a template id, or null for all. Never remembered. */
   templateFilter: string | null
   setTemplateFilter: (id: string | null) => void
+  /** The Notes tab's tag filter, as To-do's: OR across these. Never remembered. */
+  tagFilter: string[]
+  setTagFilter: (tagIds: string[]) => void
+  /** A tag deleted from the book comes off every note (bookStore.removeTag). */
+  dropTag: (tagId: string) => Promise<void>
+  /** Undo of that: the tag back on these notes. */
+  addTag: (noteIds: string[], tagId: string) => Promise<void>
+  /** Select ▸ Convert: these notes onto a template, or plain with null (lib/templates.ts `convertNote`). */
+  convert: (ids: string[], templateId: string | null) => Promise<number>
   /** A new note from a template ('new' with this template). */
   newTemplate: string | null
   startFrom: (templateId: string | null) => void
@@ -89,6 +100,7 @@ export const useNoteStore = create<NoteState>((set, get) => {
     editing: null,
     templates: [],
     templateFilter: null,
+    tagFilter: [],
     newTemplate: null,
     choosing: false,
     query: '',
@@ -120,6 +132,44 @@ export const useNoteStore = create<NoteState>((set, get) => {
     newNote: () => (get().templates.length ? set({ choosing: true }) : get().edit('new')),
     stopChoosing: () => set({ choosing: false }),
     setTemplateFilter: (templateFilter) => set({ templateFilter }),
+    setTagFilter: (tagFilter) => set({ tagFilter }),
+
+    dropTag: async (tagId) => {
+      set((s) => ({ tagFilter: s.tagFilter.filter((x) => x !== tagId) }))
+      if (!get().notes.some((n) => n.tagIds?.includes(tagId))) return
+      const now = Date.now()
+      await commit(
+        get().notes.map((n) => {
+          if (!n.tagIds?.includes(tagId)) return n
+          const tagIds = n.tagIds.filter((x) => x !== tagId)
+          const { tagIds: _t, ...rest } = n
+          void _t
+          return { ...rest, ...(tagIds.length ? { tagIds } : {}), updatedAt: now }
+        }),
+      )
+    },
+
+    addTag: async (noteIds, tagId) => {
+      const on = new Set(noteIds)
+      const now = Date.now()
+      await commit(get().notes.map((n) => (on.has(n.id) && !n.tagIds?.includes(tagId) ? { ...n, tagIds: [...(n.tagIds ?? []), tagId], updatedAt: now } : n)))
+    },
+
+    convert: async (ids, templateId) => {
+      const to = templateId === null ? null : get().templates.find((x) => x.id === templateId)
+      if (to === undefined) return 0
+      const pick = new Set(ids)
+      const now = Date.now()
+      let changed = 0
+      const notes = get().notes.map((n) => {
+        if (!pick.has(n.id)) return n
+        const next = convertNote(n, get().templates.find((x) => x.id === n.templateId), to, now)
+        if (next !== n) changed++
+        return next
+      })
+      if (changed) await commit(notes)
+      return changed
+    },
     view: (viewing) => set((s) => ({ viewing, editing: viewing === null ? s.editing : s.editing === 'new' ? null : s.editing })),
     startNote: (title) => set({ editing: 'new', prefillTitle: title, focusDetails: true }),
     setQuery: (query) => set({ query }),
@@ -131,11 +181,13 @@ export const useNoteStore = create<NoteState>((set, get) => {
       const details = draft.details.replace(/\s+$/, '')
       const fields = Object.fromEntries(Object.entries(draft.fields ?? {}).filter(([, v]) => v.trim()))
       const sameFields = JSON.stringify(existing?.fields ?? {}) === JSON.stringify(fields)
+      const tagIds = draft.tagIds ?? existing?.tagIds ?? []
+      const sameTags = JSON.stringify(existing?.tagIds ?? []) === JSON.stringify(tagIds)
       // A new note lands on its own view, as a new contact does; an edited
       // one goes back to the view it was fine-tuned from.
       set({ editing: null })
       // Nothing changed: no new "edited" time, so the order stays put.
-      if (existing && existing.title === title && existing.details === details && sameFields) return
+      if (existing && existing.title === title && existing.details === details && sameFields && sameTags) return
       // `...existing` first: what the page does not edit (reminders, links,
       // place) stays as it was.
       const note: Note = {
@@ -145,6 +197,7 @@ export const useNoteStore = create<NoteState>((set, get) => {
         details,
         ...((existing?.templateId ?? draft.templateId) ? { templateId: existing?.templateId ?? draft.templateId } : {}),
         fields: Object.keys(fields).length ? fields : undefined,
+        tagIds: tagIds.length ? tagIds : undefined,
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,
       }

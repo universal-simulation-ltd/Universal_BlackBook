@@ -9,8 +9,9 @@
 //   • A note or to-do becomes a contact named with its title, its text (a
 //     template's fields and a deadline written out) as the contact's notes.
 //     A to-do's tags come along.
-//   • A note becomes a to-do and back with its title and text; a deadline
-//     is written into the note.
+//   • A note becomes a to-do and back with its title, text and tags; a
+//     deadline is written into the note. Notes carry tags since 2026-11-03,
+//     so a contact's tags (never its lists) come along to a note too.
 //
 // Pure functions of what is moved; the ids and times are the stores'.
 
@@ -59,7 +60,7 @@ export function fromNote(n: Note, template: NoteTemplate | undefined, w: MoveWor
   const fields = template
     ? template.fields.map((f) => (n.fields?.[f.id]?.trim() ? `${f.label}: ${n.fields[f.id].trim()}` : '')).filter(Boolean)
     : []
-  return { title: n.title.trim() || w.untitled, details: para(lines(...fields), n.details), tagIds: [], location: n.location }
+  return { title: n.title.trim() || w.untitled, details: para(lines(...fields), n.details), tagIds: n.tagIds ?? [], location: n.location }
 }
 
 export function fromTodo(x: Todo, w: MoveWords): Moved {
