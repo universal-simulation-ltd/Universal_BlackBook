@@ -6,11 +6,18 @@
 # rejects it as an infinite loop (the asset layer strips `.html` itself, the
 # same trap as the marketing site's /netzero). Unmatched paths fall through to
 # `not_found_handling: single-page-application`, which serves index.html anyway.
+#
+# ⚠️ That fallback is why a missing rule fails SILENTLY: the file "loads" with
+# a 200 and the app's HTML in it. Every entry in public/ needs a rule here —
+# src/lib/redirects.test.ts checks. geo/ was missed from 2026-10-25 to
+# 2026-11-03, so the map said it needed the internet and town suggestions
+# were empty on the website.
 /blackbook/sw.js                /sw.js                200
 /blackbook/registerSW.js        /registerSW.js        200
 /blackbook/manifest.webmanifest /manifest.webmanifest 200
 /blackbook/workbox-*            /workbox-:splat       200
 /blackbook/assets/*             /assets/:splat        200
+/blackbook/geo/*                /geo/:splat           200
 /blackbook/favicon.svg          /favicon.svg          200
 /blackbook/unisim-icon.png      /unisim-icon.png      200
 /blackbook/icon-180.png         /icon-180.png         200
