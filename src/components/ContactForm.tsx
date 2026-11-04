@@ -16,7 +16,7 @@ import { LocationFields } from './LocationFields'
 import { newLocation, useCurrentLocation } from './currentLocation'
 import { Modal } from './Modal'
 import { ExpandGlyph, NotesFullscreen } from './NotesFullscreen'
-import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label, PinGlyph, textareaCls } from './ui'
+import { btnDanger, btnGhost, btnPrimary, btnSubtle, CheckIcon, inputCls, BtnKey, label, PinGlyph, textareaCls } from './ui'
 import { autoFocusOK, usePhoneKit } from '../native/kit'
 
 /**
@@ -624,6 +624,9 @@ export function ContactForm({ id }: { id: string }) {
                 {t('c.cancel')}
               </button>
               <button type="submit" className={btnPrimary} disabled={!valid}>
+                <BtnKey>
+                  <CheckIcon />
+                </BtnKey>
                 {t('c.save')}
               </button>
             </div>

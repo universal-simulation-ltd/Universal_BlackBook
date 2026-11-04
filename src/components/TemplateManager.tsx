@@ -8,7 +8,7 @@ import { Modal } from './Modal'
 import { actionSwipe, deleteSwipe, removeSwipe, SelectBar, SwipeGroup, SwipeItem, UndoBar, useHoldSelect, useUndo } from './SwipeActions'
 import { usePhoneKit } from '../native/kit'
 import type { Note } from '../lib/notes'
-import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label } from './ui'
+import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, BtnKey, label, PlusIcon } from './ui'
 
 const FIELD_TYPE_KEY: Record<FieldType, Key> = {
   text: 'tpl.type_text',
@@ -102,6 +102,9 @@ export function TemplateManager({ onClose }: { onClose: () => void }) {
         )}
         <div className="mt-4 flex justify-end">
           <button type="button" className={btnPrimary} onClick={() => setOpen('new')}>
+            <BtnKey>
+              <PlusIcon />
+            </BtnKey>
             {t('tpl.add')}
           </button>
         </div>

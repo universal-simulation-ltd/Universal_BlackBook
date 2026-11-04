@@ -14,7 +14,7 @@ import { useBookStore } from '../stores/bookStore'
 import { ContactRow, ListExport } from './ContactList'
 import { ListChip } from './ListChip'
 import { TagChip } from './TagChip'
-import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, tabHeading } from './ui'
+import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, BtnKey, PlusIcon, tabHeading } from './ui'
 import { autoFocusOK } from '../native/kit'
 import { phoneScreens } from '../native/shell'
 import { useT } from '../i18n'
@@ -94,6 +94,9 @@ export function ListsView() {
         {/* On the phone the top bar's + does this. */}
         {!phoneScreens() && (
           <button type="button" className={btnPrimary} onClick={() => newList()}>
+            <BtnKey>
+              <PlusIcon />
+            </BtnKey>
             {t('c.add_new')}
           </button>
         )}
@@ -272,6 +275,9 @@ function ListPage({ list, onBack }: { list: Tag; onBack: () => void }) {
           <p className="text-sm text-slate-500 tabular-nums">{t.plural('c.people', people.length)}</p>
         </div>
         <button type="button" className={btnPrimary} onClick={() => newList(list.name)}>
+          <BtnKey>
+            <PlusIcon />
+          </BtnKey>
           {t('c.add_new')}
         </button>
       </div>

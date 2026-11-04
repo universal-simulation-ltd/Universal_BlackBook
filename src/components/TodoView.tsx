@@ -19,7 +19,7 @@ import { TagCombo } from './TagCombo'
 import { AddTyped, ListSearch } from './ListSearch'
 import { matchesNote } from '../lib/notes'
 import { useT } from '../i18n'
-import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label, tabHeading, textareaCls } from './ui'
+import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, BtnKey, label, PlusIcon, tabHeading, textareaCls } from './ui'
 import { autoFocusOK } from '../native/kit'
 import { phoneScreens } from '../native/shell'
 
@@ -125,6 +125,9 @@ export function TodoView() {
         {/* On the phone the top bar's + does this. */}
         {!phoneScreens() && (
           <button type="button" className={btnPrimary} onClick={() => edit('new')}>
+            <BtnKey>
+              <PlusIcon />
+            </BtnKey>
             {t('c.add_new')}
           </button>
         )}

@@ -1,3 +1,7 @@
+import type { ReactNode } from 'react'
+import { buttonClass } from '@unisim/sdk'
+import { phoneScreens } from '../native/shell'
+
 // Shared class strings — one visual language across the app.
 //
 // ⚠️ NOT A SINGLE `dark:` VARIANT IN THIS FILE, and none is wanted. These are
@@ -17,17 +21,53 @@
  */
 export const tabHeading = 'text-xl font-semibold text-slate-100 sm:text-2xl'
 
-export const btnPrimary =
-  'rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-orange-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:cursor-not-allowed disabled:opacity-40'
+// The website's buttons are the suite's key buttons (SDK 0.216, BRANDING.md →
+// Buttons, 2026-11-04; main.tsx installs their CSS). The phone app keeps its own
+// paper-and-ribbon buttons (store-listings §7: its own look), and these
+// components serve both, so each string is decided once, for the screens this
+// run shows (native/shell.ts). Primary is once per view; a <BtnKey> holds the icon.
+const PHONE = phoneScreens()
 
-export const btnGhost =
-  'rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 hover:border-slate-600 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 disabled:cursor-not-allowed disabled:opacity-40'
+export const btnPrimary = PHONE
+  ? 'rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-orange-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:cursor-not-allowed disabled:opacity-40'
+  : buttonClass('primary')
 
-export const btnDanger =
-  'rounded-lg border border-rose-900 px-4 py-2 text-sm font-medium text-rose-300 hover:bg-rose-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400'
+export const btnGhost = PHONE
+  ? 'rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 hover:border-slate-600 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 disabled:cursor-not-allowed disabled:opacity-40'
+  : buttonClass()
 
-export const btnSubtle =
-  'rounded-md px-2 py-1 text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400'
+export const btnDanger = PHONE
+  ? 'rounded-lg border border-rose-900 px-4 py-2 text-sm font-medium text-rose-300 hover:bg-rose-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400'
+  : buttonClass('danger')
+
+/** Small row actions (Edit, Forget, Clear). The quiet rank on the website. */
+export const btnSubtle = PHONE
+  ? 'rounded-md px-2 py-1 text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400'
+  : buttonClass('quiet', 'sm')
+
+/** A hand-rolled button's classes: the suite's on the website, its own on the phone. */
+export const onWeb = (web: string, phone: string) => (PHONE ? phone : web)
+
+/**
+ * A key button's icon block, its first child. Nothing on the phone, whose
+ * buttons have no key.
+ */
+export function BtnKey({ children }: { children: ReactNode }) {
+  if (PHONE) return null
+  return (
+    <span className="u-btn__key" aria-hidden>
+      {children}
+    </span>
+  )
+}
+
+const keyIcon = (d: string) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d={d} />
+  </svg>
+)
+export const PlusIcon = () => keyIcon('M12 5v14M5 12h14')
+export const CheckIcon = () => keyIcon('M5 12.5l4.5 4.5L19 7.5')
 
 // `min-w-0` on every control is load-bearing on a phone: without it a field's
 // intrinsic width forces its grid or flex track wider than the screen. Touch

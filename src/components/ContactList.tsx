@@ -26,7 +26,7 @@ import { FocusActions, UndoBar, useHold, useLeaveSelection, useUndo } from './Sw
 import { ListChip } from './ListChip'
 import { TagDot } from './TagChip'
 import { TagPicker } from './TagPicker'
-import { btnDanger, btnGhost, btnPrimary, btnSubtle, TuneGlyph } from './ui'
+import { btnDanger, btnGhost, btnPrimary, btnSubtle, BtnKey, PlusIcon, TuneGlyph } from './ui'
 import { currentT, useT } from '../i18n'
 import { usePhoneKit } from '../native/kit'
 import { hasLocation } from '../lib/geo'
@@ -269,6 +269,9 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
         )}
         <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
           <button type="button" className={btnPrimary} onClick={() => void newContact()}>
+            <BtnKey>
+              <PlusIcon />
+            </BtnKey>
             {t('list.add_first')}
           </button>
           {onImport && (

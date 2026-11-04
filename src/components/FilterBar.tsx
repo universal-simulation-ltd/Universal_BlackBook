@@ -17,7 +17,8 @@ import { usePhoneKit } from '../native/kit'
 import { TagChip } from './TagChip'
 import { TagCombo } from './TagCombo'
 import { useT } from '../i18n'
-import { btnSubtle, inputCls, label } from './ui'
+import { buttonClass } from '@unisim/sdk'
+import { btnSubtle, inputCls, label, onWeb } from './ui'
 
 // The orders offered as buttons. `birthday` is not among them on purpose — it
 // is the switch above, for the reason in this file's doc comment — but its
@@ -233,7 +234,10 @@ export function FilterBar({
             type="button"
             onClick={applyDefaultView}
             disabled={showingDefault}
-            className="rounded-lg border border-slate-700 px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:border-slate-600 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 disabled:cursor-not-allowed disabled:opacity-40"
+            className={onWeb(
+              buttonClass(),
+              'rounded-lg border border-slate-700 px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:border-slate-600 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 disabled:cursor-not-allowed disabled:opacity-40',
+            )}
           >
             {t('filter.default')}
           </button>
@@ -241,7 +245,10 @@ export function FilterBar({
             type="button"
             onClick={() => void saveDefaultView()}
             disabled={showingDefault}
-            className="rounded-lg border border-orange-500/60 px-3 py-2 text-sm font-medium text-orange-300 transition-colors hover:bg-orange-500/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 disabled:cursor-not-allowed disabled:opacity-40"
+            className={onWeb(
+              buttonClass('soft'),
+              'rounded-lg border border-orange-500/60 px-3 py-2 text-sm font-medium text-orange-300 transition-colors hover:bg-orange-500/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 disabled:cursor-not-allowed disabled:opacity-40',
+            )}
           >
             {t('filter.save_default')}
           </button>

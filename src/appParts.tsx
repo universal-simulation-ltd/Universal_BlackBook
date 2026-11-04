@@ -17,7 +17,7 @@ import { useBookStore } from './stores/bookStore'
 import { useLockStore } from './stores/lockStore'
 import { useSettingsStore } from './stores/settingsStore'
 import { useSyncStore } from './stores/syncStore'
-import { btnPrimary, radioCls } from './components/ui'
+import { btnPrimary, BtnKey, PlusIcon, radioCls } from './components/ui'
 import { DICTS, en as EN, useT, type Key, type Translator } from './i18n'
 
 // The pieces both layouts share: the website's (App.tsx) and the phone
@@ -303,6 +303,9 @@ export function AddMenu({ onNew, onPick }: { onNew: () => void; onPick: () => vo
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
       >
+        <BtnKey>
+          <PlusIcon />
+        </BtnKey>
         {t('add_new')}
         <svg viewBox="0 0 16 16" className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-180' : ''}`} fill="currentColor" aria-hidden>
           <path d="M4 6h8l-4 4.5Z" />

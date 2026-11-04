@@ -1,7 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { Capacitor } from '@capacitor/core'
-import { UniversalProvider } from '@unisim/sdk'
+import { UniversalProvider, installButtonStyles, installTabStyles } from '@unisim/sdk'
 import App from './App'
 import './index.css'
 
@@ -44,6 +44,11 @@ const universalConfig = {
   cookieDomain: !isDesktop && import.meta.env.PROD ? '.unisim.co.uk' : undefined,
   openCount: !isPhoneApp,
 }
+
+// The suite's key buttons and tray tabs, as class strings (components/ui.tsx,
+// App.tsx's tab bar). The website wears them; the phone app keeps its own.
+installButtonStyles()
+installTabStyles()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

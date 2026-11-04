@@ -18,7 +18,7 @@ import { useNoteStore } from '../stores/noteStore'
 import { useBookStore } from '../stores/bookStore'
 import { TagChip, TagDot } from './TagChip'
 import { TagCombo } from './TagCombo'
-import { btnDanger, btnGhost, btnPrimary, btnSubtle, tabHeading, TuneGlyph } from './ui'
+import { btnDanger, btnGhost, btnPrimary, btnSubtle, BtnKey, PlusIcon, tabHeading, TuneGlyph } from './ui'
 import { usePanelStore } from '../stores/panelStore'
 import { phoneScreens } from '../native/shell'
 import { useT } from '../i18n'
@@ -153,6 +153,9 @@ export function NotesView() {
           {/* On the phone the top bar's + does this. */}
           {!phoneScreens() && (
             <button type="button" className={btnPrimary} onClick={() => newNote()}>
+              <BtnKey>
+                <PlusIcon />
+              </BtnKey>
               {t('c.add_new')}
             </button>
           )}

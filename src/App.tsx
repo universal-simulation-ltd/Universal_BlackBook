@@ -32,7 +32,7 @@ import { LockPanel, LockScreen } from './components/Lock'
 import { DueReminders } from './components/Reminders'
 import { NoteLayers } from './components/NoteView'
 import { TemplateManager } from './components/TemplateManager'
-import { btnGhost, btnPrimary } from './components/ui'
+import { btnGhost, btnPrimary, BtnKey, PlusIcon } from './components/ui'
 import { allOnline } from './lib/merge'
 import { moveTab, withShownOrder } from './lib/tabs'
 import { forgetVault, loadSyncMeta } from './lib/store'
@@ -316,7 +316,10 @@ export default function App() {
               e.preventDefault()
               dropTabs()
             }}
-            className={`mb-5 grid gap-1 rounded-lg border border-slate-800 bg-slate-900 p-1 ${
+            // The suite's tray tabs (SDK 0.216, BRANDING.md → Tabs), on a grid
+            // so the segments share the width; aria-selected selects, and
+            // buttonProps' data-default-view draws the opens-here dot.
+            className={`u-tabs mb-5 grid w-full ${
               tabs.length === 4 ? 'grid-cols-4 sm:max-w-md' : tabs.length === 3 ? 'grid-cols-3 sm:max-w-sm' : 'grid-cols-2 sm:max-w-xs'
             }`}
           >
@@ -351,16 +354,7 @@ export default function App() {
                   else useSearchReset.getState().clearAll()
                   setTab(t)
                 }}
-                // The default tab is orange: filled while you are on it, an
-                // orange ring while you are not (Jukebox's look, SDK README ▸
-                // Default views).
-                className={`cursor-grab rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
-                  dragTabs?.tab === t ? 'opacity-50 ' : ''
-                }${
-                  t === current
-                    ? 'bg-orange-500/15 text-orange-300 data-[default-view=true]:bg-gradient-to-br data-[default-view=true]:from-[#FE8C01] data-[default-view=true]:to-[#E05504] data-[default-view=true]:text-white'
-                    : 'text-slate-400 hover:text-slate-200 data-[default-view=true]:text-orange-400 data-[default-view=true]:ring-1 data-[default-view=true]:ring-inset data-[default-view=true]:ring-orange-400/70'
-                }`}
+                className={`u-tab min-w-0 cursor-grab justify-center px-3 ${dragTabs?.tab === t ? 'opacity-50' : ''}`}
               >
                 {tabName(tr, t)}
               </button>
@@ -397,6 +391,9 @@ export default function App() {
                 <AddMenu onNew={() => void newContact()} onPick={pick} />
               ) : (
                 <button type="button" className={btnPrimary} onClick={() => void newContact()}>
+                  <BtnKey>
+                    <PlusIcon />
+                  </BtnKey>
                   {tr('add_new')}
                 </button>
               )}
