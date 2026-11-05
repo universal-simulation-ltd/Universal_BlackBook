@@ -35,6 +35,7 @@ export function TagCombo<T extends ComboOption>({
   fullLabel,
   extraFull,
   belowInput,
+  open = false,
 }: {
   /** Every tag that can be chosen here, in the order the full list shows them. */
   options: T[]
@@ -59,9 +60,17 @@ export function TagCombo<T extends ComboOption>({
   extraFull?: ReactNode
   /** Under the box while something is typed (the new tag's colour). */
   belowInput?: (draft: string, willCreate: boolean) => ReactNode
+  /**
+   * The whole list always shown, with no chevron and no separate row of
+   * chosen chips (they are lit in the list): the 🏷️ Tags page, where the
+   * tags are the only thing on it (James, 2026-11-05: "it might as well be
+   * open and fill up to the page").
+   */
+  open?: boolean
 }) {
   const [draft, setDraft] = useState('')
-  const [full, setFull] = useState(false)
+  const [fullToggle, setFull] = useState(false)
+  const full = open || fullToggle
   const [active, setActive] = useState(0)
   const input = useRef<HTMLInputElement>(null)
   const listId = useId()
@@ -114,7 +123,7 @@ export function TagCombo<T extends ComboOption>({
 
   return (
     <div>
-      {chosen.length > 0 && <div className="mb-2 flex flex-wrap gap-1.5">{chosen.map((o) => <span key={o.id}>{chip(o)}</span>)}</div>}
+      {!open && chosen.length > 0 && <div className="mb-2 flex flex-wrap gap-1.5">{chosen.map((o) => <span key={o.id}>{chip(o)}</span>)}</div>}
       {options.length === 0 && !onCreate ? (
         noneYet && <p className="text-sm text-slate-500">{noneYet}</p>
       ) : (
@@ -140,7 +149,7 @@ export function TagCombo<T extends ComboOption>({
               autoCapitalize="sentences"
               enterKeyHint="done"
             />
-            {options.length > 0 && (
+            {options.length > 0 && !open && (
               <button
                 type="button"
                 onClick={() => setFull((v) => !v)}

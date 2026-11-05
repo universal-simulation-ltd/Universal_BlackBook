@@ -8,7 +8,8 @@ import { useT } from '../i18n'
  * a note's or a person's tags change without opening the whole form. Every
  * toggle is written straight away, like the 👤 link sheet beside it. Tags
  * only: `value` is the item's whole `tagIds`, and a contact's lists ride
- * through TagPicker untouched.
+ * through TagPicker untouched. The whole list is open on arrival: the tags
+ * are all this page is for.
  */
 export function TagSheet({
   value,
@@ -24,7 +25,7 @@ export function TagSheet({
   const t = useT()
   return (
     <Modal title={t('field.tags')} onClose={onClose} backLabel={backLabel}>
-      <TagPicker value={value} onChange={onChange} />
+      <TagPicker value={value} onChange={onChange} open />
     </Modal>
   )
 }

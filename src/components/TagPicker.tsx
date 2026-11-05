@@ -33,6 +33,7 @@ export function TagPicker({
   value,
   onChange,
   kind,
+  open,
 }: {
   value: string[]
   onChange: (next: string[]) => void
@@ -45,6 +46,8 @@ export function TagPicker({
    * Without it, TAGS only — a list is never offered as a tag (2026-09-18).
    */
   kind?: 'list'
+  /** Every tag shown at once, no chevron (TagCombo `open`): the 🏷️ Tags page. */
+  open?: boolean
 }) {
   const t = useT()
   const all = useBookStore((s) => s.tags)
@@ -117,6 +120,7 @@ export function TagPicker({
       createLabel={listMode ? t('tags.add_new_list') : t('tags.add_new')}
       fullLabel={listMode ? t('tags.show_all_lists') : t('tags.show_all')}
       // Lists have no colour of their own to pick — see ListChip.
+      open={open}
       belowInput={(_, willCreate) => (willCreate && !listMode ? swatches : null)}
     />
   )
