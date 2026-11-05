@@ -10,11 +10,13 @@
 
 export const QUICK_SLOTS = 4
 
-export const NOTE_ACTIONS = ['contacts', 'place', 'remind', 'copy', 'copyDelete', 'share'] as const
+// 'tags' (2026-11-05) is offered by a "+", never placed by default, so a row
+// someone has already arranged is left exactly as it was.
+export const NOTE_ACTIONS = ['contacts', 'tags', 'place', 'remind', 'copy', 'copyDelete', 'share'] as const
 export type QuickAction = (typeof NOTE_ACTIONS)[number]
 export const DEFAULT_QUICK_ACTIONS: readonly QuickAction[] = ['contacts', 'place', 'remind']
 
-export const CONTACT_ACTIONS = ['call', 'message', 'email', 'place', 'share', 'remind', 'copy', 'pin'] as const
+export const CONTACT_ACTIONS = ['call', 'message', 'email', 'place', 'tags', 'share', 'remind', 'copy', 'pin'] as const
 export type ContactAction = (typeof CONTACT_ACTIONS)[number]
 export const DEFAULT_CONTACT_ACTIONS: readonly ContactAction[] = ['call', 'message', 'share']
 

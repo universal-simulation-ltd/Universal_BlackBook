@@ -18,6 +18,7 @@ import { btnGhost, btnPrimary } from '../components/ui'
 import { hasLocation, locationText, type Location } from '../lib/geo'
 import { mapsUrl } from '../lib/notes'
 import { QuickActions, type QuickButton } from '../components/QuickActions'
+import { TagSheet } from '../components/TagSheet'
 import { contactsAvailability, ContactsPermissionError, pickOneContact } from '../lib/deviceContacts'
 import { CONTACT_ACTIONS, type ContactAction } from '../lib/quickActions'
 import { copyText } from '../lib/clipboard'
@@ -60,6 +61,7 @@ export function ContactActions({ contact, onRemind }: { contact: Contact; onRemi
   // Message, when WhatsApp or WhatsApp Business is on the phone too: which one.
   const [chats, setChats] = useState<ChatApp[] | null>(null)
   const [addPlace, setAddPlace] = useState<Location | null>(null)
+  const [tagging, setTagging] = useState(false)
   const canPick = contactsAvailability() !== 'none'
 
   const importPhone = async () => {
@@ -111,6 +113,7 @@ export function ContactActions({ contact, onRemind }: { contact: Contact; onRemi
       muted: !located,
       onClick: () => (located ? go(mapsUrl(place, Capacitor.getPlatform(), t.locale)) : setAddPlace(newLocation())),
     },
+    tags: { label: t('field.tags'), emoji: '\u{1F3F7}\u{FE0F}', onClick: () => setTagging(true) },
     share: { label: t('action_share'), emoji: '\u{1F4E4}', onClick: () => void share() },
     remind: { label: t('rem.add'), emoji: '\u{1F514}', onClick: onRemind },
     copy: {
@@ -129,6 +132,14 @@ export function ContactActions({ contact, onRemind }: { contact: Contact; onRemi
   return (
     <>
       <QuickActions buttons={buttons} all={CONTACT_ACTIONS} order={order} onChange={(contactActions) => setSettings({ contactActions })} label={t('actions_label')} />
+      {tagging && (
+        <TagSheet
+          value={contact.tagIds}
+          onChange={(tagIds) => void patch(contact.id, { tagIds })}
+          onClose={() => setTagging(false)}
+          backLabel={contact.name || t('c.unnamed')}
+        />
+      )}
       {chats && (
         <Sheet title={t('action_message')} onClose={() => setChats(null)}>
           <SheetRow icon={<span className="text-[20px] leading-none">{'\u{1F4AC}'}</span>} onClick={() => {

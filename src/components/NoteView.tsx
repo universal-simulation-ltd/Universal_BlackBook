@@ -24,6 +24,7 @@ import { actionSwipe, pinSwipe, removeSwipe, SelectBar, SwipeGroup, SwipeItem, U
 import type { Contact } from '../lib/types'
 import { ReminderEditor, ReminderList } from './Reminders'
 import { TagPicker } from './TagPicker'
+import { TagSheet } from './TagSheet'
 import { TagChip } from './TagChip'
 import { isList } from '../lib/lists'
 import type { Tag } from '../lib/types'
@@ -177,7 +178,7 @@ function NoteView({ id, onBinned }: { id: string; onBinned: (note: Note) => void
   const say = useNativeNav((s) => s.say)
   const actionOrder = useSettingsStore((s) => s.noteActions)
   const setSettings = useSettingsStore((s) => s.set)
-  const [sheet, setSheet] = useState<'contacts' | 'place' | 'remind' | null>(null)
+  const [sheet, setSheet] = useState<'contacts' | 'tags' | 'place' | 'remind' | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
@@ -306,6 +307,7 @@ function NoteView({ id, onBinned }: { id: string; onBinned: (note: Note) => void
   // (NoteQuickActions).
   const buttons: Record<QuickAction, QuickButton> = {
     contacts: { label: t('nlink.contact'), emoji: '\u{1F464}', onClick: () => setSheet('contacts') },
+    tags: { label: t('field.tags'), emoji: '\u{1F3F7}\u{FE0F}', onClick: () => setSheet('tags') },
     place: { label: t('nlink.location'), emoji: '\u{1F4CD}', onClick: () => setSheet('place') },
     remind: { label: t('rem.add'), emoji: '\u{1F514}', onClick: () => setSheet('remind') },
     copy: { label: t('notes.copy'), emoji: '\u{1F4CB}', onClick: () => void copy() },
@@ -328,7 +330,7 @@ function NoteView({ id, onBinned }: { id: string; onBinned: (note: Note) => void
     <div ref={bodyRef} className="mx-auto w-full max-w-2xl space-y-5">
       {actionRow}
 
-      {/* Its tags, as chips; Fine-tune changes them. */}
+      {/* Its tags, as chips; 🏷️ Tags or Fine-tune changes them. */}
       {noteTags.length > 0 && (
         <div data-blank className="flex flex-wrap gap-1.5">
           {noteTags.map((x) => (
@@ -420,6 +422,14 @@ function NoteView({ id, onBinned }: { id: string; onBinned: (note: Note) => void
   const layers = (
     <>
       {sheet === 'contacts' && <ContactPicker note={note} onClose={() => setSheet(null)} />}
+      {sheet === 'tags' && (
+        <TagSheet
+          value={note.tagIds ?? []}
+          onChange={(next) => void patch(note.id, { tagIds: next.length ? next : undefined })}
+          onClose={() => setSheet(null)}
+          backLabel={note.title || t('c.untitled')}
+        />
+      )}
       {sheet === 'place' && <LocationEditor note={note} onClose={() => setSheet(null)} />}
       {sheet === 'remind' && (
         <ReminderEditor

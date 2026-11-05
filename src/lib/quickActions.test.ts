@@ -17,8 +17,8 @@ describe('quick buttons', () => {
     expect(normaliseContactActions(undefined)).toEqual([...DEFAULT_CONTACT_ACTIONS, null])
     expect(DEFAULT_QUICK_ACTIONS.length).toBe(QUICK_SLOTS - 1)
     expect(DEFAULT_CONTACT_ACTIONS.length).toBe(QUICK_SLOTS - 1)
-    expect(hiddenActions(NOTE_ACTIONS, normaliseQuickActions(undefined))).toEqual(['copy', 'copyDelete', 'share'])
-    expect(hiddenActions(CONTACT_ACTIONS, normaliseContactActions(undefined))).toEqual(['email', 'place', 'remind', 'copy', 'pin'])
+    expect(hiddenActions(NOTE_ACTIONS, normaliseQuickActions(undefined))).toEqual(['tags', 'copy', 'copyDelete', 'share'])
+    expect(hiddenActions(CONTACT_ACTIONS, normaliseContactActions(undefined))).toEqual(['email', 'place', 'tags', 'remind', 'copy', 'pin'])
   })
 
   it('keep what was stored, gaps where they were, dropping unknown and repeated buttons and any past the fourth', () => {
