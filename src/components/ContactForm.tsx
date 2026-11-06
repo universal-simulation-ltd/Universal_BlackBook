@@ -1,5 +1,5 @@
 import { useEffect, useId, useState, type FormEvent, type ReactNode } from 'react'
-import { GrowingTextarea } from './GrowingTextarea'
+import { GrowingTextarea } from '@unisim/sdk'
 import { blankDraft, draftIsEmpty, useBookStore, type ContactDraft } from '../stores/bookStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { isList, listIdsOf } from '../lib/lists'

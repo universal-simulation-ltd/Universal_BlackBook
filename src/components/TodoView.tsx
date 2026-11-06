@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type FormEvent, type ReactNode, type TouchEvent as ReactTouchEvent } from 'react'
-import { GrowingTextarea } from './GrowingTextarea'
+import { GrowingTextarea } from '@unisim/sdk'
 import { SwipeRow } from './SwipeRow'
 import { useMove } from './MoveTo'
 import { actionSwipe, deleteSwipe, FocusActions, pinSwipe, SelectBar, SwipeGroup, SwipeItem, UndoBar, useHoldSelect, useUndo } from './SwipeActions'

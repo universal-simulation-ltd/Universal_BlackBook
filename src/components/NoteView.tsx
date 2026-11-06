@@ -1,5 +1,5 @@
+import { GrowingTextarea, growToFit, useTypingRoom } from '@unisim/sdk'
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { GrowingTextarea } from './GrowingTextarea'
 import { Capacitor } from '@capacitor/core'
 import { LinkifiedText } from '@unisim/sdk'
 import { copyText } from '../lib/clipboard'
@@ -33,7 +33,6 @@ import { QuickActions, type QuickButton } from './QuickActions'
 import { NOTE_ACTIONS, type QuickAction } from '../lib/quickActions'
 import { shareText } from '../lib/share'
 import { useSettingsStore } from '../stores/settingsStore'
-import { growToFit, useTypingRoom } from '../lib/typingRoom'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label, textareaCls } from './ui'
 
 /**

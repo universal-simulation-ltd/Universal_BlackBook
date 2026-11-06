@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from 'react'
-import { GrowingTextarea } from './GrowingTextarea'
+import { GrowingTextarea } from '@unisim/sdk'
 import {
   countryName,
   divisionWord,

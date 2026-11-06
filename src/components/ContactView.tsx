@@ -2,7 +2,7 @@ import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type Reac
 import { LinkifiedText } from '@unisim/sdk'
 import { countdownLabel, currentAge, formatBirthday, nextBirthday, todayParts } from '../lib/birthday'
 import { usePageScrollLock } from '../lib/scrollLock'
-import { growToFit, useTypingRoom } from '../lib/typingRoom'
+import { growToFit, useTypingRoom } from '@unisim/sdk'
 import { isList } from '../lib/lists'
 import type { Tag } from '../lib/types'
 import { useBookStore } from '../stores/bookStore'
