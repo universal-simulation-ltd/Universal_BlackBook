@@ -1,6 +1,7 @@
 import { useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { fold } from '../lib/filter'
 import { inputCls } from './ui'
+import { noteRecentTag, quickTags, readRecentTags } from '../lib/recentTags'
 
 /**
  * Tags, collapsed (James, 2026-10-23): wherever tags are chosen, the chosen
@@ -72,24 +73,31 @@ export function TagCombo<T extends ComboOption>({
   const [fullToggle, setFull] = useState(false)
   const full = open || fullToggle
   const [active, setActive] = useState(0)
+  // Focused with nothing typed: a few recent tags to tap (RECENT_KEY).
+  const [focused, setFocused] = useState(false)
   const input = useRef<HTMLInputElement>(null)
+  // Enter in an empty box takes a quick tag only once ↓/↑ has picked one.
+  const arrowed = useRef(false)
   const listId = useId()
   const fullId = useId()
 
   const text = draft.trim()
   const matches = useMemo(() => {
-    if (!text) return []
+    if (!text) return focused && !open && !fullToggle ? quickTags(options, isOn, readRecentTags()) : []
     const q = fold(text)
     return options.filter((o) => !isOn(o.id) && fold(o.name).includes(q)).slice(0, 8)
-  }, [options, isOn, text])
+  }, [options, isOn, text, focused, open, fullToggle])
   const exact = text !== '' && options.some((o) => fold(o.name) === fold(text))
   const willCreate = Boolean(onCreate) && text !== '' && !exact
   const items = matches.length + (willCreate ? 1 : 0)
   const current = Math.min(active, Math.max(0, items - 1))
+  // An empty box's quick tags show no pick until ↓/↑ makes one.
+  const lit = (i: number) => i === current && (text !== '' || arrowed.current)
   const chosen = options.filter((o) => isOn(o.id))
 
   const take = async (index: number) => {
     if (index < matches.length) {
+      noteRecentTag(matches[index].id)
       onPick(matches[index].id)
       setDraft('')
     } else if (willCreate && onCreate) {
@@ -97,20 +105,24 @@ export function TagCombo<T extends ComboOption>({
       setDraft('')
     }
     setActive(0)
+    arrowed.current = false
     input.current?.focus({ preventScroll: true })
   }
 
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'ArrowDown' && items > 0) {
       e.preventDefault()
-      setActive((current + 1) % items)
+      // The first ↓ in an empty box lights the first quick tag.
+      setActive(!text && !arrowed.current ? 0 : (current + 1) % items)
+      arrowed.current = true
     } else if (e.key === 'ArrowUp' && items > 0) {
       e.preventDefault()
+      arrowed.current = true
       setActive((current - 1 + items) % items)
     } else if (e.key === 'Enter') {
       // Inside the contact <form>: Enter must take the tag, never submit.
       e.preventDefault()
-      if (items > 0) void take(current)
+      if (items > 0 && (text || arrowed.current)) void take(current)
     } else if (e.key === 'Escape' && draft) {
       // Clear the box; a second Escape is the page's (closes the dialog).
       e.preventDefault()
@@ -136,15 +148,18 @@ export function TagCombo<T extends ComboOption>({
               onChange={(e) => {
                 setDraft(e.target.value)
                 setActive(0)
+                arrowed.current = false
               }}
               onKeyDown={onKey}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
               placeholder={placeholder}
               aria-label={placeholder}
               role="combobox"
               aria-expanded={items > 0}
               aria-controls={listId}
               aria-autocomplete="list"
-              aria-activedescendant={items > 0 ? optionId(current) : undefined}
+              aria-activedescendant={items > 0 && lit(current) ? optionId(current) : undefined}
               autoComplete="off"
               autoCapitalize="sentences"
               enterKeyHint="done"
@@ -172,12 +187,12 @@ export function TagCombo<T extends ComboOption>({
                   key={o.id}
                   id={optionId(i)}
                   role="option"
-                  aria-selected={i === current}
+                  aria-selected={lit(i)}
                   // mousedown, not click: the box keeps focus, so a keyboard
                   // user's next keystroke still goes into it.
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => void take(i)}
-                  className={`flex min-h-[40px] cursor-pointer items-center px-2 py-1 ${i === current ? 'bg-slate-800' : ''}`}
+                  className={`flex min-h-[40px] cursor-pointer items-center px-2 py-1 ${lit(i) ? 'bg-slate-800' : ''}`}
                 >
                   {suggestion(o)}
                 </li>

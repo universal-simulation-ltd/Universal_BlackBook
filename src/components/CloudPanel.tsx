@@ -5,6 +5,7 @@ import { payloadTags } from '../lib/cloud'
 import { useBookStore } from '../stores/bookStore'
 import { offlineMessage, useSyncStore } from '../stores/syncStore'
 import { Modal } from './Modal'
+import { ClashBlock } from './ClashBlock'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, checkboxCls, inputCls, label } from './ui'
 import { autoFocusOK, usePhoneKit } from '../native/kit'
 import { currentT, useT } from '../i18n'
@@ -241,7 +242,9 @@ export function CloudPanel({ onClose }: { onClose: () => void }) {
             />
           )}
 
-          {sync.status === 'conflict' && !sync.pending && (
+          {sync.clash && !sync.pending && <ClashBlock supabase={supabase} />}
+
+          {sync.status === 'conflict' && !sync.pending && !sync.clash && (
             <ChoiceBlock
               title={t('cp.conflict_title')}
               body={t('cp.conflict_body')}

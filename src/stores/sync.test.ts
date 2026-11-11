@@ -222,7 +222,7 @@ describe('the compare-and-set, from both sides', () => {
   })
 
 
-  it('the device that pushes second is told, not silently overwritten', async () => {
+  it('the device that pushes second merges, never silently overwrites', async () => {
     const { a, b } = await twoUnlockedDevices(server)
 
     await seed(a, ['Ada', 'Alan'])
@@ -236,22 +236,62 @@ describe('the compare-and-set, from both sides', () => {
 
     // ⚠️ THE POINT OF THE WHOLE FEATURE. A blind write here loses Alan with no
     // trace: the vault is a whole-book blob, so "last write wins" means "last
-    // writer deletes everyone else's work".
-    expect(use(b).sync.getState().status).toBe('conflict')
-    expect(server.row!.rev).toBe(2)
+    // writer deletes everyone else's work". Since 2026-11-11 the clash is
+    // merged rather than asked about: both additions survive.
+    expect(use(b).sync.getState().status).toBe('saved')
+    expect(use(b).sync.getState().clash).toBeNull()
+    expect(server.row!.rev).toBe(3)
+    expect(names(b)).toEqual(['Ada', 'Alan', 'Barbara'])
 
-    // The server still holds A's book, not B's.
     await use(a).sync.getState().pull(a.client)
-    expect(names(a)).toEqual(['Ada', 'Alan'])
+    expect(names(a)).toEqual(['Ada', 'Alan', 'Barbara'])
   })
 
-  it('a forced push wins, deliberately, and the loser can pull it back', async () => {
+  it('a merge keeps a deletion made on the other device', async () => {
     const { a, b } = await twoUnlockedDevices(server)
-
-    await seed(a, ['Ada', 'Alan'])
+    // A deletes Ada and adds Alan; B, unaware, adds Bob and leaves Ada alone.
+    await seed(a, ['Alan'])
     await use(a).sync.getState().push(a.client)
+    await seed(b, ['Ada', 'Bob'])
+    await use(b).sync.getState().push(b.client)
 
-    await seed(b, ['Ada', 'Barbara'])
+    expect(use(b).sync.getState().status).toBe('saved')
+    expect(names(b)).toEqual(['Alan', 'Bob'])
+  })
+
+  it('only an entry changed on both devices is asked about, and the answer is saved', async () => {
+    const { a, b } = await twoUnlockedDevices(server)
+    const edit = (d: Device, notes: string) =>
+      use(d).book.getState().importBook([{ ...contact('Ada'), notes, updatedAt: notes.length + 10 }, contact('Zoe')], [], 'replace', null)
+
+    await edit(a, 'From A')
+    await use(a).sync.getState().push(a.client)
+    await edit(b, 'From B, longer')
+    await use(b).sync.getState().push(b.client)
+
+    const clash = use(b).sync.getState().clash
+    expect(use(b).sync.getState().status).toBe('conflict')
+    expect(clash?.result.conflicts.map((c) => c.id)).toEqual(['c-Ada'])
+    // Nothing was written over A's save while the question is open.
+    expect(server.row!.rev).toBe(2)
+    // A save meanwhile waits for the answer rather than asking again.
+    await use(b).sync.getState().push(b.client)
+    expect(server.row!.rev).toBe(2)
+
+    await use(b).sync.getState().resolveClash(b.client, () => false)
+    expect(use(b).sync.getState().status).toBe('saved')
+    expect(server.row!.rev).toBe(3)
+    expect(use(b).book.getState().contacts.find((c) => c.id === 'c-Ada')?.notes).toBe('From A')
+    expect(names(b)).toEqual(['Ada', 'Zoe'])
+  })
+
+  it('a forced push still wins, deliberately, and the loser can pull it back', async () => {
+    const { a, b } = await twoUnlockedDevices(server)
+    const edit = (d: Device, notes: string) => use(d).book.getState().importBook([{ ...contact('Ada'), notes, updatedAt: 5 }], [], 'replace', null)
+
+    await edit(a, 'From A')
+    await use(a).sync.getState().push(a.client)
+    await edit(b, 'From B')
     await use(b).sync.getState().push(b.client)
     expect(use(b).sync.getState().status).toBe('conflict')
 
@@ -262,23 +302,7 @@ describe('the compare-and-set, from both sides', () => {
     expect(server.row!.rev).toBe(3)
 
     await use(a).sync.getState().pull(a.client)
-    expect(names(a)).toEqual(['Ada', 'Barbara'])
-  })
-
-  it('a conflict does not advance this device’s rev, so the retry is still a conflict', async () => {
-    const { a, b } = await twoUnlockedDevices(server)
-    await seed(a, ['Ada', 'Alan'])
-    await use(a).sync.getState().push(a.client)
-
-    await seed(b, ['Bob'])
-    await use(b).sync.getState().push(b.client)
-    expect(use(b).sync.getState().rev).toBe(1)
-
-    // Pressing save again must not quietly succeed by having moved the rev on
-    // failure — the user has to actually choose.
-    await use(b).sync.getState().push(b.client)
-    expect(use(b).sync.getState().status).toBe('conflict')
-    expect(server.row!.rev).toBe(2)
+    expect(a.book.getState().contacts[0].notes).toBe('From B')
   })
 
   it('two devices racing to CREATE: the loser is told to unlock, not to overwrite', async () => {

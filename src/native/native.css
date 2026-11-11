@@ -504,6 +504,11 @@ html.bb-phone body {
   animation: bb-rise 200ms ease-out;
 }
 
+/* Undo outranks a passing toast: it is the one with a button. */
+.bb-toast.bb-undo {
+  z-index: 310;
+}
+
 /* Article text in the knowledge base. */
 .bb-article p,
 .bb-article li {

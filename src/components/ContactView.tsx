@@ -21,6 +21,7 @@ import { TagChip } from './TagChip'
 import { btnGhost, btnPrimary, inputCls, label } from './ui'
 import { fieldLabel } from '../lib/formFields'
 import { useT } from '../i18n'
+import { isSaveKey } from '../lib/saveKey'
 
 /**
  * One person, filling the screen, with an Edit button (owner's request,
@@ -425,6 +426,13 @@ export function ContactView({ id }: { id: string }) {
     <dialog
       ref={ref}
       aria-labelledby={titleId}
+      onKeyDown={(e) => {
+        // Ctrl/⌘+Enter: a typed note is saved and the page closes (lib/saveKey.ts).
+        if (!isSaveKey(e)) return
+        e.preventDefault()
+        flush()
+        closeRef.current(null)
+      }}
       // Every default the UA puts on a modal dialog is in the way: `m-auto`
       // centres a box, the max sizes cap it well short of the screen, and the
       // border draws a card edge around something that has no edge. `h-[100dvh]`

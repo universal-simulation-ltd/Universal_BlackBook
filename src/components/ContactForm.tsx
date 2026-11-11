@@ -18,6 +18,7 @@ import { Modal } from './Modal'
 import { ExpandGlyph, NotesFullscreen } from './NotesFullscreen'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, CheckIcon, inputCls, BtnKey, label, PinGlyph, textareaCls } from './ui'
 import { autoFocusOK, usePhoneKit } from '../native/kit'
+import { saveKeyLabel } from '../lib/saveKey'
 
 /**
  * Add or edit one person. Six fields, in the order they matter — but on a blank
@@ -623,7 +624,7 @@ export function ContactForm({ id }: { id: string }) {
               <button type="button" className={btnGhost} onClick={cancel}>
                 {t('c.cancel')}
               </button>
-              <button type="submit" className={btnPrimary} disabled={!valid}>
+              <button type="submit" className={btnPrimary} disabled={!valid} title={saveKeyLabel()}>
                 <BtnKey>
                   <CheckIcon />
                 </BtnKey>

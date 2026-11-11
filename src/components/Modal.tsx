@@ -2,6 +2,7 @@ import { useEffect, useRef, type ReactNode } from 'react'
 import { usePageScrollLock } from '../lib/scrollLock'
 import { usePhoneKit } from '../native/kit'
 import { currentT } from '../i18n'
+import { isSaveKey } from '../lib/saveKey'
 
 /**
  * The app's one dialog.
@@ -68,9 +69,14 @@ interface ModalProps {
   backLabel?: string
   /** On the phone screens: buttons at the right of the page's bar (a form's Save). */
   phoneActions?: ReactNode
+  /**
+   * Ctrl/⌘+Enter on the website: save and close (lib/saveKey.ts). Left out,
+   * the shortcut submits the dialog's form, if it has one.
+   */
+  onSave?: () => void
 }
 
-function WebModal({ title, onClose, children, wide = false }: ModalProps) {
+function WebModal({ title, onClose, children, wide = false, onSave }: ModalProps) {
   const ref = useRef<HTMLDialogElement>(null)
 
   // The page behind stays put. `showModal()` makes it inert but not unscrollable
@@ -95,6 +101,16 @@ function WebModal({ title, onClose, children, wide = false }: ModalProps) {
     <dialog
       ref={ref}
       aria-labelledby="modal-title"
+      onKeyDown={(e) => {
+        // Save and close. The innermost dialog answers, and only once.
+        if (!isSaveKey(e)) return
+        const form = (e.target as HTMLElement).closest('form') ?? e.currentTarget.querySelector('form')
+        if (!onSave && !form) return
+        e.preventDefault()
+        e.stopPropagation()
+        if (onSave) onSave()
+        else form?.requestSubmit()
+      }}
       onMouseDown={(e) => {
         // Backdrop click. `mousedown` rather than `click`: with `click`, a drag
         // that starts inside a text field and releases outside it counts as a

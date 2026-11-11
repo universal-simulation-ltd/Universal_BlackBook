@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { newId } from '../lib/id'
-import type { Note } from '../lib/notes'
+import { blankNote, type Note } from '../lib/notes'
 import { loadPages, loadTemplates, loadTemplatesSeeded, markTemplatesSeeded, savePages, saveTemplates } from '../lib/store'
 import { bookTemplate, convertNote, retireFields, type NoteTemplate } from '../lib/templates'
 import { currentT } from '../i18n'
@@ -38,6 +38,15 @@ interface NoteState {
    * (James, 2026-10-30: search, Return, type). Read once by the form.
    */
   focusDetails: boolean
+  /**
+   * A note made a moment ago on its own page (James, 2026-11-11: "when
+   * creating a new note go straight to the note page and edit directly"):
+   * its id while that page is open. Left empty, it goes as the page closes.
+   * `typeTitle` / `typeDetails` say which box the page opens typing in.
+   */
+  fresh: { id: string; typeTitle: boolean } | null
+  /** A new plain note on its page, typing. `title` given: straight to the text. */
+  create: (title?: string) => void
   init: () => Promise<void>
   edit: (id: string | null) => void
   /** Open a note's view, or close it with null. */
@@ -106,6 +115,16 @@ export const useNoteStore = create<NoteState>((set, get) => {
     query: '',
     prefillTitle: null,
     focusDetails: false,
+    fresh: null,
+
+    create: (title) => {
+      const now = Date.now()
+      const note: Note = { id: newId(), title: title?.trim() ?? '', details: '', createdAt: now, updatedAt: now }
+      // Leaving another fresh one first, so an empty one is not kept.
+      get().view(null)
+      set({ choosing: false, editing: null, fresh: { id: note.id, typeTitle: !note.title }, viewing: note.id })
+      void commit([...get().notes, note])
+    },
 
     init: async () => {
       if (get().loaded) return
@@ -128,8 +147,11 @@ export const useNoteStore = create<NoteState>((set, get) => {
     },
 
     edit: (editing) => set({ editing, prefillTitle: null, newTemplate: null, focusDetails: false }),
-    startFrom: (newTemplate) => set({ editing: 'new', prefillTitle: null, newTemplate, choosing: false, focusDetails: false }),
-    newNote: () => (get().templates.length ? set({ choosing: true }) : get().edit('new')),
+    // A plain note opens on its page; a template's still opens its form,
+    // where its fields are (the page only shows the ones filled in).
+    startFrom: (newTemplate) =>
+      newTemplate === null ? get().create() : set({ editing: 'new', prefillTitle: null, newTemplate, choosing: false, focusDetails: false }),
+    newNote: () => (get().templates.length ? set({ choosing: true }) : get().create()),
     stopChoosing: () => set({ choosing: false }),
     setTemplateFilter: (templateFilter) => set({ templateFilter }),
     setTagFilter: (tagFilter) => set({ tagFilter }),
@@ -170,8 +192,21 @@ export const useNoteStore = create<NoteState>((set, get) => {
       if (changed) await commit(notes)
       return changed
     },
-    view: (viewing) => set((s) => ({ viewing, editing: viewing === null ? s.editing : s.editing === 'new' ? null : s.editing })),
-    startNote: (title) => set({ editing: 'new', prefillTitle: title, focusDetails: true }),
+    view: (viewing) => {
+      const { fresh } = get()
+      if (fresh && fresh.id !== viewing) {
+        // Its page closed: kept if anything was put in it, else gone. A beat
+        // later, so a title box still open as the page went (Android's back,
+        // Escape) has saved what it held as it unmounted.
+        set({ fresh: null })
+        setTimeout(() => {
+          const n = get().notes.find((x) => x.id === fresh.id)
+          if (n && blankNote(n) && get().viewing !== n.id) void commit(get().notes.filter((x) => x.id !== n.id))
+        }, 0)
+      }
+      set((s) => ({ viewing, editing: viewing === null ? s.editing : s.editing === 'new' ? null : s.editing }))
+    },
+    startNote: (title) => get().create(title),
     setQuery: (query) => set({ query }),
 
     save: async (draft) => {

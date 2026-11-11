@@ -35,7 +35,16 @@ export interface PhonePageProps {
    * title to edit it inline"): a tap on it in the bar opens a box there.
    * `value` is the real name, which may be empty while `title` says "Unnamed".
    */
-  editTitle?: { value: string; label: string; placeholder?: string; onSave: (value: string) => void }
+  editTitle?: {
+    value: string
+    label: string
+    placeholder?: string
+    onSave: (value: string) => void
+    /** Open with the box already typing (a note just made, 2026-11-11). */
+    startEditing?: boolean
+    /** Return was pressed in the box (after it saved): a note moves on to its text. */
+    onEnter?: () => void
+  }
 }
 
 export interface PhoneSheetProps {

@@ -5,6 +5,7 @@ import { btnSubtle } from './ui'
 import type { Side } from '../lib/swipe'
 import { SwipeRow } from './SwipeRow'
 import { usePhoneKit } from '../native/kit'
+import { useNativeNav } from '../native/nav'
 import { currentT, useT } from '../i18n'
 import type { SwipeAction } from './SwipeRow'
 
@@ -437,12 +438,19 @@ export function useUndo<T>(restore: (item: T) => Promise<void>) {
 export function UndoBar({ title, text, onUndo }: { title: string; text?: string; onUndo: () => void }) {
   const t = useT()
   const kit = usePhoneKit()
+  // The phone's toast ("Copied") sits in exactly this spot and is drawn over
+  // it: Copy then Delete in Notes put "Copied" on top of Undo, and a tap on
+  // Undo only closed the toast (James, 2026-11-11: "Undo link didn't work").
+  // The newer message wins, so the toast goes when an Undo arrives.
+  useEffect(() => {
+    if (kit) useNativeNav.getState().say(null)
+  }, [kit])
   return (
     <div
       role="status"
       className={
         kit
-          ? 'bb-toast flex items-center gap-3 text-left'
+          ? 'bb-toast bb-undo flex items-center gap-3 text-left'
           : 'fixed bottom-5 left-1/2 z-50 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-3 rounded-2xl bg-slate-100 px-4 py-2.5 text-sm text-slate-950 shadow-xl'
       }
     >

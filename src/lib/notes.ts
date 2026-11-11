@@ -160,6 +160,22 @@ export function mergeNotes(online: Note[], local: Note[], remap: Map<string, str
   return out
 }
 
+/**
+ * Nothing put in it yet: no title, text, fields, tags, people, place or
+ * notification. A new note's page left like this is not kept.
+ */
+export function blankNote(n: Note): boolean {
+  return (
+    !n.title.trim() &&
+    !n.details.trim() &&
+    !Object.values(n.fields ?? {}).some((v) => v.trim()) &&
+    !n.tagIds?.length &&
+    !n.contactIds?.length &&
+    !n.reminders?.length &&
+    !n.location
+  )
+}
+
 /** A note as plain text for the clipboard: the title, a blank line, the details. */
 export function noteText(title: string, details: string): string {
   const head = title.trim()

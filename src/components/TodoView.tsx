@@ -22,6 +22,7 @@ import { useT } from '../i18n'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, BtnKey, label, PlusIcon, tabHeading, textareaCls } from './ui'
 import { autoFocusOK } from '../native/kit'
 import { phoneScreens } from '../native/shell'
+import { saveKeyLabel } from '../lib/saveKey'
 
 /**
  * The To-do tab (owner's request, 2026-09-27), there only with App
@@ -502,6 +503,7 @@ function TodoRow({
   // A group's items have tick boxes of their own, and a button cannot hold
   // them: the card is drawn by the box around both, the items under the button.
   const grouped = Boolean(todo.items?.length)
+  const [folded, setFolded] = useFolded(todo.id)
   const edge = lifted ? 'border-orange-400 shadow-2xl' : 'border-slate-800'
 
   return (
@@ -537,7 +539,7 @@ function TodoRow({
           <span className="min-w-0 break-words">{todo.title || t('c.untitled')}</span>
         </p>
         {todo.details && <p className="line-clamp-2 whitespace-pre-wrap break-words text-sm text-slate-400">{todo.details}</p>}
-        {progress && progress.count > 0 && (
+        {progress && progress.count > 0 && !grouped && (
           <p className="text-xs font-medium tabular-nums text-slate-500">{t('todo.group_count', { done: progress.done, count: progress.count })}</p>
         )}
         {todo.due && !done && (
@@ -567,7 +569,25 @@ function TodoRow({
       >
         <Tick on={done} />
       </button>
-      {todo.items && todo.items.length > 0 && <GroupItems todo={todo} />}
+      {grouped && progress && (
+        // The group's count is also its fold (James, 2026-11-11: "when there's
+        // a grouped todo make it collapsible"). Remembered on this device.
+        <button
+          type="button"
+          aria-expanded={!folded}
+          aria-label={t(folded ? 'todo.group_show' : 'todo.group_hide', { title: todo.title || t('c.untitled') })}
+          onClick={() => setFolded(todo.id, !folded)}
+          className={`flex min-h-[32px] w-full items-center gap-1.5 pb-1.5 pl-12 pr-3.5 text-left text-xs font-medium tabular-nums text-slate-500 hover:text-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-400 ${
+            folded ? 'rounded-b-xl' : ''
+          } ${done ? 'opacity-60' : ''}`}
+        >
+          <svg viewBox="0 0 16 16" className={`h-3.5 w-3.5 shrink-0 transition-transform ${folded ? '-rotate-90' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="m4 6 4 4 4-4" />
+          </svg>
+          {t('todo.group_count', { done: progress.done, count: progress.count })}
+        </button>
+      )}
+      {grouped && !folded && <GroupItems todo={todo} />}
       {/* The website's drag handle (mouse); a touch screen holds the row instead. */}
       {onGripDown && !done && (
         <span
@@ -585,6 +605,35 @@ function TodoRow({
       {extra}
     </div>
   )
+}
+
+/**
+ * Which groups are folded shut, on this device only: how the list looks here,
+ * not something worth syncing. A Set in localStorage, shared by every row.
+ */
+const FOLD_KEY = 'bb.todo.folded'
+function readFolded(): Set<string> {
+  try {
+    const v = JSON.parse(localStorage.getItem(FOLD_KEY) ?? '[]')
+    return new Set(Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [])
+  } catch {
+    return new Set()
+  }
+}
+function useFolded(id: string): [boolean, (id: string, on: boolean) => void] {
+  const [on, setOn] = useState(() => readFolded().has(id))
+  const set = useCallback((which: string, value: boolean) => {
+    const all = readFolded()
+    if (value) all.add(which)
+    else all.delete(which)
+    try {
+      localStorage.setItem(FOLD_KEY, JSON.stringify([...all]))
+    } catch {
+      /* private mode: folds for this visit only */
+    }
+    if (which === id) setOn(value)
+  }, [id])
+  return [on, set]
 }
 
 /** A to-do's search: its name, its text and, for a group, what is in it. */
@@ -831,7 +880,7 @@ function TodoForm({ id }: { id: string }) {
             <button type="button" className={btnGhost} onClick={() => close(null)}>
               {t('c.cancel')}
             </button>
-            <button type="submit" className={btnPrimary} disabled={!valid}>
+            <button type="submit" className={btnPrimary} disabled={!valid} title={saveKeyLabel()}>
               {existing ? t('c.save') : t('todo.add')}
             </button>
           </div>

@@ -33,6 +33,7 @@ import { QuickActions, type QuickButton } from './QuickActions'
 import { NOTE_ACTIONS, type QuickAction } from '../lib/quickActions'
 import { shareText } from '../lib/share'
 import { useSettingsStore } from '../stores/settingsStore'
+import { isSaveKey, saveKeyLabel } from '../lib/saveKey'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label, textareaCls } from './ui'
 
 /**
@@ -203,7 +204,15 @@ function NoteView({ id, onBinned }: { id: string; onBinned: (note: Note) => void
   // The text, typed straight into the view as on a contact: saved half a
   // second after typing stops, on blur, and as the view closes.
   const [draft, setDraft] = useState(note?.details ?? '')
-  const [typing, setTyping] = useState(false)
+  // A note just made opens typing (James, 2026-11-11: "go straight to the
+  // note page and edit directly"): in its title, or in its text when the
+  // title came with it (typed into search first).
+  const [fresh] = useState(() => {
+    const f = useNoteStore.getState().fresh
+    return f?.id === id ? f : null
+  })
+  const [typing, setTyping] = useState(() => Boolean(fresh && !fresh.typeTitle))
+  const [titleTyping, setTitleTyping] = useState(() => Boolean(fresh?.typeTitle))
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const draftRef = useRef(draft)
   draftRef.current = draft
@@ -457,6 +466,8 @@ function NoteView({ id, onBinned }: { id: string; onBinned: (note: Note) => void
           label: t('notes.title'),
           placeholder: t('notes.title_placeholder'),
           onSave: (title) => void patch(note.id, { title }),
+          startEditing: fresh?.typeTitle,
+          onEnter: () => setTyping(true),
         }}
         backLabel={kit.t('tab_notes')}
         onBack={back}
@@ -476,13 +487,41 @@ function NoteView({ id, onBinned }: { id: string; onBinned: (note: Note) => void
     <dialog
       ref={ref}
       aria-labelledby={titleId}
+      onKeyDown={(e) => {
+        // Ctrl/⌘+Enter: what's typed is saved and the page closes.
+        if (!isSaveKey(e)) return
+        e.preventDefault()
+        back()
+      }}
       className="m-0 flex h-[100dvh] max-h-none w-screen max-w-none flex-col rounded-none border-0 bg-slate-950 p-0 text-slate-200 backdrop:bg-slate-950"
     >
       <div className="shrink-0 border-b border-slate-800 px-4 py-3" style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}>
         <div className="mx-auto flex w-full max-w-2xl items-center gap-3">
-          <h2 id={titleId} className="min-w-0 flex-1 truncate text-base font-semibold text-slate-100">
-            {note.title || t('c.untitled')}
-          </h2>
+          {titleTyping ? (
+            <WebTitleBox
+              id={titleId}
+              value={note.title}
+              label={t('notes.title')}
+              placeholder={t('notes.title_placeholder')}
+              onSave={(title) => title !== note.title && void patch(note.id, { title })}
+              onDone={(toText) => {
+                setTitleTyping(false)
+                if (toText) setTyping(true)
+              }}
+            />
+          ) : (
+            // A click on the title types into it, as the phone's bar does.
+            <h2 id={titleId} className="min-w-0 flex-1 truncate text-base font-semibold text-slate-100">
+              <button
+                type="button"
+                onClick={() => setTitleTyping(true)}
+                title={t('notes.title')}
+                className="max-w-full truncate rounded-md px-1 -mx-1 text-left hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+              >
+                {note.title || t('c.untitled')}
+              </button>
+            </h2>
+          )}
           <button type="button" className={`${btnPrimary} shrink-0`} onClick={fineTune}>
             {t('row.fine_tune')}
           </button>
@@ -501,6 +540,69 @@ function NoteView({ id, onBinned }: { id: string; onBinned: (note: Note) => void
       </div>
       {layers}
     </dialog>
+  )
+}
+
+/**
+ * The note's title, typed into in the website's header. Saved as it is typed
+ * (so Escape, which closes the page, keeps it) and on leaving. Enter moves on
+ * to the text, Escape-in-the-box puts the title back and stops.
+ */
+function WebTitleBox({
+  id,
+  value,
+  label,
+  placeholder,
+  onSave,
+  onDone,
+}: {
+  id: string
+  value: string
+  label: string
+  placeholder: string
+  onSave: (title: string) => void
+  onDone: (toText: boolean) => void
+}) {
+  const [draft, setDraft] = useState(value)
+  const save = useRef(onSave)
+  save.current = onSave
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const latest = useRef(draft)
+  useEffect(
+    () => () => {
+      clearTimeout(timer.current)
+      save.current(latest.current.trim())
+    },
+    [],
+  )
+  return (
+    <input
+      id={id}
+      className={`${inputCls} min-w-0 flex-1 py-1.5 text-base font-semibold`}
+      value={draft}
+      aria-label={label}
+      placeholder={placeholder}
+      autoFocus
+      autoComplete="off"
+      enterKeyHint="next"
+      onChange={(e) => {
+        setDraft(e.target.value)
+        latest.current = e.target.value
+        clearTimeout(timer.current)
+        timer.current = setTimeout(() => save.current(latest.current.trim()), 400)
+      }}
+      onBlur={() => onDone(false)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault()
+          onDone(true)
+        } else if (e.key === 'Escape') {
+          // Escape closes the page: saved now, before it goes.
+          clearTimeout(timer.current)
+          save.current(latest.current.trim())
+        }
+      }}
+    />
   )
 }
 
@@ -745,6 +847,7 @@ function NoteForm({ id }: { id: string }) {
     <Modal
       title={existing ? t('notes.fine_tune') : t('add_note')}
       onClose={done}
+      onSave={done}
       backLabel={existing ? existing.title || t('c.untitled') : kit?.t('tab_notes')}
     >
       <div className="space-y-4">
@@ -824,7 +927,7 @@ function NoteForm({ id }: { id: string }) {
           ) : (
             <span />
           )}
-          <button type="button" className={btnPrimary} onClick={done} disabled={empty && !existing}>
+          <button type="button" className={btnPrimary} onClick={done} disabled={empty && !existing} title={`${t('c.done')} (${saveKeyLabel()})`}>
             {t('c.done')}
           </button>
         </div>

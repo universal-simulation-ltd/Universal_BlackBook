@@ -19,7 +19,7 @@
 // @capacitor/app installed, back simply leaves the app from any page (seen on
 // the emulator, 2026-10-22) — keep the dependency.
 
-import { useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { BottomSheet, configurePhoneLayers, PhonePage, useAnyPhoneLayerOpen } from '@unisim/sdk'
 import type { PhonePageProps, PhoneSheetProps } from './kit'
@@ -99,10 +99,22 @@ function BarTitleEditor({
   label,
   placeholder,
   onSave,
+  startEditing = false,
+  onEnter,
 }: { marker: RefObject<HTMLSpanElement | null>; title: string } & NonNullable<PhonePageProps['editTitle']>) {
   const [row, setRow] = useState<HTMLElement | null>(null)
-  const [editing, setEditing] = useState(false)
+  const [editing, setEditing] = useState(startEditing)
   const [draft, setDraft] = useState(value)
+  // Still typing as the page goes (Android's back, the edge swipe): keep it.
+  const pending = useRef<{ editing: boolean; draft: string; value: string; onSave: (v: string) => void }>({ editing, draft, value, onSave })
+  pending.current = { editing, draft, value, onSave }
+  useEffect(
+    () => () => {
+      const p = pending.current
+      if (p.editing && p.draft.trim() !== p.value) p.onSave(p.draft.trim())
+    },
+    [],
+  )
   useLayoutEffect(() => {
     setRow(marker.current?.closest('.unisim-phone-page')?.querySelector<HTMLElement>('.unisim-phone-bar-row') ?? null)
   }, [marker])
@@ -129,7 +141,10 @@ function BarTitleEditor({
         onChange={(e) => setDraft(e.target.value)}
         onBlur={save}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') e.currentTarget.blur()
+          if (e.key === 'Enter') {
+            e.currentTarget.blur()
+            onEnter?.()
+          }
           if (e.key === 'Escape') {
             setDraft(value)
             setEditing(false)

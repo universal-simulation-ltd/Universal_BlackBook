@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ACTION_WIDTH, decideAxis, dragOffset, restingOffset, settles } from './swipe'
+import { ACTION_WIDTH, FIRE_DISTANCE, FIRE_TRAVEL, decideAxis, dragOffset, dragOffsetFromOpen, firesOnRelease, restingOffset, settles } from './swipe'
 import type { Widths } from './swipe'
 
 describe('decideAxis', () => {
@@ -107,5 +107,33 @@ describe('restingOffset', () => {
     expect(restingOffset(null, BOTH)).toBe(0)
     expect(settles(restingOffset('left', BOTH), BOTH)).toBe('left')
     expect(settles(restingOffset('right', BOTH), BOTH)).toBe('right')
+  })
+})
+
+describe('second swipe fires', () => {
+  const both: Widths = { left: ACTION_WIDTH, right: ACTION_WIDTH }
+
+  it('runs the open side when the finger carries on that way', () => {
+    expect(firesOnRelease('right', -FIRE_DISTANCE, both)).toBe('right')
+    expect(firesOnRelease('left', FIRE_DISTANCE + 10, both)).toBe('left')
+  })
+
+  it('never fires from closed, however long the flick', () => {
+    expect(firesOnRelease(null, -400, both)).toBeNull()
+    expect(firesOnRelease(null, 400, both)).toBeNull()
+  })
+
+  it('does not fire on a short nudge or the opposite way', () => {
+    expect(firesOnRelease('right', -FIRE_DISTANCE + 1, both)).toBeNull()
+    expect(firesOnRelease('right', 80, both)).toBeNull()
+    expect(firesOnRelease('left', -80, both)).toBeNull()
+  })
+
+  it('lets an open row travel a little past its edge, no further', () => {
+    expect(dragOffsetFromOpen('right', -ACTION_WIDTH, -20, both)).toBe(-ACTION_WIDTH - 10)
+    expect(dragOffsetFromOpen('right', -ACTION_WIDTH, -500, both)).toBe(-ACTION_WIDTH - FIRE_TRAVEL)
+    expect(dragOffsetFromOpen('left', ACTION_WIDTH, 500, both)).toBe(ACTION_WIDTH + FIRE_TRAVEL)
+    // Closing still follows the finger as before.
+    expect(dragOffsetFromOpen('right', -ACTION_WIDTH, 40, both)).toBe(-ACTION_WIDTH + 40)
   })
 })

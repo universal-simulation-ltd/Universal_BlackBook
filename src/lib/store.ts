@@ -11,6 +11,7 @@
 //     result, never thrown over: one bad row must not make the whole book
 //     unopenable.
 
+import type { SyncBase } from './syncMerge'
 import { toPhoneLink, type Contact, type Tag } from './types'
 import { isValidBirthday } from './birthday'
 import { SORT_KEYS, type SortKey, type View } from './filter'
@@ -288,6 +289,22 @@ export async function loadSyncMeta(): Promise<SyncMeta | null> {
 
 export async function saveSyncMeta(meta: SyncMeta): Promise<void> {
   await tx(SYNC, 'readwrite', (s) => s.put(meta, 'meta'))
+}
+
+/**
+ * The book as it last matched the online copy, as one signature per entry
+ * (lib/syncMerge.ts): the base a three-way merge needs when another device
+ * saved first. Kept per Universal ID, so another account's is never used.
+ */
+export async function loadSyncBase(userId: string): Promise<SyncBase | null> {
+  const raw = await tx<unknown>(SYNC, 'readonly', (s) => s.get('base') as IDBRequest<unknown>)
+  if (!raw || typeof raw !== 'object') return null
+  const r = raw as { userId?: unknown; base?: unknown }
+  return r.userId === userId && r.base && typeof r.base === 'object' ? (r.base as SyncBase) : null
+}
+
+export async function saveSyncBase(userId: string, base: SyncBase): Promise<void> {
+  await tx(SYNC, 'readwrite', (s) => s.put({ userId, base }, 'base'))
 }
 
 // ── the view the app opens on ────────────────────────────────────────────────

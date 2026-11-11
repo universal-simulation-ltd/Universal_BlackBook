@@ -16,8 +16,13 @@ import {
   forgetVault,
   forgetVaultKey,
   loadBackupOff,
+  loadSyncBase,
   loadSyncMeta,
   loadVaultKey,
+  replaceAll,
+  saveSyncBase,
+  savePages,
+  saveTodos,
   saveBackupOff,
   saveSyncMeta,
   saveVaultKey,
@@ -36,6 +41,7 @@ import {
   vaultSizeError,
 } from '../lib/vault'
 import { mergeBooks, unsyncedWork } from '../lib/merge'
+import { baseOf, mergeVault, resolve, type Conflict, type MergeInput, type MergeResult } from '../lib/syncMerge'
 import { useBookStore } from './bookStore'
 import { useTodoStore } from './todoStore'
 import { useNoteStore } from './noteStore'
@@ -105,6 +111,15 @@ interface SyncStore {
    * count rather than a flag so every failure schedules the next try.
    */
   offline: number
+  /**
+   * Another device saved first and both changed the same entries (James,
+   * 2026-11-11): the merge, the entries to ask about, and the online
+   * revision it was made against. Everything else is merged already; saving
+   * waits until `resolveClash` is answered. Null otherwise.
+   */
+  clash: { rev: number; online: VaultPayload; result: MergeResult } | null
+  /** Answer a clash: per conflict, keep this device's version or not. */
+  resolveClash: (supabase: SupabaseClient, keepLocal: (c: Conflict) => boolean) => Promise<void>
 
   hydrate: (supabase: SupabaseClient, userId: string | null) => Promise<void>
   /** `passphrase` null: no passphrase — the key is kept with the account. */
@@ -112,7 +127,8 @@ interface SyncStore {
   unlock: (supabase: SupabaseClient, userId: string, passphrase: string, remember: boolean) => Promise<void>
   adoptPending: () => Promise<void>
   mergePending: (supabase: SupabaseClient) => Promise<void>
-  push: (supabase: SupabaseClient, force?: boolean) => Promise<void>
+  /** `attempt`: internal, how many merges this save has already made (it stops at 3). */
+  push: (supabase: SupabaseClient, force?: boolean, attempt?: number) => Promise<void>
   pull: (supabase: SupabaseClient) => Promise<void>
   /**
    * Re-encrypt the online copy under a new passphrase — or, with `next` null,
@@ -148,6 +164,45 @@ function bookPayload(): VaultPayload {
     ...tuning(),
     savedAt: Date.now(),
   }
+}
+
+/** A payload's entries as the merge reads them, each read the way adopting it would. */
+function inputOf(p: VaultPayload): MergeInput {
+  return {
+    contacts: Array.isArray(p.contacts) ? p.contacts : [],
+    tags: payloadTags(p),
+    ...(Array.isArray(p.todos) && { todos: toTodos(p.todos) }),
+    ...(Array.isArray(p.pages) && { pages: toNotes(p.pages) }),
+    ...(Array.isArray(p.templates) && { templates: toTemplates(p.templates) }),
+  }
+}
+
+/**
+ * Remember the book as it now matches the online copy: the base the next
+ * three-way merge needs (lib/syncMerge.ts). After every push, adopt and pull.
+ */
+async function rememberBase(payload: VaultPayload = bookPayload()) {
+  const meta = await loadSyncMeta()
+  if (meta) await saveSyncBase(meta.userId, baseOf(inputOf(payload)))
+}
+
+/**
+ * A merged book becomes this device's, quietly: unlike `adopt`, nothing that
+ * is open is closed (this happens under somebody's fingers, on an autosave).
+ */
+async function applyMerged(merged: MergeInput, online: VaultPayload) {
+  useBookStore.setState({ contacts: merged.contacts, tags: merged.tags })
+  await replaceAll(merged.contacts, merged.tags)
+  if (merged.todos) {
+    useTodoStore.setState({ todos: merged.todos })
+    await saveTodos(merged.todos)
+  }
+  if (merged.pages) {
+    useNoteStore.setState({ notes: merged.pages })
+    await savePages(merged.pages)
+  }
+  if (merged.templates) await useNoteStore.getState().replaceTemplates(merged.templates)
+  adoptTuning(online)
 }
 
 /**
@@ -329,8 +384,10 @@ async function openVault(
     status: 'idle',
     message: null,
   })
-  if (local === 0) await adopt(payload)
-  else {
+  if (local === 0) {
+    await adopt(payload)
+    await rememberBase()
+  } else {
     await mergeIn(payload)
     // Straight up: the online copy lacks the guest's contacts until it goes.
     await useSyncStore.getState().push(supabase)
@@ -493,7 +550,11 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       // A merge is in sync once it has gone up: `push` writes the meta. Until
       // then (offline) a reload merges again, which changes nothing.
       if (ask) await get().push(supabase)
-      else await saveSyncMeta({ ...meta, rev: row.rev, salt: row.kdf_salt, iterations: row.kdf_iterations, syncedAt: behind ? Date.now() : since })
+      else {
+        await saveSyncMeta({ ...meta, rev: row.rev, salt: row.kdf_salt, iterations: row.kdf_iterations, syncedAt: behind ? Date.now() : since })
+        // Adopted: the book now IS the online copy, the base for the next merge.
+        if (behind) await rememberBase()
+      }
     } catch (e) {
       set({ status: 'error', message: e instanceof Error ? e.message : currentT()('sync.unreachable') })
     }
@@ -518,6 +579,7 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       const now = Date.now()
       const meta: SyncMeta = { userId, rev, salt, iterations, pushedAt: now, syncedAt: now }
       await saveSyncMeta(meta)
+      await rememberBase()
       const keep = remember && !account
       if (keep) await saveVaultKey(key)
       await saveBackupOff(null)
@@ -585,6 +647,7 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
     const meta = await loadSyncMeta()
     if (meta) await saveSyncMeta({ ...meta, rev: get().rev, syncedAt: Date.now() })
     set({ pending: null, status: 'saved' })
+    await rememberBase()
   },
 
   mergePending: async (supabase) => {
@@ -598,17 +661,30 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
     await get().push(supabase)
   },
 
-  push: async (supabase, force = false) => {
-    const { key, rev, salt, iterations, state, pending, accountKey } = get()
+  clash: null,
+  resolveClash: async (supabase, keepLocal) => {
+    const { clash } = get()
+    if (!clash) return
+    await applyMerged(resolve(clash.result, keepLocal), clash.online)
+    set({ clash: null, rev: clash.rev, status: 'idle', message: null })
+    await get().push(supabase)
+  },
+
+  push: async (supabase, force = false, attempt = 0) => {
+    const { key, rev, salt, iterations, state, pending, accountKey, clash } = get()
     // ⚠️ Never while the merge question is open. This device's book is not
     // the answer yet, and the autosave fires 2.5 s after sync turns on: it
     // used to write the local book over the online copy before anybody had
     // chosen, so closing the panel unanswered lost everything online that
     // this device did not have.
     if (state !== 'on' || !key || !salt || pending) return
+    // A clash waits for its answer (resolveClash); "keep this device"
+    // (force) is still the way past it.
+    if (clash && !force) return
     set({ status: 'working', message: null })
     try {
-      const ciphertext = await encryptJson(bookPayload(), key)
+      const payload = bookPayload()
+      const ciphertext = await encryptJson(payload, key)
       // Same check on every save, not just the first: a book goes over the line
       // by being edited, and this is the path an edit takes. `rev` is left
       // where it was, so the next push after a prune is an ordinary one.
@@ -630,7 +706,8 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
         expected = row?.rev ?? 0
         if (!row) {
           const created = await createVault(supabase, ciphertext, salt, iterations, accountKey)
-          set({ status: 'saved', rev: created, lastPushedAt: Date.now(), dirty: false })
+          set({ status: 'saved', rev: created, lastPushedAt: Date.now(), dirty: false, clash: null })
+          await rememberBase(payload)
           return
         }
       }
@@ -638,13 +715,30 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       const meta = await loadSyncMeta()
       const now = Date.now()
       if (meta) await saveSyncMeta({ ...meta, rev: next, pushedAt: now, syncedAt: now })
-      set({ status: 'saved', rev: next, lastPushedAt: now, dirty: false, offline: 0 })
+      set({ status: 'saved', rev: next, lastPushedAt: now, dirty: false, offline: 0, clash: null })
+      await rememberBase(payload)
     } catch (e) {
       if (e instanceof VaultConflictError) {
         // A passphrase change moves the rev too. Offering "keep this device"
         // for that would be offering to revert it — see the force branch.
         const row = await fetchVault(supabase).catch(() => null)
         if (row && (await lockIfPassphraseChanged(supabase, row))) return
+        // Merge rather than ask (James, 2026-11-11): the online copy and
+        // this device's book, three ways against the last sync's base. Only
+        // entries changed on both sides are asked about, with the diff.
+        const online = row && attempt < 3 ? await decryptJson<VaultPayload>(row.ciphertext, key).catch(() => null) : null
+        if (row && online) {
+          const meta = await loadSyncMeta()
+          const base = meta ? await loadSyncBase(meta.userId) : null
+          const result = mergeVault(base, inputOf(bookPayload()), inputOf(online))
+          // Until it is answered, an entry changed on both sides stays as
+          // this device has it: nothing changes under somebody's fingers.
+          await applyMerged(resolve(result, () => true), online)
+          set({ rev: row.rev })
+          if (result.conflicts.length === 0) return get().push(supabase, false, attempt + 1)
+          set({ status: 'conflict', message: currentT()('sync.clash', { count: result.conflicts.length }), clash: { rev: row.rev, online, result } })
+          return
+        }
         set({
           status: 'conflict',
           message: currentT()('sync.conflict'),
@@ -678,7 +772,8 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       await adopt(payload)
       const meta = await loadSyncMeta()
       if (meta) await saveSyncMeta({ ...meta, rev: row.rev, syncedAt: Date.now() })
-      set({ status: 'saved', rev: row.rev, message: null })
+      set({ status: 'saved', rev: row.rev, message: null, clash: null })
+      await rememberBase()
     } catch (e) {
       set({ status: 'error', message: e instanceof Error ? e.message : currentT()('sync.unreachable') })
     }

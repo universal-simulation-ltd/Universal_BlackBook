@@ -183,6 +183,7 @@ export function TemplateForm({
     <Modal
       title={template ? template.name : t('tpl.new')}
       onClose={onClose}
+      onSave={save}
       backLabel={backLabel ?? t('tpl.manage')}
       phoneActions={
         <button type="button" className="min-h-[44px] px-2 text-[16px] font-semibold text-orange-400 disabled:opacity-40" disabled={!ok} onClick={save}>

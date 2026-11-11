@@ -17,7 +17,8 @@
  * deletes something. It is also why an action is only REVEALED and never
  * triggered by the swipe itself: a full-swipe-to-delete would put an
  * irreversible action one thumb flick away, and the confirmation that follows
- * is the second half of the same decision.
+ * is the second half of the same decision. Since 2026-11-11 that second half
+ * can also be a second swipe the same way (FIRE_DISTANCE), never the first.
  */
 export const ACTION_WIDTH = 96
 
@@ -88,4 +89,42 @@ export function restingOffset(open: Side | null, widths: Widths = RIGHT_ONLY): n
   if (open === 'right') return -widths.right
   if (open === 'left') return widths.left
   return 0
+}
+
+/**
+ * How much further a finger must travel, past an action that is already
+ * showing, to run it. James, 2026-11-11: "if you swipe again in that direction
+ * then do that action e.g. delete".
+ *
+ * ⚠️ Only a SECOND swipe, on a row already open on that side. A single long
+ * flick from closed still only reveals (see ACTION_WIDTH): the first swipe is
+ * the "are you sure", the second is the yes, exactly as tapping the revealed
+ * button is. Every delete it can reach already has Undo.
+ */
+export const FIRE_DISTANCE = 56
+
+/** How far past its open position the row may be dragged to show it will fire. */
+export const FIRE_TRAVEL = 40
+
+/**
+ * Does this release run the action showing on `open`'s side? Only when the
+ * touch began with that side already open and the finger carried on the same
+ * way by FIRE_DISTANCE.
+ */
+export function firesOnRelease(open: Side | null, dx: number, widths: Widths = RIGHT_ONLY): Side | null {
+  if (open === 'right' && widths.right > 0 && dx <= -FIRE_DISTANCE) return 'right'
+  if (open === 'left' && widths.left > 0 && dx >= FIRE_DISTANCE) return 'left'
+  return null
+}
+
+/**
+ * Where the row sits mid-drag when it started open: like dragOffset, but it
+ * may carry on past the open edge by up to FIRE_TRAVEL (at half the finger's
+ * speed), so the second swipe visibly goes somewhere.
+ */
+export function dragOffsetFromOpen(open: Side | null, base: number, dx: number, widths: Widths = RIGHT_ONLY): number {
+  const raw = base + dx
+  if (open === 'right' && raw < -widths.right) return -widths.right - Math.min(FIRE_TRAVEL, (-widths.right - raw) / 2)
+  if (open === 'left' && raw > widths.left) return widths.left + Math.min(FIRE_TRAVEL, (raw - widths.left) / 2)
+  return dragOffset(base, dx, widths)
 }
