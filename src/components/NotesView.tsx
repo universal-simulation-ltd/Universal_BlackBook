@@ -71,6 +71,18 @@ export function NotesView() {
     return tags.filter((x) => !isList(x) && used.has(x.id))
   }, [notes, tags])
   const activeTags = tagFilter.filter((id) => usedTags.some((x) => x.id === id))
+  // The tag box stays behind a Tags chip at the end of the template row until
+  // it is wanted (James, 2026-11-12); the chip opens it with the cursor in it.
+  // Open from the start when a tag filter is already on.
+  const [tagsOpen, setTagsOpen] = useState(() => activeTags.length > 0)
+  const tagBoxId = useId()
+  const tagBox = useRef<HTMLDivElement>(null)
+  const toggleTags = () => {
+    if (tagsOpen) return setTagsOpen(false)
+    // Rendered now, inside the tap, so the focus can raise the keyboard on iOS.
+    flushSync(() => setTagsOpen(true))
+    tagBox.current?.querySelector('input')?.focus()
+  }
   const shown = useMemo(
     () => sorted.filter((n) => (!active || n.templateId === active) && matchesNoteTags(n, activeTags) && matchesNote(n, query)),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- activeTags is derived each render; its content is the key
@@ -169,11 +181,16 @@ export function NotesView() {
         filtering={active !== null || activeTags.length > 0}
         onEnter={() => addTyped(query)}
       >
-        {templates.length > 0 && notes.length > 0 && (
-          <TemplateFilter templates={templates} active={active} onPick={setFilter} />
+        {((templates.length > 0 && notes.length > 0) || usedTags.length > 0) && (
+          <TemplateFilter
+            templates={notes.length > 0 ? templates : []}
+            active={active}
+            onPick={setFilter}
+            tags={usedTags.length > 0 ? { open: tagsOpen, count: activeTags.length, controls: tagBoxId, onClick: toggleTags } : undefined}
+          />
         )}
-        {usedTags.length > 0 && (
-          <div role="group" aria-label={t('tags.filter_by')}>
+        {usedTags.length > 0 && tagsOpen && (
+          <div ref={tagBox} id={tagBoxId} role="group" aria-label={t('tags.filter_by')}>
             <TagCombo
               options={usedTags}
               isOn={(id) => activeTags.includes(id)}
@@ -349,9 +366,21 @@ export function NotesView() {
  * All · Book · …: the Notes tab by template (James, 2026-10-25). A row that
  * scrolls sideways when there are many, and shows it (BRANDING.md ▸ "A row
  * that scrolls shows it scrolls": the SDK's useScrollHint fades the edge with
- * more beyond it, and the chips are sized so one is cut off there).
+ * more beyond it, and the chips are sized so one is cut off there). Last
+ * comes Tags, which opens the tag box below the row (2026-11-12).
  */
-function TemplateFilter({ templates, active, onPick }: { templates: NoteTemplate[]; active: string | null; onPick: (id: string | null) => void }) {
+function TemplateFilter({
+  templates,
+  active,
+  onPick,
+  tags,
+}: {
+  templates: NoteTemplate[]
+  active: string | null
+  onPick: (id: string | null) => void
+  /** The Tags chip after the templates, which opens the tag box. */
+  tags?: { open: boolean; count: number; controls: string; onClick: () => void }
+}) {
   const t = useT()
   const hint = useScrollHint<HTMLDivElement>()
   const chip = (on: boolean) =>
@@ -366,14 +395,28 @@ function TemplateFilter({ templates, active, onPick }: { templates: NoteTemplate
       className={`-mx-1 flex gap-2 overflow-x-auto px-1 py-0.5 ${hint.className}`}
       style={hint.style}
     >
-      <button type="button" aria-pressed={active === null} className={chip(active === null)} onClick={() => onPick(null)}>
-        {t('tpl.all')}
-      </button>
+      {templates.length > 0 && (
+        <button type="button" aria-pressed={active === null} className={chip(active === null)} onClick={() => onPick(null)}>
+          {t('tpl.all')}
+        </button>
+      )}
       {templates.map((x) => (
         <button key={x.id} type="button" aria-pressed={active === x.id} className={chip(active === x.id)} onClick={() => onPick(active === x.id ? null : x.id)}>
           {x.name}
         </button>
       ))}
+      {tags && (
+        <button
+          type="button"
+          aria-expanded={tags.open}
+          aria-controls={tags.controls}
+          className={chip(tags.open || tags.count > 0)}
+          onClick={tags.onClick}
+        >
+          {t('field.tags')}
+          {tags.count > 0 && ` · ${tags.count}`}
+        </button>
+      )}
     </div>
   )
 }
