@@ -255,6 +255,25 @@ export function TodoView() {
         />
       )}
 
+      {/* The last one ticked off stays in sight, struck through, above the
+          closed Done drawer (James, 2026-11-12: "so it can be easily
+          reverted") — tap its box, or swipe right, to put it back. Open
+          the drawer and it is simply the first of the done ones. */}
+      {done.length > 0 && !showDone && (
+        <SwipeGroup>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            <SwipeItem
+              id={done[0].id}
+              name={done[0].title}
+              left={actionSwipe('undone', t('todo.not_done'), t('todo.mark_undone', { title: done[0].title }), () => void setDone(done[0].id, false))}
+              right={deleteSwipe(done[0].title, () => removeWithUndo(done[0]))}
+              focus={[{ label: t('todo.delete_label', { title: done[0].title }), onClick: () => removeWithUndo(done[0]) }]}
+            >
+              <TodoRow todo={done[0]} byId={byId} today={today} />
+            </SwipeItem>
+          </div>
+        </SwipeGroup>
+      )}
       {done.length > 0 && (
         <section className="border-t border-slate-800 pt-3">
           <div className="flex items-center justify-between gap-2">
