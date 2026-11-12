@@ -8,7 +8,7 @@
 // copy, and applies a `look` that arrived from another device back to the SDK.
 // Mounted once, at the top of App, so it runs on the phone and the website.
 
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { isSupportedLanguage, useDefaultView, useUniversal } from '@unisim/sdk'
 import { TABS, type Tab } from '../lib/tabs'
 import { sameLook, type Look } from '../lib/tuning'
@@ -44,4 +44,26 @@ export function useTuneLook() {
     // `agreed` follows the store's own copy, which is `here` itself.
     agreed.current = useSettingsStore.getState().look
   }, [look, scheme, appLanguage, defaultView, setScheme, setAppLanguage, setDefaultView])
+}
+
+/**
+ * The tab on screen follows the default until somebody picks one (James,
+ * 2026-11-12: set To-do as the default on the phone, signed in on the website,
+ * and it stayed on People). A tab state seeded from `useDefaultView` reads the
+ * default once, at start-up — but signing in loads the page first and the
+ * phone's choice arrives with the book a moment later. So a default that
+ * changes while nobody has touched the tabs moves the screen too. Returns the
+ * call a tab tap makes, after which the screen is left where it is put.
+ */
+export function useFollowDefaultTab<T extends string>(defaultView: T, setTab: (tab: T) => void): () => void {
+  const picked = useRef(false)
+  const seen = useRef(defaultView)
+  useEffect(() => {
+    if (defaultView === seen.current) return
+    seen.current = defaultView
+    if (!picked.current) setTab(defaultView)
+  }, [defaultView, setTab])
+  return useCallback(() => {
+    picked.current = true
+  }, [])
 }

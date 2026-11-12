@@ -47,7 +47,7 @@ import { usePanelStore } from './stores/panelStore'
 import { AddMenu, APP_ABOUT, availableTabs, LockLink, PREFERENCE_ROWS, REPO_URL, SyncStatus, tabName, TABS, useContactPicker, type Tab } from './appParts'
 import { currentT, useT } from './i18n'
 import { personalBookTitle, useNamedTitle } from './components/bookTitle'
-import { useTuneLook } from './components/tuneLook'
+import { useFollowDefaultTab, useTuneLook } from './components/tuneLook'
 import { useEffectiveTheme, useThemeStore } from './stores/themeStore'
 import { phoneScreens } from './native/shell'
 import { followThemeWithStatusBar } from './native/systemBars'
@@ -117,6 +117,8 @@ export default function App() {
   // on Contacts, by the same `current` rule as turning the switch off.
   const tabDefault = useDefaultView<Tab>('tab', 'contacts', { views: TABS })
   const [tab, setTab] = useState<Tab>(tabDefault.defaultView)
+  // …and follows it when it arrives from another device after start-up.
+  const pickedTab = useFollowDefaultTab(tabDefault.defaultView, setTab)
   const onLists = emailLists && tab === 'lists'
   const onTodos = todosOn && tab === 'todos'
   const onNotes = notesOn && tab === 'notes'
@@ -343,6 +345,7 @@ export default function App() {
                 // Dropped outside the bar, or Escape: nothing moves.
                 onDragEnd={() => setDragTabs(null)}
                 onClick={() => {
+                  pickedTab()
                   const double = tabDefault.tap(t)
                   // Contacts tapped while already on it: open the search, keyboard
                   // up (Jukebox's tab tap). Sent here, inside the tap, which iOS

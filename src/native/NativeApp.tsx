@@ -33,6 +33,7 @@ import { ImportPanel } from '../components/ImportPanel'
 import { ListsView } from '../components/ListsView'
 import { LockPanel } from '../components/Lock'
 import { SearchDrawer } from '../components/SearchDrawer'
+import { useFollowDefaultTab } from '../components/tuneLook'
 import { TagManager } from '../components/TagManager'
 import { TodoView } from '../components/TodoView'
 import { NotesView } from '../components/NotesView'
@@ -116,6 +117,9 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
 
   const tabDefault = useDefaultView<Tab>('tab', 'contacts', { views: ['contacts', 'lists', 'todos', 'notes'] })
   const [tab, setTab] = useState<PhoneTab>(tabDefault.defaultView)
+  // Follows the default when it arrives from another device after start-up
+  // (components/tuneLook.ts), until a tab is tapped.
+  const pickedTab = useFollowDefaultTab(tabDefault.defaultView, setTab)
   const tabOrder = useSettingsStore((s) => s.tabOrder)
   const setSettings = useSettingsStore((s) => s.set)
   const shownTabs = availableTabs(emailLists, todosOn, notesOn, tabOrder, contactsOn)
@@ -270,6 +274,7 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
   }, [current])
 
   const tapTab = (target: PhoneTab) => {
+    pickedTab()
     const double = target !== 'tune' && tabDefault.tap(target as Tab)
     if (target === current) {
       window.scrollTo({ top: 0, behavior: 'smooth' })
