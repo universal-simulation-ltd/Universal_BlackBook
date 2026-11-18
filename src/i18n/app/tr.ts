@@ -426,7 +426,7 @@ export const appTr: Partial<Record<AppKey, string>> = {
   'todo.edit_label': "“{title}” öğesini düzenle",
   'todo.detail_empty': "Henüz ayrıntı yok. Düzenle ile ekleyebilir ya da bir gruba dönüştürebilirsin.",
   'pref.todo_layout': "Yapılacaklar düzeni",
-  'pref.todo_layout_note': "Yapılacaklar sekmesinin bilgisayarda nasıl düzenlendiği. Bir düzen düğmesine iki kez dokunmak da onu seçer.",
+  'pref.todo_layout_note': "Yapılacaklar sekmesinin bilgisayarda veya tablette nasıl düzenlendiği. Bir düzen düğmesine iki kez dokunmak da onu seçer.",
   'notes.intro': "Kendi notların, en yenisi önce.",
   'notes.none': "Henüz not yok. İlkini Yeni ekle ile yaz.",
   'notes.none_phone': "Henüz not yok. İlkini yazmak için + simgesine dokun.",

@@ -426,7 +426,7 @@ export const appFr: Partial<Record<AppKey, string>> = {
   'todo.edit_label': "Modifier « {title} »",
   'todo.detail_empty': "Pas encore de détails. Modifier permet d’en ajouter ou d’en faire un groupe.",
   'pref.todo_layout': "Affichage des tâches",
-  'pref.todo_layout_note': "La disposition de l’onglet À faire sur un ordinateur. Toucher deux fois un bouton d’affichage le choisit aussi.",
+  'pref.todo_layout_note': "La disposition de l’onglet À faire sur un ordinateur ou une tablette. Toucher deux fois un bouton d’affichage le choisit aussi.",
   'notes.intro': "Vos propres notes, les plus récentes en premier.",
   'notes.none': "Pas encore de notes. Écrivez la première avec Ajouter.",
   'notes.none_phone': "Pas encore de notes. Touchez + pour écrire la première.",

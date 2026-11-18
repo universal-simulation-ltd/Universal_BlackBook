@@ -426,7 +426,7 @@ export const appIt: Partial<Record<AppKey, string>> = {
   'todo.edit_label': "Modifica “{title}”",
   'todo.detail_empty': "Ancora nessun dettaglio. Modifica permette di aggiungerne o di farne un gruppo.",
   'pref.todo_layout': "Vista delle cose da fare",
-  'pref.todo_layout_note': "Come è disposta la scheda Da fare su un computer. Toccare due volte un pulsante di vista la sceglie anche.",
+  'pref.todo_layout_note': "Come è disposta la scheda Da fare su un computer o un tablet. Toccare due volte un pulsante di vista la sceglie anche.",
   'notes.intro': "Note tutte tue, dalla più recente.",
   'notes.none': "Ancora nessuna nota. Scrivi la prima con Aggiungi.",
   'notes.none_phone': "Ancora nessuna nota. Tocca + per scrivere la prima.",

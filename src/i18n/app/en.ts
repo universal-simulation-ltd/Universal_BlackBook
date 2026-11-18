@@ -476,7 +476,7 @@ export const appEn = {
   'todo.edit_label': "Edit “{title}”",
   'todo.detail_empty': "No details yet. Edit adds some, or makes it a group.",
   'pref.todo_layout': "To-do layout",
-  'pref.todo_layout_note': "How the To-do tab is laid out on a computer. Double-tapping a layout button chooses it too.",
+  'pref.todo_layout_note': "How the To-do tab is laid out on a computer or tablet. Double-tapping a layout button chooses it too.",
 
   // ── Notes ─────────────────────────────────────────────────────────────────
   'notes.intro': "Notes of your own, newest first.",

@@ -426,7 +426,7 @@ export const appEs: Partial<Record<AppKey, string>> = {
   'todo.edit_label': "Editar «{title}»",
   'todo.detail_empty': "Aún no hay detalles. Editar permite añadirlos o convertirla en un grupo.",
   'pref.todo_layout': "Vista de tareas",
-  'pref.todo_layout_note': "Cómo se organiza la pestaña de tareas en un ordenador. Tocar dos veces un botón de vista también la elige.",
+  'pref.todo_layout_note': "Cómo se organiza la pestaña de tareas en un ordenador o una tableta. Tocar dos veces un botón de vista también la elige.",
   'notes.intro': "Tus propias notas, la más reciente primero.",
   'notes.none': "Aún no hay notas. Escribe la primera con Añadir.",
   'notes.none_phone': "Aún no hay notas. Toca + para escribir la primera.",

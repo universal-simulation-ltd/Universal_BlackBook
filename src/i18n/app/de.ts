@@ -426,7 +426,7 @@ export const appDe: Partial<Record<AppKey, string>> = {
   'todo.edit_label': "„{title}“ bearbeiten",
   'todo.detail_empty': "Noch keine Details. Mit Bearbeiten fügst du welche hinzu oder machst eine Gruppe daraus.",
   'pref.todo_layout': "To-do-Ansicht",
-  'pref.todo_layout_note': "Wie der To-do-Tab auf einem Computer angeordnet ist. Ein Doppeltipp auf eine Ansichtstaste wählt sie auch.",
+  'pref.todo_layout_note': "Wie der To-do-Tab auf einem Computer oder Tablet angeordnet ist. Ein Doppeltipp auf eine Ansichtstaste wählt sie auch.",
   'notes.intro': "Deine eigenen Notizen, die neuesten zuerst.",
   'notes.none': "Noch keine Notizen. Schreib die erste mit Neu hinzufügen.",
   'notes.none_phone': "Noch keine Notizen. Tippe auf +, um die erste zu schreiben.",

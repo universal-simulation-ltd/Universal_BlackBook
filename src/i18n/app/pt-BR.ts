@@ -426,7 +426,7 @@ export const appPtBR: Partial<Record<AppKey, string>> = {
   'todo.edit_label': "Editar “{title}”",
   'todo.detail_empty': "Ainda sem detalhes. Editar permite adicionar alguns ou transformar em grupo.",
   'pref.todo_layout': "Visualização das tarefas",
-  'pref.todo_layout_note': "Como a aba de tarefas é organizada num computador. Tocar duas vezes num botão de visualização também a escolhe.",
+  'pref.todo_layout_note': "Como a aba de tarefas é organizada num computador ou tablet. Tocar duas vezes num botão de visualização também a escolhe.",
   'notes.intro': "Suas próprias notas, as mais novas primeiro.",
   'notes.none': "Nenhuma nota ainda. Escreva a primeira com Adicionar.",
   'notes.none_phone': "Nenhuma nota ainda. Toque em + para escrever a primeira.",

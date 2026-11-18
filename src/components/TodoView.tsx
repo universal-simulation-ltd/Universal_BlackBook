@@ -25,7 +25,7 @@ import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, BtnKey, label, Pl
 import { autoFocusOK } from '../native/kit'
 import { phoneScreens } from '../native/shell'
 import { saveKeyLabel } from '../lib/saveKey'
-import { isQuickTodo, TODO_LAYOUT_DEFAULT, TODO_LAYOUT_VIEW, TODO_LAYOUTS, type TodoLayout } from '../lib/todoLayout'
+import { isQuickTodo, TABLET_QUERY, TODO_LAYOUT_DEFAULT, TODO_LAYOUT_VIEW, TODO_LAYOUTS, type TodoLayout } from '../lib/todoLayout'
 
 /**
  * The To-do tab (owner's request, 2026-09-27), there only with App
@@ -143,9 +143,15 @@ export function TodoView() {
     shownDefault.current = layoutDefault.defaultView
     setLayoutPick(layoutDefault.defaultView)
   }, [layoutDefault.defaultView])
+  // The phone app on a tablet — an iPad, or a window that wide — has the
+  // room for them too (James, 2026-11-18: "Yes, do the iPad"); a phone keeps
+  // its own one-column list of cards.
+  const tablet = useMediaQuery(TABLET_QUERY)
+  const layouts = !phoneScreens() || tablet
   // The detail pane needs the room; narrower, that layout is the plain list.
-  const wide = useMediaQuery('(min-width: 1024px)')
-  const layout: Shown = phoneScreens() ? 'grid' : layoutPick === 'detail' && !wide ? 'list' : layoutPick
+  // The phone app has no sidebar beside it, so an iPad upright is wide enough.
+  const wide = useMediaQuery(phoneScreens() ? TABLET_QUERY : '(min-width: 1024px)')
+  const layout: Shown = !layouts ? 'grid' : layoutPick === 'detail' && !wide ? 'list' : layoutPick
   // List and detail: the to-do shown in full. The first one until one is picked,
   // and again once the picked one is ticked off, filtered out or deleted.
   const [picked, setPicked] = useState<string | null>(null)
@@ -219,16 +225,18 @@ export function TodoView() {
           <h1 className={phoneScreens() ? 'bb-h1' : tabHeading}>{t('tab_todos')}</h1>
           {!phoneScreens() && <p className="text-sm text-slate-500">{t('todo.intro')}</p>}
         </div>
-        {/* On the phone the top bar's + does this. */}
-        {!phoneScreens() && (
+        {layouts && (
           <div className="flex items-center gap-2">
             <LayoutButtons value={layoutPick} dv={layoutDefault} onChange={setLayoutPick} />
-            <button type="button" className={btnPrimary} onClick={() => edit('new')}>
-              <BtnKey>
-                <PlusIcon />
-              </BtnKey>
-              {t('c.add_new')}
-            </button>
+            {/* In the phone app the top bar's + does this. */}
+            {!phoneScreens() && (
+              <button type="button" className={btnPrimary} onClick={() => edit('new')}>
+                <BtnKey>
+                  <PlusIcon />
+                </BtnKey>
+                {t('c.add_new')}
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -297,13 +305,13 @@ export function TodoView() {
           <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] items-start gap-6">
             {openList(open, 'row', listClass('list'))}
             {/* Stays in sight while the list scrolls under it. */}
-            <aside className="sticky top-4" aria-live="polite">
+            <aside className="bb-detail sticky top-4" aria-live="polite">
               {current && <TodoDetail key={current.id} todo={current} byId={byId} today={today} />}
             </aside>
           </div>
         ) : layout === 'lanes' ? (
           // Only the lanes with something in them; one alone takes the width.
-          <div className={`grid items-start gap-6 ${quick.length && bigger.length ? 'md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]' : ''}`}>
+          <div className={`grid items-start gap-6 ${quick.length && bigger.length ? 'min-[700px]:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]' : ''}`}>
             {quick.length > 0 && (
               <section>
                 <h2 className="mb-1 px-2 text-xs font-semibold text-slate-500">{t('todo.lane_quick')}</h2>
@@ -592,8 +600,9 @@ function listClass(layout: Shown): string {
     case 'grid':
       return 'grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3'
     case 'columns':
-      // Newspaper columns: the order runs down the first, then the next.
-      return 'gap-x-8 lg:columns-2 2xl:columns-3'
+      // Newspaper columns: the order runs down the first, then the next. The
+      // phone app's tablet (no sidebar) splits sooner: an iPad upright has two.
+      return phoneScreens() ? 'gap-x-8 min-[700px]:columns-2 xl:columns-3' : 'gap-x-8 lg:columns-2 2xl:columns-3'
     case 'cards':
       return 'gap-2 sm:columns-2 xl:columns-3'
     default:
@@ -611,12 +620,13 @@ function itemClass(layout: Shown, look: Look): string {
  * The website's layout buttons, above the list (James, 2026-11-18). A tap
  * shows that layout; a double tap makes it the one the tab opens on, marked
  * with a dot — the suite's view-button rule (BRANDING.md, Jukebox's tabs).
- * Hidden on a narrow window, where every layout is one column anyway.
+ * Hidden on a narrow window, where every layout is one column anyway; in the
+ * phone app, on a tablet only (TodoView doesn't draw them on a phone).
  */
 function LayoutButtons({ value, dv, onChange }: { value: TodoLayout; dv: UseDefaultView<TodoLayout>; onChange: (v: TodoLayout) => void }) {
   const t = useT()
   return (
-    <div role="group" aria-label={t('todo.layout')} className="hidden items-center rounded-xl border border-slate-800 p-0.5 md:inline-flex">
+    <div role="group" aria-label={t('todo.layout')} className="hidden items-center rounded-xl border border-slate-800 p-0.5 min-[700px]:inline-flex">
       {TODO_LAYOUTS.map((v) => {
         const name = layoutName(t, v)
         const on = value === v

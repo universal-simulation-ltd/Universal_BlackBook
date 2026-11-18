@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components -- hooks and helpers live beside the components that use them; hot reload of these few files is not worth splitting them */
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
-import { useDefaultView, type AboutAppConfig } from '@unisim/sdk'
+import { useDefaultView, useMediaQuery, type AboutAppConfig } from '@unisim/sdk'
 // Generated — `npm run credits` after any dependency change. Never edit it by
 // hand: it is read off the installed tree, so a hand-kept list drifts from the
 // lockfile the first time anyone upgrades anything, and a credits list naming a
@@ -28,7 +28,7 @@ export const REPO_URL = 'https://github.com/universal-simulation-ltd/Universal_B
 /** The landing screen's tabs (lib/tabs.ts). Lists, To-do and Notes each follow their switch. */
 export { TABS, type Tab } from './lib/tabs'
 import { TABS, type Tab } from './lib/tabs'
-import { TODO_LAYOUT_DEFAULT, TODO_LAYOUT_VIEW, TODO_LAYOUTS, type TodoLayout } from './lib/todoLayout'
+import { TABLET_QUERY, TODO_LAYOUT_DEFAULT, TODO_LAYOUT_VIEW, TODO_LAYOUTS, type TodoLayout } from './lib/todoLayout'
 const TAB_KEYS: Record<Tab, Key> = { contacts: 'tab_contacts', lists: 'tab_lists', todos: 'tab_todos', notes: 'tab_notes' }
 /** A tab's name, in the language on screen. */
 export const tabName = (t: Translator, tab: Tab) => t(TAB_KEYS[tab])
@@ -42,7 +42,7 @@ export const PREFERENCE_ROWS = (
     <EmailListsPreference />
     <OpensOnPreference />
     {/* The phone's To-do is always its one-column list. */}
-    {!phoneScreens() && <TodoLayoutPreference />}
+    <TodoLayoutPreference />
     <TabOrderPreference />
     <FormFieldsPreference />
     {/* The phone has its own row in Tune ▸ Your book. */}
@@ -269,14 +269,16 @@ function OpensOnPreference() {
 /**
  * Tune this app ▸ To-do layout (2026-11-18): the double-tapped default of the
  * To-do tab's layout buttons, as rows, like Opens on. Only while the To-do tab
- * is on. Choosing List, the app's own default, forgets the stored one.
+ * is on, and in the phone app only on a tablet (a phone has no layouts).
+ * Choosing List, the app's own default, forgets the stored one.
  */
 function TodoLayoutPreference() {
   const todos = useSettingsStore((s) => s.todos)
+  const tablet = useMediaQuery(TABLET_QUERY)
   const t = useT()
   const { defaultView, setDefaultView } = useDefaultView<TodoLayout>(TODO_LAYOUT_VIEW, TODO_LAYOUT_DEFAULT, { views: TODO_LAYOUTS })
   const name = useId()
-  if (!todos) return null
+  if (!todos || (phoneScreens() && !tablet)) return null
   return (
     <fieldset className="mt-3 border-t border-slate-800 pt-3">
       <legend className="sr-only">{t('pref.todo_layout')}</legend>

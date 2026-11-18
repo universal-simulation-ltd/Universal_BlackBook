@@ -90,6 +90,10 @@ html.bb-phone body {
 .bb-main .bb-selectbar {
   top: calc(env(safe-area-inset-top) + var(--bb-bar-h) + 8px);
 }
+/* The To-do tab's List and detail pane (an iPad) sticks below the bar too. */
+.bb-main .bb-detail {
+  top: calc(env(safe-area-inset-top) + var(--bb-bar-h) + 14px);
+}
 .bb-h1 {
   font-family: var(--bb-serif);
   font-size: 30px;

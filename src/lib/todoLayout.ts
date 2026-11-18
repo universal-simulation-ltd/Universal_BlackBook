@@ -5,7 +5,9 @@ import type { Todo } from './todos'
  * work well when some are simple one-liners and others have details and a
  * group of tasks"). Chosen with the layout buttons above the list; a double tap
  * makes one the default (the SDK's useDefaultView, id `todo-layout`), and so
- * does Tune this app ▸ To-do layout. The phone keeps its own one-column list.
+ * does Tune this app ▸ To-do layout. The phone app has them on a tablet (an
+ * iPad, from 700 px across — an iPad mini upright is 744); a phone keeps its
+ * own one-column list of cards.
  *
  * - list:    one column of rows, each only as tall as what is in it
  * - columns: the same rows, flowed into two or three columns
@@ -23,3 +25,6 @@ export const TODO_LAYOUT_VIEW = 'todo-layout'
 export function isQuickTodo(todo: Todo): boolean {
   return !todo.details.trim() && !todo.items?.length
 }
+
+/** Wide enough for the layouts in the phone app: a tablet, not a phone. */
+export const TABLET_QUERY = '(min-width: 700px)'
