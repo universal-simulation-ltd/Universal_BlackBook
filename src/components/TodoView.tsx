@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type FormEvent, type ReactNode, type TouchEvent as ReactTouchEvent } from 'react'
-import { GrowingTextarea } from '@unisim/sdk'
+import { GrowingTextarea, useDefaultView, useMediaQuery, type UseDefaultView } from '@unisim/sdk'
 import { SwipeRow } from './SwipeRow'
 import { useMove } from './MoveTo'
 import { actionSwipe, deleteSwipe, FocusActions, pinSwipe, SelectBar, SwipeGroup, SwipeItem, UndoBar, useHoldSelect, useUndo } from './SwipeActions'
@@ -23,6 +23,7 @@ import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, BtnKey, label, Pl
 import { autoFocusOK } from '../native/kit'
 import { phoneScreens } from '../native/shell'
 import { saveKeyLabel } from '../lib/saveKey'
+import { isQuickTodo, TODO_LAYOUT_DEFAULT, TODO_LAYOUT_VIEW, TODO_LAYOUTS, type TodoLayout } from '../lib/todoLayout'
 
 /**
  * The To-do tab (owner's request, 2026-09-27), there only with App
@@ -116,6 +117,86 @@ export function TodoView() {
   const openSel = useHoldSelect(open.map((x) => x.id), Boolean(kit))
   const doneSel = useHoldSelect(done.map((x) => x.id), Boolean(kit))
 
+  // The website's layout (lib/todoLayout.ts). Opens on the default; a tap on
+  // another button is for this visit, a double tap makes it the default.
+  const layoutDefault = useDefaultView<TodoLayout>(TODO_LAYOUT_VIEW, TODO_LAYOUT_DEFAULT, { views: TODO_LAYOUTS })
+  const [layoutPick, setLayoutPick] = useState<TodoLayout>(layoutDefault.defaultView)
+  // A default chosen in Tune this app while the tab is open shows at once.
+  const shownDefault = useRef(layoutDefault.defaultView)
+  useEffect(() => {
+    if (shownDefault.current === layoutDefault.defaultView) return
+    shownDefault.current = layoutDefault.defaultView
+    setLayoutPick(layoutDefault.defaultView)
+  }, [layoutDefault.defaultView])
+  // The detail pane needs the room; narrower, that layout is the plain list.
+  const wide = useMediaQuery('(min-width: 1024px)')
+  const layout: Shown = phoneScreens() ? 'grid' : layoutPick === 'detail' && !wide ? 'list' : layoutPick
+  // List and detail: the to-do shown in full. The first one until one is picked,
+  // and again once the picked one is ticked off, filtered out or deleted.
+  const [picked, setPicked] = useState<string | null>(null)
+  const current = layout === 'detail' ? (open.find((x) => x.id === picked) ?? open[0]) : undefined
+
+  /** One open to-do, drawn the way `look` says; `list` is the run it sits in. */
+  const openItem = (x: Todo, list: Todo[], i: number, look: Look) => (
+    <li
+      key={x.id}
+      data-todo={x.id}
+      className={`bb-todo relative ${itemClass(layout, look)} ${dropClass(drag, x.id)}`}
+      style={drag?.id === x.id ? { transform: `translate(${drag.dx}px, ${drag.dy}px)`, zIndex: 40 } : undefined}
+    >
+      {openSel.selecting ? (
+        <SwipeItem id={x.id} select={openSel} name={x.title}>
+          <TodoRow todo={x} byId={byId} today={today} look={look} />
+        </SwipeItem>
+      ) : (
+        <SwipeRow
+          open={openRow?.id === x.id ? openRow.side : null}
+          onOpenChange={(side) => setOpenRow(side ? { id: x.id, side } : null)}
+          left={pinSwipe(Boolean(x.pinnedAt), x.title, () => {
+            setOpenRow(null)
+            void setPinned(x.id, !x.pinnedAt)
+          })}
+          right={deleteSwipe(x.title, () => {
+            setOpenRow(null)
+            removeWithUndo(x)
+          })}
+        >
+          <TodoRow
+            todo={x}
+            byId={byId}
+            today={today}
+            look={look}
+            lifted={drag?.id === x.id}
+            current={current?.id === x.id}
+            brief={layout === 'detail'}
+            onOpen={layout === 'detail' ? () => setPicked(x.id) : undefined}
+            onTouchStart={dragStart(x.id)}
+            onGripDown={gripDown(x.id)}
+            extra={
+              <RowActions
+                todo={x}
+                up={i > 0 ? list[i - 1].id : null}
+                down={i < list.length - 1 ? list[i + 1].id : null}
+                onDelete={() => removeWithUndo(x)}
+                onSelect={() => openSel.start(x.id)}
+              />
+            }
+          />
+        </SwipeRow>
+      )}
+    </li>
+  )
+  const openList = (list: Todo[], look: Look, cls: string) => (
+    <ul className={cls} data-across={layout === 'grid' ? '' : undefined} aria-describedby={hintId}>
+      {list.map((x, i) => openItem(x, list, i, look))}
+    </ul>
+  )
+  const quick = layout === 'lanes' ? open.filter(isQuickTodo) : []
+  const bigger = layout === 'lanes' ? open.filter((x) => !isQuickTodo(x)) : []
+  // The done ones: rows, except where the open ones are cards.
+  const doneLook: Look = layout === 'grid' || layout === 'cards' ? 'card' : 'row'
+  const doneCls = listClass(layout === 'detail' || layout === 'lanes' ? 'list' : layout)
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -125,12 +206,15 @@ export function TodoView() {
         </div>
         {/* On the phone the top bar's + does this. */}
         {!phoneScreens() && (
-          <button type="button" className={btnPrimary} onClick={() => edit('new')}>
-            <BtnKey>
-              <PlusIcon />
-            </BtnKey>
-            {t('c.add_new')}
-          </button>
+          <div className="flex items-center gap-2">
+            <LayoutButtons value={layoutPick} dv={layoutDefault} onChange={setLayoutPick} />
+            <button type="button" className={btnPrimary} onClick={() => edit('new')}>
+              <BtnKey>
+                <PlusIcon />
+              </BtnKey>
+              {t('c.add_new')}
+            </button>
+          </div>
         )}
       </div>
 
@@ -194,53 +278,33 @@ export function TodoView() {
             { label: t('c.delete'), danger: true, onClick: (ids) => removeManyWithUndo(open.filter((x) => ids.includes(x.id))) },
           ]}
         />
-        <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3" aria-describedby={hintId}>
-          {open.map((x, i) => (
-            <li
-              key={x.id}
-              data-todo={x.id}
-              className={`bb-todo relative ${dropClass(drag, x.id)}`}
-              style={drag?.id === x.id ? { transform: `translateY(${drag.dy}px)`, zIndex: 40 } : undefined}
-            >
-              {openSel.selecting ? (
-                <SwipeItem id={x.id} select={openSel} name={x.title}>
-                  <TodoRow todo={x} byId={byId} today={today} />
-                </SwipeItem>
-              ) : (
-              <SwipeRow
-                open={openRow?.id === x.id ? openRow.side : null}
-                onOpenChange={(side) => setOpenRow(side ? { id: x.id, side } : null)}
-                left={pinSwipe(Boolean(x.pinnedAt), x.title, () => {
-                  setOpenRow(null)
-                  void setPinned(x.id, !x.pinnedAt)
-                })}
-                right={deleteSwipe(x.title, () => {
-                  setOpenRow(null)
-                  removeWithUndo(x)
-                })}
-              >
-                <TodoRow
-                  todo={x}
-                  byId={byId}
-                  today={today}
-                  lifted={drag?.id === x.id}
-                  onTouchStart={dragStart(x.id)}
-                  onGripDown={gripDown(x.id)}
-                  extra={
-                    <RowActions
-                      todo={x}
-                      up={i > 0 ? open[i - 1].id : null}
-                      down={i < open.length - 1 ? open[i + 1].id : null}
-                      onDelete={() => removeWithUndo(x)}
-                      onSelect={() => openSel.start(x.id)}
-                    />
-                  }
-                />
-              </SwipeRow>
-              )}
-            </li>
-          ))}
-        </ul>
+        {layout === 'detail' ? (
+          <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] items-start gap-6">
+            {openList(open, 'row', listClass('list'))}
+            {/* Stays in sight while the list scrolls under it. */}
+            <aside className="sticky top-4" aria-live="polite">
+              {current && <TodoDetail key={current.id} todo={current} byId={byId} today={today} />}
+            </aside>
+          </div>
+        ) : layout === 'lanes' ? (
+          // Only the lanes with something in them; one alone takes the width.
+          <div className={`grid items-start gap-6 ${quick.length && bigger.length ? 'md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]' : ''}`}>
+            {quick.length > 0 && (
+              <section>
+                <h2 className="mb-1 px-2 text-xs font-semibold text-slate-500">{t('todo.lane_quick')}</h2>
+                {openList(quick, 'row', listClass('list'))}
+              </section>
+            )}
+            {bigger.length > 0 && (
+              <section>
+                <h2 className="mb-1 px-1 text-xs font-semibold text-slate-500">{t('todo.lane_bigger')}</h2>
+                {openList(bigger, 'card', 'space-y-2')}
+              </section>
+            )}
+          </div>
+        ) : (
+          openList(open, layout === 'grid' || layout === 'cards' ? 'card' : 'row', listClass(layout))
+        )}
         </>
       )}
       <p id={hintId} className="sr-only">
@@ -261,7 +325,7 @@ export function TodoView() {
           the drawer and it is simply the first of the done ones. */}
       {done.length > 0 && !showDone && (
         <SwipeGroup>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          <div className={doneCls}>
             <SwipeItem
               id={done[0].id}
               name={done[0].title}
@@ -269,7 +333,7 @@ export function TodoView() {
               right={deleteSwipe(done[0].title, () => removeWithUndo(done[0]))}
               focus={[{ label: t('todo.delete_label', { title: done[0].title }), onClick: () => removeWithUndo(done[0]) }]}
             >
-              <TodoRow todo={done[0]} byId={byId} today={today} />
+              <TodoRow todo={done[0]} byId={byId} today={today} look={doneLook} />
             </SwipeItem>
           </div>
         </SwipeGroup>
@@ -313,9 +377,9 @@ export function TodoView() {
                 ]}
               />
             </div>
-            <ul id={doneId} className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            <ul id={doneId} className={`mt-2 ${doneCls}`}>
               {done.map((x) => (
-                <li key={x.id}>
+                <li key={x.id} className={itemClass(layout, doneLook)}>
                   {/* Done ones swipe too: left deletes (with Undo), right
                       puts it back on the list. */}
                   <SwipeItem
@@ -326,7 +390,7 @@ export function TodoView() {
                     right={deleteSwipe(x.title, () => removeWithUndo(x))}
                     focus={[{ label: t('todo.delete_label', { title: x.title }), onClick: () => removeWithUndo(x) }]}
                   >
-                    <TodoRow todo={x} byId={byId} today={today} />
+                    <TodoRow todo={x} byId={byId} today={today} look={doneLook} />
                   </SwipeItem>
                 </li>
               ))}
@@ -341,7 +405,7 @@ export function TodoView() {
   )
 }
 
-type Drag = { id: string; dy: number; target: { id: string; after: boolean; across?: boolean } | null }
+type Drag = { id: string; dx: number; dy: number; target: { id: string; after: boolean; across?: boolean } | null }
 
 /** The orange line where a dragged to-do will land. */
 function dropClass(drag: Drag | null, id: string): string {
@@ -374,9 +438,10 @@ function useTodoDrag(onDrop: (id: string, targetId: string, after: boolean) => v
     for (const el of document.querySelectorAll<HTMLElement>('li[data-todo]')) {
       if (el.dataset.todo === id) continue
       const r = el.getBoundingClientRect()
-      // Cards side by side (the website's grid) go before or after by the
-      // half the pointer is in across; one column, by the half down.
-      const across = (el.parentElement?.clientWidth ?? r.width) > r.width * 1.5
+      // Cards side by side (the phone app's grid on a tablet) go before or
+      // after by the half the pointer is in across; everything else, the
+      // website's column layouts included, runs down, so by the half down.
+      const across = el.parentElement?.dataset.across !== undefined && (el.parentElement?.clientWidth ?? r.width) > r.width * 1.5
       if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom)
         return { id: el.dataset.todo!, across, after: across ? x > r.left + r.width / 2 : y > r.top + r.height / 2 }
     }
@@ -420,7 +485,7 @@ function useTodoDrag(onDrop: (id: string, targetId: string, after: boolean) => v
       e.preventDefault()
       e.stopPropagation()
       if (Math.abs(t.clientY - s.y0) > 6 || Math.abs(t.clientX - s.x0) > 6) moved.current = true
-      setDrag({ id: s.id, dy: t.clientY - s.y0, target: targetAt(t.clientX, t.clientY, s.id) })
+      setDrag({ id: s.id, dx: t.clientX - s.x0, dy: t.clientY - s.y0, target: targetAt(t.clientX, t.clientY, s.id) })
     }
     const end = (e: TouchEvent) => {
       if (st.current?.active) e.stopPropagation()
@@ -443,7 +508,7 @@ function useTodoDrag(onDrop: (id: string, targetId: string, after: boolean) => v
     s.timer = setTimeout(() => {
       s.active = true
       navigator.vibrate?.(12)
-      setDrag({ id, dy: 0, target: null })
+      setDrag({ id, dx: 0, dy: 0, target: null })
     }, 400)
     st.current = s
   }
@@ -451,12 +516,13 @@ function useTodoDrag(onDrop: (id: string, targetId: string, after: boolean) => v
   const gripDown = (id: string) => (e: React.PointerEvent) => {
     if (e.pointerType !== 'mouse' || e.button !== 0) return
     e.preventDefault()
+    const x0 = e.clientX
     const y0 = e.clientY
-    st.current = { id, x0: e.clientX, y0, active: true }
-    setDrag({ id, dy: 0, target: null })
+    st.current = { id, x0, y0, active: true }
+    setDrag({ id, dx: 0, dy: 0, target: null })
     const onMove = (m: PointerEvent) => {
       moved.current = true
-      setDrag({ id, dy: m.clientY - y0, target: targetAt(m.clientX, m.clientY, id) })
+      setDrag({ id, dx: m.clientX - x0, dy: m.clientY - y0, target: targetAt(m.clientX, m.clientY, id) })
     }
     const onUp = () => {
       window.removeEventListener('pointermove', onMove)
@@ -495,11 +561,171 @@ function RowActions({ todo, up, down, onDelete, onSelect }: { todo: Todo; up: st
   )
 }
 
+/** What the tab is showing: one of the website's layouts, or the phone's grid. */
+type Shown = TodoLayout | 'grid'
+/** A to-do drawn as a card (bordered box) or as a row of a list. */
+type Look = 'card' | 'row'
+
+/** The open (and done) list's own classes, per layout. */
+function listClass(layout: Shown): string {
+  switch (layout) {
+    case 'grid':
+      return 'grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3'
+    case 'columns':
+      // Newspaper columns: the order runs down the first, then the next.
+      return 'gap-x-8 lg:columns-2 2xl:columns-3'
+    case 'cards':
+      return 'gap-2 sm:columns-2 xl:columns-3'
+    default:
+      return 'max-w-4xl'
+  }
+}
+
+/** One item's own classes: a row's rule under it, a column's no-split. */
+function itemClass(layout: Shown, look: Look): string {
+  if (look === 'row') return `border-b border-slate-800/70 ${layout === 'columns' ? 'break-inside-avoid' : ''}`
+  return layout === 'cards' ? 'mb-2 break-inside-avoid' : ''
+}
+
+/**
+ * The website's layout buttons, above the list (James, 2026-11-18). A tap
+ * shows that layout; a double tap makes it the one the tab opens on, marked
+ * with a dot — the suite's view-button rule (BRANDING.md, Jukebox's tabs).
+ * Hidden on a narrow window, where every layout is one column anyway.
+ */
+function LayoutButtons({ value, dv, onChange }: { value: TodoLayout; dv: UseDefaultView<TodoLayout>; onChange: (v: TodoLayout) => void }) {
+  const t = useT()
+  return (
+    <div role="group" aria-label={t('todo.layout')} className="hidden items-center rounded-xl border border-slate-800 p-0.5 md:inline-flex">
+      {TODO_LAYOUTS.map((v) => {
+        const name = layoutName(t, v)
+        const on = value === v
+        return (
+          <button
+            key={v}
+            type="button"
+            {...dv.buttonProps(v, name)}
+            aria-label={name}
+            aria-pressed={on}
+            onClick={() => {
+              dv.tap(v)
+              onChange(v)
+            }}
+            className={`relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+              on ? 'bg-orange-500/15 text-orange-300' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+            }`}
+          >
+            <LayoutIcon kind={v} />
+            {dv.defaultView === v && <span aria-hidden className="absolute bottom-0.5 h-1 w-1 rounded-full bg-orange-400" />}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function layoutName(t: ReturnType<typeof useT>, v: TodoLayout): string {
+  return t(`todo.layout_${v}` as const)
+}
+
+/** Each layout's picture, drawn small: what the list will look like. */
+function LayoutIcon({ kind }: { kind: TodoLayout }) {
+  const p = {
+    list: 'M3 4h10M3 8h10M3 12h10',
+    columns: 'M2 4h5M2 8h5M2 12h5M9 4h5M9 8h5M9 12h5',
+    cards: 'M2.5 2.5h5v6h-5zM2.5 11h5v2.5h-5zM9.5 2.5h4v3h-4zM9.5 8h4v5.5h-4z',
+    detail: 'M2 4h4M2 8h4M2 12h4M8.5 2.5h5.5v11H8.5z',
+    lanes: 'M2 4h4M2 8h4M2 12h4M8.5 2.5h5.5v4.5H8.5zM8.5 9.5h5.5v4H8.5z',
+  }[kind]
+  return (
+    <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d={p} />
+    </svg>
+  )
+}
+
+/**
+ * List and detail: the picked to-do in full beside the list — every line of
+ * its details, its group's items to tick, and Edit for the form.
+ */
+function TodoDetail({ todo, byId, today }: { todo: Todo; byId: Map<string, Tag>; today: ReturnType<typeof todayParts> }) {
+  const t = useT()
+  const setDone = useTodoStore((s) => s.setDone)
+  const edit = useTodoStore((s) => s.edit)
+  const chips = todo.tagIds.map((id) => byId.get(id)).filter((x): x is Tag => Boolean(x) && !isList(x!))
+  const days = todo.due ? daysUntil(todo.due, today) : null
+  const progress = groupProgress(todo)
+  const grouped = Boolean(todo.items?.length)
+  const title = todo.title || t('c.untitled')
+  return (
+    <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+      <div className="flex items-start gap-3">
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={false}
+          aria-label={t('todo.mark_done', { title: todo.title })}
+          onClick={() => void setDone(todo.id, true)}
+          className="-m-2.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+        >
+          <Tick on={false} />
+        </button>
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <h2 className="break-words text-lg font-semibold leading-snug text-slate-100">
+            {todo.pinnedAt && <PinMark />}
+            {title}
+          </h2>
+          {todo.due && (
+            <p className={`text-sm font-medium tabular-nums ${days! < 0 ? 'text-rose-300' : days! <= 1 ? 'text-orange-300' : 'text-slate-400'}`}>
+              {dueLabel(todo.due, today)}
+            </p>
+          )}
+          {chips.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {chips.map((c) => (
+                <TagChip key={c.id} name={c.name} colour={c.colour} pattern={c.pattern} />
+              ))}
+            </div>
+          )}
+        </div>
+        <button type="button" className={btnGhost} onClick={() => edit(todo.id)} aria-label={t('todo.edit_label', { title })}>
+          {t('todo.edit')}
+        </button>
+      </div>
+      {todo.details && <p className="mt-4 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-300">{todo.details}</p>}
+      {grouped && progress && (
+        <div className="mt-4 border-t border-slate-800 pt-3">
+          <p className="mb-1 px-2 text-xs font-medium tabular-nums text-slate-500">{t('todo.group_count', { done: progress.done, count: progress.count })}</p>
+          <GroupItems todo={todo} />
+        </div>
+      )}
+      {!todo.details && !grouped && <p className="mt-4 text-sm text-slate-500">{t('todo.detail_empty')}</p>}
+    </div>
+  )
+}
+
+/** The pin before a pinned to-do's name. */
+function PinMark() {
+  const t = useT()
+  return (
+    <span className="mr-1.5 inline-block align-[-2px] text-orange-400" title={t('todo.pinned')}>
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <path d="M9 3h6l-1 6 3 3H7l3-3-1-6ZM12 12v9" />
+      </svg>
+      <span className="sr-only">{t('todo.pinned')}</span>
+    </span>
+  )
+}
+
 function TodoRow({
   todo,
   byId,
   today,
+  look = 'card',
   lifted = false,
+  current = false,
+  brief = false,
+  onOpen,
   onTouchStart,
   onGripDown,
   extra,
@@ -507,7 +733,15 @@ function TodoRow({
   todo: Todo
   byId: Map<string, Tag>
   today: ReturnType<typeof todayParts>
+  /** A bordered card (the phone, Cards, Two lanes' right side) or a list row. */
+  look?: Look
   lifted?: boolean
+  /** List and detail: this is the one shown in full. */
+  current?: boolean
+  /** List and detail: a group's items stay in the pane, its count in the row. */
+  brief?: boolean
+  /** In place of opening the form (List and detail picks it; a double click still edits). */
+  onOpen?: () => void
   onTouchStart?: (e: ReactTouchEvent) => void
   onGripDown?: (e: React.PointerEvent) => void
   extra?: ReactNode
@@ -521,17 +755,44 @@ function TodoRow({
   const progress = groupProgress(todo)
   // A group's items have tick boxes of their own, and a button cannot hold
   // them: the card is drawn by the box around both, the items under the button.
-  const grouped = Boolean(todo.items?.length)
+  const grouped = Boolean(todo.items?.length) && !brief
   const [folded, setFolded] = useFolded(todo.id)
   const edge = lifted ? 'border-orange-400 shadow-2xl' : 'border-slate-800'
+  const row = look === 'row'
+  const countText = brief && progress && progress.count > 0 && (
+    <span className="text-xs font-medium tabular-nums text-slate-500">{t('todo.group_count', { done: progress.done, count: progress.count })}</span>
+  )
+  const dueText = todo.due && !done && (
+    <span className={`font-medium tabular-nums ${days! < 0 ? 'text-rose-300' : days! <= 1 ? 'text-orange-300' : 'text-slate-400'} ${row ? 'text-xs' : 'text-sm'}`}>
+      {dueLabel(todo.due, today)}
+    </span>
+  )
+  const chipRow = chips.length > 0 && (
+    <span className={`flex flex-wrap gap-1.5 ${row ? 'justify-end' : ''}`}>
+      {chips.map((t) => (
+        <TagChip key={t.id} name={t.name} colour={t.colour} pattern={t.pattern} />
+      ))}
+    </span>
+  )
+  const name = (
+    <span className={`min-w-0 break-words font-semibold text-slate-100 ${done ? 'line-through decoration-slate-500' : ''} ${row ? 'flex-1' : ''}`}>
+      {todo.pinnedAt && !done && <PinMark />}
+      {todo.title || t('c.untitled')}
+    </span>
+  )
 
   return (
     // The tick box is a SIBLING of the card button, never inside it — a button
     // in a button is invalid HTML (see ContactRow).
-    <div className={`relative h-full ${grouped ? `flex flex-col rounded-xl border bg-slate-900 ${edge}` : ''}`} onTouchStart={onTouchStart}>
+    <div
+      className={`relative ${row ? (lifted ? 'rounded-lg bg-slate-900 shadow-2xl ring-1 ring-orange-400' : '') : `h-full ${grouped ? `flex flex-col rounded-xl border bg-slate-900 ${edge}` : ''}`}`}
+      onTouchStart={onTouchStart}
+    >
       <button
         type="button"
-        onClick={() => edit(todo.id)}
+        onClick={() => (onOpen ? onOpen() : edit(todo.id))}
+        onDoubleClick={onOpen ? () => edit(todo.id) : undefined}
+        aria-current={current || undefined}
         onKeyDown={(e) => {
           // Alt+↑ / Alt+↓: the keyboard's drag.
           if (!e.altKey || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return
@@ -542,40 +803,42 @@ function TodoRow({
           void useTodoStore.getState().move(todo.id, sib.dataset.todo, e.key === 'ArrowDown')
           requestAnimationFrame(() => (document.querySelector(`li[data-todo="${todo.id}"] button`) as HTMLElement | null)?.focus())
         }}
-        className={`flex w-full flex-col gap-1.5 rounded-xl py-3 pl-12 ${onGripDown ? 'pr-9' : 'pr-3.5'} text-left transition-colors hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
-          done ? 'opacity-60' : ''
-        } ${grouped ? 'rounded-b-none' : `h-full border bg-slate-900 hover:border-slate-700 ${edge}`}`}
+        className={
+          row
+            ? `flex w-full flex-col gap-0.5 rounded-lg py-2 pl-11 ${onGripDown ? 'pr-9' : 'pr-2'} text-left transition-colors hover:bg-slate-800/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+                current ? 'bg-slate-800' : ''
+              } ${done ? 'opacity-60' : ''}`
+            : `flex w-full flex-col gap-1.5 rounded-xl py-3 pl-12 ${onGripDown ? 'pr-9' : 'pr-3.5'} text-left transition-colors hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+                done ? 'opacity-60' : ''
+              } ${grouped ? 'rounded-b-none' : `h-full border bg-slate-900 hover:border-slate-700 ${edge}`}`
+        }
       >
-        <p className={`flex items-start gap-1.5 font-semibold text-slate-100 ${done ? 'line-through decoration-slate-500' : ''}`}>
-          {todo.pinnedAt && !done && (
-            <span className="mt-0.5 shrink-0 text-orange-400" title={t('todo.pinned')}>
-              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M9 3h6l-1 6 3 3H7l3-3-1-6ZM12 12v9" />
-              </svg>
-              <span className="sr-only">{t('todo.pinned')}</span>
+        {row ? (
+          // A row: the name, and on its right the deadline and tags; the
+          // details' first line under it.
+          <>
+            <span className="flex items-baseline gap-3">
+              {name}
+              {(dueText || chipRow || countText) && (
+                <span className="flex shrink-0 flex-wrap items-center justify-end gap-x-3 gap-y-1">
+                  {countText}
+                  {dueText}
+                  {chipRow}
+                </span>
+              )}
             </span>
-          )}
-          <span className="min-w-0 break-words">{todo.title || t('c.untitled')}</span>
-        </p>
-        {todo.details && <p className="line-clamp-2 whitespace-pre-wrap break-words text-sm text-slate-400">{todo.details}</p>}
-        {progress && progress.count > 0 && !grouped && (
-          <p className="text-xs font-medium tabular-nums text-slate-500">{t('todo.group_count', { done: progress.done, count: progress.count })}</p>
-        )}
-        {todo.due && !done && (
-          <p
-            className={`text-sm font-medium tabular-nums ${
-              days! < 0 ? 'text-rose-300' : days! <= 1 ? 'text-orange-300' : 'text-slate-400'
-            }`}
-          >
-            {dueLabel(todo.due, today)}
-          </p>
-        )}
-        {chips.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {chips.map((t) => (
-              <TagChip key={t.id} name={t.name} colour={t.colour} pattern={t.pattern} />
-            ))}
-          </div>
+            {todo.details && <span className="line-clamp-1 break-words text-sm text-slate-400">{todo.details}</span>}
+          </>
+        ) : (
+          <>
+            <p className="flex items-start gap-1.5">{name}</p>
+            {todo.details && <p className="line-clamp-2 whitespace-pre-wrap break-words text-sm text-slate-400">{todo.details}</p>}
+            {progress && progress.count > 0 && !grouped && (
+              <p className="text-xs font-medium tabular-nums text-slate-500">{t('todo.group_count', { done: progress.done, count: progress.count })}</p>
+            )}
+            {dueText && <p>{dueText}</p>}
+            {chipRow && <div>{chipRow}</div>}
+          </>
         )}
       </button>
       <button
@@ -584,7 +847,7 @@ function TodoRow({
         aria-checked={done}
         aria-label={done ? t('todo.mark_undone', { title: todo.title }) : t('todo.mark_done', { title: todo.title })}
         onClick={() => void setDone(todo.id, !done)}
-        className="absolute left-1.5 top-1.5 flex h-10 w-10 items-center justify-center rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+        className={`absolute left-1.5 ${row ? 'top-0' : 'top-1.5'} flex h-10 w-10 items-center justify-center rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400`}
       >
         <Tick on={done} />
       </button>
@@ -596,8 +859,8 @@ function TodoRow({
           aria-expanded={!folded}
           aria-label={t(folded ? 'todo.group_show' : 'todo.group_hide', { title: todo.title || t('c.untitled') })}
           onClick={() => setFolded(todo.id, !folded)}
-          className={`flex min-h-[32px] w-full items-center gap-1.5 pb-1.5 pl-12 pr-3.5 text-left text-xs font-medium tabular-nums text-slate-500 hover:text-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-400 ${
-            folded ? 'rounded-b-xl' : ''
+          className={`flex w-full items-center gap-1.5 text-left text-xs font-medium tabular-nums text-slate-500 hover:text-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-400 ${
+            row ? 'min-h-[28px] rounded-lg pb-1 pl-11 pr-2' : `min-h-[32px] pb-1.5 pl-12 pr-3.5 ${folded ? 'rounded-b-xl' : ''}`
           } ${done ? 'opacity-60' : ''}`}
         >
           <svg viewBox="0 0 16 16" className={`h-3.5 w-3.5 shrink-0 transition-transform ${folded ? '-rotate-90' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -606,13 +869,15 @@ function TodoRow({
           {t('todo.group_count', { done: progress.done, count: progress.count })}
         </button>
       )}
-      {grouped && !folded && <GroupItems todo={todo} />}
+      {grouped && !folded && <GroupItems todo={todo} indent={row} />}
       {/* The website's drag handle (mouse); a touch screen holds the row instead. */}
       {onGripDown && !done && (
         <span
           aria-hidden
           onPointerDown={onGripDown}
-          className="bb-grip absolute right-1 top-1/2 hidden h-10 w-7 -translate-y-1/2 cursor-grab items-center justify-center rounded-md text-slate-500 hover:bg-slate-800 hover:text-slate-200 sm:flex"
+          className={`bb-grip absolute right-1 hidden w-7 cursor-grab items-center justify-center rounded-md text-slate-500 hover:bg-slate-800 hover:text-slate-200 sm:flex ${
+            row ? 'top-0 h-10' : 'top-1/2 h-10 -translate-y-1/2'
+          }`}
         >
           <svg viewBox="0 0 16 16" className="h-4 w-4" fill="currentColor">
             <circle cx="5.5" cy="4" r="1.2" /><circle cx="10.5" cy="4" r="1.2" />
@@ -665,11 +930,12 @@ function matchesTodo(todo: Todo, query: string): boolean {
  * A group's items, each with its own tick box, under the group's card
  * (2026-10-30). Ticking the last one ticks the group off.
  */
-function GroupItems({ todo }: { todo: Todo }) {
+function GroupItems({ todo, indent = false }: { todo: Todo; indent?: boolean }) {
   const t = useT()
   const setItemDone = useTodoStore((s) => s.setItemDone)
   return (
-    <ul className={`space-y-0.5 px-1.5 pb-2 ${todo.doneAt ? 'opacity-60' : ''}`}>
+    // A list row's items sit under its name, not under its tick box.
+    <ul className={`space-y-0.5 pb-2 ${indent ? 'pl-9 pr-1.5' : 'px-1.5'} ${todo.doneAt ? 'opacity-60' : ''}`}>
       {todo.items!.map((item) => {
         const on = item.doneAt !== undefined
         return (
@@ -680,7 +946,7 @@ function GroupItems({ todo }: { todo: Todo }) {
               aria-checked={on}
               aria-label={on ? t('todo.mark_undone', { title: item.title }) : t('todo.mark_done', { title: item.title })}
               onClick={() => void setItemDone(todo.id, item.id, !on)}
-              className="flex min-h-[40px] w-full items-center gap-3 rounded-lg px-2 text-left text-sm transition-colors hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+              className={`flex ${indent ? 'min-h-[32px]' : 'min-h-[40px]'} w-full items-center gap-3 rounded-lg px-2 text-left text-sm transition-colors hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400`}
             >
               <Tick on={on} />
               <span className={`min-w-0 break-words ${on ? 'text-slate-500 line-through decoration-slate-500' : 'text-slate-200'}`}>{item.title}</span>

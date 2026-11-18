@@ -28,6 +28,7 @@ export const REPO_URL = 'https://github.com/universal-simulation-ltd/Universal_B
 /** The landing screen's tabs (lib/tabs.ts). Lists, To-do and Notes each follow their switch. */
 export { TABS, type Tab } from './lib/tabs'
 import { TABS, type Tab } from './lib/tabs'
+import { TODO_LAYOUT_DEFAULT, TODO_LAYOUT_VIEW, TODO_LAYOUTS, type TodoLayout } from './lib/todoLayout'
 const TAB_KEYS: Record<Tab, Key> = { contacts: 'tab_contacts', lists: 'tab_lists', todos: 'tab_todos', notes: 'tab_notes' }
 /** A tab's name, in the language on screen. */
 export const tabName = (t: Translator, tab: Tab) => t(TAB_KEYS[tab])
@@ -40,6 +41,8 @@ export const PREFERENCE_ROWS = (
   <>
     <EmailListsPreference />
     <OpensOnPreference />
+    {/* The phone's To-do is always its one-column list. */}
+    {!phoneScreens() && <TodoLayoutPreference />}
     <TabOrderPreference />
     <FormFieldsPreference />
     {/* The phone has its own row in Tune ▸ Your book. */}
@@ -256,6 +259,42 @@ function OpensOnPreference() {
               onChange={() => setDefaultView(tab === 'contacts' ? null : tab)}
             />
             {tabName(t, tab)}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  )
+}
+
+/**
+ * Tune this app ▸ To-do layout (2026-11-18): the double-tapped default of the
+ * To-do tab's layout buttons, as rows, like Opens on. Only while the To-do tab
+ * is on. Choosing List, the app's own default, forgets the stored one.
+ */
+function TodoLayoutPreference() {
+  const todos = useSettingsStore((s) => s.todos)
+  const t = useT()
+  const { defaultView, setDefaultView } = useDefaultView<TodoLayout>(TODO_LAYOUT_VIEW, TODO_LAYOUT_DEFAULT, { views: TODO_LAYOUTS })
+  const name = useId()
+  if (!todos) return null
+  return (
+    <fieldset className="mt-3 border-t border-slate-800 pt-3">
+      <legend className="sr-only">{t('pref.todo_layout')}</legend>
+      <p aria-hidden className="text-sm font-medium text-slate-200">
+        {t('pref.todo_layout')}
+      </p>
+      <p className="mb-1.5 mt-0.5 text-xs text-slate-400">{t('pref.todo_layout_note')}</p>
+      <div className="grid grid-cols-2 gap-x-4">
+        {TODO_LAYOUTS.map((v) => (
+          <label key={v} className="flex min-h-[36px] items-center gap-3 py-1 text-sm text-slate-200">
+            <input
+              type="radio"
+              name={name}
+              className={radioCls}
+              checked={defaultView === v}
+              onChange={() => setDefaultView(v === TODO_LAYOUT_DEFAULT ? null : v)}
+            />
+            {t(`todo.layout_${v}` as const)}
           </label>
         ))}
       </div>
