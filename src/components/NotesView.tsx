@@ -16,6 +16,8 @@ import { isList } from '../lib/lists'
 import type { Tag } from '../lib/types'
 import { useNoteStore } from '../stores/noteStore'
 import { useBookStore } from '../stores/bookStore'
+import { tagNames } from '../lib/filter'
+import { Elsewhere } from './Elsewhere'
 import { TagChip, TagDot } from './TagChip'
 import { TagCombo } from './TagCombo'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, BtnKey, PlusIcon, tabHeading, TuneGlyph } from './ui'
@@ -63,6 +65,7 @@ export function NotesView() {
   // Tags, as on To-do (2026-11-03): the book's, and only those some note
   // carries are offered as a filter.
   const tags = useBookStore((s) => s.tags)
+  const tagsById = useMemo(() => new Map(tags.map((x) => [x.id, x])), [tags])
   const tagById = useMemo(() => new Map(tags.map((x) => [x.id, x])), [tags])
   const tagFilter = useNoteStore((s) => s.tagFilter)
   const setTagFilter = useNoteStore((s) => s.setTagFilter)
@@ -84,9 +87,12 @@ export function NotesView() {
     tagBox.current?.querySelector('input')?.focus()
   }
   const shown = useMemo(
-    () => sorted.filter((n) => (!active || n.templateId === active) && matchesNoteTags(n, activeTags) && matchesNote(n, query)),
+    () =>
+      sorted.filter(
+        (n) => (!active || n.templateId === active) && matchesNoteTags(n, activeTags) && matchesNote(n, query, query ? tagNames(n.tagIds, tagsById) : ''),
+      ),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- activeTags is derived each render; its content is the key
-    [sorted, query, active, activeTags.join(',')],
+    [sorted, query, active, activeTags.join(','), tagsById],
   )
   const byTemplate = useMemo(() => new Map(templates.map((x) => [x.id, x])), [templates])
   const searching = query.trim() !== ''
@@ -357,7 +363,8 @@ export function NotesView() {
           </div>
         </Modal>
       )}
-
+      {/* Then what the same search finds on the other tabs (James, 2026-11-18). */}
+      {!selecting && <Elsewhere here="notes" query={query} />}
     </div>
   )
 }

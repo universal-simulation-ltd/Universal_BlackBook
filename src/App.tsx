@@ -42,7 +42,7 @@ import { useSettingsStore } from './stores/settingsStore'
 import { useSyncStore } from './stores/syncStore'
 import { useTodoStore } from './stores/todoStore'
 import { useNoteStore } from './stores/noteStore'
-import { useSearchReset } from './stores/searchStore'
+import { useGoTab, useSearchReset } from './stores/searchStore'
 import { usePanelStore } from './stores/panelStore'
 import { AddMenu, APP_ABOUT, availableTabs, LockLink, PREFERENCE_ROWS, REPO_URL, SyncStatus, tabName, TABS, useContactPicker, type Tab } from './appParts'
 import { currentT, useT } from './i18n'
@@ -119,6 +119,17 @@ export default function App() {
   const [tab, setTab] = useState<Tab>(tabDefault.defaultView)
   // …and follows it when it arrives from another device after start-up.
   const pickedTab = useFollowDefaultTab(tabDefault.defaultView, setTab)
+  // A tab asked for from inside another (components/Elsewhere: a to-do found
+  // from the Notes tab opens on To-do).
+  const goN = useGoTab((s) => s.n)
+  useEffect(() => {
+    const want = useGoTab.getState().tab
+    if (!goN || !want) return
+    pickedTab()
+    useSearchReset.getState().clearAll()
+    setTab(want)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only a new request moves the tab
+  }, [goN])
   const onLists = emailLists && tab === 'lists'
   const onTodos = todosOn && tab === 'todos'
   const onNotes = notesOn && tab === 'notes'

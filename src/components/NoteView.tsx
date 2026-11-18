@@ -239,6 +239,7 @@ function NoteView({ id, onBinned }: { id: string; onBinned: (note: Note) => void
     if (areaRef.current) growToFit(areaRef.current)
   }, [draft, typing])
   useTypingRoom(areaRef, Boolean(kit))
+  const keyboardRoom = useKeyboardRoom(typing && Boolean(kit), areaRef)
   // A tap anywhere in the page's empty room types into the text, not only a
   // tap on the words already there (James, 2026-11-03: "clicking anywhere
   // below the title should open the details"). Empty room is the scroller
@@ -421,6 +422,8 @@ function NoteView({ id, onBinned }: { id: string; onBinned: (note: Note) => void
             )}
           </div>
         )}
+        {/* Room under the text for the keyboard to cover (useKeyboardRoom). */}
+        {typing && keyboardRoom > 0 && <div aria-hidden style={{ height: keyboardRoom }} />}
       </div>
 
       <ReminderList reminders={note.reminders} onChange={(next) => void patch(note.id, { reminders: next })} />
@@ -1176,3 +1179,37 @@ const TemplateGlyph = () => (
     <path d="M8 9h8M8 13h3M13 13h3M8 17h3M13 17h3" />
   </svg>
 )
+
+/**
+ * How much of the page the on-screen keyboard covers, while `on` (James,
+ * 2026-11-18: "when typing on the note and then get to the bottom move the
+ * page up so it doesn't go behind the onscreen keyboard"). useTypingRoom
+ * scrolls the line being typed above the keyboard, but on iOS the keyboard
+ * lies OVER the web view rather than shrinking it, so at the end of a note
+ * there was nothing left to scroll: the last lines stayed under the keys. A
+ * spacer this tall under the text gives the scroll that room. Where the
+ * keyboard does shrink the page (Android), the two heights match and it is 0.
+ */
+function useKeyboardRoom(on: boolean, area: React.RefObject<HTMLTextAreaElement>): number {
+  const [room, setRoom] = useState(0)
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!on || !vv) {
+      setRoom(0)
+      return
+    }
+    const read = () => {
+      const covered = Math.round(window.innerHeight - vv.height)
+      setRoom(covered > 80 ? covered + 24 : 0)
+    }
+    read()
+    vv.addEventListener('resize', read)
+    return () => vv.removeEventListener('resize', read)
+  }, [on])
+  // The room arrives a render after the keyboard: ask useTypingRoom to look
+  // again now that there is somewhere to scroll to.
+  useEffect(() => {
+    if (room > 0 && document.activeElement === area.current) area.current?.dispatchEvent(new Event('keyup'))
+  }, [room, area])
+  return room
+}

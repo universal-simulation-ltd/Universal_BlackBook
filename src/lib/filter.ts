@@ -175,7 +175,7 @@ export function digits(s: string): string {
  * "sam berlin" finds Sam whose notes mention Berlin, which a single-field
  * search would not, and typing a second word always narrows rather than widens.
  */
-export function matchesText(contact: Contact, text: string): boolean {
+export function matchesText(contact: Contact, text: string, extra = ''): boolean {
   const terms = fold(text).split(/\s+/).filter(Boolean)
   if (terms.length === 0) return true
   // The FORMATTED birthday, so "june" matches and "--06-04" is not what a
@@ -193,6 +193,9 @@ export function matchesText(contact: Contact, text: string): boolean {
     // English too, whatever the language on screen: "june" keeps finding June.
     fold(formatBirthday(contact.birthdate, 'en-GB')),
     fold(contact.birthdate ?? ''),
+    // Its tags' names (`tagNames`): a search for "Golf" finds everyone tagged
+    // Golf, whatever else is written on them.
+    fold(extra),
   ].join(' ')
   // The number's digits are searched separately from its text, and the term is
   // reduced the same way, so how either side was punctuated stops mattering.
@@ -208,6 +211,16 @@ export function matchesText(contact: Contact, text: string): boolean {
 }
 
 /** Tag filter: OR within the selection — a person carrying ANY chosen tag. */
+/**
+ * The names of the tags these ids point at, as one string to search in
+ * (James, 2026-11-18: "you tagged a contact and a note the same and then
+ * search the name of the tag"). Lists count too: a list's name finds who is on it.
+ */
+export function tagNames(ids: readonly string[] | undefined, byId: ReadonlyMap<string, { name: string }>): string {
+  if (!ids?.length) return ''
+  return ids.map((id) => byId.get(id)?.name ?? '').join('\n')
+}
+
 export function matchesTags(contact: Contact, tagIds: string[], listIds: Set<string> = new Set()): boolean {
   if (tagIds.length === 0) return true
   if (tagIds.includes(UNTAGGED) && untagged(contact, listIds)) return true
@@ -276,6 +289,7 @@ export function runQuery(
   query: Query,
   today: Today,
   listIds: Set<string> = new Set(),
+  tagsById?: ReadonlyMap<string, { name: string }>,
 ): Contact[] {
   const searching = isSearching(query)
   // ⚠️ Lists are not tags and have no chip in the filter panel any more
@@ -286,7 +300,7 @@ export function runQuery(
   return contacts
     .filter(
       (c) =>
-        matchesText(c, query.text) &&
+        matchesText(c, query.text, tagsById && query.text ? tagNames(c.tagIds, tagsById) : '') &&
         matchesTags(c, tagIds, listIds) &&
         // ⚠️ Searching sees past hidden tags, for the reason `isSearching`
         // gives: hiding the email lists tidies the list you scroll, and typing

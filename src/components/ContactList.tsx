@@ -1,4 +1,5 @@
 import { useId, useMemo, useRef, useState } from 'react'
+import { Elsewhere } from './Elsewhere'
 import { addContactFromSearch } from './addFromSearch'
 import { saveBlob } from '@unisim/media/save'
 import {
@@ -187,7 +188,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
   const today = useMemo(() => todayParts(), [])
   const byId = useMemo(() => new Map(tags.map((t) => [t.id, t])), [tags])
   const listIds = useMemo(() => listIdsOf(tags), [tags])
-  const queried = useMemo(() => runQuery(contacts, query, today, listIds), [contacts, query, today, listIds])
+  const queried = useMemo(() => runQuery(contacts, query, today, listIds, byId), [contacts, query, today, listIds, byId])
   const pins = useMemo(() => pinnedContacts(contacts), [contacts])
   // Unpinning the last one closes the view by itself.
   const showingPins = pinsFor === query && pins.length > 0
@@ -301,6 +302,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
             : t.plural('list.no_match', contacts.length)}
         </p>
       </div>
+      {!birthdays && <Elsewhere here="contacts" query={query.text} />}
       </>
     )
   }
@@ -662,6 +664,8 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
         />
       )}
 
+      {/* Then what the same search finds on the other tabs (James, 2026-11-18). */}
+      {!birthdays && !selecting && <div className="mt-6"><Elsewhere here="contacts" query={query.text} /></div>}
       {moveTo.ui}
       {undoDelete.item && <UndoBar title={undoDelete.item[0]?.name || ''} onUndo={() => void undoDelete.undo()} />}
       {pending && (

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { isList } from '../lib/lists'
 import { SWATCHES, swatch } from '../lib/palette'
+import { CustomColour } from './CustomColour'
 import { PATTERNS } from '../lib/patterns'
 import { TagMark } from './TagMark'
 import { useBookStore } from '../stores/bookStore'
@@ -164,6 +165,7 @@ export function TagManager({ onClose }: { onClose: () => void }) {
                         style={{ background: s.dot }}
                       />
                     ))}
+                    <CustomColour value={c.colour} onPick={(hex) => void recolourTag(c.id, hex)} label={t('tags.custom_colour_for', { name: c.name })} />
                   </div>
                   {/* The pattern, any colour (2026-10-25): two tags of one
                       colour told apart by shape, colour-blind or not. */}

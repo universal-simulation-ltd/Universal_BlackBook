@@ -10,3 +10,16 @@ export const useSearchReset = create<{ epoch: number; clearAll: () => void }>((s
   epoch: 0,
   clearAll: () => set((s) => ({ epoch: s.epoch + 1 })),
 }))
+
+export type GoTab = 'contacts' | 'lists' | 'todos' | 'notes'
+
+/**
+ * A tab asked for from inside another (a to-do found by the Notes tab's search
+ * opens on To-do: components/Elsewhere). Both shells (App, NativeApp) follow
+ * `n`: a new number is a new request, even for the tab asked for last time.
+ */
+export const useGoTab = create<{ tab: GoTab | null; n: number; go: (tab: GoTab) => void }>((set) => ({
+  tab: null,
+  n: 0,
+  go: (tab) => set((s) => ({ tab, n: s.n + 1 })),
+}))

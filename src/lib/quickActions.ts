@@ -8,17 +8,25 @@
 // choices are the same kind of thing on both (a reminder, a copy, a share), but
 // each keeps its own order and its own pick: "don't sync the order and choice".
 
-export const QUICK_SLOTS = 4
+//
+// 2026-11-18 (James): "have first two defined, the third as a '+' so user sees
+// they can define it and the fourth as a … so they can quickly choose a
+// different quick action one time", and the first two different for contacts
+// and notes. So three places of the person's own — two buttons and a "+" to
+// start — then a fixed "…" that runs any of the rest once without placing it
+// (components/QuickActions). The "…" is not a slot: it is never stored, moved
+// or binned.
+export const QUICK_SLOTS = 3
 
 // 'tags' (2026-11-05) is offered by a "+", never placed by default, so a row
 // someone has already arranged is left exactly as it was.
 export const NOTE_ACTIONS = ['contacts', 'tags', 'place', 'remind', 'copy', 'copyDelete', 'share'] as const
 export type QuickAction = (typeof NOTE_ACTIONS)[number]
-export const DEFAULT_QUICK_ACTIONS: readonly QuickAction[] = ['contacts', 'place', 'remind']
+export const DEFAULT_QUICK_ACTIONS: readonly QuickAction[] = ['contacts', 'remind']
 
 export const CONTACT_ACTIONS = ['call', 'message', 'email', 'place', 'tags', 'share', 'remind', 'copy', 'pin'] as const
 export type ContactAction = (typeof CONTACT_ACTIONS)[number]
-export const DEFAULT_CONTACT_ACTIONS: readonly ContactAction[] = ['call', 'message', 'share']
+export const DEFAULT_CONTACT_ACTIONS: readonly ContactAction[] = ['call', 'message']
 
 /**
  * A row is its four places in order, a button or `null` for a "+" (James,
@@ -32,7 +40,10 @@ export type Slots<K extends string> = (K | null)[]
  * four places exactly. Unset is the default. An unknown or repeated button is
  * dropped, not left as a gap.
  */
-export function normaliseActions<K extends string>(raw: unknown, all: readonly K[], fallback: readonly K[]): Slots<K> {
+export function normaliseActions<K extends string>(raw: unknown, all: readonly K[], fallback: readonly K[], oldDefault?: readonly (K | null)[]): Slots<K> {
+  // The four-place default, never rearranged, is read as unset: the new
+  // default (two buttons and a "+") is what that person would have had.
+  if (Array.isArray(raw) && oldDefault && raw.length === oldDefault.length && raw.every((k, i) => k === oldDefault[i])) raw = undefined
   const list: Slots<K> = Array.isArray(raw) ? [] : [...fallback]
   if (Array.isArray(raw)) {
     for (const x of raw) {
@@ -40,7 +51,11 @@ export function normaliseActions<K extends string>(raw: unknown, all: readonly K
       else if ((all as readonly unknown[]).includes(x) && !list.includes(x as K)) list.push(x as K)
     }
   }
-  const row = list.slice(0, QUICK_SLOTS)
+  // A row kept from when there were four places can hold one button too
+  // many: its gaps go first, so every button chosen on purpose that fits is
+  // kept, and the one left over is still a tap away under the "…".
+  const buttons = list.filter((k) => k !== null).length
+  const row = (buttons >= QUICK_SLOTS ? list.filter((k) => k !== null) : list).slice(0, QUICK_SLOTS)
   while (row.length < QUICK_SLOTS) row.push(null)
   return row
 }
@@ -52,9 +67,10 @@ export function normaliseActions<K extends string>(raw: unknown, all: readonly K
  */
 export function normaliseQuickActions(raw: unknown): Slots<QuickAction> {
   const over = Array.isArray(raw) && raw.filter((k) => k !== null).length > QUICK_SLOTS && raw.includes('copyDelete')
-  return normaliseActions(over ? (raw as unknown[]).filter((k) => k !== 'copy') : raw, NOTE_ACTIONS, DEFAULT_QUICK_ACTIONS)
+  return normaliseActions(over ? (raw as unknown[]).filter((k) => k !== 'copy') : raw, NOTE_ACTIONS, DEFAULT_QUICK_ACTIONS, ['contacts', 'place', 'remind', null])
 }
-export const normaliseContactActions = (raw: unknown) => normaliseActions(raw, CONTACT_ACTIONS, DEFAULT_CONTACT_ACTIONS)
+export const normaliseContactActions = (raw: unknown) =>
+  normaliseActions(raw, CONTACT_ACTIONS, DEFAULT_CONTACT_ACTIONS, ['call', 'message', 'share', null])
 
 /**
  * The held place (a button, or a "+": James, 2026-10-27 "tap and hold to drag

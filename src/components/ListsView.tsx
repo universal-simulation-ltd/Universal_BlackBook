@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Elsewhere } from './Elsewhere'
 import { actionSwipe, deleteSwipe, removeSwipe, SelectBar, SwipeGroup, SwipeItem, UndoBar, useHoldSelect, useUndo } from './SwipeActions'
 import type { TagUndo } from '../stores/bookStore'
 import { toRecipients } from '../lib/emailList'
@@ -177,6 +178,8 @@ export function ListsView() {
           onUndo={() => void undo.undo()}
         />
       )}
+      {/* What the same search finds on the other tabs (James, 2026-11-18). */}
+      <Elsewhere here="lists" query={query} />
     </div>
   )
 }

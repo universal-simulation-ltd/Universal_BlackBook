@@ -7,17 +7,19 @@ import { usePhoneKit } from '../native/kit'
 import type { Side } from '../lib/swipe'
 import { todayParts } from '../lib/birthday'
 import { isList } from '../lib/lists'
-import { compareDone, compareOpen, daysUntil, dueLabel, groupProgress, matchesTodoTags, type Todo, type TodoItem } from '../lib/todos'
+import { compareDone, compareOpen, daysUntil, dueLabel, dueShort, groupProgress, matchesTodo, matchesTodoTags, type Todo, type TodoItem } from '../lib/todos'
 import { newId } from '../lib/id'
 import type { Tag } from '../lib/types'
 import { useBookStore } from '../stores/bookStore'
 import { useTodoStore, type TodoDraft } from '../stores/todoStore'
+import { useSettingsStore } from '../stores/settingsStore'
+import { listenForShake } from '../lib/shake'
 import { Modal } from './Modal'
-import { TagChip } from './TagChip'
+import { TagChip, TagDot } from './TagChip'
 import { TagPicker } from './TagPicker'
 import { TagCombo } from './TagCombo'
 import { AddTyped, ListSearch } from './ListSearch'
-import { matchesNote } from '../lib/notes'
+import { Elsewhere } from './Elsewhere'
 import { useT } from '../i18n'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, BtnKey, label, PlusIcon, tabHeading, textareaCls } from './ui'
 import { autoFocusOK } from '../native/kit'
@@ -101,19 +103,32 @@ export function TodoView() {
   const open = useMemo(
     () =>
       todos
-        .filter((t) => !t.doneAt && matchesTodoTags(t, activeFilter) && matchesTodo(t, query))
+        .filter((t) => !t.doneAt && matchesTodoTags(t, activeFilter) && matchesTodo(t, query, byId))
         .sort(compareOpen),
-    [todos, activeFilter, query],
+    [todos, activeFilter, query, byId],
   )
   const done = useMemo(
     () =>
       todos
-        .filter((t) => t.doneAt && matchesTodoTags(t, activeFilter) && matchesTodo(t, query))
+        .filter((t) => t.doneAt && matchesTodoTags(t, activeFilter) && matchesTodo(t, query, byId))
         .sort(compareDone),
-    [todos, activeFilter, query],
+    [todos, activeFilter, query, byId],
   )
 
   const kit = usePhoneKit()
+  // Shake to clear the done ones (Tune this app, off to start), with Undo.
+  const shakeClear = useSettingsStore((s) => s.shakeClear)
+  const removeManyRef = useRef(removeManyWithUndo)
+  removeManyRef.current = removeManyWithUndo
+  useEffect(() => {
+    if (!shakeClear || !kit) return
+    return listenForShake(() => {
+      const gone = useTodoStore.getState().todos.filter((x) => x.doneAt)
+      if (!gone.length) return
+      navigator.vibrate?.(30)
+      removeManyRef.current(gone)
+    })
+  }, [shakeClear, kit])
   const openSel = useHoldSelect(open.map((x) => x.id), Boolean(kit))
   const doneSel = useHoldSelect(done.map((x) => x.id), Boolean(kit))
 
@@ -319,25 +334,6 @@ export function TodoView() {
         />
       )}
 
-      {/* The last one ticked off stays in sight, struck through, above the
-          closed Done drawer (James, 2026-11-12: "so it can be easily
-          reverted") — tap its box, or swipe right, to put it back. Open
-          the drawer and it is simply the first of the done ones. */}
-      {done.length > 0 && !showDone && (
-        <SwipeGroup>
-          <div className={doneCls}>
-            <SwipeItem
-              id={done[0].id}
-              name={done[0].title}
-              left={actionSwipe('undone', t('todo.not_done'), t('todo.mark_undone', { title: done[0].title }), () => void setDone(done[0].id, false))}
-              right={deleteSwipe(done[0].title, () => removeWithUndo(done[0]))}
-              focus={[{ label: t('todo.delete_label', { title: done[0].title }), onClick: () => removeWithUndo(done[0]) }]}
-            >
-              <TodoRow todo={done[0]} byId={byId} today={today} look={doneLook} />
-            </SwipeItem>
-          </div>
-        </SwipeGroup>
-      )}
       {done.length > 0 && (
         <section className="border-t border-slate-800 pt-3">
           <div className="flex items-center justify-between gap-2">
@@ -364,6 +360,27 @@ export function TodoView() {
               </button>
             )}
           </div>
+          {/* The last one ticked off stays in sight, struck through, under
+              the closed Done drawer's title (James, 2026-11-12: "so it can be
+              easily reverted"; 2026-11-18: "move the recently done item
+              beneath the done collapsible") — tap its box, or swipe right,
+              to put it back. Open the drawer and it is simply the first of
+              the done ones. */}
+          {!showDone && (
+            <SwipeGroup>
+              <div className={`mt-2 ${doneCls}`}>
+                <SwipeItem
+                  id={done[0].id}
+                  name={done[0].title}
+                  left={actionSwipe('undone', t('todo.not_done'), t('todo.mark_undone', { title: done[0].title }), () => void setDone(done[0].id, false))}
+                  right={deleteSwipe(done[0].title, () => removeWithUndo(done[0]))}
+                  focus={[{ label: t('todo.delete_label', { title: done[0].title }), onClick: () => removeWithUndo(done[0]) }]}
+                >
+                  <TodoRow todo={done[0]} byId={byId} today={today} look={doneLook} />
+                </SwipeItem>
+              </div>
+            </SwipeGroup>
+          )}
           {showDone && (
             <SwipeGroup>
             <div className="mt-2">
@@ -399,6 +416,9 @@ export function TodoView() {
           )}
         </section>
       )}
+
+      {/* Then what the same search finds on the other tabs (James, 2026-11-18). */}
+      {!openSel.selecting && !doneSel.selecting && <Elsewhere here="todos" query={query} />}
 
       {editing && <TodoForm key={editing} id={editing} />}
     </div>
@@ -762,24 +782,37 @@ function TodoRow({
   const countText = brief && progress && progress.count > 0 && (
     <span className="text-xs font-medium tabular-nums text-slate-500">{t('todo.group_count', { done: progress.done, count: progress.count })}</span>
   )
+  // Kept to one line (James, 2026-11-18: "do best to keep things on one
+  // line … the due date could be a clock emoji and X day(s)"): ⏰ and the
+  // days, the tags as their dots (TagDot opens out to the name on hover, and
+  // says it on a long press), all on the name's line. The full deadline is
+  // what a screen reader hears.
   const dueText = todo.due && !done && (
-    <span className={`font-medium tabular-nums ${days! < 0 ? 'text-rose-300' : days! <= 1 ? 'text-orange-300' : 'text-slate-400'} ${row ? 'text-xs' : 'text-sm'}`}>
-      {dueLabel(todo.due, today)}
+    <span
+      title={dueLabel(todo.due, today)}
+      className={`whitespace-nowrap text-xs font-medium tabular-nums ${days! < 0 ? 'text-rose-300' : days! <= 1 ? 'text-orange-300' : 'text-slate-400'}`}
+    >
+      <span aria-hidden>⏰ {dueShort(todo.due, today)}</span>
+      <span className="sr-only">{dueLabel(todo.due, today)}</span>
     </span>
   )
-  const chipRow = chips.length > 0 && (
-    <span className={`flex flex-wrap gap-1.5 ${row ? 'justify-end' : ''}`}>
+  const dots = chips.length > 0 && (
+    <span className="flex flex-wrap items-center justify-end">
       {chips.map((t) => (
-        <TagChip key={t.id} name={t.name} colour={t.colour} pattern={t.pattern} />
+        <TagDot key={t.id} name={t.name} colour={t.colour} pattern={t.pattern} />
       ))}
     </span>
   )
   const name = (
-    <span className={`min-w-0 break-words font-semibold text-slate-100 ${done ? 'line-through decoration-slate-500' : ''} ${row ? 'flex-1' : ''}`}>
+    <span className={`min-w-0 flex-1 break-words font-semibold text-slate-100 ${done ? 'line-through decoration-slate-500' : ''}`}>
       {todo.pinnedAt && !done && <PinMark />}
       {todo.title || t('c.untitled')}
     </span>
   )
+  // A group's fold sits at the end of its name's line, as a button of its own
+  // beside the card's (a button cannot hold one); the name's button leaves it
+  // the room.
+  const foldRoom = grouped ? (onGripDown ? 'pr-[6.5rem]' : 'pr-[4.5rem]') : onGripDown ? 'pr-9' : row ? 'pr-2' : 'pr-3.5'
 
   return (
     // The tick box is a SIBLING of the card button, never inside it — a button
@@ -805,41 +838,27 @@ function TodoRow({
         }}
         className={
           row
-            ? `flex w-full flex-col gap-0.5 rounded-lg py-2 pl-11 ${onGripDown ? 'pr-9' : 'pr-2'} text-left transition-colors hover:bg-slate-800/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+            ? `flex w-full flex-col gap-0.5 rounded-lg py-2 pl-11 ${foldRoom} text-left transition-colors hover:bg-slate-800/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
                 current ? 'bg-slate-800' : ''
               } ${done ? 'opacity-60' : ''}`
-            : `flex w-full flex-col gap-1.5 rounded-xl py-3 pl-12 ${onGripDown ? 'pr-9' : 'pr-3.5'} text-left transition-colors hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+            : `flex w-full flex-col gap-0.5 rounded-xl py-2.5 pl-12 ${foldRoom} text-left transition-colors hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
                 done ? 'opacity-60' : ''
-              } ${grouped ? 'rounded-b-none' : `h-full border bg-slate-900 hover:border-slate-700 ${edge}`}`
+              } ${grouped ? (folded ? '' : 'rounded-b-none') : `h-full border bg-slate-900 hover:border-slate-700 ${edge}`}`
         }
       >
-        {row ? (
-          // A row: the name, and on its right the deadline and tags; the
-          // details' first line under it.
-          <>
-            <span className="flex items-baseline gap-3">
-              {name}
-              {(dueText || chipRow || countText) && (
-                <span className="flex shrink-0 flex-wrap items-center justify-end gap-x-3 gap-y-1">
-                  {countText}
-                  {dueText}
-                  {chipRow}
-                </span>
-              )}
+        {/* The name, and on its right the deadline and the tags' dots; the
+            details' first line under it. */}
+        <span className={`flex items-center gap-2.5 ${row ? '' : 'min-h-[24px]'}`}>
+          {name}
+          {(dueText || dots || countText) && (
+            <span className="flex shrink-0 items-center justify-end gap-x-2">
+              {countText}
+              {dueText}
+              {dots}
             </span>
-            {todo.details && <span className="line-clamp-1 break-words text-sm text-slate-400">{todo.details}</span>}
-          </>
-        ) : (
-          <>
-            <p className="flex items-start gap-1.5">{name}</p>
-            {todo.details && <p className="line-clamp-2 whitespace-pre-wrap break-words text-sm text-slate-400">{todo.details}</p>}
-            {progress && progress.count > 0 && !grouped && (
-              <p className="text-xs font-medium tabular-nums text-slate-500">{t('todo.group_count', { done: progress.done, count: progress.count })}</p>
-            )}
-            {dueText && <p>{dueText}</p>}
-            {chipRow && <div>{chipRow}</div>}
-          </>
-        )}
+          )}
+        </span>
+        {todo.details && <span className="line-clamp-1 break-words text-sm text-slate-400">{todo.details}</span>}
       </button>
       <button
         type="button"
@@ -847,26 +866,26 @@ function TodoRow({
         aria-checked={done}
         aria-label={done ? t('todo.mark_undone', { title: todo.title }) : t('todo.mark_done', { title: todo.title })}
         onClick={() => void setDone(todo.id, !done)}
-        className={`absolute left-1.5 ${row ? 'top-0' : 'top-1.5'} flex h-10 w-10 items-center justify-center rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400`}
+        className={`absolute left-1.5 ${row ? 'top-0' : 'top-0.5'} flex h-10 w-10 items-center justify-center rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400`}
       >
         <Tick on={done} />
       </button>
       {grouped && progress && (
         // The group's count is also its fold (James, 2026-11-11: "when there's
-        // a grouped todo make it collapsible"). Remembered on this device.
+        // a grouped todo make it collapsible"), on the name's line since
+        // 2026-11-18 ("the groups could just have the chevron on title line").
+        // Remembered on this device.
         <button
           type="button"
           aria-expanded={!folded}
           aria-label={t(folded ? 'todo.group_show' : 'todo.group_hide', { title: todo.title || t('c.untitled') })}
           onClick={() => setFolded(todo.id, !folded)}
-          className={`flex w-full items-center gap-1.5 text-left text-xs font-medium tabular-nums text-slate-500 hover:text-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-400 ${
-            row ? 'min-h-[28px] rounded-lg pb-1 pl-11 pr-2' : `min-h-[32px] pb-1.5 pl-12 pr-3.5 ${folded ? 'rounded-b-xl' : ''}`
-          } ${done ? 'opacity-60' : ''}`}
+          className={`absolute ${row ? 'top-0' : 'top-0.5'} ${onGripDown ? 'right-9' : 'right-1.5'} flex h-10 items-center gap-1 rounded-lg px-2 text-xs font-medium tabular-nums text-slate-500 hover:bg-slate-800 hover:text-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${done ? 'opacity-60' : ''}`}
         >
+          {progress.done}/{progress.count}
           <svg viewBox="0 0 16 16" className={`h-3.5 w-3.5 shrink-0 transition-transform ${folded ? '-rotate-90' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d="m4 6 4 4 4-4" />
           </svg>
-          {t('todo.group_count', { done: progress.done, count: progress.count })}
         </button>
       )}
       {grouped && !folded && <GroupItems todo={todo} indent={row} />}
@@ -918,12 +937,6 @@ function useFolded(id: string): [boolean, (id: string, on: boolean) => void] {
     if (which === id) setOn(value)
   }, [id])
   return [on, set]
-}
-
-/** A to-do's search: its name, its text and, for a group, what is in it. */
-function matchesTodo(todo: Todo, query: string): boolean {
-  const items = todo.items?.map((i) => i.title).join('\n') ?? ''
-  return matchesNote({ ...todo, details: items ? `${todo.details}\n${items}` : todo.details } as Parameters<typeof matchesNote>[0], query)
 }
 
 /**
@@ -1142,7 +1155,7 @@ function TodoForm({ id }: { id: string }) {
         </div>
         <div>
           <span className={label}>{t('field.tags')}</span>
-          <TagPicker value={draft.tagIds} onChange={(tagIds) => patch({ tagIds })} />
+          <TagPicker forTodos value={draft.tagIds} onChange={(tagIds) => patch({ tagIds })} />
         </div>
         </>
         )}

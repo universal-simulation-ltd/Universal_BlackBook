@@ -1,11 +1,21 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useTodoStore } from '../stores/todoStore'
+import type { Tag } from '../lib/types'
 import { SWATCHES } from '../lib/palette'
 import { useBookStore } from '../stores/bookStore'
 import { isList } from '../lib/lists'
 import { ListChip } from './ListChip'
 import { TagChip } from './TagChip'
 import { TagCombo } from './TagCombo'
+import { CustomColour } from './CustomColour'
 import { useT, type Key } from '../i18n'
+
+/** A Work or Personal tag the book does not have yet: made on first use. */
+const PRESET = 'preset:'
+const TODO_PRESETS = [
+  { label: 'todo.tag_work', colour: 'sky' },
+  { label: 'todo.tag_personal', colour: 'emerald' },
+] as const
 
 /**
  * The multi-select on the contact form, collapsed (TagCombo, 2026-10-23): the
@@ -34,6 +44,7 @@ export function TagPicker({
   onChange,
   kind,
   open,
+  forTodos = false,
 }: {
   value: string[]
   onChange: (next: string[]) => void
@@ -48,6 +59,16 @@ export function TagPicker({
   kind?: 'list'
   /** Every tag shown at once, no chevron (TagCombo `open`): the 🏷️ Tags page. */
   open?: boolean
+  /**
+   * A to-do's tags (James, 2026-11-18: "have todo tags preset as 'Work'
+   * 'Personal' and then beneath have global tags which show ones from
+   * contacts and notes to link also"): Work, Personal and every tag a to-do
+   * already carries on show first; the book's other tags (the ones contacts
+   * and notes use) under the chevron. Work and Personal are offered whether
+   * or not the book has them yet — a tap makes the tag — so nothing is
+   * written to anyone's book until it is used.
+   */
+  forTodos?: boolean
 }) {
   const t = useT()
   const all = useBookStore((s) => s.tags)
@@ -55,10 +76,45 @@ export function TagPicker({
   const tags = all.filter((t) => (listMode ? isList(t) : !isList(t)))
   const addTag = useBookStore((s) => s.addTag)
   const recolourTag = useBookStore((s) => s.recolourTag)
+  const todos = useTodoStore((s) => s.todos)
   const [colour, setColour] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
+  const presets = useMemo<Tag[]>(() => {
+    if (!forTodos) return []
+    return TODO_PRESETS.map((p) => {
+      const name = t(p.label)
+      return tags.find((x) => x.name.trim().toLowerCase() === name.toLowerCase()) ?? { id: `${PRESET}${p.colour}`, name, colour: p.colour }
+    })
+  }, [forTodos, tags, t])
+  const lead = useMemo(() => {
+    if (!forTodos) return undefined
+    const onTodos = new Set(todos.flatMap((x) => x.tagIds))
+    const ids = new Set(presets.map((p) => p.id))
+    return { label: t('todo.tags_todo'), options: [...presets, ...tags.filter((x) => onTodos.has(x.id) && !ids.has(x.id))] }
+  }, [forTodos, todos, presets, tags, t])
+  const options = useMemo(
+    () => (lead ? [...lead.options, ...tags.filter((x) => !lead.options.some((o) => o.id === x.id))] : tags),
+    [lead, tags],
+  )
+
+  /** A preset not in the book yet: made now, in its own colour, and chosen. */
+  const makePreset = async (id: string) => {
+    const p = presets.find((x) => x.id === id)
+    if (!p || busy) return
+    setBusy(true)
+    try {
+      const created = await addTag(p.name)
+      if (!created) return
+      if (!tags.some((x) => x.id === created.id)) await recolourTag(created.id, p.colour)
+      if (!value.includes(created.id)) onChange([...value, created.id])
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const toggle = (id: string) => {
+    if (id.startsWith(PRESET)) return void makePreset(id)
     onChange(value.includes(id) ? value.filter((x) => x !== id) : [...value, id])
   }
 
@@ -99,12 +155,15 @@ export function TagPicker({
           style={{ background: s.dot }}
         />
       ))}
+      <CustomColour value={colour} onPick={setColour} label={t('tags.custom_colour')} />
     </div>
   )
 
   return (
     <TagCombo
-      options={tags}
+      options={options}
+      lead={lead}
+      restLabel={t('todo.tags_everywhere')}
       isOn={(id) => value.includes(id)}
       chip={(t) =>
         listMode ? (
@@ -114,7 +173,7 @@ export function TagPicker({
         )
       }
       suggestion={(t) => (listMode ? <ListChip name={t.name} /> : <TagChip name={t.name} colour={t.colour} pattern={t.pattern} />)}
-      onPick={(id) => onChange(value.includes(id) ? value : [...value, id])}
+      onPick={(id) => (id.startsWith(PRESET) ? void makePreset(id) : onChange(value.includes(id) ? value : [...value, id]))}
       onCreate={create}
       placeholder={listMode ? t('tags.find_or_add_list') : t('tags.find_or_add')}
       createLabel={listMode ? t('tags.add_new_list') : t('tags.add_new')}

@@ -37,6 +37,8 @@ export function TagCombo<T extends ComboOption>({
   extraFull,
   belowInput,
   open = false,
+  lead,
+  restLabel,
 }: {
   /** Every tag that can be chosen here, in the order the full list shows them. */
   options: T[]
@@ -68,6 +70,13 @@ export function TagCombo<T extends ComboOption>({
    * open and fill up to the page").
    */
   open?: boolean
+  /**
+   * A group always on show above the box, lit in place when chosen (To-do's
+   * Work, Personal and the tags its to-dos carry, James 2026-11-18); the full
+   * list under the chevron is the rest, under `restLabel`.
+   */
+  lead?: { label: string; options: T[] }
+  restLabel?: string
 }) {
   const [draft, setDraft] = useState('')
   const [fullToggle, setFull] = useState(false)
@@ -93,7 +102,9 @@ export function TagCombo<T extends ComboOption>({
   const current = Math.min(active, Math.max(0, items - 1))
   // An empty box's quick tags show no pick until ↓/↑ makes one.
   const lit = (i: number) => i === current && (text !== '' || arrowed.current)
-  const chosen = options.filter((o) => isOn(o.id))
+  const leadIds = useMemo(() => new Set(lead?.options.map((o) => o.id) ?? []), [lead])
+  const chosen = options.filter((o) => isOn(o.id) && !leadIds.has(o.id))
+  const rest = lead ? options.filter((o) => !leadIds.has(o.id)) : options
 
   const take = async (index: number) => {
     if (index < matches.length) {
@@ -135,6 +146,13 @@ export function TagCombo<T extends ComboOption>({
 
   return (
     <div>
+      {lead && lead.options.length > 0 && (
+        <div className="mb-3" role="group" aria-label={lead.label}>
+          <p className="mb-1.5 text-xs font-semibold text-slate-500">{lead.label}</p>
+          <div className="flex flex-wrap gap-1.5">{lead.options.map((o) => <span key={o.id}>{chip(o)}</span>)}</div>
+        </div>
+      )}
+      {lead && restLabel && rest.length > 0 && <p className="mb-1.5 text-xs font-semibold text-slate-500">{restLabel}</p>}
       {!open && chosen.length > 0 && <div className="mb-2 flex flex-wrap gap-1.5">{chosen.map((o) => <span key={o.id}>{chip(o)}</span>)}</div>}
       {options.length === 0 && !onCreate ? (
         noneYet && <p className="text-sm text-slate-500">{noneYet}</p>
@@ -164,7 +182,7 @@ export function TagCombo<T extends ComboOption>({
               autoCapitalize="sentences"
               enterKeyHint="done"
             />
-            {options.length > 0 && !open && (
+            {rest.length > 0 && !open && (
               <button
                 type="button"
                 onClick={() => setFull((v) => !v)}
@@ -217,7 +235,7 @@ export function TagCombo<T extends ComboOption>({
           {text !== '' && belowInput?.(draft, willCreate)}
           {full && (
             <div id={fullId} className="mt-2.5 flex flex-wrap gap-1.5">
-              {options.map((o) => (
+              {rest.map((o) => (
                 <span key={o.id}>{chip(o)}</span>
               ))}
               {extraFull}

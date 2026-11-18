@@ -124,12 +124,16 @@ function fold(s: string): string {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 }
 
-/** Every word of the search, somewhere in the title or the text. */
-export function matchesNote(note: Note, text: string): boolean {
+/**
+ * Every word of the search, somewhere in the title or the text — or in
+ * `extra`, the names of its tags (lib/filter.ts ▸ tagNames: James, 2026-11-18,
+ * a search for a tag's name finds what carries it).
+ */
+export function matchesNote(note: Note, text: string, extra = ''): boolean {
   const words = fold(text).split(/\s+/).filter(Boolean)
   if (words.length === 0) return true
   const hay = fold(
-    [note.title, note.details, ...Object.values(note.location ?? {}), ...Object.values(note.fields ?? {})].join('\n'),
+    [note.title, note.details, ...Object.values(note.location ?? {}), ...Object.values(note.fields ?? {}), extra].join('\n'),
   )
   return words.every((w) => hay.includes(w))
 }

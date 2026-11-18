@@ -20,7 +20,8 @@ export interface QuickButton {
  * The row of emoji buttons across the top of a note and of a contact (James,
  * 2026-10-27: "match up the quick actions style for contacts and notes, use
  * four buttons but only show the emojis"), in the order the person keeps
- * (lib/quickActions.ts). Four places, each a button or a "+". On the phone,
+ * (lib/quickActions.ts). Three places, each a button or a "+", then a "…"
+ * that runs any of the others once (2026-11-18). On the phone,
  * hold a button or a "+" and drag it to a new place: onto a "+" the two
  * swap, onto a button it slides in (James, 2026-10-27: "change position of the
  * + as well as opposed to a + hiding another action if dropped", "tap and
@@ -223,6 +224,40 @@ export function QuickActions<K extends string>({
             </button>
           )
         })}
+        {/* The fourth place is always "…" (James, 2026-11-18): any of the
+            rest, once, without putting it in the row. A real <select> laid
+            over it, as on a "+", so the phone's own list opens. Not a slot:
+            it never moves, and nothing drops on it. */}
+        {hidden.length > 0 && (
+          <label
+            data-qa="more"
+            title={t('qa.more')}
+            className={`${box} relative select-none text-[26px] font-semibold text-slate-400 ${drag || settling ? '' : 'cursor-pointer'}`}
+          >
+            {/* ⋯, the ellipsis on the middle of the line, sits centred where … sat low. */}
+            <span aria-hidden>⋯</span>
+            <select
+              aria-label={t('qa.more')}
+              value=""
+              disabled={Boolean(drag) || settling}
+              onChange={(e) => {
+                const pick = e.target.value as K
+                e.target.value = ''
+                if (pick) buttons[pick].onClick()
+              }}
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            >
+              <option value="" disabled>
+                {t('qa.more')}
+              </option>
+              {hidden.map((k) => (
+                <option key={k} value={k}>
+                  {buttons[k].label}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <span className="sr-only" role="status" aria-live="polite">
           {status ?? ''}
         </span>

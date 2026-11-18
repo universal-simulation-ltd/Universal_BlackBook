@@ -863,8 +863,8 @@ describe('everything in Tune this app travels with the book (2026-10-30)', () =>
       shownFields: ['phone', 'email'],
       notifyDetails: true,
       fillLocation: true,
-      noteActions: ['share', null, 'copy', null],
-      contactActions: ['email', 'call', null, null],
+      noteActions: ['share', null, 'copy'],
+      contactActions: ['email', 'call', null],
       look: { scheme: 'dark', language: 'fr', opensOn: 'notes' },
     })
     await use(a).sync.getState().push(a.client)

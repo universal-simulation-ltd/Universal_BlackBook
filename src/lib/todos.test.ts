@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { compareOpen, daysUntil, dueLabel, groupProgress, mergeTodos, moveTodo, toTodo, toTodos, withItemDone, type Todo } from './todos'
+import { compareOpen, daysUntil, dueLabel, dueShort, groupProgress, matchesTodo, mergeTodos, moveTodo, toTodo, toTodos, withItemDone, type Todo } from './todos'
 import { parseBackup } from './backup'
 
 const today = { year: 2026, month: 9, day: 27 }
@@ -132,5 +132,24 @@ describe('groups (2026-10-30)', () => {
   it('travels in a backup file', () => {
     const data = parseBackup({ contacts: [], todos: [group] })!
     expect(data.todos[0].items).toEqual(group.items)
+  })
+})
+
+describe('one-line rows (2026-11-18)', () => {
+  it('say the deadline in days after the ⏰', () => {
+    expect(dueShort('2026-09-27', today)).toBe('Today')
+    expect(dueShort('2026-09-28', today)).toBe('1 day')
+    expect(dueShort('2026-11-04', today)).toBe('38 days')
+    expect(dueShort('2026-09-26', today)).toBe('1 day late')
+    expect(dueShort('2026-09-20', today)).toBe('7 days late')
+  })
+
+  it('find a to-do by the name of a tag it carries', () => {
+    const x = toTodo({ id: 'a', title: 'Ring the bank', details: '', tagIds: ['t1'], createdAt: 1, updatedAt: 1 })!
+    const tags = new Map([['t1', { name: 'Work' }]])
+    expect(matchesTodo(x, 'work', tags)).toBe(true)
+    expect(matchesTodo(x, 'bank work', tags)).toBe(true)
+    expect(matchesTodo(x, 'golf', tags)).toBe(false)
+    expect(matchesTodo(x, '', tags)).toBe(true)
   })
 })

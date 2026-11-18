@@ -45,7 +45,7 @@ import { isValidBirthday } from './birthday'
 import { SORT_KEYS, UNTAGGED, type SortKey, type View } from './filter'
 import { FORM_FIELDS, isFormField, type FormField } from './formFields'
 import { mergeBooks } from './merge'
-import { SWATCHES } from './palette'
+import { isTagColour, SWATCHES } from './palette'
 import { toTodo, mergeTodos, type Todo } from './todos'
 import { toReminders } from './reminders'
 import { isPattern } from './patterns'
@@ -229,8 +229,6 @@ function ids(v: unknown, known: Set<string>): string[] {
   return out
 }
 
-const COLOURS = new Set(SWATCHES.map((s) => s.key))
-
 function parseTag(raw: unknown): Tag | null {
   if (!isRecord(raw)) return null
   const tagId = id(raw.id)
@@ -239,7 +237,7 @@ function parseTag(raw: unknown): Tag | null {
   return {
     id: tagId,
     name,
-    colour: typeof raw.colour === 'string' && COLOURS.has(raw.colour) ? raw.colour : SWATCHES[0].key,
+    colour: isTagColour(raw.colour) ? raw.colour : SWATCHES[0].key,
     ...(isPattern(raw.pattern) ? { pattern: raw.pattern } : {}),
     ...(raw.kind === 'list' ? { kind: 'list' as const, tagIds: [] } : {}),
   }

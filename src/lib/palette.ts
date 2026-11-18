@@ -42,13 +42,36 @@ const FALLBACK = SWATCHES[0]
 const BY_KEY = new Map(SWATCHES.map((s) => [s.key, s]))
 
 /**
+ * A colour of the person's own, `#rrggbb` (James, 2026-11-18: "have a
+ * multicoloured dot that allows you to choose a custom colour"). The one
+ * exception to keys-not-hexes above, chosen on purpose by the person: the chip
+ * still runs its label through `accessibleColor` (TagChip), so the words stay
+ * readable on either theme whatever was picked; only the dot and the arc are
+ * the raw colour.
+ */
+const CUSTOM = /^#[0-9a-f]{6}$/i
+export function isCustomColour(colour: unknown): colour is string {
+  return typeof colour === 'string' && CUSTOM.test(colour)
+}
+/** A stored colour worth keeping: a swatch key or a custom `#rrggbb`. */
+export function isTagColour(colour: unknown): colour is string {
+  return typeof colour === 'string' && (BY_KEY.has(colour) || CUSTOM.test(colour))
+}
+
+function customSwatch(hex: string): Swatch {
+  const n = parseInt(hex.slice(1), 16)
+  const rgb = `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`
+  return { key: hex.toLowerCase(), label: hex, dot: hex, bg: `rgba(${rgb},0.14)`, border: `rgba(${rgb},0.38)`, text: hex }
+}
+
+/**
  * Never throws and never returns undefined. A category carrying an unknown
  * swatch — hand-edited, imported from a newer build, or written by a version
  * of this app that had a colour we since dropped — renders in amber rather
  * than crashing the list it appears in.
  */
 export function swatch(key: string): Swatch {
-  return BY_KEY.get(key) ?? FALLBACK
+  return BY_KEY.get(key) ?? (CUSTOM.test(key) ? customSwatch(key) : FALLBACK)
 }
 
 /** The swatch to offer next, given what is already used. Falls back to cycling. */

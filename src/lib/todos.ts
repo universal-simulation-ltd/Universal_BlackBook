@@ -8,6 +8,8 @@ import { currentT } from '../i18n'
 // names would drift the first time one was renamed.
 
 import { daysInMonth, type Today } from './birthday'
+import { tagNames } from './filter'
+import { matchesNote, type Note } from './notes'
 
 /** One to-do inside a group (2026-10-30): a name, and whether it is done. */
 export interface TodoItem {
@@ -150,6 +152,20 @@ export function dueLabel(due: string, today: Today): string {
 }
 
 /**
+ * The deadline in days, for the row's one line after a ⏰ (James, 2026-11-18:
+ * "the due date could be a clock emoji and X day(s)"): "Today", "1 day",
+ * "5 days", "2 days late". `dueLabel` is the full sentence, for the title and
+ * a screen reader.
+ */
+export function dueShort(due: string, today: Today): string {
+  const n = daysUntil(due, today)
+  const t = currentT()
+  if (n === 0) return t('due.short_today')
+  if (n < 0) return t.plural('due.short_late', -n)
+  return t.plural('due.short_days', n)
+}
+
+/**
  * Open ones by deadline, soonest (and so overdue) first; the ones with no
  * deadline after them, newest first. `YYYY-MM-DD` sorts as a string.
  */
@@ -222,4 +238,15 @@ export function mergeTodos(online: Todo[], local: Todo[], remap: Map<string, str
     }
   }
   return out
+}
+
+/** A to-do's search: its name, its text, its tags' names and, for a group, what is in it. */
+export function matchesTodo(todo: Todo, query: string, byId: ReadonlyMap<string, { name: string }>): boolean {
+  if (!query.trim()) return true
+  const items = todo.items?.map((i) => i.title).join('\n') ?? ''
+  return matchesNote(
+    { ...todo, details: items ? `${todo.details}\n${items}` : todo.details } as unknown as Note,
+    query,
+    tagNames(todo.tagIds, byId),
+  )
 }

@@ -40,7 +40,7 @@ import { NotesView } from '../components/NotesView'
 import { useBookStore } from '../stores/bookStore'
 import { useTodoStore } from '../stores/todoStore'
 import { useNoteStore } from '../stores/noteStore'
-import { useSearchReset } from '../stores/searchStore'
+import { useGoTab, useSearchReset } from '../stores/searchStore'
 import { usePanelStore } from '../stores/panelStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { AboutContent } from './AboutScreen'
@@ -120,6 +120,16 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
   // Follows the default when it arrives from another device after start-up
   // (components/tuneLook.ts), until a tab is tapped.
   const pickedTab = useFollowDefaultTab(tabDefault.defaultView, setTab)
+  // A tab asked for from inside another (components/Elsewhere: a to-do found
+  // from the Notes tab opens on To-do).
+  const goN = useGoTab((s) => s.n)
+  useEffect(() => {
+    const want = useGoTab.getState().tab
+    if (!goN || !want) return
+    pickedTab()
+    setTab(want)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only a new request moves the tab
+  }, [goN])
   const tabOrder = useSettingsStore((s) => s.tabOrder)
   const setSettings = useSettingsStore((s) => s.set)
   const shownTabs = availableTabs(emailLists, todosOn, notesOn, tabOrder, contactsOn)

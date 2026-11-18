@@ -70,6 +70,12 @@ export interface Settings {
    */
   bookYours: boolean
   /**
+   * Shake the phone on the To-do tab to clear the done ones, with Undo (James,
+   * 2026-11-18: "Add an option to shake to clear the done todo items"). Off to
+   * start, and this device's alone: a shake is a thing a phone does.
+   */
+  shakeClear: boolean
+  /**
    * This app's colour scheme and language (its own, over the suite's) and the
    * tab it opens on, as last seen here — the SDK keeps the live values
    * (useTuneLook in App.tsx copies them in and out). Null until first seen.
@@ -91,7 +97,7 @@ const KEY = 'blackbook.settings'
 // To-do and Notes are ON by default, Email lists off (James, 2026-10-23: "have
 // all active as default except email lists"). Their tick boxes are worded as
 // opt-outs ("Hide the To-do tab"), so every box still starts unticked.
-const DEFAULTS: Settings = { emailLists: false, todos: true, notes: true, contacts: true, shownFields: [], notifyDetails: false, tabOrder: [...TABS], fillLocation: false, noteActions: normaliseQuickActions(undefined), contactActions: normaliseContactActions(undefined), bookYours: false, look: null, tunedAt: 0 }
+const DEFAULTS: Settings = { emailLists: false, todos: true, notes: true, contacts: true, shownFields: [], notifyDetails: false, tabOrder: [...TABS], fillLocation: false, noteActions: normaliseQuickActions(undefined), contactActions: normaliseContactActions(undefined), bookYours: false, shakeClear: false, look: null, tunedAt: 0 }
 /**
  * The stored shape's version. 1 (no `v`) wrote every switch whenever any one
  * changed, so a stored `false` for To-do or Notes cannot be told from "never
@@ -121,6 +127,7 @@ function load(): Settings {
       noteActions: normaliseQuickActions(raw.noteActions),
       contactActions: normaliseContactActions(raw.contactActions),
       bookYours: raw.bookYours === true,
+      shakeClear: raw.shakeClear === true,
       look: parseLook(raw.look) ?? null,
       tunedAt: stamp(raw.tunedAt) ?? stamp((raw as { tabsAt?: unknown }).tabsAt) ?? 0,
     }
@@ -157,10 +164,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     const tuned = patch.tunedAt === undefined && SYNCED_KEYS.some((k) => k in patch)
     set(tuned ? { ...patch, tunedAt: Date.now() } : patch)
     try {
-      const { emailLists, todos, notes, contacts, shownFields, notifyDetails, tabOrder, fillLocation, noteActions, contactActions, bookYours, look, tunedAt } = get()
+      const { emailLists, todos, notes, contacts, shownFields, notifyDetails, tabOrder, fillLocation, noteActions, contactActions, bookYours, shakeClear, look, tunedAt } = get()
       localStorage.setItem(
         KEY,
-        JSON.stringify({ v: VERSION, emailLists, todos, notes, contacts, shownFields, notifyDetails, tabOrder, fillLocation, noteActions, contactActions, bookYours, look, tunedAt }),
+        JSON.stringify({ v: VERSION, emailLists, todos, notes, contacts, shownFields, notifyDetails, tabOrder, fillLocation, noteActions, contactActions, bookYours, shakeClear, look, tunedAt }),
       )
     } catch {
       // See the note above: the switch still works until the app is closed.
