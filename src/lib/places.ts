@@ -10,7 +10,7 @@
 
 import { tagNames } from './filter'
 import { locationLines, toLocation, type Location } from './geo'
-import { matchesNote, type Note } from './notes'
+import { matchesNote, toContactIds, type Note } from './notes'
 
 export interface Place {
   id: string
@@ -26,6 +26,12 @@ export interface Place {
   tagIds: string[]
   /** Pinned to the top of the list: when. Absent = not pinned. */
   pinnedAt?: number
+  /**
+   * People linked to this place (2026-11-19, "both ways, like notes"): the
+   * person's view lists the places linked to them. A deleted person's id
+   * matches nobody and is not shown, as on a note.
+   */
+  contactIds?: string[]
   createdAt: number
   updatedAt: number
 }
@@ -54,6 +60,7 @@ export function toPlace(raw: unknown, knownTags?: Set<string>): Place | null {
     details: str(r.details, PLACE_LIMITS.details),
     tagIds,
     ...(typeof r.pinnedAt === 'number' && Number.isFinite(r.pinnedAt) ? { pinnedAt: r.pinnedAt } : {}),
+    ...(toContactIds(r.contactIds) ? { contactIds: toContactIds(r.contactIds) } : {}),
     createdAt,
     updatedAt: typeof r.updatedAt === 'number' && Number.isFinite(r.updatedAt) ? r.updatedAt : createdAt,
   }

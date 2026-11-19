@@ -328,6 +328,7 @@ function parseNote(raw: unknown, known: Set<string>): Note | null {
   const createdAt = time(raw.createdAt, EARLIEST)
   const reminders = toReminders(raw.reminders)
   const contactIds = toContactIds(raw.contactIds)
+  const placeIds = toContactIds(raw.placeIds)
   const location = toLocation(raw.location ?? raw.place)
   const fields = toFieldValues(raw.fields)
   const templateId = id(raw.templateId)
@@ -338,6 +339,7 @@ function parseNote(raw: unknown, known: Set<string>): Note | null {
     details,
     ...(reminders ? { reminders } : {}),
     ...(contactIds ? { contactIds } : {}),
+    ...(placeIds ? { placeIds } : {}),
     ...(location ? { location } : {}),
     ...(templateId ? { templateId } : {}),
     ...(fields ? { fields } : {}),

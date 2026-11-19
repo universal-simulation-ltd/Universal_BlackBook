@@ -33,6 +33,7 @@ import { QuickActions, type QuickButton } from './QuickActions'
 import { NOTE_ACTIONS, type QuickAction } from '../lib/quickActions'
 import { shareText } from '../lib/share'
 import { useSettingsStore } from '../stores/settingsStore'
+import { NoteLinkedPlaces, NotePlacePicker } from './PlaceLinks'
 import { isSaveKey, saveKeyLabel } from '../lib/saveKey'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, label, textareaCls } from './ui'
 
@@ -178,7 +179,8 @@ function NoteView({ id, onBinned }: { id: string; onBinned: (note: Note) => void
   const say = useNativeNav((s) => s.say)
   const actionOrder = useSettingsStore((s) => s.noteActions)
   const setSettings = useSettingsStore((s) => s.set)
-  const [sheet, setSheet] = useState<'contacts' | 'tags' | 'place' | 'remind' | null>(null)
+  const placesOn = useSettingsStore((s) => s.places)
+  const [sheet, setSheet] = useState<'contacts' | 'tags' | 'place' | 'places' | 'remind' | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
@@ -318,6 +320,7 @@ function NoteView({ id, onBinned }: { id: string; onBinned: (note: Note) => void
     contacts: { label: t('nlink.contact'), emoji: '\u{1F464}', onClick: () => setSheet('contacts') },
     tags: { label: t('field.tags'), emoji: '\u{1F3F7}\u{FE0F}', onClick: () => setSheet('tags') },
     place: { label: t('nlink.location'), emoji: '\u{1F4CD}', onClick: () => setSheet('place') },
+    places: { label: t('plink.place'), emoji: '\u{1F3E0}', onClick: () => setSheet('places') },
     remind: { label: t('rem.add'), emoji: '\u{1F514}', onClick: () => setSheet('remind') },
     copy: { label: t('notes.copy'), emoji: '\u{1F4CB}', onClick: () => void copy() },
     copyDelete: { label: t('qa.copy_delete'), emoji: '\u{1F4CB}\u{1F5D1}\u{FE0F}', small: true, onClick: () => void copyAndDelete() },
@@ -327,7 +330,8 @@ function NoteView({ id, onBinned }: { id: string; onBinned: (note: Note) => void
   const actionRow = (
     <QuickActions
       buttons={buttons}
-      all={NOTE_ACTIONS}
+      // Link to a place only while there is a Places tab to link to.
+      all={placesOn ? NOTE_ACTIONS : NOTE_ACTIONS.filter((k) => k !== 'places')}
       order={actionOrder}
       onChange={(noteActions) => setSettings({ noteActions })}
       label={t('nlink.actions')}
@@ -361,6 +365,14 @@ function NoteView({ id, onBinned }: { id: string; onBinned: (note: Note) => void
         onOpen={(cid) => {
           flush()
           viewContact(cid)
+        }}
+      />
+
+      <NoteLinkedPlaces
+        note={note}
+        onLeave={() => {
+          flush()
+          close(null)
         }}
       />
 
@@ -442,6 +454,7 @@ function NoteView({ id, onBinned }: { id: string; onBinned: (note: Note) => void
         />
       )}
       {sheet === 'place' && <LocationEditor note={note} onClose={() => setSheet(null)} />}
+      {sheet === 'places' && <NotePlacePicker note={note} onClose={() => setSheet(null)} />}
       {sheet === 'remind' && (
         <ReminderEditor
           onClose={() => setSheet(null)}

@@ -18,6 +18,7 @@ import { TagCombo } from './TagCombo'
 import { AddTyped, ListSearch } from './ListSearch'
 import { LocationFields } from './LocationFields'
 import { Elsewhere } from './Elsewhere'
+import { PlaceLinks } from './PlaceLinks'
 import { newLocation } from './currentLocation'
 import { useT } from '../i18n'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, BtnKey, inputCls, label, MapGlyph, PlusIcon, tabHeading, textareaCls } from './ui'
@@ -386,6 +387,8 @@ function PlaceForm({ id }: { id: string }) {
           <span className={label}>{t('field.tags')}</span>
           <TagPicker value={draft.tagIds} onChange={(tagIds) => patch({ tagIds })} />
         </div>
+        {/* People and notes linked to it (2026-11-19). Each link saves at once. */}
+        {existing && <PlaceLinks place={existing} onLeave={() => close(null)} />}
 
         <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
           {existing ? (

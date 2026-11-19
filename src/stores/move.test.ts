@@ -47,4 +47,17 @@ describe('Move and the Places tab', () => {
     ])
     expect(useNoteStore.getState().notes.some((n) => n.id === 'n1')).toBe(false)
   })
+
+  it('links a person to a place and unlinks them; the form never drops a link', async () => {
+    const { usePlaceStore } = await stores()
+    await usePlaceStore.getState().save({ name: 'Gym', phone: '', website: '', details: '', tagIds: [] })
+    const id = usePlaceStore.getState().places[0].id
+    await usePlaceStore.getState().setContact(id, 'c1', true)
+    await usePlaceStore.getState().setContact(id, 'c1', true)
+    expect(usePlaceStore.getState().places[0].contactIds).toEqual(['c1'])
+    await usePlaceStore.getState().save({ id, name: 'The gym', phone: '', website: '', details: '', tagIds: [] })
+    expect(usePlaceStore.getState().places[0].contactIds).toEqual(['c1'])
+    await usePlaceStore.getState().setContact(id, 'c1', false)
+    expect(usePlaceStore.getState().places[0]).not.toHaveProperty('contactIds')
+  })
 })

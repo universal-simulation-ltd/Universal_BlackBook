@@ -18,7 +18,7 @@ describe('quick buttons', () => {
     expect(DEFAULT_QUICK_ACTIONS.length).toBe(QUICK_SLOTS - 1)
     expect(DEFAULT_CONTACT_ACTIONS.length).toBe(QUICK_SLOTS - 1)
     expect(DEFAULT_QUICK_ACTIONS).not.toEqual(DEFAULT_CONTACT_ACTIONS)
-    expect(hiddenActions(NOTE_ACTIONS, normaliseQuickActions(undefined))).toEqual(['tags', 'place', 'copy', 'copyDelete', 'share'])
+    expect(hiddenActions(NOTE_ACTIONS, normaliseQuickActions(undefined))).toEqual(['tags', 'place', 'places', 'copy', 'copyDelete', 'share'])
     expect(hiddenActions(CONTACT_ACTIONS, normaliseContactActions(undefined))).toEqual(['email', 'place', 'tags', 'share', 'remind', 'copy', 'pin'])
   })
 

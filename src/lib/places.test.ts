@@ -78,3 +78,15 @@ describe('places on the map', () => {
     expect([...mappedFilters([], [], places).tagIds]).toEqual(['pub'])
   })
 })
+
+describe('links (2026-11-19)', () => {
+  it('a place keeps its people, and a note its places, through storage and a backup file', async () => {
+    const { toNote } = await import('./notes')
+    expect(toPlace({ id: 'p', name: 'X', contactIds: ['c1', 'c1', 7] })!.contactIds).toEqual(['c1'])
+    expect(toPlace({ id: 'p', name: 'X', contactIds: [] })).not.toHaveProperty('contactIds')
+    expect(toNote({ id: 'n', title: 'T', placeIds: ['p1'] })!.placeIds).toEqual(['p1'])
+    const data = parseBackup({ contacts: [], places: [place({ contactIds: ['c1'] })], pages: [{ id: 'n', title: 'T', details: '', placeIds: ['p1'], createdAt: 1, updatedAt: 1 }] })!
+    expect(data.places[0].contactIds).toEqual(['c1'])
+    expect(data.pages[0].placeIds).toEqual(['p1'])
+  })
+})

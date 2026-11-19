@@ -15,6 +15,8 @@ import { compareNotes, matchesNote, matchesNoteTags, noteText, preview, type Not
 import { isList } from '../lib/lists'
 import type { Tag } from '../lib/types'
 import { useNoteStore } from '../stores/noteStore'
+import { useSettingsStore } from '../stores/settingsStore'
+import { usePlaceStore } from '../stores/placeStore'
 import { useBookStore } from '../stores/bookStore'
 import { tagNames } from '../lib/filter'
 import { Elsewhere } from './Elsewhere'
@@ -458,6 +460,9 @@ function NoteRow({
     ? template.fields.map((f) => (note.fields?.[f.id] ? showValue(f.type, note.fields[f.id], t.locale) : '')).filter(Boolean).join(' · ')
     : ''
   const line = values || preview(note)
+  // Only places that still exist (and a tab to show them on) earn the 🏠.
+  const placesOn = useSettingsStore((s) => s.places)
+  const linkedPlace = usePlaceStore((s) => placesOn && Boolean(note.placeIds?.some((id) => s.places.some((p) => p.id === id))))
   return (
     // `relative`: the Fine-tune button is a SIBLING over the card's corner,
     // never inside it (a button in a button is invalid HTML; see ContactRow).
@@ -508,6 +513,7 @@ function NoteRow({
           marks={[
             { emoji: '\u{1F464}', label: t('nlink.contacts_label'), on: (note.contactIds?.length ?? 0) > 0 },
             { emoji: '\u{1F4CD}', label: t('nlink.location_label'), on: hasLocation(note.location) },
+            { emoji: '\u{1F3E0}', label: t('plink.places_label'), on: linkedPlace },
             { emoji: '\u{1F514}', label: t('rem.section'), on: (note.reminders?.length ?? 0) > 0 },
           ]}
         />

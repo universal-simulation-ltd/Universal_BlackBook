@@ -20,7 +20,9 @@ export const QUICK_SLOTS = 3
 
 // 'tags' (2026-11-05) is offered by a "+", never placed by default, so a row
 // someone has already arranged is left exactly as it was.
-export const NOTE_ACTIONS = ['contacts', 'tags', 'place', 'remind', 'copy', 'copyDelete', 'share'] as const
+// 'places' (2026-11-19) links the note to places on the Places tab; like
+// 'tags', only ever offered by a "+" or the "…".
+export const NOTE_ACTIONS = ['contacts', 'tags', 'place', 'places', 'remind', 'copy', 'copyDelete', 'share'] as const
 export type QuickAction = (typeof NOTE_ACTIONS)[number]
 export const DEFAULT_QUICK_ACTIONS: readonly QuickAction[] = ['contacts', 'remind']
 

@@ -51,6 +51,12 @@ export interface Note {
    */
   contactIds?: string[]
   /**
+   * "Link to a place" (2026-11-19, James: places linked "both ways, like
+   * notes"): places on the Places tab this note is about. The place's form
+   * lists the notes linked to it. An id whose place has gone matches nothing.
+   */
+  placeIds?: string[]
+  /**
    * "Link to location" (2026-10-25): Place, Street, City, County, Country
    * (lib/geo.ts). The first shape, `place` with coordinates, is read into this
    * and its coordinates dropped.
@@ -86,6 +92,7 @@ export function toNote(raw: unknown): Note | null {
     details: typeof r.details === 'string' ? r.details : '',
     ...(toReminders(r.reminders) ? { reminders: toReminders(r.reminders) } : {}),
     ...(toContactIds(r.contactIds) ? { contactIds: toContactIds(r.contactIds) } : {}),
+    ...(toContactIds(r.placeIds) ? { placeIds: toContactIds(r.placeIds) } : {}),
     ...(toLocation(r.location ?? r.place) ? { location: toLocation(r.location ?? r.place) } : {}),
     ...(typeof r.templateId === 'string' && LINK_ID.test(r.templateId) ? { templateId: r.templateId } : {}),
     ...(typeof r.pinnedAt === 'number' && Number.isFinite(r.pinnedAt) ? { pinnedAt: r.pinnedAt } : {}),
@@ -175,6 +182,7 @@ export function blankNote(n: Note): boolean {
     !Object.values(n.fields ?? {}).some((v) => v.trim()) &&
     !n.tagIds?.length &&
     !n.contactIds?.length &&
+    !n.placeIds?.length &&
     !n.reminders?.length &&
     !n.location
   )

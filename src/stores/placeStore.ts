@@ -3,6 +3,7 @@ import { newId } from '../lib/id'
 import { hasLocation, type Location } from '../lib/geo'
 import { loadPlaces, savePlaces } from '../lib/store'
 import type { Place } from '../lib/places'
+import { useGoTab } from './searchStore'
 
 /** What the Places form hands back. */
 export interface PlaceDraft {
@@ -38,6 +39,8 @@ interface PlaceState {
   /** Undo a delete: the place as it was. */
   restore: (place: Place) => Promise<void>
   setPinned: (id: string, pinned: boolean) => Promise<void>
+  /** Link or unlink a person (2026-11-19). Saves at once, as a note's links do. */
+  setContact: (id: string, contactId: string, on: boolean) => Promise<void>
   /** A tag was deleted: nothing may go on pointing at it. */
   dropTag: (tagId: string) => Promise<void>
   /** Undo a tag's delete: it goes back on these places. */
@@ -86,6 +89,8 @@ export const usePlaceStore = create<PlaceState>((set, get) => {
         details: draft.details.trim(),
         tagIds: draft.tagIds,
         ...(existing?.pinnedAt ? { pinnedAt: existing.pinnedAt } : {}),
+        // Links are made and broken on their own (setContact), never by the form.
+        ...(existing?.contactIds?.length ? { contactIds: existing.contactIds } : {}),
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,
       }
@@ -119,6 +124,22 @@ export const usePlaceStore = create<PlaceState>((set, get) => {
       )
     },
 
+    setContact: async (id, contactId, on) => {
+      const now = Date.now()
+      await commit(
+        get().places.map((p) => {
+          if (p.id !== id) return p
+          const ids = new Set(p.contactIds ?? [])
+          if (on === ids.has(contactId)) return p
+          if (on) ids.add(contactId)
+          else ids.delete(contactId)
+          const { contactIds: _c, ...rest } = p
+          void _c
+          return { ...rest, ...(ids.size ? { contactIds: [...ids] } : {}), updatedAt: now }
+        }),
+      )
+    },
+
     dropTag: async (tagId) => {
       set((s) => ({ tagFilter: s.tagFilter.filter((x) => x !== tagId) }))
       if (!get().places.some((p) => p.tagIds.includes(tagId))) return
@@ -138,3 +159,9 @@ export const usePlaceStore = create<PlaceState>((set, get) => {
     },
   }
 })
+
+/** Open a place from anywhere: its form lives on the Places tab, so go there first. */
+export function openPlace(id: string) {
+  useGoTab.getState().go('places')
+  usePlaceStore.getState().edit(id)
+}

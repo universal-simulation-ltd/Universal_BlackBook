@@ -12,6 +12,7 @@ import { CloseGlyph } from './Modal'
 import { BellGlyph, ContactMore, MoreRow } from './ContactMore'
 import { ReminderEditor, ReminderList } from './Reminders'
 import { LinkedNotes } from './NoteView'
+import { LinkedPlaces } from './PlaceLinks'
 import { formatWhen, nextOccurrence } from '../lib/reminders'
 import { useNativeNav } from '../native/nav'
 import { askForNotifications } from '../native/notify'
@@ -356,6 +357,7 @@ export function ContactView({ id }: { id: string }) {
       </div>
 
       <LinkedNotes contactId={contact.id} />
+      <LinkedPlaces contactId={contact.id} />
 
       <ReminderList reminders={contact.reminders} onChange={(next) => void patchContact(contact.id, { reminders: next })} />
 
