@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { compareOpen, daysUntil, dueLabel, dueShort, groupProgress, matchesTodo, mergeTodos, moveTodo, toTodo, toTodos, withItemDone, type Todo } from './todos'
+import { addDays, compareOpen, compareSnoozed, daysUntil, isSnoozed, snoozeChoices, dueLabel, dueShort, groupProgress, matchesTodo, mergeTodos, moveTodo, toTodo, toTodos, withItemDone, type Todo } from './todos'
 import { parseBackup } from './backup'
 
 const today = { year: 2026, month: 9, day: 27 }
@@ -151,5 +151,38 @@ describe('one-line rows (2026-11-18)', () => {
     expect(matchesTodo(x, 'bank work', tags)).toBe(true)
     expect(matchesTodo(x, 'golf', tags)).toBe(false)
     expect(matchesTodo(x, '', tags)).toBe(true)
+  })
+})
+
+describe('snoozed until (2026-11-19)', () => {
+  it('is asleep until its day, then back; a done one is never asleep', () => {
+    expect(isSnoozed(todo({ snoozedUntil: '2026-09-28' }), today)).toBe(true)
+    expect(isSnoozed(todo({ snoozedUntil: '2026-09-27' }), today)).toBe(false)
+    expect(isSnoozed(todo({ snoozedUntil: '2026-09-01' }), today)).toBe(false)
+    expect(isSnoozed(todo({ snoozedUntil: '2026-10-01', doneAt: 5 }), today)).toBe(false)
+    expect(isSnoozed(todo(), today)).toBe(false)
+  })
+
+  it('offers tomorrow, next Monday and the same day next month', () => {
+    // 2026-09-27 is a Sunday.
+    expect(snoozeChoices(today).map((c) => c.until)).toEqual(['2026-09-28', '2026-09-28', '2026-10-27'])
+    // From a Monday, next week is a week on; 31 January lands on February's last day.
+    expect(snoozeChoices({ year: 2027, month: 1, day: 4 })[1].until).toBe('2027-01-11')
+    expect(snoozeChoices({ year: 2027, month: 1, day: 31 })[2].until).toBe('2027-02-28')
+    expect(snoozeChoices({ year: 2026, month: 12, day: 15 })[2].until).toBe('2027-01-15')
+    expect(addDays({ year: 2026, month: 12, day: 31 }, 1)).toBe('2027-01-01')
+  })
+
+  it('the first to wake sorts first', () => {
+    const a = todo({ id: 'a', snoozedUntil: '2026-10-05' })
+    const b = todo({ id: 'b', snoozedUntil: '2026-09-30' })
+    expect([a, b].sort(compareSnoozed).map((x) => x.id)).toEqual(['b', 'a'])
+  })
+
+  it('survives storage and a backup file; a bad date is dropped', () => {
+    expect(toTodo({ id: 'x', title: 'X', snoozedUntil: '2026-10-01' })).toMatchObject({ snoozedUntil: '2026-10-01' })
+    expect(toTodo({ id: 'x', title: 'X', snoozedUntil: '2026-02-30' })).not.toHaveProperty('snoozedUntil')
+    const data = parseBackup({ contacts: [], todos: [{ id: 't1', title: 'T', snoozedUntil: '2026-10-01' }] })!
+    expect(data.todos[0]).toMatchObject({ snoozedUntil: '2026-10-01' })
   })
 })

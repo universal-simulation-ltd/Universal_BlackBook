@@ -51,6 +51,14 @@ export interface Todo {
    * group as one to-do.
    */
   items?: TodoItem[]
+  /**
+   * Snoozed (James, 2026-11-19: "snoozed until so it doesn't appear in the
+   * main list until that date arrives"): a `YYYY-MM-DD`. Until that day it
+   * waits in the tab's Snoozed drawer, not the list; on that day it is simply
+   * back, where its deadline and order put it. A date that has passed is
+   * harmless and left alone. Absent = not snoozed.
+   */
+  snoozedUntil?: string
   createdAt: number
   updatedAt: number
 }
@@ -111,6 +119,7 @@ export function toTodo(raw: unknown): Todo | null {
     ...(typeof r.pinnedAt === 'number' && Number.isFinite(r.pinnedAt) ? { pinnedAt: r.pinnedAt } : {}),
     ...(typeof r.rank === 'number' && Number.isFinite(r.rank) ? { rank: r.rank } : {}),
     ...(toItems(r.items) ? { items: toItems(r.items) } : {}),
+    ...(toDue(r.snoozedUntil) ? { snoozedUntil: toDue(r.snoozedUntil) } : {}),
     createdAt: typeof r.createdAt === 'number' ? r.createdAt : Date.now(),
     updatedAt: typeof r.updatedAt === 'number' ? r.updatedAt : Date.now(),
   }
@@ -124,6 +133,52 @@ export function toTodos(raw: unknown): Todo[] {
 export function isoDay(today: Today): string {
   const p = (n: number) => String(n).padStart(2, '0')
   return `${today.year}-${p(today.month)}-${p(today.day)}`
+}
+
+/** Today plus `n` days, as `YYYY-MM-DD`. */
+export function addDays(today: Today, n: number): string {
+  return new Date(Date.UTC(today.year, today.month - 1, today.day + n)).toISOString().slice(0, 10)
+}
+
+/** Still asleep: open, and snoozed until a day after today. */
+export function isSnoozed(todo: Todo, today: Today): boolean {
+  return todo.doneAt === undefined && todo.snoozedUntil !== undefined && todo.snoozedUntil > isoDay(today)
+}
+
+export type SnoozeChoice = 'tomorrow' | 'next_week' | 'next_month'
+
+/**
+ * The quick snoozes: tomorrow, next Monday (a week on, from a Monday) and the
+ * same day next month (its last day where that month is shorter).
+ */
+export function snoozeChoices(today: Today): { key: SnoozeChoice; until: string }[] {
+  const dow = new Date(Date.UTC(today.year, today.month - 1, today.day)).getUTCDay()
+  const toMonday = (8 - dow) % 7 || 7
+  const y = today.month === 12 ? today.year + 1 : today.year
+  const m = today.month === 12 ? 1 : today.month + 1
+  const p = (n: number) => String(n).padStart(2, '0')
+  return [
+    { key: 'tomorrow', until: addDays(today, 1) },
+    { key: 'next_week', until: addDays(today, toMonday) },
+    { key: 'next_month', until: `${y}-${p(m)}-${p(Math.min(today.day, daysInMonth(m, y)))}` },
+  ]
+}
+
+/** "Thu 20 Nov" (with the year when it is not this one), for a snooze. */
+export function shortDate(day: string, today: Today): string {
+  const [y, m, d] = day.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString(currentT().locale, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    ...(y !== today.year && { year: 'numeric' }),
+    timeZone: 'UTC',
+  })
+}
+
+/** Snoozed ones, the first to wake first. */
+export function compareSnoozed(a: Todo, b: Todo): number {
+  return (a.snoozedUntil ?? '').localeCompare(b.snoozedUntil ?? '') || compareOpen(a, b)
 }
 
 /** Whole days from today to the deadline; negative once it has passed. */

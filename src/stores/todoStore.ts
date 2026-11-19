@@ -12,6 +12,8 @@ export interface TodoDraft {
   tagIds: string[]
   /** Present (even empty) makes it a group — see `Todo.items`. */
   items?: TodoItem[]
+  /** `YYYY-MM-DD` — see `Todo.snoozedUntil`. */
+  snoozedUntil?: string
 }
 
 /**
@@ -42,6 +44,8 @@ interface TodoState {
   setItemDone: (id: string, itemId: string, done: boolean) => Promise<void>
   remove: (id: string) => Promise<void>
   clearDone: () => Promise<void>
+  /** Snooze until a day (`YYYY-MM-DD`), or wake (undefined). */
+  snooze: (ids: string[], until: string | undefined) => Promise<void>
   /** Pin to the top, or unpin. */
   setPinned: (id: string, pinned: boolean) => Promise<void>
   /** Drag (or Move up / down): put it just before or after another. */
@@ -94,7 +98,11 @@ export const useTodoStore = create<TodoState>((set, get) => {
         doneAt: existing?.doneAt,
         ...(existing?.pinnedAt ? { pinnedAt: existing.pinnedAt } : {}),
         ...(existing?.rank !== undefined ? { rank: existing.rank } : {}),
-        ...(draft.items ? { items: draft.items.map((i) => ({ ...i, title: i.title.trim() })).filter((i) => i.title) } : {}),
+        // A group only while something is in it (the form's tick boxes, 2026-11-19).
+        ...(draft.items?.some((i) => i.title.trim())
+          ? { items: draft.items.map((i) => ({ ...i, title: i.title.trim() })).filter((i) => i.title) }
+          : {}),
+        ...(draft.snoozedUntil ? { snoozedUntil: draft.snoozedUntil } : {}),
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,
       }
@@ -126,6 +134,19 @@ export const useTodoStore = create<TodoState>((set, get) => {
     remove: async (id) => {
       set((s) => ({ editing: s.editing === id ? null : s.editing }))
       await commit(get().todos.filter((t) => t.id !== id))
+    },
+
+    snooze: async (ids, until) => {
+      const now = Date.now()
+      const pick = new Set(ids)
+      await commit(
+        get().todos.map((t) => {
+          if (!pick.has(t.id)) return t
+          const { snoozedUntil: _s, ...rest } = t
+          void _s
+          return { ...rest, ...(until ? { snoozedUntil: until } : {}), updatedAt: now }
+        }),
+      )
     },
 
     setPinned: async (id, pinned) => {

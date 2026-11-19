@@ -59,4 +59,17 @@ describe('the to-do list', () => {
     await useBookStore.getState().removeTag(tag.id)
     expect(useTodoStore.getState().todos[0].tagIds).toEqual([])
   })
+
+  it('snoozes and wakes, across a reload; a group with nothing in it is an ordinary to-do', async () => {
+    const store = await reopen()
+    await store.getState().save(draft({ items: [{ id: 'i', title: '  ' }] }))
+    const id = store.getState().todos[0].id
+    expect(store.getState().todos[0]).not.toHaveProperty('items')
+    await store.getState().snooze([id], '2099-01-01')
+    let again = await reopen()
+    expect(again.getState().todos[0].snoozedUntil).toBe('2099-01-01')
+    await again.getState().snooze([id], undefined)
+    again = await reopen()
+    expect(again.getState().todos[0]).not.toHaveProperty('snoozedUntil')
+  })
 })

@@ -287,7 +287,7 @@ function parseTodo(raw: unknown, known: Set<string>): Todo | null {
   const title = str(raw.title, LIMITS.todoTitle)
   if (!todoId || !title.trim()) return null
   // toTodo checks the deadline is a real calendar date; the rest is ours.
-  const base = toTodo({ id: todoId, title, due: raw.due, items: raw.items })
+  const base = toTodo({ id: todoId, title, due: raw.due, items: raw.items, snoozedUntil: raw.snoozedUntil })
   const createdAt = time(raw.createdAt, EARLIEST)
   // A group's items (2026-10-30), held to the same lengths as a to-do's name.
   const items = base?.items
@@ -304,6 +304,7 @@ function parseTodo(raw: unknown, known: Set<string>): Todo | null {
     ...(optTime(raw.pinnedAt) ? { pinnedAt: optTime(raw.pinnedAt) } : {}),
     ...(typeof raw.rank === 'number' && Number.isFinite(raw.rank) && Math.abs(raw.rank) <= 1e6 ? { rank: Math.round(raw.rank) } : {}),
     ...(items ? { items } : {}),
+    ...(base?.snoozedUntil ? { snoozedUntil: base.snoozedUntil } : {}),
     createdAt,
     updatedAt: time(raw.updatedAt, createdAt),
   }

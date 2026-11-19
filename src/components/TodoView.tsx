@@ -7,7 +7,7 @@ import { usePhoneKit } from '../native/kit'
 import type { Side } from '../lib/swipe'
 import { todayParts } from '../lib/birthday'
 import { isList } from '../lib/lists'
-import { compareDone, compareOpen, daysUntil, dueLabel, dueShort, groupProgress, matchesTodo, matchesTodoTags, type Todo, type TodoItem } from '../lib/todos'
+import { addDays, compareDone, compareOpen, compareSnoozed, daysUntil, dueLabel, dueShort, groupProgress, isSnoozed, matchesTodo, matchesTodoTags, shortDate, snoozeChoices, type Todo, type TodoItem } from '../lib/todos'
 import { newId } from '../lib/id'
 import type { Tag } from '../lib/types'
 import { useBookStore } from '../stores/bookStore'
@@ -45,6 +45,10 @@ export function TodoView() {
   const clearDone = useTodoStore((s) => s.clearDone)
   const tags = useBookStore((s) => s.tags)
   const [showDone, setShowDone] = useState(false)
+  const [showSnoozed, setShowSnoozed] = useState(false)
+  // The to-dos the Snooze sheet is open on (a row's, the detail's, or a selection).
+  const [snoozing, setSnoozing] = useState<string[] | null>(null)
+  const snooze = useTodoStore((s) => s.snooze)
   // The tab's search (James, 2026-10-23): pulled down on a phone, a box
   // elsewhere; never remembered.
   const [query, setQuery] = useState('')
@@ -60,6 +64,7 @@ export function TodoView() {
     setQuery('')
   }
   const doneId = useId()
+  const snoozedId = useId()
   const hintId = useId()
   const setPinned = useTodoStore((s) => s.setPinned)
   const setDone = useTodoStore((s) => s.setDone)
@@ -103,9 +108,17 @@ export function TodoView() {
   const open = useMemo(
     () =>
       todos
-        .filter((t) => !t.doneAt && matchesTodoTags(t, activeFilter) && matchesTodo(t, query, byId))
+        .filter((t) => !t.doneAt && !isSnoozed(t, today) && matchesTodoTags(t, activeFilter) && matchesTodo(t, query, byId))
         .sort(compareOpen),
-    [todos, activeFilter, query, byId],
+    [todos, activeFilter, query, byId, today],
+  )
+  // Snoozed ones wait in their own drawer until their day (James, 2026-11-19).
+  const snoozed = useMemo(
+    () =>
+      todos
+        .filter((t) => isSnoozed(t, today) && matchesTodoTags(t, activeFilter) && matchesTodo(t, query, byId))
+        .sort(compareSnoozed),
+    [todos, activeFilter, query, byId, today],
   )
   const done = useMemo(
     () =>
@@ -200,6 +213,7 @@ export function TodoView() {
                 down={i < list.length - 1 ? list[i + 1].id : null}
                 onDelete={() => removeWithUndo(x)}
                 onSelect={() => openSel.start(x.id)}
+                onSnooze={() => setSnoozing([x.id])}
               />
             }
           />
@@ -287,7 +301,13 @@ export function TodoView() {
         </div>
       ) : open.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-slate-800 px-6 py-8 text-center text-sm text-slate-400">
-          {query.trim() ? t('todo.no_match') : activeFilter.length > 0 ? t('todo.none_tagged') : t('todo.all_done')}
+          {query.trim()
+            ? t('todo.no_match')
+            : activeFilter.length > 0
+              ? t('todo.none_tagged')
+              : snoozed.length > 0
+                ? t('todo.nothing_today')
+                : t('todo.all_done')}
         </p>
       ) : (
         <>
@@ -297,6 +317,7 @@ export function TodoView() {
           actions={[
             { label: t('todo.pin'), onClick: (ids) => ids.forEach((id) => void setPinned(id, true)) },
             { label: t('todo.mark_done_short'), onClick: (ids) => ids.forEach((id) => void setDone(id, true)) },
+            { label: t('todo.snooze'), onClick: (ids) => setSnoozing(ids) },
             { label: t('sel.move'), onClick: moveTo.start },
             { label: t('c.delete'), danger: true, onClick: (ids) => removeManyWithUndo(open.filter((x) => ids.includes(x.id))) },
           ]}
@@ -306,7 +327,7 @@ export function TodoView() {
             {openList(open, 'row', listClass('list'))}
             {/* Stays in sight while the list scrolls under it. */}
             <aside className="bb-detail sticky top-4" aria-live="polite">
-              {current && <TodoDetail key={current.id} todo={current} byId={byId} today={today} />}
+              {current && <TodoDetail key={current.id} todo={current} byId={byId} today={today} onSnooze={() => setSnoozing([current.id])} />}
             </aside>
           </div>
         ) : layout === 'lanes' ? (
@@ -340,6 +361,48 @@ export function TodoView() {
           text={undo.item.length === 1 ? undefined : t.plural('sel.deleted', undo.item.length)}
           onUndo={() => void undo.undo()}
         />
+      )}
+
+      {snoozed.length > 0 && (
+        <section className="border-t border-slate-800 pt-3">
+          <button
+            type="button"
+            onClick={() => setShowSnoozed((v) => !v)}
+            aria-expanded={showSnoozed}
+            aria-controls={snoozedId}
+            className="inline-flex items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs text-slate-500 transition-colors hover:text-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+          >
+            <svg viewBox="0 0 16 16" className={`h-3.5 w-3.5 transition-transform ${showSnoozed ? 'rotate-90' : ''}`} fill="currentColor" aria-hidden>
+              <path d="M6 3.5 10.5 8 6 12.5V3.5Z" />
+            </svg>
+            <span className="tabular-nums">{t('todo.snoozed_count', { count: snoozed.length })}</span>
+          </button>
+          {showSnoozed && (
+            <SwipeGroup>
+              {/* Asleep until their day: swipe right (or the hidden button)
+                  wakes one now, left deletes it. */}
+              <ul id={snoozedId} className={`mt-2 ${doneCls}`}>
+                {snoozed.map((x) => (
+                  <li key={x.id} className={itemClass(layout, doneLook)}>
+                    <SwipeItem
+                      id={x.id}
+                      name={x.title}
+                      left={actionSwipe('wake', t('todo.wake'), t('todo.wake_label', { title: x.title }), () => void snooze([x.id], undefined))}
+                      right={deleteSwipe(x.title, () => removeWithUndo(x))}
+                      focus={[
+                        { label: t('todo.wake_label', { title: x.title }), onClick: () => void snooze([x.id], undefined) },
+                        { label: t('todo.snooze_label', { title: x.title }), onClick: () => setSnoozing([x.id]) },
+                        { label: t('todo.delete_label', { title: x.title }), onClick: () => removeWithUndo(x) },
+                      ]}
+                    >
+                      <TodoRow todo={x} byId={byId} today={today} look={doneLook} />
+                    </SwipeItem>
+                  </li>
+                ))}
+              </ul>
+            </SwipeGroup>
+          )}
+        </section>
       )}
 
       {done.length > 0 && (
@@ -429,6 +492,18 @@ export function TodoView() {
       {!openSel.selecting && !doneSel.selecting && <Elsewhere here="todos" query={query} />}
 
       {editing && <TodoForm key={editing} id={editing} />}
+      {snoozing && (
+        <SnoozeSheet
+          count={snoozing.length}
+          today={today}
+          current={snoozing.length === 1 ? todos.find((x) => x.id === snoozing[0])?.snoozedUntil : undefined}
+          onPick={(until) => {
+            void snooze(snoozing, until)
+            setSnoozing(null)
+          }}
+          onClose={() => setSnoozing(null)}
+        />
+      )}
     </div>
   )
 }
@@ -569,7 +644,7 @@ function useTodoDrag(onDrop: (id: string, targetId: string, after: boolean) => v
  * VoiceOver, TalkBack and the keyboard reach Move up, Move down, Pin and
  * Delete without a gesture.
  */
-function RowActions({ todo, up, down, onDelete, onSelect }: { todo: Todo; up: string | null; down: string | null; onDelete: () => void; onSelect: () => void }) {
+function RowActions({ todo, up, down, onDelete, onSelect, onSnooze }: { todo: Todo; up: string | null; down: string | null; onDelete: () => void; onSelect: () => void; onSnooze: () => void }) {
   const t = useT()
   const move = useTodoStore((s) => s.move)
   const setPinned = useTodoStore((s) => s.setPinned)
@@ -583,6 +658,7 @@ function RowActions({ todo, up, down, onDelete, onSelect }: { todo: Todo; up: st
           label: todo.pinnedAt ? t('todo.unpin_label', { title: todo.title }) : t('todo.pin_label', { title: todo.title }),
           onClick: () => void setPinned(todo.id, !todo.pinnedAt),
         },
+        { label: t('todo.snooze_label', { title: todo.title }), onClick: onSnooze },
         { label: t('todo.delete_label', { title: todo.title }), onClick: onDelete },
       ]}
     />
@@ -678,7 +754,7 @@ function LayoutIcon({ kind }: { kind: TodoLayout }) {
  * List and detail: the picked to-do in full beside the list — every line of
  * its details, its group's items to tick, and Edit for the form.
  */
-function TodoDetail({ todo, byId, today }: { todo: Todo; byId: Map<string, Tag>; today: ReturnType<typeof todayParts> }) {
+function TodoDetail({ todo, byId, today, onSnooze }: { todo: Todo; byId: Map<string, Tag>; today: ReturnType<typeof todayParts>; onSnooze: () => void }) {
   const t = useT()
   const setDone = useTodoStore((s) => s.setDone)
   const edit = useTodoStore((s) => s.edit)
@@ -718,9 +794,14 @@ function TodoDetail({ todo, byId, today }: { todo: Todo; byId: Map<string, Tag>;
             </div>
           )}
         </div>
-        <button type="button" className={btnGhost} onClick={() => edit(todo.id)} aria-label={t('todo.edit_label', { title })}>
-          {t('todo.edit')}
-        </button>
+        <div className="flex shrink-0 gap-2">
+          <button type="button" className={btnGhost} onClick={onSnooze} aria-label={t('todo.snooze_label', { title })}>
+            {t('todo.snooze')}
+          </button>
+          <button type="button" className={btnGhost} onClick={() => edit(todo.id)} aria-label={t('todo.edit_label', { title })}>
+            {t('todo.edit')}
+          </button>
+        </div>
       </div>
       {todo.details && <p className="mt-4 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-300">{todo.details}</p>}
       {grouped && progress && (
@@ -806,6 +887,13 @@ function TodoRow({
       <span className="sr-only">{dueLabel(todo.due, today)}</span>
     </span>
   )
+  // 💤 and the day it wakes, while it is asleep.
+  const sleepText = isSnoozed(todo, today) && (
+    <span className="whitespace-nowrap text-xs font-medium tabular-nums text-sky-300">
+      <span aria-hidden>💤 {shortDate(todo.snoozedUntil!, today)}</span>
+      <span className="sr-only">{t('todo.snoozed_until', { date: shortDate(todo.snoozedUntil!, today) })}</span>
+    </span>
+  )
   const dots = chips.length > 0 && (
     <span className="flex flex-wrap items-center justify-end">
       {chips.map((t) => (
@@ -860,9 +948,10 @@ function TodoRow({
             details' first line under it. */}
         <span className={`flex items-center gap-2.5 ${row ? '' : 'min-h-[24px]'}`}>
           {name}
-          {(dueText || dots || countText) && (
+          {(sleepText || dueText || dots || countText) && (
             <span className="flex shrink-0 items-center justify-end gap-x-2">
               {countText}
+              {sleepText}
               {dueText}
               {dots}
             </span>
@@ -1000,75 +1089,150 @@ function Tick({ on }: { on: boolean }) {
 }
 
 /**
- * A group's items in the form (2026-10-30): each one's name to change or take
- * out, and a box under them that adds one on Return and stays put for the
- * next. "Not a group" only while nothing is in it, so a list is never lost to
- * one tap.
+ * A group's items in the form (2026-10-30). No "Make it a group" button any
+ * more (James, 2026-11-19: "show the first nested tick box and if they type it
+ * in then it's a group and it shows the next tick box ready"): there is always
+ * one empty tick box at the foot, and typing in it makes it an item with a
+ * fresh empty box under it. No items, an ordinary to-do. Return goes to the
+ * next box; Backspace in an emptied one takes it out.
  */
-function GroupEditor({ items, onChange, onUngroup }: { items: TodoItem[]; onChange: (items: TodoItem[]) => void; onUngroup: () => void }) {
+function GroupEditor({ items, onChange }: { items: TodoItem[]; onChange: (items: TodoItem[]) => void }) {
   const t = useT()
-  const [next, setNext] = useState('')
-  const addId = useId()
-  const add = () => {
-    const title = next.trim().replace(/\s+/g, ' ')
-    if (!title) return
-    onChange([...items, { id: newId(), title }])
-    setNext('')
-  }
+  // The empty box's id. Typing turns it into the item with this id, so React
+  // keeps the same input — and the caret in it — and draws a new empty one.
+  const [nextId, setNextId] = useState(newId)
+  const listRef = useRef<HTMLUListElement>(null)
+  const inputAt = (i: number) => listRef.current?.querySelectorAll('input')[i]
+  // After a row is taken out, the next frame's list.
+  const focusAt = (i: number) => requestAnimationFrame(() => inputAt(i)?.focus())
+  const drop = (id: string) => onChange(items.filter((x) => x.id !== id))
+  const rows: TodoItem[] = [...items, { id: nextId, title: '' }]
   return (
-    <fieldset className="space-y-2 rounded-xl border border-slate-800 p-3">
-      <legend className="px-1 text-xs font-semibold text-slate-400">{t('todo.group_items')}</legend>
-      {items.length > 0 && (
-        <ul className="space-y-1.5">
-          {items.map((item) => (
-            <li key={item.id} className="flex items-center gap-2">
+    <div>
+      {items.length > 0 && <span className={label}>{t('todo.group_items')}</span>}
+      <ul ref={listRef} className="space-y-1">
+        {rows.map((item, i) => {
+          const blank = item.id === nextId
+          return (
+            <li key={item.id} className="flex items-center gap-2.5 pl-1">
+              <Tick on={item.doneAt !== undefined} />
               <input
                 className={inputCls}
                 value={item.title}
-                aria-label={t('todo.group_item_name')}
-                onChange={(e) => onChange(items.map((i) => (i.id === item.id ? { ...i, title: e.target.value } : i)))}
+                placeholder={blank ? t('todo.group_add') : undefined}
+                aria-label={blank ? t('todo.group_add') : t('todo.group_item_name')}
+                enterKeyHint="next"
+                onChange={(e) => {
+                  const title = e.target.value
+                  if (!blank) return onChange(items.map((x) => (x.id === item.id ? { ...x, title } : x)))
+                  if (!title.trim()) return
+                  onChange([...items, { id: nextId, title }])
+                  setNextId(newId())
+                }}
+                onKeyDown={(e) => {
+                  if (e.nativeEvent.isComposing) return
+                  if (e.key === 'Enter') {
+                    // The next box, never the form's Save. It is already
+                    // there, so at once: what is typed next goes in it.
+                    e.preventDefault()
+                    inputAt(i + 1)?.focus()
+                  } else if (e.key === 'Backspace' && !blank && item.title === '') {
+                    e.preventDefault()
+                    drop(item.id)
+                    focusAt(Math.max(0, i - 1))
+                  }
+                }}
+                onBlur={() => {
+                  if (!blank && !item.title.trim()) drop(item.id)
+                }}
               />
-              <button
-                type="button"
-                className="h-10 w-10 shrink-0 rounded-md text-slate-400 hover:bg-slate-800 hover:text-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
-                aria-label={t('todo.group_remove', { title: item.title })}
-                onClick={() => onChange(items.filter((i) => i.id !== item.id))}
-              >
-                <svg viewBox="0 0 16 16" className="mx-auto h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
-                  <path d="m4 4 8 8M12 4l-8 8" strokeLinecap="round" />
-                </svg>
-              </button>
+              {blank ? (
+                <span className="h-10 w-10 shrink-0" aria-hidden />
+              ) : (
+                <button
+                  type="button"
+                  className="h-10 w-10 shrink-0 rounded-md text-slate-400 hover:bg-slate-800 hover:text-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+                  aria-label={t('todo.group_remove', { title: item.title })}
+                  onClick={() => drop(item.id)}
+                >
+                  <svg viewBox="0 0 16 16" className="mx-auto h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
+                    <path d="m4 4 8 8M12 4l-8 8" strokeLinecap="round" />
+                  </svg>
+                </button>
+              )}
             </li>
-          ))}
-        </ul>
-      )}
-      <div className="flex items-center gap-2">
-        <input
-          id={addId}
-          className={inputCls}
-          value={next}
-          placeholder={t('todo.group_add')}
-          aria-label={t('todo.group_add')}
-          enterKeyHint="enter"
-          onChange={(e) => setNext(e.target.value)}
-          onKeyDown={(e) => {
-            // Return adds and stays in the box (not the form's Save).
-            if (e.key !== 'Enter' || e.nativeEvent.isComposing) return
-            e.preventDefault()
-            add()
-          }}
-          onBlur={add}
-        />
-        <button type="button" className={btnGhost} onClick={add} disabled={!next.trim()}>
-          {t('c.add')}
+          )
+        })}
+      </ul>
+    </div>
+  )
+}
+
+/** The quick snoozes as buttons, each with the day it lands on. */
+function SnoozeButtons({ today, value, onPick }: { today: ReturnType<typeof todayParts>; value?: string; onPick: (until: string) => void }) {
+  const t = useT()
+  return (
+    <div className="flex flex-wrap gap-2">
+      {snoozeChoices(today).map((c) => (
+        <button
+          key={c.key}
+          type="button"
+          aria-pressed={value === c.until}
+          className={`${btnGhost} ${value === c.until ? '!border-orange-400 !text-orange-300' : ''}`}
+          onClick={() => onPick(c.until)}
+        >
+          {t(`todo.snooze_${c.key}` as const)}
+          <span className="text-slate-500">{shortDate(c.until, today)}</span>
         </button>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * Snooze one or several to-dos (James, 2026-11-19): tomorrow, next week, next
+ * month, or a day of your own. Gone from the list until that day.
+ */
+function SnoozeSheet({
+  count,
+  today,
+  current,
+  onPick,
+  onClose,
+}: {
+  count: number
+  today: ReturnType<typeof todayParts>
+  current?: string
+  onPick: (until: string | undefined) => void
+  onClose: () => void
+}) {
+  const t = useT()
+  // The date picker's day waits for Snooze: the phone's wheel changes it as it spins.
+  const [day, setDay] = useState(current ?? '')
+  const min = addDays(today, 1)
+  const dayId = useId()
+  return (
+    <Modal title={count === 1 ? t('todo.snooze_until') : t.plural('todo.snooze_many', count)} onClose={onClose} phone="sheet">
+      <div className="space-y-4">
+        <SnoozeButtons today={today} value={current} onPick={onPick} />
+        <div>
+          <label htmlFor={dayId} className={label}>
+            {t('todo.snooze_pick')}
+          </label>
+          <div className="flex items-center gap-2">
+            <input id={dayId} type="date" min={min} className={`${inputCls} [color-scheme:dark]`} value={day} onChange={(e) => setDay(e.target.value)} />
+            <button type="button" className={btnPrimary} disabled={!day || day < min} onClick={() => onPick(day)}>
+              {t('todo.snooze')}
+            </button>
+          </div>
+        </div>
+        {current && current >= min && (
+          <button type="button" className={btnSubtle} onClick={() => onPick(undefined)}>
+            {t('todo.wake')}
+          </button>
+        )}
       </div>
-      {items.length === 0 && (
-        <button type="button" className={btnSubtle} onClick={onUngroup}>
-          {t('todo.group_ungroup')}
-        </button>
-      )}
-    </fieldset>
+    </Modal>
   )
 }
 
@@ -1089,8 +1253,12 @@ function TodoForm({ id }: { id: string }) {
     details: existing?.details ?? '',
     due: existing?.due,
     tagIds: existing?.tagIds ?? [],
-    ...(existing?.items ? { items: existing.items } : {}),
+    ...(existing?.items?.length ? { items: existing.items } : {}),
+    ...(existing?.snoozedUntil ? { snoozedUntil: existing.snoozedUntil } : {}),
   }))
+  // Once per open form, like the tab's own.
+  const today = useMemo(() => todayParts(), [])
+  const snoozeId = useId()
   const [confirming, setConfirming] = useState(false)
   const titleId = useId()
   const detailsId = useId()
@@ -1132,13 +1300,7 @@ function TodoForm({ id }: { id: string }) {
             onChange={(e) => patch({ details: e.target.value })}
           />
         </div>
-        {draft.items ? (
-          <GroupEditor items={draft.items} onChange={(items) => patch({ items })} onUngroup={() => patch({ items: undefined })} />
-        ) : (
-          <button type="button" className={btnGhost} onClick={() => patch({ items: [] })}>
-            {t('todo.group_make')}
-          </button>
-        )}
+        <GroupEditor items={draft.items ?? []} onChange={(items) => patch({ items: items.length ? items : undefined })} />
         {/* A new one is its name, its text and maybe a group (James,
             2026-10-30); the deadline and the tags are Fine-tune's. */}
         {existing && (
@@ -1161,6 +1323,29 @@ function TodoForm({ id }: { id: string }) {
                 {t('c.clear')}
               </button>
             )}
+          </div>
+        </div>
+        <div>
+          <label htmlFor={snoozeId} className={label}>
+            {t('todo.snooze_until')}
+          </label>
+          <div className="space-y-2">
+            <SnoozeButtons today={today} value={draft.snoozedUntil} onPick={(snoozedUntil) => patch({ snoozedUntil })} />
+            <div className="flex items-center gap-2">
+              <input
+                id={snoozeId}
+                type="date"
+                min={addDays(today, 1)}
+                className={`${inputCls} [color-scheme:dark]`}
+                value={draft.snoozedUntil ?? ''}
+                onChange={(e) => patch({ snoozedUntil: e.target.value || undefined })}
+              />
+              {draft.snoozedUntil && (
+                <button type="button" className={btnSubtle} onClick={() => patch({ snoozedUntil: undefined })}>
+                  {t('c.clear')}
+                </button>
+              )}
+            </div>
           </div>
         </div>
         <div>
