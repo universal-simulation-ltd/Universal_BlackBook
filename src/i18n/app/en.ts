@@ -509,7 +509,7 @@ export const appEn = {
   'place.none_phone': "No places yet. Tap + to add the first.",
   'place.no_match': "No place has that in it.",
   'place.none_tagged': "No place has those tags.",
-  'place.hint': "Swipe right to pin a place, left to delete it.",
+  'place.hint': "Swipe right to pin a place, left to delete it, or hold it to select.",
   'place.directions': "Directions",
   'place.call': "Call",
   'place.website_open': "Website",

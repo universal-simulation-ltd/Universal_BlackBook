@@ -457,7 +457,7 @@ export const appTr: Partial<Record<AppKey, string>> = {
   'place.none_phone': "Henüz yer yok. İlkini eklemek için + simgesine dokunun.",
   'place.no_match': "Bunu içeren yer yok.",
   'place.none_tagged': "Bu etiketlere sahip yer yok.",
-  'place.hint': "Bir yeri sabitlemek için sağa, silmek için sola kaydırın.",
+  'place.hint': "Bir yeri sabitlemek için sağa, silmek için sola kaydırın ya da seçmek için basılı tutun.",
   'place.directions': "Yol tarifi",
   'place.call': "Ara",
   'place.website_open': "Web sitesi",

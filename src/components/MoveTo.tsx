@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { MoveKind } from '../lib/move'
 import { moveItems, undoMove, type MoveUndo } from '../stores/move'
-import { IconBook, IconNote, IconTodo } from '../native/icons'
+import { IconBook, IconNote, IconPlace, IconTodo } from '../native/icons'
 import { useT, type Key } from '../i18n'
 import { Choices } from './Choices'
 import { Modal } from './Modal'
@@ -11,6 +11,7 @@ const KINDS: { kind: MoveKind; label: Key; icon: JSX.Element }[] = [
   { kind: 'contacts', label: 'ix.contacts', icon: <IconBook /> },
   { kind: 'notes', label: 'ix.notes', icon: <IconNote /> },
   { kind: 'todos', label: 'ix.todos', icon: <IconTodo /> },
+  { kind: 'places', label: 'tab_places', icon: <IconPlace /> },
 ]
 
 /**

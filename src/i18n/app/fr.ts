@@ -457,7 +457,7 @@ export const appFr: Partial<Record<AppKey, string>> = {
   'place.none_phone': "Aucun lieu pour l’instant. Touchez + pour ajouter le premier.",
   'place.no_match': "Aucun lieu ne contient cela.",
   'place.none_tagged': "Aucun lieu n’a ces étiquettes.",
-  'place.hint': "Balayez vers la droite pour épingler un lieu, vers la gauche pour le supprimer.",
+  'place.hint': "Balayez vers la droite pour épingler un lieu, vers la gauche pour le supprimer, ou maintenez-le pour le sélectionner.",
   'place.directions': "Itinéraire",
   'place.call': "Appeler",
   'place.website_open': "Site web",

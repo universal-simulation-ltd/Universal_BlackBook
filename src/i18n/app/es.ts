@@ -457,7 +457,7 @@ export const appEs: Partial<Record<AppKey, string>> = {
   'place.none_phone': "Aún no hay lugares. Toca + para añadir el primero.",
   'place.no_match': "Ningún lugar contiene eso.",
   'place.none_tagged': "Ningún lugar tiene esas etiquetas.",
-  'place.hint': "Desliza a la derecha para fijar un lugar y a la izquierda para borrarlo.",
+  'place.hint': "Desliza a la derecha para fijar un lugar, a la izquierda para borrarlo, o mantenlo pulsado para seleccionarlo.",
   'place.directions': "Cómo llegar",
   'place.call': "Llamar",
   'place.website_open': "Sitio web",

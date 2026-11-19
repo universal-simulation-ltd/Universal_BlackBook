@@ -255,8 +255,18 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
       return next
     })
 
+  // The last one moved or deleted leaves an empty list, but its Undo must stay
+  // (2026-11-19: moving the only person to Places lost the Undo bar).
+  const undoBars = (
+    <>
+      {moveTo.ui}
+      {undoDelete.item && <UndoBar title={undoDelete.item[0]?.name || ''} onUndo={() => void undoDelete.undo()} />}
+    </>
+  )
+
   if (contacts.length === 0) {
     return (
+      <>
       <div className="rounded-2xl border border-dashed border-slate-800 px-6 py-14 text-center">
         <p className="text-lg font-semibold text-slate-200">{t('list.empty_title')}</p>
         <p className="mx-auto mt-1.5 max-w-md text-sm text-slate-400">{t('list.empty_body')}</p>
@@ -282,6 +292,8 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
           )}
         </div>
       </div>
+      {undoBars}
+      </>
     )
   }
 
@@ -303,6 +315,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
         </p>
       </div>
       {!birthdays && <Elsewhere here="contacts" query={query.text} />}
+      {undoBars}
       </>
     )
   }
@@ -666,8 +679,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
 
       {/* Then what the same search finds on the other tabs (James, 2026-11-18). */}
       {!birthdays && !selecting && <div className="mt-6"><Elsewhere here="contacts" query={query.text} /></div>}
-      {moveTo.ui}
-      {undoDelete.item && <UndoBar title={undoDelete.item[0]?.name || ''} onUndo={() => void undoDelete.undo()} />}
+      {undoBars}
       {pending && (
         <ConfirmDelete
           contact={pending}

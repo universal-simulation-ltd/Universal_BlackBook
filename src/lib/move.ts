@@ -12,6 +12,10 @@
 //   • A note becomes a to-do and back with its title, text and tags; a
 //     deadline is written into the note. Notes carry tags since 2026-11-03,
 //     so a contact's tags (never its lists) come along to a note too.
+//   • A place (2026-11-19) moves with its name, address, phone, website,
+//     notes and tags. Its phone stays a phone on a contact and its address a
+//     location on a note; whatever the other side has no field for is
+//     written into its text, as everything else is.
 //
 // Pure functions of what is moved; the ids and times are the stores'.
 
@@ -19,8 +23,9 @@ import type { Contact, Tag } from './types'
 import type { Note } from './notes'
 import type { NoteTemplate } from './templates'
 import type { Todo } from './todos'
+import type { Place } from './places'
 
-export type MoveKind = 'contacts' | 'notes' | 'todos'
+export type MoveKind = 'contacts' | 'notes' | 'todos' | 'places'
 
 /** What every kind can be read as: a title, some text, and what else carries. */
 export interface Moved {
@@ -31,6 +36,9 @@ export interface Moved {
   location?: Note['location']
   due?: string
   done?: boolean
+  /** A contact's or a place's phone; a place's website. Written into the text where there is no field for them. */
+  phone?: string
+  website?: string
 }
 
 export interface MoveWords {
@@ -48,12 +56,33 @@ export function fromContact(c: Contact, w: MoveWords): Moved {
   return {
     title: c.name.trim() || c.email.trim() || c.company?.trim() || w.untitled,
     details: para(
-      lines(c.company, c.email, c.phone, c.address, c.birthdate ? w.birthday(w.formatBirthday(c.birthdate)) : ''),
+      lines(c.company, c.email, c.address, c.birthdate ? w.birthday(w.formatBirthday(c.birthdate)) : ''),
       c.notes,
     ),
     tagIds: c.tagIds,
     location: c.location,
+    ...(c.phone.trim() ? { phone: c.phone.trim() } : {}),
   }
+}
+
+export function fromPlace(p: Place, w: MoveWords): Moved {
+  return {
+    title: p.name.trim() || w.untitled,
+    details: p.details,
+    tagIds: p.tagIds,
+    location: p.location,
+    ...(p.phone.trim() ? { phone: p.phone.trim() } : {}),
+    ...(p.website.trim() ? { website: p.website.trim() } : {}),
+  }
+}
+
+/**
+ * The text a moved one lands with: the phone and the website the new kind
+ * has no field for, above the rest (and the deadline, unless `due` is false).
+ */
+export function textFor(m: Moved, w: MoveWords, keeps: { phone?: boolean; website?: boolean; due?: boolean } = {}): string {
+  const body = keeps.due === false ? m.details : withDue(m, w)
+  return para(lines(keeps.phone ? '' : m.phone, keeps.website ? '' : m.website), body)
 }
 
 export function fromNote(n: Note, template: NoteTemplate | undefined, w: MoveWords): Moved {

@@ -1,14 +1,16 @@
 import { newId } from '../lib/id'
 import { formatBirthday } from '../lib/birthday'
-import { fromContact, fromNote, fromTodo, tagsForTodo, withDue, type Moved, type MoveKind, type MoveWords } from '../lib/move'
+import { fromContact, fromNote, fromPlace, fromTodo, tagsForTodo, textFor, type Moved, type MoveKind, type MoveWords } from '../lib/move'
 import type { Contact } from '../lib/types'
 import type { Note } from '../lib/notes'
 import type { Todo } from '../lib/todos'
+import type { Place } from '../lib/places'
 import type { Translator } from '../i18n'
 import { useBookStore } from './bookStore'
 import { useNoteStore } from './noteStore'
 import { useSettingsStore } from './settingsStore'
 import { useTodoStore } from './todoStore'
+import { usePlaceStore } from './placeStore'
 
 /**
  * Move picked contacts, notes or to-dos to another kind (lib/move.ts says how
@@ -18,7 +20,7 @@ import { useTodoStore } from './todoStore'
 export interface MoveUndo {
   from: MoveKind
   to: MoveKind
-  originals: Contact[] | Note[] | Todo[]
+  originals: Contact[] | Note[] | Todo[] | Place[]
   created: string[]
 }
 
@@ -34,11 +36,11 @@ function words(t: Translator): MoveWords {
 
 export async function moveItems(from: MoveKind, to: MoveKind, ids: string[], t: Translator): Promise<MoveUndo | null> {
   if (from === to || ids.length === 0) return null
-  await Promise.all([useBookStore.getState().init(), useTodoStore.getState().init(), useNoteStore.getState().init()])
+  await Promise.all([useBookStore.getState().init(), useTodoStore.getState().init(), useNoteStore.getState().init(), usePlaceStore.getState().init()])
   const w = words(t)
   const picked = new Set(ids)
 
-  let originals: Contact[] | Note[] | Todo[]
+  let originals: Contact[] | Note[] | Todo[] | Place[]
   let moved: Moved[]
   if (from === 'contacts') {
     const xs = useBookStore.getState().contacts.filter((c) => picked.has(c.id))
@@ -49,6 +51,10 @@ export async function moveItems(from: MoveKind, to: MoveKind, ids: string[], t: 
     const templates = new Map(useNoteStore.getState().templates.map((x) => [x.id, x]))
     originals = xs
     moved = xs.map((n) => fromNote(n, n.templateId ? templates.get(n.templateId) : undefined, w))
+  } else if (from === 'places') {
+    const xs = usePlaceStore.getState().places.filter((p) => picked.has(p.id))
+    originals = xs
+    moved = xs.map((p) => fromPlace(p, w))
   } else {
     const xs = useTodoStore.getState().todos.filter((x) => picked.has(x.id))
     originals = xs
@@ -63,9 +69,10 @@ export async function moveItems(from: MoveKind, to: MoveKind, ids: string[], t: 
       id: newId(),
       name: m.title.trim(),
       email: '',
-      phone: '',
+      phone: m.phone ?? '',
       tagIds: m.tagIds,
-      notes: withDue(m, w),
+      notes: textFor(m, w, { phone: true }),
+      ...(m.location ? { location: m.location } : {}),
       createdAt: now,
       updatedAt: now + i,
     }))
@@ -78,7 +85,7 @@ export async function moveItems(from: MoveKind, to: MoveKind, ids: string[], t: 
       return {
       id: newId(),
       title: m.title.trim(),
-      details: withDue(m, w),
+      details: textFor(m, w),
       ...(m.location ? { location: m.location } : {}),
       ...(tagIds.length ? { tagIds } : {}),
       createdAt: now,
@@ -88,12 +95,33 @@ export async function moveItems(from: MoveKind, to: MoveKind, ids: string[], t: 
     await useNoteStore.getState().restoreMany(notes)
     useSettingsStore.getState().set({ notes: true })
     created = notes.map((n) => n.id)
+  } else if (to === 'places') {
+    const tags = useBookStore.getState().tags
+    const places: Place[] = moved.map((m, i) => {
+      // A note's own name for a spot ("Mum's") is the place's name already.
+      const { place: _p, ...location } = m.location ?? {}
+      void _p
+      return {
+        id: newId(),
+        name: m.title.trim(),
+        ...(Object.keys(location).length ? { location } : {}),
+        phone: m.phone ?? '',
+        website: m.website ?? '',
+        details: textFor(m, w, { phone: true, website: true }),
+        tagIds: tagsForTodo(m.tagIds, tags),
+        createdAt: now,
+        updatedAt: now + i,
+      }
+    })
+    await usePlaceStore.getState().replace([...usePlaceStore.getState().places, ...places])
+    useSettingsStore.getState().set({ places: true })
+    created = places.map((p) => p.id)
   } else {
     const tags = useBookStore.getState().tags
     const todos: Todo[] = moved.map((m, i) => ({
       id: newId(),
       title: m.title.trim(),
-      details: m.details,
+      details: textFor(m, w, { due: false }),
       tagIds: tagsForTodo(m.tagIds, tags),
       createdAt: now,
       updatedAt: now + i,
@@ -110,7 +138,10 @@ export async function moveItems(from: MoveKind, to: MoveKind, ids: string[], t: 
 async function remove(kind: MoveKind, ids: string[]) {
   if (kind === 'contacts') await useBookStore.getState().removeContacts(ids)
   else if (kind === 'notes') await useNoteStore.getState().removeMany(ids)
-  else {
+  else if (kind === 'places') {
+    const gone = new Set(ids)
+    await usePlaceStore.getState().replace(usePlaceStore.getState().places.filter((p) => !gone.has(p.id)))
+  } else {
     const gone = new Set(ids)
     await useTodoStore.getState().replace(useTodoStore.getState().todos.filter((x) => !gone.has(x.id)))
   }
@@ -121,7 +152,11 @@ export async function undoMove(u: MoveUndo) {
   await remove(u.to, u.created)
   if (u.from === 'contacts') await useBookStore.getState().restoreContacts(u.originals as Contact[])
   else if (u.from === 'notes') await useNoteStore.getState().restoreMany(u.originals as Note[])
-  else {
+  else if (u.from === 'places') {
+    const here = new Set(usePlaceStore.getState().places.map((p) => p.id))
+    const back = (u.originals as Place[]).filter((p) => !here.has(p.id))
+    await usePlaceStore.getState().replace([...usePlaceStore.getState().places, ...back])
+  } else {
     const here = new Set(useTodoStore.getState().todos.map((x) => x.id))
     const back = (u.originals as Todo[]).filter((x) => !here.has(x.id))
     await useTodoStore.getState().replace([...useTodoStore.getState().todos, ...back])

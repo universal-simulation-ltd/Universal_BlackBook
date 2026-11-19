@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fromContact, fromNote, fromTodo, tagsForTodo, withDue, type MoveWords } from './move'
+import { fromContact, fromNote, fromPlace, fromTodo, tagsForTodo, textFor, withDue, type MoveWords } from './move'
 import type { Contact, Tag } from './types'
 import type { Note } from './notes'
 import type { Todo } from './todos'
@@ -20,7 +20,11 @@ describe('moving between contacts, notes and to-dos', () => {
       w,
     )
     expect(m.title).toBe('Grace Hopper')
-    expect(m.details).toBe('Navy\ng@navy.mil\n0113 496 0000\nBirthday: [1906-12-09]\n\nMet at the conference')
+    expect(m.details).toBe('Navy\ng@navy.mil\nBirthday: [1906-12-09]\n\nMet at the conference')
+    expect(m.phone).toBe('0113 496 0000')
+    // Where there is no phone field (a note, a to-do) it is written in, on top.
+    expect(textFor(m, w)).toBe('0113 496 0000\n\nNavy\ng@navy.mil\nBirthday: [1906-12-09]\n\nMet at the conference')
+    expect(textFor(m, w, { phone: true })).toBe(m.details)
     expect(m.tagIds).toEqual(['t1'])
     expect(m.location).toEqual({ street: 'x' })
   })
@@ -46,5 +50,21 @@ describe('moving between contacts, notes and to-dos', () => {
   it('a to-do never gets a list as a tag', () => {
     const tags = [{ id: 't1', name: 'Family' }, { id: 'l1', name: 'Newsletter', kind: 'list' }] as Tag[]
     expect(tagsForTodo(['t1', 'l1'], tags)).toEqual(['t1'])
+  })
+})
+
+describe('moving places (2026-11-19)', () => {
+  it('a place keeps its phone, website, address, notes and tags', () => {
+    const m = fromPlace(
+      { id: 'p', name: 'The Crown', location: { city: 'Leeds', country: 'GB' }, phone: '0113 000', website: 'crown.example', details: 'Quiz on Tuesdays', tagIds: ['pub'], createdAt: 1, updatedAt: 1 },
+      w,
+    )
+    expect(m).toMatchObject({ title: 'The Crown', phone: '0113 000', website: 'crown.example', location: { city: 'Leeds', country: 'GB' }, tagIds: ['pub'] })
+    expect(textFor(m, w)).toBe('0113 000\ncrown.example\n\nQuiz on Tuesdays')
+    expect(textFor(m, w, { phone: true, website: true })).toBe('Quiz on Tuesdays')
+  })
+
+  it('a nameless place is Untitled', () => {
+    expect(fromPlace({ id: 'p', name: ' ', phone: '', website: '', details: '', tagIds: [], createdAt: 1, updatedAt: 1 }, w).title).toBe('Untitled')
   })
 })

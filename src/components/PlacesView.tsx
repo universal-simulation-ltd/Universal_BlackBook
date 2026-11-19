@@ -1,9 +1,9 @@
 import { useId, useMemo, useState, type FormEvent } from 'react'
 import { Capacitor } from '@capacitor/core'
 import { GrowingTextarea } from '@unisim/sdk'
-import { SwipeRow } from './SwipeRow'
-import { deleteSwipe, FocusActions, pinSwipe, UndoBar, useUndo } from './SwipeActions'
-import type { Side } from '../lib/swipe'
+import { deleteSwipe, pinSwipe, SelectBar, SwipeGroup, SwipeItem, UndoBar, useHoldSelect, useUndo } from './SwipeActions'
+import { useMove } from './MoveTo'
+import { usePhoneKit } from '../native/kit'
 import { isList } from '../lib/lists'
 import { mapsUrl } from '../lib/notes'
 import { hasLocation } from '../lib/geo'
@@ -30,7 +30,8 @@ import { saveKeyLabel } from '../lib/saveKey'
  * The Places tab (James, 2026-11-19: "Add a 'Places' tab as well similar to
  * people"): the places you keep, A to Z with the pinned ones first, each with
  * its town and its tags' dots. Tap one to see and change it; swipe right to
- * pin, left to delete (with Undo). Search covers names, addresses, phone
+ * pin, left to delete (with Undo); hold one to select, then Pin, Move (to
+ * People, Notes or To-dos) or Delete. Search covers names, addresses, phone
  * numbers, websites, notes and tags. See lib/places.ts for what a place is.
  */
 export function PlacesView() {
@@ -47,15 +48,19 @@ export function PlacesView() {
   const restore = usePlaceStore((s) => s.restore)
   const tags = useBookStore((s) => s.tags)
   const [query, setQuery] = useState('')
-  const [openRow, setOpenRow] = useState<{ id: string; side: Side } | null>(null)
   const hintId = useId()
-  const undo = useUndo<Place>(async (x) => {
-    await restore(x)
+  const undo = useUndo<Place[]>(async (xs) => {
+    for (const x of xs) await restore(x)
   })
-  const removeWithUndo = (x: Place) => {
-    undo.deleted(x)
-    void remove(x.id)
+  const removeManyWithUndo = (xs: Place[]) => {
+    if (!xs.length) return
+    undo.deleted(xs)
+    for (const x of xs) void remove(x.id)
   }
+  const removeWithUndo = (x: Place) => removeManyWithUndo([x])
+  const kit = usePhoneKit()
+  // Select ▸ Move: to People, Notes or To-dos (MoveTo).
+  const moveTo = useMove('places')
   // What was typed in the search becomes a new place's name, in the form: a
   // place is worth its address, so the form opens rather than saving a name alone.
   const addTyped = (text: string) => {
@@ -79,6 +84,7 @@ export function PlacesView() {
         .sort((a, b) => comparePlaces(a, b, t.locale)),
     [places, activeFilter, query, byId, t.locale],
   )
+  const sel = useHoldSelect(shown.map((p) => p.id), Boolean(kit))
 
   return (
     <div className="space-y-4">
@@ -142,40 +148,53 @@ export function PlacesView() {
           {query.trim() ? t('place.no_match') : t('place.none_tagged')}
         </p>
       ) : (
-        <ul className="max-w-4xl" aria-describedby={hintId}>
-          {shown.map((p) => (
-            <li key={p.id} className="border-b border-slate-800/70">
-              <SwipeRow
-                open={openRow?.id === p.id ? openRow.side : null}
-                onOpenChange={(side) => setOpenRow(side ? { id: p.id, side } : null)}
-                left={pinSwipe(Boolean(p.pinnedAt), p.name, () => {
-                  setOpenRow(null)
-                  void setPinned(p.id, !p.pinnedAt)
-                })}
-                right={deleteSwipe(p.name, () => {
-                  setOpenRow(null)
-                  removeWithUndo(p)
-                })}
-              >
-                <PlaceRow place={p} byId={byId} onOpen={() => edit(p.id)} />
-                <FocusActions
-                  actions={[
-                    { label: p.pinnedAt ? t('todo.unpin_label', { title: p.name }) : t('todo.pin_label', { title: p.name }), onClick: () => void setPinned(p.id, !p.pinnedAt) },
-                    { label: t('todo.delete_label', { title: p.name }), onClick: () => removeWithUndo(p) },
-                  ]}
-                />
-              </SwipeRow>
-            </li>
-          ))}
-        </ul>
+        <>
+          <SelectBar
+            select={sel}
+            total={shown.length}
+            actions={[
+              { label: t('todo.pin'), onClick: (ids) => ids.forEach((id) => void setPinned(id, true)) },
+              { label: t('sel.move'), onClick: moveTo.start },
+              { label: t('c.delete'), danger: true, onClick: (ids) => removeManyWithUndo(shown.filter((p) => ids.includes(p.id))) },
+            ]}
+          />
+          <SwipeGroup>
+            <ul className="max-w-4xl" aria-describedby={hintId}>
+              {shown.map((p) => (
+                <li key={p.id} className="border-b border-slate-800/70">
+                  <SwipeItem
+                    id={p.id}
+                    name={p.name}
+                    select={sel}
+                    left={pinSwipe(Boolean(p.pinnedAt), p.name, () => void setPinned(p.id, !p.pinnedAt))}
+                    right={deleteSwipe(p.name, () => removeWithUndo(p))}
+                    focus={[
+                      { label: p.pinnedAt ? t('todo.unpin_label', { title: p.name }) : t('todo.pin_label', { title: p.name }), onClick: () => void setPinned(p.id, !p.pinnedAt) },
+                      { label: t('todo.delete_label', { title: p.name }), onClick: () => removeWithUndo(p) },
+                    ]}
+                  >
+                    <PlaceRow place={p} byId={byId} onOpen={() => edit(p.id)} />
+                  </SwipeItem>
+                </li>
+              ))}
+            </ul>
+          </SwipeGroup>
+        </>
       )}
       <p id={hintId} className="sr-only">
         {t('place.hint')}
       </p>
-      {undo.item && <UndoBar title={undo.item.name} onUndo={() => void undo.undo()} />}
+      {moveTo.ui}
+      {undo.item && (
+        <UndoBar
+          title={undo.item.length === 1 ? undo.item[0].name : ''}
+          text={undo.item.length === 1 ? undefined : t.plural('sel.deleted', undo.item.length)}
+          onUndo={() => void undo.undo()}
+        />
+      )}
 
       {/* Then what the same search finds on the other tabs. */}
-      <Elsewhere here="places" query={query} />
+      {!sel.selecting && <Elsewhere here="places" query={query} />}
 
       {editing && <PlaceForm key={editing} id={editing} />}
     </div>
