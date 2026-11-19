@@ -4,7 +4,7 @@ import { useSettingsStore } from '../stores/settingsStore'
 import { useT, type Key } from '../i18n'
 import { phoneScreens } from '../native/shell'
 
-const NAME: Record<Tab, Key> = { contacts: 'tab_contacts', lists: 'tab_lists', todos: 'tab_todos', notes: 'tab_notes' }
+const NAME: Record<Tab, Key> = { contacts: 'tab_contacts', places: 'tab_places', lists: 'tab_lists', todos: 'tab_todos', notes: 'tab_notes' }
 
 /**
  * Tune this app ▸ Tab order (James, 2026-10-25): the same order the phone's
@@ -22,7 +22,8 @@ export function TabOrderPreference() {
   const todos = useSettingsStore((s) => s.todos)
   const notes = useSettingsStore((s) => s.notes)
   const contacts = useSettingsStore((s) => s.contacts)
-  const on: Record<Tab, boolean> = { contacts: !phoneScreens() || contacts, lists: emailLists, todos, notes }
+  const places = useSettingsStore((s) => s.places)
+  const on: Record<Tab, boolean> = { contacts: !phoneScreens() || contacts, places, lists: emailLists, todos, notes }
   const list = useRef<HTMLOListElement>(null)
   const [held, setHeld] = useState<Tab | null>(null)
   const move = (tab: Tab, to: number) => set({ tabOrder: moveTab(order, tab, to) })

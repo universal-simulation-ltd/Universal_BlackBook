@@ -29,6 +29,7 @@ const tag = (id: string, name: string, patch: Partial<Tag> = {}): Tag => ({ id, 
 
 const source = (): BackupSource => ({
   templates: [],
+  places: [],
   contacts: [
     contact('c1', 'Ada', {
       phone: '+44 7700 900123',
@@ -62,7 +63,7 @@ describe('backup file', () => {
     expect(opened.data.todos).toEqual(source().todos)
     expect(opened.data.tags).toEqual(source().tags)
     expect(opened.data.pages).toEqual(source().pages)
-    expect(opened.data.settings).toEqual({ emailLists: true, todos: true, notes: true, shownFields: ['email', 'phone'] })
+    expect(opened.data.settings).toEqual({ emailLists: true, todos: true, notes: true, places: true, shownFields: ['email', 'phone'] })
     expect(opened.data.view).toEqual(source().view)
   })
 
@@ -138,7 +139,7 @@ describe('parseBackup (untrusted data)', () => {
     expect(data.todos).toHaveLength(1)
     expect(data.todos[0].due).toBeUndefined()
     expect(data.todos[0].doneAt).toBeUndefined()
-    expect(data.settings).toEqual({ emailLists: false, todos: true, notes: true, shownFields: ['phone'] })
+    expect(data.settings).toEqual({ emailLists: false, todos: true, notes: true, places: true, shownFields: ['phone'] })
     expect(data.view).toBeNull()
   })
 

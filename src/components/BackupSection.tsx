@@ -6,6 +6,7 @@ import { mergeBackup, openBackup, packBackup, type BackupData } from '../lib/bac
 import { useBookStore } from '../stores/bookStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useTodoStore } from '../stores/todoStore'
+import { usePlaceStore } from '../stores/placeStore'
 import { useNoteStore } from '../stores/noteStore'
 import { btnDanger, btnGhost, btnPrimary, checkboxCls, inputCls, label } from './ui'
 import { autoFocusOK } from '../native/kit'
@@ -70,7 +71,7 @@ export function BackupSection({ part, onDone }: { part: 'save' | 'open'; onDone:
     setSaved(null)
     setError(null)
     try {
-      await Promise.all([useTodoStore.getState().init(), useNoteStore.getState().init()])
+      await Promise.all([useTodoStore.getState().init(), useNoteStore.getState().init(), usePlaceStore.getState().init()])
       const settings = useSettingsStore.getState()
       const packed = await packBackup(
         {
@@ -79,7 +80,8 @@ export function BackupSection({ part, onDone }: { part: 'save' | 'open'; onDone:
           todos: useTodoStore.getState().todos,
           pages: useNoteStore.getState().notes,
           templates: useNoteStore.getState().templates,
-          settings: { emailLists: settings.emailLists, todos: settings.todos, notes: settings.notes, shownFields: settings.shownFields, tabOrder: settings.tabOrder },
+          places: usePlaceStore.getState().places,
+          settings: { emailLists: settings.emailLists, todos: settings.todos, notes: settings.notes, places: settings.places, shownFields: settings.shownFields, tabOrder: settings.tabOrder },
           view: useBookStore.getState().defaultView,
         },
         {
@@ -137,14 +139,15 @@ export function BackupSection({ part, onDone }: { part: 'save' | 'open'; onDone:
   const apply = async (data: BackupData, mode: 'merge' | 'replace') => {
     setBusy(true)
     try {
-      await Promise.all([useTodoStore.getState().init(), useNoteStore.getState().init()])
+      await Promise.all([useTodoStore.getState().init(), useNoteStore.getState().init(), usePlaceStore.getState().init()])
       const settings = useSettingsStore.getState()
       if (mode === 'replace') {
         await useTodoStore.getState().replace(data.todos)
         await useNoteStore.getState().replace(data.pages)
         // An older file has no templates (null) and leaves this device's alone.
         if (data.templates) await useNoteStore.getState().replaceTemplates(data.templates)
-        if (data.settings) settings.set(data.settings)
+        await usePlaceStore.getState().replace(data.places)
+        if (data.settings) settings.set({ ...data.settings, places: data.settings.places !== false })
         await restoreBook(
           { contacts: data.contacts, tags: data.tags, view: data.view },
           t('bk.opened', { text: bookCounts(t, { contacts: data.contacts.length, todos: data.todos.length, notes: data.pages.length }) }),
@@ -156,8 +159,10 @@ export function BackupSection({ part, onDone }: { part: 'save' | 'open'; onDone:
           todos: useTodoStore.getState().todos,
           pages: useNoteStore.getState().notes,
           templates: useNoteStore.getState().templates,
+          places: usePlaceStore.getState().places,
         }
         const merged = mergeBackup(here, data)
+        await usePlaceStore.getState().replace(merged.places)
         await useTodoStore.getState().replace(merged.todos)
         await useNoteStore.getState().replace(merged.pages)
         await useNoteStore.getState().replaceTemplates(merged.templates)
@@ -168,6 +173,7 @@ export function BackupSection({ part, onDone }: { part: 'save' | 'open'; onDone:
             emailLists: settings.emailLists || data.settings.emailLists,
             todos: settings.todos || data.settings.todos,
             notes: settings.notes || data.settings.notes,
+            places: settings.places || data.settings.places !== false,
             shownFields: [...new Set([...settings.shownFields, ...data.settings.shownFields])],
           })
         }

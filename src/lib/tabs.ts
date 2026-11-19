@@ -3,7 +3,9 @@
 // here: it is where the settings are, and a tab bar that could lose it would
 // be a trap.
 
-export const TABS = ['contacts', 'lists', 'todos', 'notes'] as const
+// Places (2026-11-19) sits beside People, as James asked for it "similar to
+// people"; a stored order gets it just after Contacts (normaliseOrder).
+export const TABS = ['contacts', 'places', 'lists', 'todos', 'notes'] as const
 export type Tab = (typeof TABS)[number]
 
 /**
@@ -62,6 +64,8 @@ export interface TabLayout {
   todos: boolean
   notes: boolean
   contacts: boolean
+  /** The Places tab (2026-11-19). On unless a device said off. */
+  places: boolean
   at: number
 }
 
@@ -76,6 +80,7 @@ export function parseTabLayout(raw: unknown): TabLayout | null {
     todos: r.todos !== false,
     notes: r.notes !== false,
     contacts: r.contacts !== false,
+    places: r.places !== false,
     at: r.at,
   }
 }

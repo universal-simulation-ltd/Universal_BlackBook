@@ -819,7 +819,7 @@ describe('the tabs travel with the book (2026-10-30)', () => {
     use(b)
     const web = b.settings
     await use(b).sync.getState().pull(b.client)
-    expect(web.getState().tabOrder).toEqual(['todos', 'lists', 'contacts', 'notes'])
+    expect(web.getState().tabOrder).toEqual(['todos', 'lists', 'contacts', 'places', 'notes'])
     expect(web.getState().emailLists).toBe(true)
     expect(web.getState().notes).toBe(false)
     expect(web.getState().tunedAt).toBe(phone.getState().tunedAt)

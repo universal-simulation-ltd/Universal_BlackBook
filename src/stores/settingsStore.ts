@@ -31,6 +31,8 @@ export interface Settings {
    * shows Contacts.
    */
   contacts: boolean
+  /** The Places tab beside Contacts (2026-11-19). On by default, like To-do and Notes. */
+  places: boolean
   /**
    * The optional fields a NEW contact's form shows straight away; the rest
    * wait under "More" (owner's request, 2026-09-29: "select which fields are
@@ -91,13 +93,13 @@ export interface Settings {
 }
 
 /** The switches that go to the account's other devices; a change to one is stamped. */
-const SYNCED_KEYS = ['tabOrder', 'emailLists', 'todos', 'notes', 'contacts', 'shownFields', 'notifyDetails', 'fillLocation', 'noteActions', 'contactActions', 'look'] as const
+const SYNCED_KEYS = ['tabOrder', 'emailLists', 'todos', 'notes', 'contacts', 'places', 'shownFields', 'notifyDetails', 'fillLocation', 'noteActions', 'contactActions', 'look'] as const
 
 const KEY = 'blackbook.settings'
 // To-do and Notes are ON by default, Email lists off (James, 2026-10-23: "have
 // all active as default except email lists"). Their tick boxes are worded as
 // opt-outs ("Hide the To-do tab"), so every box still starts unticked.
-const DEFAULTS: Settings = { emailLists: false, todos: true, notes: true, contacts: true, shownFields: [], notifyDetails: false, tabOrder: [...TABS], fillLocation: false, noteActions: normaliseQuickActions(undefined), contactActions: normaliseContactActions(undefined), bookYours: false, shakeClear: false, look: null, tunedAt: 0 }
+const DEFAULTS: Settings = { emailLists: false, todos: true, notes: true, contacts: true, places: true, shownFields: [], notifyDetails: false, tabOrder: [...TABS], fillLocation: false, noteActions: normaliseQuickActions(undefined), contactActions: normaliseContactActions(undefined), bookYours: false, shakeClear: false, look: null, tunedAt: 0 }
 /**
  * The stored shape's version. 1 (no `v`) wrote every switch whenever any one
  * changed, so a stored `false` for To-do or Notes cannot be told from "never
@@ -118,6 +120,7 @@ function load(): Settings {
       todos: (raw as { v?: number }).v === VERSION ? raw.todos !== false : true,
       notes: (raw as { v?: number }).v === VERSION ? raw.notes !== false : true,
       contacts: raw.contacts !== false,
+      places: raw.places !== false,
       // Kept in FORM_FIELDS order whatever order they were ticked in, and
       // anything unknown (a field since removed) dropped.
       shownFields: normaliseShownFields(raw.shownFields),
@@ -164,10 +167,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     const tuned = patch.tunedAt === undefined && SYNCED_KEYS.some((k) => k in patch)
     set(tuned ? { ...patch, tunedAt: Date.now() } : patch)
     try {
-      const { emailLists, todos, notes, contacts, shownFields, notifyDetails, tabOrder, fillLocation, noteActions, contactActions, bookYours, shakeClear, look, tunedAt } = get()
+      const { emailLists, todos, notes, contacts, places, shownFields, notifyDetails, tabOrder, fillLocation, noteActions, contactActions, bookYours, shakeClear, look, tunedAt } = get()
       localStorage.setItem(
         KEY,
-        JSON.stringify({ v: VERSION, emailLists, todos, notes, contacts, shownFields, notifyDetails, tabOrder, fillLocation, noteActions, contactActions, bookYours, shakeClear, look, tunedAt }),
+        JSON.stringify({ v: VERSION, emailLists, todos, notes, contacts, places, shownFields, notifyDetails, tabOrder, fillLocation, noteActions, contactActions, bookYours, shakeClear, look, tunedAt }),
       )
     } catch {
       // See the note above: the switch still works until the app is closed.

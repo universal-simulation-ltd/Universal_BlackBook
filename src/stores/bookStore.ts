@@ -5,6 +5,7 @@ import { DEFAULT_VIEW, EMPTY_QUERY, UNTAGGED, viewOf, type Query, type View } fr
 import { newId } from '../lib/id'
 import { listIdsOf } from '../lib/lists'
 import { useTodoStore } from './todoStore'
+import { usePlaceStore } from './placeStore'
 import { useNoteStore } from './noteStore'
 import { nextSwatch, SWATCHES } from '../lib/palette'
 import type { Pattern } from '../lib/patterns'
@@ -202,6 +203,8 @@ export interface TagUndo {
   todoIds: string[]
   /** Notes carry the book's tags too (2026-11-03). Absent in an older undo. */
   noteIds?: string[]
+  /** Places carry them too (2026-11-19). Absent in an older undo. */
+  placeIds?: string[]
   listIds: string[]
 }
 
@@ -686,7 +689,7 @@ export const useBookStore = create<BookState>((set, get) => ({
     await Promise.all(add.map(putContact))
   },
 
-  restoreTag: async ({ tag, contactIds, todoIds, noteIds, listIds }) => {
+  restoreTag: async ({ tag, contactIds, todoIds, noteIds, placeIds, listIds }) => {
     if (get().tags.some((t) => t.id === tag.id)) return
     const now = Date.now()
     const onContacts = new Set(contactIds)
@@ -710,6 +713,7 @@ export const useBookStore = create<BookState>((set, get) => ({
       await todos.replace(todos.todos.map((x) => (on.has(x.id) && !x.tagIds.includes(tag.id) ? { ...x, tagIds: [...x.tagIds, tag.id], updatedAt: now } : x)))
     }
     if (noteIds?.length) await useNoteStore.getState().addTag(noteIds, tag.id)
+    if (placeIds?.length) await usePlaceStore.getState().addTag(placeIds, tag.id)
   },
 
   removeTag: async (id) => {
@@ -720,6 +724,7 @@ export const useBookStore = create<BookState>((set, get) => ({
           contactIds: get().contacts.filter((c) => c.tagIds.includes(id)).map((c) => c.id),
           todoIds: useTodoStore.getState().todos.filter((x) => x.tagIds.includes(id)).map((x) => x.id),
           noteIds: useNoteStore.getState().notes.filter((n) => n.tagIds?.includes(id)).map((n) => n.id),
+          placeIds: usePlaceStore.getState().places.filter((p) => p.tagIds.includes(id)).map((p) => p.id),
           listIds: get().tags.filter((t) => t.tagIds?.includes(id)).map((t) => t.id),
         }
       : null
@@ -764,6 +769,7 @@ export const useBookStore = create<BookState>((set, get) => ({
     // To-dos carry the same tags (lib/todos.ts).
     await useTodoStore.getState().dropTag(id)
     await useNoteStore.getState().dropTag(id)
+    await usePlaceStore.getState().dropTag(id)
     await Promise.all(lists.map(putTag))
     await Promise.all(
       touched.map((t) => {

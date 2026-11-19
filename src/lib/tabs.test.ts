@@ -6,7 +6,7 @@ import { availableTabs } from '../appParts'
 describe('tab order (2026-10-25)', () => {
   it('makes any stored order whole', () => {
     expect(normaliseOrder(undefined)).toEqual([...TABS])
-    expect(normaliseOrder(['notes', 'contacts', 'notes', 'bogus'])).toEqual(['notes', 'contacts', 'lists', 'todos'])
+    expect(normaliseOrder(['notes', 'contacts', 'notes', 'bogus'])).toEqual(['notes', 'contacts', 'places', 'lists', 'todos'])
     expect(isDefaultOrder(normaliseOrder([]))).toBe(true)
   })
 
@@ -25,7 +25,7 @@ describe('tab order (2026-10-25)', () => {
 
   it('travels in the backup file; an older file says nothing', () => {
     const data = parseBackup({ contacts: [], settings: { emailLists: false, shownFields: [], tabOrder: ['notes', 'x'] } })!
-    expect(data.settings?.tabOrder).toEqual(['contacts', 'lists', 'todos', 'notes'])
+    expect(data.settings?.tabOrder).toEqual(['contacts', 'places', 'lists', 'todos', 'notes'])
     expect(parseBackup({ contacts: [], settings: { emailLists: false, shownFields: [] } })!.settings).not.toHaveProperty('tabOrder')
   })
 })
@@ -38,6 +38,7 @@ describe('the synced tab layout (2026-10-30)', () => {
       todos: false,
       notes: true,
       contacts: true,
+      places: true,
       at: 5,
     })
     expect(parseTabLayout({ order: [] })).toBeNull()

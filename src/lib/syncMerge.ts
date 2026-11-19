@@ -23,11 +23,12 @@
 
 import type { Contact, Tag } from './types'
 import type { Todo } from './todos'
+import type { Place } from './places'
 import type { Note } from './notes'
 import type { NoteTemplate } from './templates'
 
 /** The collections a vault holds, by their payload names. */
-export const KINDS = ['contacts', 'tags', 'todos', 'pages', 'templates'] as const
+export const KINDS = ['contacts', 'tags', 'todos', 'pages', 'templates', 'places'] as const
 export type Kind = (typeof KINDS)[number]
 
 /** One entry's signature per id, per collection, at the last sync. */
@@ -39,6 +40,8 @@ export interface MergeInput {
   todos?: Todo[]
   pages?: Note[]
   templates?: NoteTemplate[]
+  /** The Places tab (2026-11-19). Absent: says nothing about places, as `todos`. */
+  places?: Place[]
 }
 
 type Entry = { id: string; updatedAt?: number }

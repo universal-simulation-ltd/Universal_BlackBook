@@ -6,12 +6,13 @@
 import { townOf, type Location, type Town } from './geo'
 import type { Note } from './notes'
 import type { Contact } from './types'
+import type { Place } from './places'
 
-export type MapKind = 'all' | 'contacts' | 'notes'
+export type MapKind = 'all' | 'contacts' | 'notes' | 'places'
 
 export interface MapFilter {
   kind: MapKind
-  /** Contacts carrying any of these tags (none = all). */
+  /** Contacts and places carrying any of these tags (none = all). */
   tagIds: string[]
   /** Notes from this template (null = all). */
   templateId: string | null
@@ -22,6 +23,8 @@ export interface MapGroup {
   town: Town
   contacts: Contact[]
   notes: Note[]
+  /** The Places tab's places in this town (2026-11-19). */
+  places: Place[]
 }
 
 /** A contact's location: its parts, else nothing (an address kept only as text has no town to place). */
@@ -29,7 +32,7 @@ function contactLocation(c: Contact): Location | undefined {
   return c.location
 }
 
-export function mapGroups(contacts: Contact[], notes: Note[], filter: MapFilter): { groups: MapGroup[]; unplaced: number } {
+export function mapGroups(contacts: Contact[], notes: Note[], filter: MapFilter, places: Place[] = []): { groups: MapGroup[]; unplaced: number } {
   const groups = new Map<string, MapGroup>()
   let unplaced = 0
   const add = (loc: Location | undefined, put: (g: MapGroup) => void) => {
@@ -42,22 +45,28 @@ export function mapGroups(contacts: Contact[], notes: Note[], filter: MapFilter)
     const key = `${town.cc}|${town.div}|${town.name}`
     let g = groups.get(key)
     if (!g) {
-      g = { key, town, contacts: [], notes: [] }
+      g = { key, town, contacts: [], notes: [], places: [] }
       groups.set(key, g)
     }
     put(g)
   }
-  if (filter.kind !== 'notes') {
+  if (filter.kind === 'all' || filter.kind === 'contacts') {
     for (const c of contacts) {
       if (c.listOnly) continue
       if (filter.tagIds.length && !c.tagIds.some((t) => filter.tagIds.includes(t))) continue
       add(contactLocation(c), (g) => g.contacts.push(c))
     }
   }
-  if (filter.kind !== 'contacts') {
+  if (filter.kind === 'all' || filter.kind === 'notes') {
     for (const n of notes) {
       if (filter.templateId && n.templateId !== filter.templateId) continue
       add(n.location, (g) => g.notes.push(n))
+    }
+  }
+  if (filter.kind === 'all' || filter.kind === 'places') {
+    for (const p of places) {
+      if (filter.tagIds.length && !p.tagIds.some((t) => filter.tagIds.includes(t))) continue
+      add(p.location, (g) => g.places.push(p))
     }
   }
   return { groups: [...groups.values()], unplaced }
@@ -68,12 +77,13 @@ export function mapGroups(contacts: Contact[], notes: Note[], filter: MapFilter)
  * show a tag in the map view if it doesn't have any items with map
  * locations"): only those carried by something that lands on a pin.
  */
-export function mappedFilters(contacts: Contact[], notes: Note[]): { tagIds: Set<string>; templateIds: Set<string> } {
+export function mappedFilters(contacts: Contact[], notes: Note[], places: Place[] = []): { tagIds: Set<string>; templateIds: Set<string> } {
   const tagIds = new Set<string>()
   const templateIds = new Set<string>()
   const placed = (loc: Location | undefined) => Boolean(loc?.city && townOf(loc))
   for (const c of contacts) if (!c.listOnly && placed(contactLocation(c))) for (const id of c.tagIds) tagIds.add(id)
   for (const n of notes) if (n.templateId && placed(n.location)) templateIds.add(n.templateId)
+  for (const p of places) if (placed(p.location)) for (const id of p.tagIds) tagIds.add(id)
   return { tagIds, templateIds }
 }
 

@@ -17,6 +17,7 @@ import { isValidBirthday } from './birthday'
 import { SORT_KEYS, type SortKey, type View } from './filter'
 import { toLockRecord, type LockRecord } from './lock'
 import { toTodos, type Todo } from './todos'
+import { toPlaces, type Place } from './places'
 import { toNotes, type Note } from './notes'
 import { toReminders } from './reminders'
 import { isPattern } from './patterns'
@@ -246,6 +247,7 @@ export async function replaceAll(contacts: Contact[], tags: Tag[]): Promise<void
 //           part of the vault — it is data, not a preference.
 //   'pages' the Notes tab's notes (lib/notes.ts), as ONE array, for the same
 //           reason as 'todos' — and, like it, part of the vault.
+//   'places' the Places tab's places (lib/places.ts, 2026-11-19), the same way.
 //   'templates' / 'tplseed'  the note templates (lib/templates.ts) and whether
 //           the example one has been given; templates are part of the vault.
 //   'seed'  whether this device has ever been given its two starting tags. A
@@ -334,6 +336,15 @@ export async function loadTodos(): Promise<Todo[]> {
 
 export async function saveTodos(todos: Todo[]): Promise<void> {
   await tx(SYNC, 'readwrite', (s) => s.put(todos, 'todos'))
+}
+
+/** The Places tab's places. Absent on a device that never had them: an empty list. */
+export async function loadPlaces(): Promise<Place[]> {
+  return toPlaces(await tx<unknown>(SYNC, 'readonly', (s) => s.get('places') as IDBRequest<unknown>))
+}
+
+export async function savePlaces(places: Place[]): Promise<void> {
+  await tx(SYNC, 'readwrite', (s) => s.put(places, 'places'))
 }
 
 /** The Notes tab's notes. Absent on a device that never had them: an empty list. */
@@ -469,6 +480,7 @@ export async function wipeDevice(): Promise<void> {
   // The to-do list is part of the book, and goes with it.
   await tx(SYNC, 'readwrite', (s) => s.delete('todos'))
   await tx(SYNC, 'readwrite', (s) => s.delete('pages'))
+  await tx(SYNC, 'readwrite', (s) => s.delete('places'))
   await tx(SYNC, 'readwrite', (s) => s.delete('templates'))
   await tx(SYNC, 'readwrite', (s) => s.delete('tplseed'))
 }

@@ -47,6 +47,7 @@ import { FORM_FIELDS, isFormField, type FormField } from './formFields'
 import { mergeBooks } from './merge'
 import { isTagColour, SWATCHES } from './palette'
 import { toTodo, mergeTodos, type Todo } from './todos'
+import { mergePlaces, toPlaces, type Place } from './places'
 import { toReminders } from './reminders'
 import { isPattern } from './patterns'
 import { normaliseOrder, type Tab } from './tabs'
@@ -64,6 +65,8 @@ export interface BackupSettings {
   emailLists: boolean
   todos: boolean
   notes: boolean
+  /** The Places tab (2026-11-19). Absent in an older file: on. */
+  places?: boolean
   shownFields: FormField[]
   /** The tabs' order (2026-10-25). Absent in an older file, which leaves this device's. */
   tabOrder?: Tab[]
@@ -76,6 +79,8 @@ export interface BackupData {
   pages: Note[]
   /** Note templates (schema 3). Null for an older file, which says nothing about them. */
   templates: NoteTemplate[] | null
+  /** The Places tab's places (2026-11-19). An older file has none: an empty list. */
+  places: Place[]
   settings: BackupSettings | null
   view: View | null
 }
@@ -88,6 +93,7 @@ export const LIMITS = {
   tags: 2_000,
   todos: 20_000,
   pages: 20_000,
+  places: 20_000,
   tagIdsPerRecord: 500,
   id: 100,
   name: 500,
@@ -112,6 +118,7 @@ export interface BackupSource {
   todos: Todo[]
   pages: Note[]
   templates: NoteTemplate[]
+  places: Place[]
   settings: BackupSettings
   view: View
 }
@@ -124,10 +131,12 @@ export function backupData(src: BackupSource): BackupData {
     todos: src.todos.map((t) => ({ ...t, tagIds: [...t.tagIds] })),
     pages: src.pages.map((n) => ({ ...n })),
     templates: src.templates.map((t) => ({ ...t, fields: t.fields.map((f) => ({ ...f })) })),
+    places: src.places.map((p) => ({ ...p, tagIds: [...p.tagIds], ...(p.location ? { location: { ...p.location } } : {}) })),
     settings: {
       emailLists: src.settings.emailLists,
       todos: src.settings.todos,
       notes: src.settings.notes,
+      places: src.settings.places !== false,
       shownFields: [...src.settings.shownFields],
       ...(src.settings.tabOrder ? { tabOrder: [...src.settings.tabOrder] } : {}),
     },
@@ -347,6 +356,7 @@ function parseSettings(raw: unknown): BackupSettings | null {
     // On unless the file says off (the defaults since 2026-10-23).
     todos: raw.todos !== false,
     notes: raw.notes !== false,
+    places: raw.places !== false,
     shownFields: FORM_FIELDS.filter((f) => shown.includes(f)),
     ...(Array.isArray(raw.tabOrder) ? { tabOrder: normaliseOrder(raw.tabOrder) } : {}),
   }
@@ -430,7 +440,11 @@ export function parseBackup(raw: unknown): BackupData | null {
   if (Array.isArray(raw.templates) && raw.templates.length > TEMPLATE_LIMITS.templates * 2) return null
   const templates = Array.isArray(raw.templates) ? toTemplates(raw.templates) : null
 
-  return { contacts, tags, todos, pages, templates, settings: parseSettings(raw.settings), view: parseView(raw.view, tagIds) }
+  // Places carry ordinary tags only, as to-dos do.
+  if (Array.isArray(raw.places) && raw.places.length > LIMITS.places) return null
+  const places = toPlaces(raw.places, plain)
+
+  return { contacts, tags, todos, pages, templates, places, settings: parseSettings(raw.settings), view: parseView(raw.view, tagIds) }
 }
 
 // ── Merging ──────────────────────────────────────────────────────────────────
@@ -441,6 +455,7 @@ export interface MergedBackup {
   todos: Todo[]
   pages: Note[]
   templates: NoteTemplate[]
+  places: Place[]
   /** People, to-dos and notes from the file that were not here. */
   added: number
   /** Ones in both, where the file's copy was edited later. */
@@ -455,7 +470,7 @@ export interface MergedBackup {
  * is not added again either. So opening the same backup twice adds nothing.
  */
 export function mergeBackup(
-  here: { contacts: Contact[]; tags: Tag[]; todos: Todo[]; pages: Note[]; templates?: NoteTemplate[] },
+  here: { contacts: Contact[]; tags: Tag[]; todos: Todo[]; pages: Note[]; templates?: NoteTemplate[]; places?: Place[] },
   file: BackupData,
 ): MergedBackup {
   const book = mergeBooks({ contacts: here.contacts, tags: here.tags }, { contacts: file.contacts, tags: file.tags })
@@ -488,6 +503,18 @@ export function mergeBackup(
     if (was === undefined) todosAdded++
     else if (n.updatedAt > was) todosUpdated++
   }
+  // Places the same way: a new id with the same name and town as one here is the same place.
+  const samePlace = (p: Place) => `${p.name.trim().toLowerCase()}\u0000${(p.location?.city ?? '').trim().toLowerCase()}`
+  const herePlaces = here.places ?? []
+  const herePlaceIds = new Set(herePlaces.map((p) => p.id))
+  const herePlaceKeys = new Set(herePlaces.map(samePlace))
+  const places = mergePlaces(herePlaces, file.places.filter((p) => herePlaceIds.has(p.id) || !herePlaceKeys.has(samePlace(p))), book.remap)
+  const placesBefore = new Map(herePlaces.map((p) => [p.id, p.updatedAt]))
+  for (const p of places) {
+    const was = placesBefore.get(p.id)
+    if (was === undefined) todosAdded++
+    else if (p.updatedAt > was) todosUpdated++
+  }
   // A list from the file keeps pointing at its own tags where they were
   // folded into one of the same name here.
   const tags = book.remap.size
@@ -499,6 +526,7 @@ export function mergeBackup(
     todos,
     pages,
     templates: mergeTemplates(here.templates ?? [], file.templates ?? []),
+    places,
     added: book.added + todosAdded,
     updated: book.updated + todosUpdated,
   }

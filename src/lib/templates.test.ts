@@ -61,6 +61,7 @@ describe('note templates (2026-10-25)', () => {
       todos: [],
       pages: [note({ templateId: book.id, fields: { 'f-read': '2026-03-04' } })],
       templates: [book],
+      places: [],
       settings: { emailLists: false, todos: true, notes: true, shownFields: [] },
       view: { tagIds: [], hiddenTagIds: [], sort: 'name' as const },
     }
@@ -159,6 +160,7 @@ describe('notes carry tags (2026-11-03)', () => {
       todos: [],
       pages: [n],
       templates: [],
+      places: [],
       settings: { emailLists: false, todos: true, notes: true, shownFields: [] },
       view: { tagIds: [], hiddenTagIds: [], sort: 'name' as const },
     }

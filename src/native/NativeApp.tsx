@@ -39,6 +39,8 @@ import { TodoView } from '../components/TodoView'
 import { NotesView } from '../components/NotesView'
 import { useBookStore } from '../stores/bookStore'
 import { useTodoStore } from '../stores/todoStore'
+import { usePlaceStore } from '../stores/placeStore'
+import { PlacesView } from '../components/PlacesView'
 import { useNoteStore } from '../stores/noteStore'
 import { useGoTab, useSearchReset } from '../stores/searchStore'
 import { usePanelStore } from '../stores/panelStore'
@@ -46,7 +48,7 @@ import { useSettingsStore } from '../stores/settingsStore'
 import { AboutContent } from './AboutScreen'
 import { ContactActions } from './ContactActions'
 import { useT, type Key } from '../i18n'
-import { IconBin, IconMap, IconBook, IconContactsBook, IconFile, IconLists, IconNote, IconPerson, IconPlus, IconTodo, IconTune, Ribbon } from './icons'
+import { IconBin, IconMap, IconBook, IconContactsBook, IconFile, IconLists, IconNote, IconPerson, IconPlace, IconPlus, IconTodo, IconTune, Ribbon } from './icons'
 import { PhoneKitContext, type PhoneKit } from './kit'
 import { ArticleBody, KnowledgeList, useArticles } from './KnowledgeScreen'
 import { Page, Sheet, SheetRow } from './layers'
@@ -71,15 +73,16 @@ type PhoneTab = Tab | 'tune'
  * The tabs a switch in Tune turns off, and that switch: what the bin can take.
  * Every tab now, Contacts too (James, 2026-10-26); the last one shown stays.
  */
-const TAB_SWITCH: Record<Tab, 'emailLists' | 'todos' | 'notes' | 'contacts'> = {
+const TAB_SWITCH: Record<Tab, 'emailLists' | 'todos' | 'notes' | 'contacts' | 'places'> = {
   contacts: 'contacts',
+  places: 'places',
   lists: 'emailLists',
   todos: 'todos',
   notes: 'notes',
 }
 
-const TAB_LABEL: Record<PhoneTab, Key> = { contacts: 'tab_contacts', lists: 'tab_lists', todos: 'tab_todos', notes: 'tab_notes', tune: 'tab_tune' }
-const TAB_ICON: Record<PhoneTab, () => JSX.Element> = { contacts: IconBook, lists: IconLists, todos: IconTodo, notes: IconNote, tune: IconTune }
+const TAB_LABEL: Record<PhoneTab, Key> = { contacts: 'tab_contacts', places: 'tab_places', lists: 'tab_lists', todos: 'tab_todos', notes: 'tab_notes', tune: 'tab_tune' }
+const TAB_ICON: Record<PhoneTab, () => JSX.Element> = { contacts: IconBook, places: IconPlace, lists: IconLists, todos: IconTodo, notes: IconNote, tune: IconTune }
 
 function SignInPage({ onClose }: { onClose: () => void }) {
   const t = useT()
@@ -110,12 +113,13 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
   const todosOn = useSettingsStore((s) => s.todos)
   const notesOn = useSettingsStore((s) => s.notes)
   const contactsOn = useSettingsStore((s) => s.contacts)
+  const placesOn = useSettingsStore((s) => s.places)
   const tuning = useSettingsStore((s) => s.tune !== null)
   const closeTune = useSettingsStore((s) => s.closeTune)
   const reopenParked = useBookStore((s) => s.reopenParked)
   const nav = useNativeNav()
 
-  const tabDefault = useDefaultView<Tab>('tab', 'contacts', { views: ['contacts', 'lists', 'todos', 'notes'] })
+  const tabDefault = useDefaultView<Tab>('tab', 'contacts', { views: ['contacts', 'places', 'lists', 'todos', 'notes'] })
   const [tab, setTab] = useState<PhoneTab>(tabDefault.defaultView)
   // Follows the default when it arrives from another device after start-up
   // (components/tuneLook.ts), until a tab is tapped.
@@ -132,7 +136,7 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
   }, [goN])
   const tabOrder = useSettingsStore((s) => s.tabOrder)
   const setSettings = useSettingsStore((s) => s.set)
-  const shownTabs = availableTabs(emailLists, todosOn, notesOn, tabOrder, contactsOn)
+  const shownTabs = availableTabs(emailLists, todosOn, notesOn, tabOrder, contactsOn, placesOn)
   // Hold a tab and drag it (James, 2026-10-25). While one is held the bar
   // shows the order it would drop into; Tune stays last. A tab that Tune can
   // switch off can also be dropped on the bin that rises above the bar, which
@@ -245,6 +249,7 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
   const { canPick, picking, pick } = useContactPicker()
   const newList = useBookStore((s) => s.newList)
   const editTodo = useTodoStore((s) => s.edit)
+  const editPlace = usePlaceStore((s) => s.edit)
   const newNote = useNoteStore((s) => s.newNote)
   // The top bar's + (James, 2026-10-23): on Contacts it opens a sheet of the
   // ways to add somebody, so "From my contacts" is no longer a button of its
@@ -310,13 +315,18 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
                   it to choose "Your Book" instead. */}
               <BookTitle />
             </span>
-            {(current === 'contacts' || current === 'notes') && (
+            {(current === 'contacts' || current === 'notes' || current === 'places') && (
               <button type="button" className="bb-iconbtn" aria-label={t('map.title')} onClick={() => openPanel('map')}>
                 <IconMap />
               </button>
             )}
             {current === 'contacts' && (
               <button type="button" className="bb-iconbtn" aria-label={t('add_contact')} aria-haspopup="dialog" onClick={() => setAdding(true)}>
+                <IconPlus />
+              </button>
+            )}
+            {current === 'places' && (
+              <button type="button" className="bb-iconbtn" aria-label={t('add_place')} onClick={() => editPlace('new')}>
                 <IconPlus />
               </button>
             )}
@@ -367,6 +377,7 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
             {loaded && <ContactList onImport={() => openPanel('import')} />}
           </div>
 
+          {current === 'places' && <PlacesView />}
           {current === 'lists' && loaded && <ListsView />}
           {current === 'todos' && <TodoView />}
           {current === 'notes' && <NotesView />}

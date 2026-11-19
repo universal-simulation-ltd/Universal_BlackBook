@@ -7,6 +7,9 @@ import { bounds, mapGroups, mappedFilters, type MapFilter, type MapGroup, type M
 import { usePageScrollLock } from '../lib/scrollLock'
 import { useBookStore } from '../stores/bookStore'
 import { useNoteStore } from '../stores/noteStore'
+import { usePlaceStore } from '../stores/placeStore'
+import { useSettingsStore } from '../stores/settingsStore'
+import { useGoTab } from '../stores/searchStore'
 import { useEffectiveTheme } from '../stores/themeStore'
 import { usePhoneKit } from '../native/kit'
 import { useT, type Key } from '../i18n'
@@ -38,6 +41,10 @@ export function MapView({ onClose }: { onClose: () => void }) {
   const tags = useBookStore((s) => s.tags)
   const notes = useNoteStore((s) => s.notes)
   const templates = useNoteStore((s) => s.templates)
+  // The Places tab's places get pins too (2026-11-19), while the tab is on.
+  const placesOn = useSettingsStore((s) => s.places)
+  const allPlaces = usePlaceStore((s) => s.places)
+  const places = useMemo(() => (placesOn ? allPlaces : []), [placesOn, allPlaces])
   const [filter, setFilter] = useState<MapFilter>({ kind: 'all', tagIds: [], templateId: null })
   const [geo, setGeo] = useState(false)
   const [failed, setFailed] = useState(false)
@@ -60,7 +67,7 @@ export function MapView({ onClose }: { onClose: () => void }) {
     }
   }, [])
 
-  const { groups, unplaced } = useMemo(() => (geo ? mapGroups(contacts, notes, filter) : { groups: [], unplaced: 0 }), [geo, contacts, notes, filter])
+  const { groups, unplaced } = useMemo(() => (geo ? mapGroups(contacts, notes, filter, places) : { groups: [], unplaced: 0 }), [geo, contacts, notes, filter, places])
 
   // The map itself, made once; its style follows Light / Dark.
   useEffect(() => {
@@ -109,7 +116,7 @@ export function MapView({ onClose }: { onClose: () => void }) {
       const el = document.createElement('button')
       el.type = 'button'
       el.className = 'bb-pin'
-      const count = g.contacts.length + g.notes.length
+      const count = g.contacts.length + g.notes.length + g.places.length
       el.textContent = String(count)
       el.setAttribute('aria-label', `${g.town.name}: ${t.plural('map.things', count)}`)
       el.addEventListener('click', (e) => {
@@ -123,13 +130,14 @@ export function MapView({ onClose }: { onClose: () => void }) {
   }, [groups, ready, t])
 
   // Only chips that can show something: a tag or template nothing on the map carries is hidden.
-  const mapped = useMemo(() => (geo ? mappedFilters(contacts, notes) : { tagIds: new Set<string>(), templateIds: new Set<string>() }), [geo, contacts, notes])
+  const mapped = useMemo(() => (geo ? mappedFilters(contacts, notes, places) : { tagIds: new Set<string>(), templateIds: new Set<string>() }), [geo, contacts, notes, places])
   const plainTags = tags.filter((x) => !isList(x) && mapped.tagIds.has(x.id))
   const mappedTemplates = templates.filter((x) => mapped.templateIds.has(x.id))
   const kinds: { k: MapKind; label: Key }[] = [
     { k: 'all', label: 'tpl.all' },
     { k: 'contacts', label: 'tab_contacts' },
     { k: 'notes', label: 'tab_notes' },
+    ...(places.length ? [{ k: 'places' as const, label: 'tab_places' as const }] : []),
   ]
   const chip = (on: boolean) =>
     `shrink-0 rounded-full border px-3 py-1 text-sm font-medium ${on ? 'border-orange-500 bg-orange-500/15 text-orange-300' : 'border-slate-700 bg-slate-900 text-slate-300'}`
@@ -162,7 +170,7 @@ export function MapView({ onClose }: { onClose: () => void }) {
               }
             />
           ))}
-        {filter.kind !== 'contacts' &&
+        {(filter.kind === 'all' || filter.kind === 'notes') &&
           mappedTemplates.map((tpl) => (
             <button
               key={tpl.id}
@@ -210,6 +218,7 @@ function PinSheet({ group, onClose, onLeave }: { group: MapGroup; onClose: () =>
   const t = useT()
   const view = useBookStore((s) => s.view)
   const viewNote = useNoteStore((s) => s.view)
+  const editPlace = usePlaceStore((s) => s.edit)
   const where = [divisionName(group.town.cc, group.town.div), countryName(group.town.cc, t.locale)].filter(Boolean).join(', ')
   const row = 'flex w-full flex-col items-start rounded-lg px-3 py-2 text-left hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400'
   return (
@@ -245,6 +254,24 @@ function PinSheet({ group, onClose, onLeave }: { group: MapGroup; onClose: () =>
             >
               <span className="text-sm font-medium text-slate-100">{n.title || t('c.untitled')}</span>
               <span className="text-xs text-slate-500">{n.location?.place || t('map.note')}</span>
+            </button>
+          </li>
+        ))}
+        {group.places.map((p) => (
+          <li key={p.id}>
+            <button
+              type="button"
+              className={row}
+              onClick={() => {
+                onClose()
+                onLeave()
+                // The place's form lives on its tab: go there, then open it.
+                useGoTab.getState().go('places')
+                editPlace(p.id)
+              }}
+            >
+              <span className="text-sm font-medium text-slate-100">{p.name || t('c.unnamed')}</span>
+              <span className="text-xs text-slate-500">{t('map.place')}</span>
             </button>
           </li>
         ))}

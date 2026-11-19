@@ -23,6 +23,7 @@ import {
   saveSyncBase,
   savePages,
   saveTodos,
+  savePlaces,
   saveBackupOff,
   saveSyncMeta,
   saveVaultKey,
@@ -44,11 +45,13 @@ import { mergeBooks, unsyncedWork } from '../lib/merge'
 import { baseOf, mergeVault, resolve, type Conflict, type MergeInput, type MergeResult } from '../lib/syncMerge'
 import { useBookStore } from './bookStore'
 import { useTodoStore } from './todoStore'
+import { usePlaceStore } from './placeStore'
 import { useNoteStore } from './noteStore'
 import { mergeNotes, toNotes } from '../lib/notes'
 import { BACKUP_SCHEMA } from '../lib/backup'
 import { mergeTemplates, toTemplates } from '../lib/templates'
 import { mergeTodos, toTodos } from '../lib/todos'
+import { mergePlaces, toPlaces } from '../lib/places'
 import { parseTabLayout } from '../lib/tabs'
 import { parseTuning } from '../lib/tuning'
 import { useSettingsStore } from './settingsStore'
@@ -149,6 +152,7 @@ function bookPayload(): VaultPayload {
   const { contacts, tags } = useBookStore.getState()
   const todo = useTodoStore.getState()
   const note = useNoteStore.getState()
+  const place = usePlaceStore.getState()
   // `categories` is the deprecated mirror of `tags` — see VaultPayload for why
   // a stale PWA build reading this blob makes the duplication necessary.
   // `todos` only once the list has been read off the disk: an empty array
@@ -161,6 +165,7 @@ function bookPayload(): VaultPayload {
     categories: tags,
     ...(todo.loaded && { todos: todo.todos }),
     ...(note.loaded && { pages: note.notes, templates: note.templates }),
+    ...(place.loaded && { places: place.places }),
     ...tuning(),
     savedAt: Date.now(),
   }
@@ -174,6 +179,7 @@ function inputOf(p: VaultPayload): MergeInput {
     ...(Array.isArray(p.todos) && { todos: toTodos(p.todos) }),
     ...(Array.isArray(p.pages) && { pages: toNotes(p.pages) }),
     ...(Array.isArray(p.templates) && { templates: toTemplates(p.templates) }),
+    ...(Array.isArray(p.places) && { places: toPlaces(p.places) }),
   }
 }
 
@@ -202,6 +208,10 @@ async function applyMerged(merged: MergeInput, online: VaultPayload) {
     await savePages(merged.pages)
   }
   if (merged.templates) await useNoteStore.getState().replaceTemplates(merged.templates)
+  if (merged.places) {
+    usePlaceStore.setState({ places: merged.places })
+    await savePlaces(merged.places)
+  }
   adoptTuning(online)
 }
 
@@ -215,7 +225,7 @@ function tuning(): Pick<VaultPayload, 'tabs' | 'tune'> {
   const s = useSettingsStore.getState()
   if (!s.tunedAt) return {}
   return {
-    tabs: { order: s.tabOrder, lists: s.emailLists, todos: s.todos, notes: s.notes, contacts: s.contacts, at: s.tunedAt },
+    tabs: { order: s.tabOrder, lists: s.emailLists, todos: s.todos, notes: s.notes, contacts: s.contacts, places: s.places, at: s.tunedAt },
     tune: {
       shownFields: s.shownFields,
       notifyDetails: s.notifyDetails,
@@ -240,7 +250,7 @@ function adoptTuning(payload: VaultPayload) {
   const at = Math.max(tabs?.at ?? 0, tune?.at ?? 0)
   if (!at || at <= useSettingsStore.getState().tunedAt) return
   useSettingsStore.getState().set({
-    ...(tabs && { tabOrder: tabs.order, emailLists: tabs.lists, todos: tabs.todos, notes: tabs.notes, contacts: tabs.contacts }),
+    ...(tabs && { tabOrder: tabs.order, emailLists: tabs.lists, todos: tabs.todos, notes: tabs.notes, contacts: tabs.contacts, places: tabs.places }),
     ...(tune && {
       shownFields: tune.shownFields,
       notifyDetails: tune.notifyDetails,
@@ -269,6 +279,7 @@ async function adopt(payload: VaultPayload) {
   if (Array.isArray(payload.todos)) await useTodoStore.getState().replace(toTodos(payload.todos))
   if (Array.isArray(payload.pages)) await useNoteStore.getState().replace(toNotes(payload.pages))
   if (Array.isArray(payload.templates)) await useNoteStore.getState().replaceTemplates(toTemplates(payload.templates))
+  if (Array.isArray(payload.places)) await usePlaceStore.getState().replace(toPlaces(payload.places))
   adoptTuning(payload)
 }
 
@@ -295,6 +306,8 @@ async function mergeIn(payload: VaultPayload) {
   await useNoteStore.getState().init()
   await useNoteStore.getState().replace(mergeNotes(toNotes(payload.pages), useNoteStore.getState().notes, merged.remap))
   await useNoteStore.getState().replaceTemplates(mergeTemplates(toTemplates(payload.templates), useNoteStore.getState().templates))
+  await usePlaceStore.getState().init()
+  await usePlaceStore.getState().replace(mergePlaces(toPlaces(payload.places), usePlaceStore.getState().places, merged.remap))
   adoptTuning(payload)
 }
 
@@ -355,8 +368,8 @@ async function openVault(
 ) {
   // To-dos count as local data too: a device holding only to-dos must be
   // asked, not have them replaced by the online list.
-  await Promise.all([useBookStore.getState().init(), useTodoStore.getState().init(), useNoteStore.getState().init()])
-  const local = useBookStore.getState().contacts.length + useTodoStore.getState().todos.length + useNoteStore.getState().notes.length
+  await Promise.all([useBookStore.getState().init(), useTodoStore.getState().init(), useNoteStore.getState().init(), usePlaceStore.getState().init()])
+  const local = useBookStore.getState().contacts.length + useTodoStore.getState().todos.length + useNoteStore.getState().notes.length + usePlaceStore.getState().places.length
   const now = Date.now()
   const meta: SyncMeta = {
     userId,
@@ -445,7 +458,7 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
         const meta = await loadSyncMeta()
         if ((meta && meta.userId === userId) || (await loadBackupOff()) === userId) return
         // The book has to be off the disk first, or an empty one goes up.
-        await Promise.all([useBookStore.getState().init(), useTodoStore.getState().init(), useNoteStore.getState().init()])
+        await Promise.all([useBookStore.getState().init(), useTodoStore.getState().init(), useNoteStore.getState().init(), usePlaceStore.getState().init()])
         await get().enable(supabase, userId, null, false)
         return
       }
@@ -525,10 +538,10 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       // `since === 0` is an unlock whose question was never answered: the
       // books are unrelated, so it is asked again, or adopted if this device
       // has nothing of its own — never pushed over the online copy.
-      await Promise.all([useBookStore.getState().init(), useTodoStore.getState().init(), useNoteStore.getState().init()])
+      await Promise.all([useBookStore.getState().init(), useTodoStore.getState().init(), useNoteStore.getState().init(), usePlaceStore.getState().init()])
       const since = meta.syncedAt ?? meta.pushedAt
       const behind = meta.rev !== row.rev || since === 0
-      const book = { contacts: useBookStore.getState().contacts, todos: useTodoStore.getState().todos, pages: useNoteStore.getState().notes }
+      const book = { contacts: useBookStore.getState().contacts, todos: useTodoStore.getState().todos, pages: useNoteStore.getState().notes, places: usePlaceStore.getState().places }
       const ask = behind && unsyncedWork(book, payload, since) > 0
       if (behind && !ask) await adopt(payload)
       // Work this device has that the online copy lacks is merged in, not

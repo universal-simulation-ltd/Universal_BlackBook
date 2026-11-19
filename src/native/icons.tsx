@@ -148,6 +148,16 @@ export function IconContactsBook() {
 }
 
 /** Notes: a page with its lines, a corner turned down. */
+/** A map pin: the Places tab (2026-11-19). */
+export function IconPlace() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" {...stroke} aria-hidden>
+      <path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z" />
+      <circle cx="12" cy="10" r="2.4" />
+    </svg>
+  )
+}
+
 export function IconNote() {
   return (
     <svg viewBox="0 0 24 24" className="h-6 w-6" {...stroke} aria-hidden>

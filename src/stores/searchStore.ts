@@ -11,7 +11,7 @@ export const useSearchReset = create<{ epoch: number; clearAll: () => void }>((s
   clearAll: () => set((s) => ({ epoch: s.epoch + 1 })),
 }))
 
-export type GoTab = 'contacts' | 'lists' | 'todos' | 'notes'
+export type GoTab = 'contacts' | 'places' | 'lists' | 'todos' | 'notes'
 
 /**
  * A tab asked for from inside another (a to-do found by the Notes tab's search

@@ -105,8 +105,8 @@ export function mergeBooks(
  * keeps this device's list (see `adopt`), so none of them can be lost.
  */
 export function unsyncedWork(
-  local: { contacts: Contact[]; todos: Todo[]; pages?: Note[] },
-  online: { contacts?: Contact[]; todos?: Todo[]; pages?: Note[] },
+  local: { contacts: Contact[]; todos: Todo[]; pages?: Note[]; places?: { id: string; updatedAt: number }[] },
+  online: { contacts?: Contact[]; todos?: Todo[]; pages?: Note[]; places?: { id: string; updatedAt: number }[] },
   since: number,
 ): number {
   const count = <T extends { id: string; updatedAt: number }>(mine: T[], theirs: T[]) => {
@@ -120,7 +120,8 @@ export function unsyncedWork(
   return (
     count(local.contacts, Array.isArray(online.contacts) ? online.contacts : []) +
     (Array.isArray(online.todos) ? count(local.todos, online.todos) : 0) +
-    (Array.isArray(online.pages) ? count(local.pages ?? [], online.pages) : 0)
+    (Array.isArray(online.pages) ? count(local.pages ?? [], online.pages) : 0) +
+    (Array.isArray(online.places) ? count(local.places ?? [], online.places) : 0)
   )
 }
 
@@ -137,7 +138,7 @@ export function unsyncedWork(
  */
 export function allOnline(
   meta: { rev: number; pushedAt: number; syncedAt?: number } | null,
-  local: { contacts: Contact[]; todos: Todo[]; pages?: Note[] },
+  local: { contacts: Contact[]; todos: Todo[]; pages?: Note[]; places?: { updatedAt: number }[] },
 ): boolean {
   if (!meta || meta.rev <= 0) return false
   const since = meta.syncedAt ?? meta.pushedAt
@@ -145,6 +146,7 @@ export function allOnline(
   return (
     local.contacts.every((c) => c.updatedAt <= since) &&
     local.todos.every((t) => t.updatedAt <= since) &&
-    (local.pages ?? []).every((n) => n.updatedAt <= since)
+    (local.pages ?? []).every((n) => n.updatedAt <= since) &&
+    (local.places ?? []).every((p) => p.updatedAt <= since)
   )
 }

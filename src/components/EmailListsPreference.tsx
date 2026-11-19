@@ -21,6 +21,7 @@ export function EmailListsPreference() {
   const todos = useSettingsStore((s) => s.todos)
   const notes = useSettingsStore((s) => s.notes)
   const contacts = useSettingsStore((s) => s.contacts)
+  const places = useSettingsStore((s) => s.places)
   const set = useSettingsStore((s) => s.set)
   const notifyDetails = useSettingsStore((s) => s.notifyDetails)
   const fillLocation = useSettingsStore((s) => s.fillLocation)
@@ -30,7 +31,7 @@ export function EmailListsPreference() {
   // On the phone a tab bar with nothing but Tune in it would be a trap, so the
   // last tab shown can't be hidden (the website always keeps Contacts).
   const phone = phoneScreens()
-  const shown = [phone ? contacts : true, emailLists, todos, notes].filter(Boolean).length
+  const shown = [phone ? contacts : true, places, emailLists, todos, notes].filter(Boolean).length
   const last = (on: boolean) => phone && on && shown === 1
 
   return (
@@ -50,6 +51,20 @@ export function EmailListsPreference() {
         </span>
       </label>
     )}
+    <label className="flex items-start gap-3 py-1 text-sm text-slate-200">
+      <input
+        type="checkbox"
+        className={`${checkboxCls} mt-0.5`}
+        // Inverted, as To-do's: on by default, and the box hides it.
+        checked={!places}
+        disabled={last(places)}
+        onChange={(e) => set({ places: !e.target.checked })}
+      />
+      <span>
+        {t('pref.places')}
+        <span className="mt-0.5 block text-xs text-slate-400">{t('pref.places_note')}</span>
+      </span>
+    </label>
     <label className="flex items-start gap-3 py-1 text-sm text-slate-200">
       <input
         type="checkbox"

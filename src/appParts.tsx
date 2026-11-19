@@ -29,7 +29,7 @@ export const REPO_URL = 'https://github.com/universal-simulation-ltd/Universal_B
 export { TABS, type Tab } from './lib/tabs'
 import { TABS, type Tab } from './lib/tabs'
 import { TABLET_QUERY, TODO_LAYOUT_DEFAULT, TODO_LAYOUT_VIEW, TODO_LAYOUTS, type TodoLayout } from './lib/todoLayout'
-const TAB_KEYS: Record<Tab, Key> = { contacts: 'tab_contacts', lists: 'tab_lists', todos: 'tab_todos', notes: 'tab_notes' }
+const TAB_KEYS: Record<Tab, Key> = { contacts: 'tab_contacts', places: 'tab_places', lists: 'tab_lists', todos: 'tab_todos', notes: 'tab_notes' }
 /** A tab's name, in the language on screen. */
 export const tabName = (t: Translator, tab: Tab) => t(TAB_KEYS[tab])
 
@@ -215,8 +215,8 @@ export function useContactPicker() {
  * The tabs the landing screen shows, given Tune this app ▸ Email lists, ▸
  * To-do and ▸ Notes, and on the phone ▸ Contacts (the website always has it).
  */
-export function availableTabs(emailLists: boolean, todos: boolean, notes = false, order: readonly Tab[] = TABS, contacts = true): Tab[] {
-  const on: Record<Tab, boolean> = { contacts, lists: emailLists, todos, notes }
+export function availableTabs(emailLists: boolean, todos: boolean, notes = false, order: readonly Tab[] = TABS, contacts = true, places = false): Tab[] {
+  const on: Record<Tab, boolean> = { contacts, places, lists: emailLists, todos, notes }
   return order.filter((t) => on[t])
 }
 
@@ -231,8 +231,9 @@ function OpensOnPreference() {
   const notes = useSettingsStore((s) => s.notes)
   const order = useSettingsStore((s) => s.tabOrder)
   const contacts = useSettingsStore((s) => s.contacts)
+  const places = useSettingsStore((s) => s.places)
   const t = useT()
-  const tabs = availableTabs(emailLists, todos, notes, order, !phoneScreens() || contacts)
+  const tabs = availableTabs(emailLists, todos, notes, order, !phoneScreens() || contacts, places)
   // The same stored default the double tap writes (useDefaultView), shown as
   // the app's own choice rows rather than the SDK's dropdown (James,
   // 2026-10-25: "the dropdown doesn't fit the style"): exactly one is on, and

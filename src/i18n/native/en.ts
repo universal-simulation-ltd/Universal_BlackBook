@@ -9,6 +9,7 @@ export const en = {
 
   tabs_label: 'BlackBook',
   tab_contacts: 'People',
+  tab_places: 'Places',
   tab_lists: 'Lists',
   tab_todos: 'To-do',
   tab_notes: 'Notes',
@@ -21,6 +22,7 @@ export const en = {
   add_from_file: 'From a spreadsheet or backup',
   add_list: 'New list',
   add_todo: 'New to-do',
+  add_place: 'New place',
   add_note: 'New note',
   add_quoted_before: 'Add ',
   add_quoted_after: '',

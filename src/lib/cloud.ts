@@ -11,6 +11,7 @@ import type { NoteTemplate } from './templates'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Contact, Tag } from './types'
 import type { Todo } from './todos'
+import type { Place } from './places'
 import type { Note } from './notes'
 import type { TabLayout } from './tabs'
 import type { Tuning } from './tuning'
@@ -56,6 +57,8 @@ export interface VaultPayload {
   pages?: Note[]
   /** Note templates (2026-10-25). Absent means "says nothing about them", as `pages`. */
   templates?: NoteTemplate[]
+  /** The Places tab's places (2026-11-19). Absent means "says nothing about them", as `todos`. */
+  places?: Place[]
   /**
    * Which tabs are shown and their order (2026-10-30), so a tab hidden or
    * moved on the phone is hidden or moved on the website too. Absent means
