@@ -118,6 +118,15 @@ export function TuneGlyph({ className = 'h-4 w-4' }: { className?: string }) {
   )
 }
 
+/** A folded map: the website's Map button (James, 2026-11-19: "replace 'Map' with the icon of a map"), as the phone's top bar draws it. */
+export function MapGlyph({ className = 'h-5 w-5' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M9 4 3.5 6v14L9 18l6 2 5.5-2V4L15 6 9 4ZM9 4v14M15 6v14" />
+    </svg>
+  )
+}
+
 /** A pushpin: filled when pinned, outlined when not. Fine-tune ▸ Pin. */
 export function PinGlyph({ filled, className = 'h-4 w-4' }: { filled: boolean; className?: string }) {
   return filled ? (

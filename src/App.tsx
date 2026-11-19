@@ -32,7 +32,7 @@ import { LockPanel, LockScreen } from './components/Lock'
 import { DueReminders } from './components/Reminders'
 import { NoteLayers } from './components/NoteView'
 import { TemplateManager } from './components/TemplateManager'
-import { btnGhost, btnPrimary, BtnKey, PlusIcon } from './components/ui'
+import { btnGhost, btnPrimary, BtnKey, MapGlyph, PlusIcon } from './components/ui'
 import { allOnline } from './lib/merge'
 import { moveTab, withShownOrder } from './lib/tabs'
 import { forgetVault, loadSyncMeta } from './lib/store'
@@ -408,8 +408,8 @@ export default function App() {
               {/* With the device's own contacts to offer, the two ways to add
                   somebody are one Add new menu (James, 2026-10-23, the phone
                   app's + sheet); without them Add new is still one click. */}
-              <button type="button" className={btnGhost} onClick={() => setPanel('map')}>
-                {tr('map.title')}
+              <button type="button" className={`${btnGhost} !px-2.5`} onClick={() => setPanel('map')} aria-label={tr('map.title')} title={tr('map.title')}>
+                <MapGlyph />
               </button>
               {canPick ? (
                 <AddMenu onNew={() => void newContact()} onPick={pick} />

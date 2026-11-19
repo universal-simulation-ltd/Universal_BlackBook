@@ -20,7 +20,7 @@ import { tagNames } from '../lib/filter'
 import { Elsewhere } from './Elsewhere'
 import { TagChip, TagDot } from './TagChip'
 import { TagCombo } from './TagCombo'
-import { btnDanger, btnGhost, btnPrimary, btnSubtle, BtnKey, PlusIcon, tabHeading, TuneGlyph } from './ui'
+import { btnDanger, btnGhost, btnPrimary, btnSubtle, BtnKey, MapGlyph, PlusIcon, tabHeading, TuneGlyph } from './ui'
 import { usePanelStore } from '../stores/panelStore'
 import { phoneScreens } from '../native/shell'
 import { useT } from '../i18n'
@@ -164,8 +164,8 @@ export function NotesView() {
         <div className="flex flex-wrap items-center gap-2">
           {/* The map's on the phone's top bar; here a button. */}
           {!phoneScreens() && (
-            <button type="button" className={btnGhost} onClick={() => usePanelStore.getState().open('map')}>
-              {t('map.title')}
+            <button type="button" className={`${btnGhost} !px-2.5`} onClick={() => usePanelStore.getState().open('map')} aria-label={t('map.title')} title={t('map.title')}>
+              <MapGlyph />
             </button>
           )}
           {/* On the phone the top bar's + does this. */}
