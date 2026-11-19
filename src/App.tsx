@@ -204,7 +204,12 @@ export default function App() {
     // inset is 0, so this is a no-op on web. Converter, PDF, QR and Images all
     // carry the same line; `.gutter` (index.css) already does the same job for
     // the left/right insets in landscape, and the footer below does the bottom.
-    <div className="flex min-h-screen flex-col bg-slate-950 text-slate-200 pt-[env(safe-area-inset-top)]">
+    //
+    // pb-[var(--u-dock-space)]: the docked tabs' room at the foot of a phone
+    // screen (SDK 0.222). The SDK pads <body> too, but html/body are
+    // height:100% here, so the page overflows body and that padding never
+    // reaches the end of the scroll; this box's does. 0 without the dock.
+    <div className="flex min-h-screen flex-col bg-slate-950 pb-[var(--u-dock-space,0px)] text-slate-200 pt-[env(safe-area-inset-top)]">
       <UniversalAppsNavBar
         contentClassName={CONTAINER}
         theme={theme}
@@ -332,7 +337,12 @@ export default function App() {
             // The suite's tray tabs (SDK 0.216, BRANDING.md → Tabs), on a grid
             // so the segments share the width; aria-selected selects, and
             // buttonProps' data-default-view draws the opens-here dot.
-            className={`u-tabs mb-5 grid w-full ${
+            // u-tabs--dock (SDK 0.222): on a phone-width browser the tray
+            // floats at the foot of the screen (owner rule 2026-11-19,
+            // BRANDING.md → "On a phone, navigation sits at the bottom"); from
+            // 768px up it stays here. The website only: the phone app returns
+            // NativeApp above, with its own bottom tab bar, and never gets here.
+            className={`u-tabs u-tabs--dock mb-5 grid w-full ${
               tabs.length === 4 ? 'grid-cols-4 sm:max-w-md' : tabs.length === 3 ? 'grid-cols-3 sm:max-w-sm' : 'grid-cols-2 sm:max-w-xs'
             }`}
           >

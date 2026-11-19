@@ -492,7 +492,8 @@ export function UndoBar({ title, text, onUndo }: { title: string; text?: string;
       className={
         kit
           ? 'bb-toast bb-undo flex items-center gap-3 text-left'
-          : 'fixed bottom-5 left-1/2 z-50 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-3 rounded-2xl bg-slate-100 px-4 py-2.5 text-sm text-slate-950 shadow-xl'
+          : // Above the website's docked tabs on a phone width (--u-dock-space, SDK 0.222; 0 elsewhere).
+            'fixed bottom-[calc(1.25rem+var(--u-dock-space,0px))] left-1/2 z-50 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-3 rounded-2xl bg-slate-100 px-4 py-2.5 text-sm text-slate-950 shadow-xl'
       }
     >
       <span className="min-w-0 truncate">{text ?? t('todo.deleted', { title: title || t('c.untitled') })}</span>
