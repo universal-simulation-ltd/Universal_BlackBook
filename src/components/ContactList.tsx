@@ -23,7 +23,7 @@ import { useSyncStore } from '../stores/syncStore'
 import { Modal } from './Modal'
 import { SwipeRow, type SwipeAction } from './SwipeRow'
 import { useMove } from './MoveTo'
-import { FocusActions, UndoBar, useHold, useLeaveSelection, useUndo } from './SwipeActions'
+import { FocusActions, SelectFrame, selectAct, selectDanger, UndoBar, useHold, useLeaveSelection, useUndo } from './SwipeActions'
 import { ListChip } from './ListChip'
 import { TagDot } from './TagChip'
 import { TagPicker } from './TagPicker'
@@ -788,38 +788,23 @@ function SelectBar({
 }) {
   const t = useT()
   const none = count === 0
-  const act = `${btnSubtle} disabled:cursor-not-allowed disabled:opacity-40`
   return (
-    <div className="bb-selectbar sticky top-0 z-30 -mx-1 mb-2 flex flex-wrap items-center gap-x-1 gap-y-1 rounded-xl border border-slate-800 bg-slate-900 px-2 py-1.5">
-      <p className="mr-auto px-1 text-sm font-medium text-slate-200 tabular-nums" aria-live="polite">
-        {t('sel.count', { count })}
-      </p>
-      <button type="button" className={act} onClick={onAll}>
-        {allPicked ? t('sel.none') : t('sel.all')}
-      </button>
-      <button type="button" className={act} onClick={onTag} disabled={none}>
+    <SelectFrame count={count} allPicked={allPicked} onAll={onAll} onDone={onDone}>
+      <button type="button" className={selectAct} onClick={onTag} disabled={none}>
         {t('sel.tag')}
       </button>
-      <button type="button" className={act} onClick={onMove} disabled={none}>
+      <button type="button" className={selectAct} onClick={onMove} disabled={none}>
         {t('sel.move')}
       </button>
       {hide && (
-        <button type="button" className={act} onClick={() => onHide(hide === 'hide')} disabled={none}>
+        <button type="button" className={selectAct} onClick={() => onHide(hide === 'hide')} disabled={none}>
           {hide === 'hide' ? t('c.hide') : t('c.show')}
         </button>
       )}
-      <button
-        type="button"
-        className={`${act} text-rose-300 hover:bg-rose-950 hover:text-rose-200`}
-        onClick={onDelete}
-        disabled={none}
-      >
+      <button type="button" className={`${selectAct} ${selectDanger}`} onClick={onDelete} disabled={none}>
         {t('c.delete')}
       </button>
-      <button type="button" className={`${act} text-orange-300`} onClick={onDone}>
-        {t('c.done')}
-      </button>
-    </div>
+    </SelectFrame>
   )
 }
 

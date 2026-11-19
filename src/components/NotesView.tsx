@@ -2,7 +2,7 @@ import { useId, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { SwipeRow } from './SwipeRow'
 import { useMove } from './MoveTo'
-import { deleteSwipe, FocusActions, pinSwipe, UndoBar, useHold, useLeaveSelection, useUndo } from './SwipeActions'
+import { deleteSwipe, FocusActions, pinSwipe, SelectFrame, selectAct, selectDanger, UndoBar, useHold, useLeaveSelection, useUndo } from './SwipeActions'
 import type { Side } from '../lib/swipe'
 import { Modal } from './Modal'
 import { copyText } from '../lib/clipboard'
@@ -529,7 +529,7 @@ function NoteRow({
   )
 }
 
-/** Over the list while selecting: how many, then Pin / Unpin, Copy, Move, Delete, Done. */
+/** Over the list while selecting: how many and Done, then Pin / Unpin, Copy, Move, Convert, Delete. */
 function NoteSelectBar({
   count,
   allPicked,
@@ -558,36 +558,26 @@ function NoteSelectBar({
 }) {
   const t = useT()
   const none = count === 0
-  const act = `${btnSubtle} disabled:cursor-not-allowed disabled:opacity-40`
   return (
-    <div className="bb-selectbar sticky top-0 z-30 -mx-1 flex flex-wrap items-center gap-x-1 gap-y-1 rounded-xl border border-slate-800 bg-slate-900 px-2 py-1.5">
-      <p className="mr-auto px-1 text-sm font-medium tabular-nums text-slate-200" aria-live="polite">
-        {t('sel.count', { count })}
-      </p>
-      <button type="button" className={act} onClick={onAll}>
-        {allPicked ? t('sel.none') : t('sel.all')}
-      </button>
-      <button type="button" className={act} onClick={() => onPin(!allPinned)} disabled={none}>
+    <SelectFrame count={count} allPicked={allPicked} onAll={onAll} onDone={onDone} className="">
+      <button type="button" className={selectAct} onClick={() => onPin(!allPinned)} disabled={none}>
         {allPinned ? t('todo.unpin') : t('todo.pin')}
       </button>
-      <button type="button" className={act} onClick={onCopy} disabled={none}>
+      <button type="button" className={selectAct} onClick={onCopy} disabled={none}>
         {copied ? t('notes.copied') : t('notes.copy')}
       </button>
-      <button type="button" className={act} onClick={onMove} disabled={none}>
+      <button type="button" className={selectAct} onClick={onMove} disabled={none}>
         {t('sel.move')}
       </button>
       {onConvert && (
-        <button type="button" className={act} onClick={onConvert} disabled={none}>
+        <button type="button" className={selectAct} onClick={onConvert} disabled={none}>
           {t('nsel.convert')}
         </button>
       )}
-      <button type="button" className={`${act} text-rose-300 hover:bg-rose-950 hover:text-rose-200`} onClick={onDelete} disabled={none}>
+      <button type="button" className={`${selectAct} ${selectDanger}`} onClick={onDelete} disabled={none}>
         {t('c.delete')}
       </button>
-      <button type="button" className={`${act} text-orange-300`} onClick={onDone}>
-        {t('c.done')}
-      </button>
-    </div>
+    </SelectFrame>
   )
 }
 

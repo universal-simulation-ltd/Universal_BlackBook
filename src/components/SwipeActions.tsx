@@ -352,9 +352,60 @@ export function useHoldSelect(ids: string[], phone: boolean): HoldSelect {
 }
 
 /**
- * Over a list while selecting: how many, Select all / none, the list's own
- * bulk actions, and Done. Sticky, so it stays in reach while ticking.
+ * The frame every list's select bar is drawn in, so Contacts, Notes, To-do and
+ * the rest cannot drift apart again. Two rows (James, 2026-11-19: "feels a bit
+ * clunky"): how many and Select all, with Done at the far end, then the list's
+ * own actions on a line of their own. All on one wrapping line, the actions
+ * broke wherever the width ran out and Select all sat among Pin and Delete as
+ * if it were one of them.
+ *
+ * Sticky, so it stays in reach while ticking (below the phone's fixed top
+ * bar: native.css ▸ `.bb-selectbar`).
  */
+export function SelectFrame({
+  count,
+  allPicked,
+  onAll,
+  onDone,
+  className = 'mb-2',
+  children,
+}: {
+  count: number
+  allPicked: boolean
+  onAll: () => void
+  onDone: () => void
+  className?: string
+  /** The actions: buttons styled with `selectAct`. */
+  children?: ReactNode
+}) {
+  const t = useT()
+  return (
+    <div className={`bb-selectbar sticky top-0 z-30 -mx-1 rounded-xl border border-slate-800 bg-slate-900 px-2 py-1.5 ${className}`}>
+      <div className="flex items-center gap-1">
+        <p className="px-1 text-sm font-medium tabular-nums text-slate-200" aria-live="polite">
+          {t('sel.count', { count })}
+        </p>
+        <button type="button" className={selectAct} onClick={onAll}>
+          {allPicked ? t('sel.none') : t('sel.all')}
+        </button>
+        <button type="button" className={`${selectAct} ml-auto text-orange-300`} onClick={onDone}>
+          {t('c.done')}
+        </button>
+      </div>
+      {children && (
+        <div className="mt-1.5 flex flex-wrap items-center gap-1 border-t border-slate-800 pt-1.5 [&>button]:flex-1 sm:[&>button]:flex-none">
+          {children}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** A select bar's action button; add `selectDanger` for Delete and the like. */
+export const selectAct = `${btnSubtle} disabled:cursor-not-allowed disabled:opacity-40`
+export const selectDanger = 'text-rose-300 hover:bg-rose-950 hover:text-rose-200'
+
+/** The select bar for a list whose actions are all "do this to the picked ids". */
 export function SelectBar({
   select,
   total,
@@ -364,37 +415,27 @@ export function SelectBar({
   total: number
   actions: { label: string; onClick: (ids: string[]) => void; danger?: boolean }[]
 }) {
-  const t = useT()
   if (!select.selecting) return null
   const count = select.picked.length
-  const act = `${btnSubtle} disabled:cursor-not-allowed disabled:opacity-40`
   return (
-    <div className="bb-selectbar sticky top-0 z-30 -mx-1 mb-2 flex flex-wrap items-center gap-x-1 gap-y-1 rounded-xl border border-slate-800 bg-slate-900 px-2 py-1.5">
-      <p className="mr-auto px-1 text-sm font-medium tabular-nums text-slate-200" aria-live="polite">
-        {t('sel.count', { count })}
-      </p>
-      <button type="button" className={act} onClick={select.all}>
-        {count === total && total > 0 ? t('sel.none') : t('sel.all')}
-      </button>
-      {actions.map((a) => (
-        <button
-          key={a.label}
-          type="button"
-          className={`${act} ${a.danger ? 'text-rose-300 hover:bg-rose-950 hover:text-rose-200' : ''}`}
-          disabled={count === 0}
-          onClick={() => {
-            const ids = select.picked
-            select.done()
-            a.onClick(ids)
-          }}
-        >
-          {a.label}
-        </button>
-      ))}
-      <button type="button" className={`${act} text-orange-300`} onClick={select.done}>
-        {t('c.done')}
-      </button>
-    </div>
+    <SelectFrame count={count} allPicked={count === total && total > 0} onAll={select.all} onDone={select.done}>
+      {actions.length > 0 &&
+        actions.map((a) => (
+          <button
+            key={a.label}
+            type="button"
+            className={`${selectAct} ${a.danger ? selectDanger : ''}`}
+            disabled={count === 0}
+            onClick={() => {
+              const ids = select.picked
+              select.done()
+              a.onClick(ids)
+            }}
+          >
+            {a.label}
+          </button>
+        ))}
+    </SelectFrame>
   )
 }
 
