@@ -1260,6 +1260,11 @@ function TodoForm({ id }: { id: string }) {
   const today = useMemo(() => todayParts(), [])
   const snoozeId = useId()
   const [confirming, setConfirming] = useState(false)
+  // A new one opens on its name, details and tick boxes; More shows the
+  // deadline, the snooze and the tags (James, 2026-11-19: "I want to add a
+  // snooze until date during creation … it would be under more"). Fine-tune
+  // shows them from the start.
+  const [more, setMore] = useState(Boolean(existing))
   const titleId = useId()
   const detailsId = useId()
   const dueId = useId()
@@ -1302,8 +1307,12 @@ function TodoForm({ id }: { id: string }) {
         </div>
         <GroupEditor items={draft.items ?? []} onChange={(items) => patch({ items: items.length ? items : undefined })} />
         {/* A new one is its name, its text and maybe a group (James,
-            2026-10-30); the deadline and the tags are Fine-tune's. */}
-        {existing && (
+            2026-10-30); the deadline, snooze and tags wait under More. */}
+        {!more ? (
+          <button type="button" className={btnGhost} aria-expanded={false} onClick={() => setMore(true)}>
+            {t('form.more')}
+          </button>
+        ) : (
         <>
         <div>
           <label htmlFor={dueId} className={label}>
