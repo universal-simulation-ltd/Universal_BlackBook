@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { parseTowns, setGeoData } from './geo'
-import { bounds, mapGroups } from './mapGroups'
+import { bounds, mapGroups, mappedFilters } from './mapGroups'
 import type { Contact } from './types'
 import type { Note } from './notes'
 
@@ -36,5 +36,13 @@ describe('the map: pins by town', () => {
     expect(mapGroups(contacts, notes, { kind: 'notes', tagIds: [], templateId: null }).groups.map((g) => g.town.name)).toEqual(['Leeds'])
     expect(mapGroups(contacts, notes, { kind: 'contacts', tagIds: ['fam'], templateId: null }).groups[0].contacts.map((x) => x.id)).toEqual(['a'])
     expect(mapGroups(contacts, notes, { kind: 'all', tagIds: [], templateId: 'other' }).groups.every((g) => g.notes.length === 0)).toBe(true)
+  })
+
+  it('offers only the tags and templates something on the map carries (2026-11-19)', () => {
+    const more = [...contacts, c('z', { tagIds: ['work'] }), c('w', { location: { city: 'Nowheresville', country: 'GB' }, tagIds: ['lost'] })]
+    const notesToo = [...notes, n('n2', { templateId: 'tpl-none' })]
+    const { tagIds, templateIds } = mappedFilters(more, notesToo)
+    expect([...tagIds]).toEqual(['fam'])
+    expect([...templateIds]).toEqual(['tpl-book'])
   })
 })

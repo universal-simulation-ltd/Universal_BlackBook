@@ -63,6 +63,20 @@ export function mapGroups(contacts: Contact[], notes: Note[], filter: MapFilter)
   return { groups: [...groups.values()], unplaced }
 }
 
+/**
+ * The tags and templates worth a chip on the map (James, 2026-11-19: "don't
+ * show a tag in the map view if it doesn't have any items with map
+ * locations"): only those carried by something that lands on a pin.
+ */
+export function mappedFilters(contacts: Contact[], notes: Note[]): { tagIds: Set<string>; templateIds: Set<string> } {
+  const tagIds = new Set<string>()
+  const templateIds = new Set<string>()
+  const placed = (loc: Location | undefined) => Boolean(loc?.city && townOf(loc))
+  for (const c of contacts) if (!c.listOnly && placed(contactLocation(c))) for (const id of c.tagIds) tagIds.add(id)
+  for (const n of notes) if (n.templateId && placed(n.location)) templateIds.add(n.templateId)
+  return { tagIds, templateIds }
+}
+
 /** The box that holds every group, padded a little; null when there are none. */
 export function bounds(groups: MapGroup[]): [[number, number], [number, number]] | null {
   if (!groups.length) return null

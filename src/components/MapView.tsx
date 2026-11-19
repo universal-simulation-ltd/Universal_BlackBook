@@ -3,7 +3,7 @@ import type { Map as MlMap, Marker } from 'maplibre-gl'
 import { useScrollHint } from '@unisim/sdk'
 import { countryName, divisionName, loadGeo } from '../lib/geo'
 import { isList } from '../lib/lists'
-import { bounds, mapGroups, type MapFilter, type MapGroup, type MapKind } from '../lib/mapGroups'
+import { bounds, mapGroups, mappedFilters, type MapFilter, type MapGroup, type MapKind } from '../lib/mapGroups'
 import { usePageScrollLock } from '../lib/scrollLock'
 import { useBookStore } from '../stores/bookStore'
 import { useNoteStore } from '../stores/noteStore'
@@ -122,7 +122,10 @@ export function MapView({ onClose }: { onClose: () => void }) {
     if (b) m.fitBounds(b, { padding: 48, maxZoom: 9, duration: 0 })
   }, [groups, ready, t])
 
-  const plainTags = tags.filter((x) => !isList(x))
+  // Only chips that can show something: a tag or template nothing on the map carries is hidden.
+  const mapped = useMemo(() => (geo ? mappedFilters(contacts, notes) : { tagIds: new Set<string>(), templateIds: new Set<string>() }), [geo, contacts, notes])
+  const plainTags = tags.filter((x) => !isList(x) && mapped.tagIds.has(x.id))
+  const mappedTemplates = templates.filter((x) => mapped.templateIds.has(x.id))
   const kinds: { k: MapKind; label: Key }[] = [
     { k: 'all', label: 'tpl.all' },
     { k: 'contacts', label: 'tab_contacts' },
@@ -160,7 +163,7 @@ export function MapView({ onClose }: { onClose: () => void }) {
             />
           ))}
         {filter.kind !== 'contacts' &&
-          templates.map((tpl) => (
+          mappedTemplates.map((tpl) => (
             <button
               key={tpl.id}
               type="button"
