@@ -6,17 +6,19 @@ import type { Tag } from '../lib/types'
 import { useBookStore } from '../stores/bookStore'
 import { useNoteStore } from '../stores/noteStore'
 import { useTodoStore } from '../stores/todoStore'
+import { usePlaceStore } from '../stores/placeStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useGoTab } from '../stores/searchStore'
 import { matchesTodo } from '../lib/todos'
+import { comparePlaces, matchesPlace, placeWhere } from '../lib/places'
 import { TagDot } from './TagChip'
-import { IconBook, IconNote, IconTodo } from '../native/icons'
+import { IconBook, IconNote, IconPlace, IconTodo } from '../native/icons'
 import { useT } from '../i18n'
 
 /** How many of each kind before "and N more". */
 const EACH = 6
 
-type Here = 'contacts' | 'notes' | 'todos' | 'lists'
+type Here = 'contacts' | 'notes' | 'todos' | 'lists' | 'places'
 
 /**
  * Under a tab's own search results, what the same search finds everywhere
@@ -28,7 +30,8 @@ type Here = 'contacts' | 'notes' | 'todos' | 'lists'
  * notes and the to-dos that carry it.
  *
  * A tap opens the thing: a contact or a note over whatever tab this is (both
- * open from anywhere), a to-do on the To-do tab, its form open.
+ * open from anywhere), a to-do on the To-do tab, its form open, and a place
+ * (2026-11-19) on the Places tab, the same way.
  */
 export function Elsewhere({ here, query }: { here: Here; query: string }) {
   const t = useT()
@@ -36,6 +39,8 @@ export function Elsewhere({ here, query }: { here: Here; query: string }) {
   const tags = useBookStore((s) => s.tags)
   const notes = useNoteStore((s) => s.notes)
   const todos = useTodoStore((s) => s.todos)
+  const places = usePlaceStore((s) => s.places)
+  const placesOn = useSettingsStore((s) => s.places)
   const contactsOn = useSettingsStore((s) => s.contacts)
   const notesOn = useSettingsStore((s) => s.notes)
   const todosOn = useSettingsStore((s) => s.todos)
@@ -56,11 +61,12 @@ export function Elsewhere({ here, query }: { here: Here; query: string }) {
         here === 'todos' || !todosOn
           ? []
           : todos.filter((x) => matchesTodo(x, q, byId)).sort((a, b) => Number(Boolean(a.doneAt)) - Number(Boolean(b.doneAt))),
+      places: here === 'places' || !placesOn ? [] : places.filter((p) => matchesPlace(p, q, byId, t.locale)).sort((a, b) => comparePlaces(a, b, t.locale)),
     }
-  }, [q, here, contacts, notes, todos, contactsOn, notesOn, todosOn, byId, listIds])
+  }, [q, here, contacts, notes, todos, places, contactsOn, notesOn, todosOn, placesOn, byId, listIds, t.locale])
 
   if (!found) return null
-  const total = found.contacts.length + found.notes.length + found.todos.length
+  const total = found.contacts.length + found.notes.length + found.todos.length + found.places.length
   if (total === 0) return null
   const chips = (ids: readonly string[] | undefined) => (ids ?? []).map((id) => byId.get(id)).filter((x): x is Tag => Boolean(x) && !isList(x!))
 
@@ -70,6 +76,20 @@ export function Elsewhere({ here, query }: { here: Here; query: string }) {
       <Group icon={<IconBook />} title={t('ix.contacts')} more={found.contacts.length - EACH}>
         {found.contacts.slice(0, EACH).map((c) => (
           <Row key={c.id} title={c.name || t('c.unnamed')} sub={c.company || c.email || c.phone} tags={chips(c.tagIds)} onClick={() => useBookStore.getState().view(c.id)} />
+        ))}
+      </Group>
+      <Group icon={<IconPlace />} title={t('tab_places')} more={found.places.length - EACH}>
+        {found.places.slice(0, EACH).map((p) => (
+          <Row
+            key={p.id}
+            title={p.name || t('c.unnamed')}
+            sub={placeWhere(p, t.locale) || p.phone}
+            tags={chips(p.tagIds)}
+            onClick={() => {
+              useGoTab.getState().go('places')
+              usePlaceStore.getState().edit(p.id)
+            }}
+          />
         ))}
       </Group>
       <Group icon={<IconNote />} title={t('ix.notes')} more={found.notes.length - EACH}>

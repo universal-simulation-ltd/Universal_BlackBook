@@ -17,6 +17,7 @@ import { TagPicker } from './TagPicker'
 import { TagCombo } from './TagCombo'
 import { AddTyped, ListSearch } from './ListSearch'
 import { LocationFields } from './LocationFields'
+import { Elsewhere } from './Elsewhere'
 import { newLocation } from './currentLocation'
 import { useT } from '../i18n'
 import { btnDanger, btnGhost, btnPrimary, btnSubtle, BtnKey, inputCls, label, MapGlyph, PlusIcon, tabHeading, textareaCls } from './ui'
@@ -172,6 +173,9 @@ export function PlacesView() {
         {t('place.hint')}
       </p>
       {undo.item && <UndoBar title={undo.item.name} onUndo={() => void undo.undo()} />}
+
+      {/* Then what the same search finds on the other tabs. */}
+      <Elsewhere here="places" query={query} />
 
       {editing && <PlaceForm key={editing} id={editing} />}
     </div>
