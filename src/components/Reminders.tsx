@@ -17,6 +17,7 @@ import {
 import { useBookStore } from '../stores/bookStore'
 import { useNoteStore } from '../stores/noteStore'
 import { useT, type Key } from '../i18n'
+import { DateField } from './DateField'
 import { Modal } from './Modal'
 import { usePhoneKit } from '../native/kit'
 import { btnGhost, btnPrimary, btnSubtle, inputCls, label, radioCls } from './ui'
@@ -65,14 +66,7 @@ export function ReminderEditor({ onSave, onClose, initial }: { onSave: (r: Remin
             <label htmlFor={`${ids}-date`} className={label}>
               {t('rem.date')}
             </label>
-            <input
-              id={`${ids}-date`}
-              type="date"
-              required
-              className={inputCls}
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
+            <DateField id={`${ids}-date`} required value={date} onChange={setDate} className="w-full" />
           </div>
           <div className="min-w-0">
             <label htmlFor={`${ids}-time`} className={label}>

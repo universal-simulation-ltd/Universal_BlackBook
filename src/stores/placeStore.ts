@@ -4,6 +4,7 @@ import { hasLocation, type Location } from '../lib/geo'
 import { loadPlaces, savePlaces } from '../lib/store'
 import { PLACE_LIMITS, type Place, type PlaceComment } from '../lib/places'
 import { useGoTab } from './searchStore'
+import { useNoteStore } from './noteStore'
 
 /** What the Places form hands back. */
 export interface PlaceDraft {
@@ -34,6 +35,12 @@ interface PlaceState {
    * form over it; saving or closing the form comes back to it.
    */
   viewing: string | null
+  /**
+   * The place just added, while its page is still open (2026-11-20, "more
+   * like the people form"): the page shows its name box and notes, and a new
+   * place left empty is not kept when the page closes.
+   */
+  fresh: string | null
   /** A new place's name, typed into the tab's search first ("Add “…”"). */
   prefillName: string | null
   init: () => Promise<void>
@@ -41,6 +48,12 @@ interface PlaceState {
   edit: (id: string | null) => void
   view: (id: string | null) => void
   startPlace: (name: string) => void
+  /** Add a place now and open its page, as a new person is (Add new, the phone's +). */
+  create: (name?: string) => Promise<string>
+  /** Change some of a place's fields from its page. Saves at once. */
+  patch: (id: string, fields: Partial<Pick<Place, 'name' | 'location' | 'phone' | 'website' | 'details'>>) => Promise<void>
+  /** Close a place's page. A new place left empty goes. */
+  closePage: () => Promise<void>
   save: (draft: PlaceDraft) => Promise<void>
   remove: (id: string) => Promise<void>
   /** Undo a delete: the place as it was. */
@@ -74,6 +87,7 @@ export const usePlaceStore = create<PlaceState>((set, get) => {
     tagFilter: [],
     editing: null,
     viewing: null,
+    fresh: null,
     prefillName: null,
 
     init: async () => {
@@ -87,7 +101,42 @@ export const usePlaceStore = create<PlaceState>((set, get) => {
     setTagFilter: (tagFilter) => set({ tagFilter }),
     edit: (editing) => set({ editing, prefillName: null }),
     view: (viewing) => set({ viewing }),
-    startPlace: (name) => set({ editing: 'new', prefillName: name }),
+    startPlace: (name) => void get().create(name),
+
+    create: async (name = '') => {
+      const now = Date.now()
+      const filter = get().tagFilter
+      const place: Place = { id: newId(), name: name.trim(), phone: '', website: '', details: '', tagIds: [...filter], createdAt: now, updatedAt: now }
+      set({ editing: null, viewing: place.id, fresh: place.id, prefillName: null })
+      await commit([...get().places, place])
+      return place.id
+    },
+
+    patch: async (id, fields) => {
+      const now = Date.now()
+      await commit(
+        get().places.map((p) => {
+          if (p.id !== id) return p
+          const next: Place = { ...p, ...fields, updatedAt: now }
+          if ('location' in fields) {
+            // Only a town or finer is worth keeping (lib/geo.ts), as in save().
+            const loc = hasLocation(fields.location) ? { ...fields.location } : undefined
+            if (loc) delete loc.place
+            if (loc) next.location = loc
+            else delete next.location
+          }
+          return next
+        }),
+      )
+    },
+
+    closePage: async () => {
+      const { viewing, fresh } = get()
+      set({ viewing: null, fresh: null })
+      if (!viewing || viewing !== fresh) return
+      const p = get().places.find((x) => x.id === viewing)
+      if (p && isEmptyPlace(p)) await commit(get().places.filter((x) => x.id !== viewing))
+    },
 
     save: async (draft) => {
       const now = Date.now()
@@ -121,7 +170,7 @@ export const usePlaceStore = create<PlaceState>((set, get) => {
     },
 
     remove: async (id) => {
-      set((s) => ({ editing: s.editing === id ? null : s.editing, viewing: s.viewing === id ? null : s.viewing }))
+      set((s) => ({ editing: s.editing === id ? null : s.editing, viewing: s.viewing === id ? null : s.viewing, fresh: s.fresh === id ? null : s.fresh }))
       await commit(get().places.filter((p) => p.id !== id))
     },
 
@@ -208,6 +257,23 @@ export const usePlaceStore = create<PlaceState>((set, get) => {
     },
   }
 })
+
+/**
+ * Nothing typed, picked or linked: a new place like this is not kept. Notes
+ * link to places from their side, so a place a note points at stays.
+ */
+export function isEmptyPlace(p: Place): boolean {
+  return (
+    !p.name.trim() &&
+    !hasLocation(p.location) &&
+    !p.phone.trim() &&
+    !p.website.trim() &&
+    !p.details.trim() &&
+    !p.comments?.length &&
+    !p.contactIds?.length &&
+    !useNoteStore.getState().notes.some((n) => n.placeIds?.includes(p.id))
+  )
+}
 
 /** Open a place's page from anywhere: it lives on the Places tab, so go there first. */
 export function openPlace(id: string) {

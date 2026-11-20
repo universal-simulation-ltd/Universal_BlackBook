@@ -41,8 +41,8 @@ export function PlacesView() {
   const loaded = usePlaceStore((s) => s.loaded)
   const editing = usePlaceStore((s) => s.editing)
   const viewing = usePlaceStore((s) => s.viewing)
-  const edit = usePlaceStore((s) => s.edit)
   const view = usePlaceStore((s) => s.view)
+  const create = usePlaceStore((s) => s.create)
   const startPlace = usePlaceStore((s) => s.startPlace)
   const tagFilter = usePlaceStore((s) => s.tagFilter)
   const setTagFilter = usePlaceStore((s) => s.setTagFilter)
@@ -128,7 +128,7 @@ export function PlacesView() {
             <button type="button" className={`${btnGhost} !px-2.5`} onClick={() => usePanelStore.getState().open('map')} aria-label={t('map.title')} title={t('map.title')}>
               <MapGlyph />
             </button>
-            <button type="button" className={btnPrimary} onClick={() => edit('new')}>
+            <button type="button" className={btnPrimary} onClick={() => void create()}>
               <BtnKey>
                 <PlusIcon />
               </BtnKey>

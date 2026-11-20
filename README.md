@@ -339,12 +339,22 @@ scanner of our own (`src/lib/noteImport.ts`).
 Tap a place and its page opens: Directions, Call and Website, the address, its
 notes and tags, then **Comments** (what happened there, what to remember,
 dated, newest first; Delete has an Undo) and the **people** and **notes**
-linked to it, with Link to a person / Link to a note. A new place opens on its
-page once added. **Fine-tune** changes its name, address, phone, website,
+linked to it, with Link to a person / Link to a note. **Add new** (the
+phone's +) makes the place at once and opens its page the way a new person
+does: a name box, a notes box and the quick actions 📍 📞 🌐 📌. 📍 with no
+address yet fills in roughly where you are (the nearest town, county and
+country, worked out on the device; nothing is sent), every box still
+editable; with one it opens directions. A new place left empty is not kept. **Fine-tune** changes its name, address, phone, website,
 notes and tags. In the list each place shows the first people linked to it,
 how many notes and comments it has, and its latest comment. Search covers the
 comments too, and a place moved to another tab takes its comments along as
 dated lines.
+
+### Dates: a calendar button
+
+Every date (a to-do's deadline and snooze, a reminder's date) is a calendar
+button showing the day picked, or "Pick a date"; a click or tap opens the
+device's own picker. A birthday keeps its Day / Month / Year boxes.
 
 ### Locations in parts, with real place lists (offline)
 

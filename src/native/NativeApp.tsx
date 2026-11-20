@@ -158,7 +158,8 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
   const { canPick, picking, pick } = useContactPicker()
   const newList = useBookStore((s) => s.newList)
   const editTodo = useTodoStore((s) => s.edit)
-  const editPlace = usePlaceStore((s) => s.edit)
+  // A new place opens on its page, as a new person does (2026-11-20).
+  const createPlace = usePlaceStore((s) => s.create)
   const newNote = useNoteStore((s) => s.newNote)
   // The top bar's + (James, 2026-10-23): on Contacts it opens a sheet of the
   // ways to add somebody, so "From my contacts" is no longer a button of its
@@ -235,7 +236,7 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
               </button>
             )}
             {current === 'places' && (
-              <button type="button" className="bb-iconbtn" aria-label={t('add_place')} onClick={() => editPlace('new')}>
+              <button type="button" className="bb-iconbtn" aria-label={t('add_place')} onClick={() => void createPlace()}>
                 <IconPlus />
               </button>
             )}

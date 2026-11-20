@@ -20,6 +20,7 @@ import { TagCombo } from './TagCombo'
 import { AddTyped, ListSearch } from './ListSearch'
 import { Elsewhere } from './Elsewhere'
 import { useT } from '../i18n'
+import { DateField } from './DateField'
 import { btnDanger, emptyBox, orbitRow, btnGhost, btnPrimary, btnSubtle, inputCls, BtnKey, label, PlusIcon, tabHeading, textareaCls } from './ui'
 import { autoFocusOK } from '../native/kit'
 import { phoneScreens } from '../native/shell'
@@ -1351,7 +1352,7 @@ function SnoozeSheet({
             {t('todo.snooze_pick')}
           </label>
           <div className="flex items-center gap-2">
-            <input id={dayId} type="date" min={min} className={`${inputCls} [color-scheme:dark]`} value={day} onChange={(e) => setDay(e.target.value)} />
+            <DateField id={dayId} min={min} value={day} onChange={setDay} className="flex-1" />
             <button type="button" className={btnPrimary} disabled={!day || day < min} onClick={() => onPick(day)}>
               {t('todo.snooze')}
             </button>
@@ -1450,14 +1451,8 @@ function TodoForm({ id }: { id: string }) {
             {t('todo.deadline')}
           </label>
           <div className="flex items-center gap-2">
-            {/* The browser's own date picker — the phone's wheel on iOS. */}
-            <input
-              id={dueId}
-              type="date"
-              className={`${inputCls} [color-scheme:dark]`}
-              value={draft.due ?? ''}
-              onChange={(e) => patch({ due: e.target.value || undefined })}
-            />
+            {/* A calendar button opening the device's own picker (DateField). */}
+            <DateField id={dueId} value={draft.due ?? ''} onChange={(v) => patch({ due: v || undefined })} className="flex-1" />
             {draft.due && (
               <button type="button" className={btnSubtle} onClick={() => patch({ due: undefined })}>
                 {t('c.clear')}
@@ -1472,13 +1467,12 @@ function TodoForm({ id }: { id: string }) {
           <div className="space-y-2">
             <SnoozeButtons today={today} value={draft.snoozedUntil} onPick={(snoozedUntil) => patch({ snoozedUntil })} />
             <div className="flex items-center gap-2">
-              <input
+              <DateField
                 id={snoozeId}
-                type="date"
                 min={addDays(today, 1)}
-                className={`${inputCls} [color-scheme:dark]`}
                 value={draft.snoozedUntil ?? ''}
-                onChange={(e) => patch({ snoozedUntil: e.target.value || undefined })}
+                onChange={(v) => patch({ snoozedUntil: v || undefined })}
+                className="flex-1"
               />
               {draft.snoozedUntil && (
                 <button type="button" className={btnSubtle} onClick={() => patch({ snoozedUntil: undefined })}>
