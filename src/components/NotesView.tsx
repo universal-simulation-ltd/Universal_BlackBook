@@ -22,7 +22,7 @@ import { tagNames } from '../lib/filter'
 import { Elsewhere } from './Elsewhere'
 import { TagChip, TagDot } from './TagChip'
 import { TagCombo } from './TagCombo'
-import { btnDanger, btnGhost, btnPrimary, btnSubtle, BtnKey, MapGlyph, PlusIcon, tabHeading, TuneGlyph } from './ui'
+import { btnDanger, emptyBox, orbitRow, btnGhost, btnPrimary, btnSubtle, BtnKey, MapGlyph, PlusIcon, tabHeading, TuneGlyph } from './ui'
 import { usePanelStore } from '../stores/panelStore'
 import { phoneScreens } from '../native/shell'
 import { useT } from '../i18n'
@@ -228,13 +228,13 @@ export function NotesView() {
       <AddTyped text={query} onAdd={addTyped} />
 
       {loaded && notes.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-800 px-6 py-14 text-center">
+        <div className={`${emptyBox} px-6 py-14 text-center`}>
           <p className="text-sm text-slate-400">
             {phoneScreens() ? t('notes.none_phone') : t('notes.none')}
           </p>
         </div>
       ) : shown.length === 0 && (searching || active || activeTags.length > 0) ? (
-        <p className="rounded-2xl border border-dashed border-slate-800 px-6 py-8 text-center text-sm text-slate-400">
+        <p className={`${emptyBox} px-6 py-8 text-center text-sm text-slate-400`}>
           {searching ? t('notes.no_match') : active ? t('tpl.filter_none') : t('todo.none_tagged')}
         </p>
       ) : (
@@ -466,12 +466,14 @@ function NoteRow({
   return (
     // `relative`: the Fine-tune button is a SIBLING over the card's corner,
     // never inside it (a button in a button is invalid HTML; see ContactRow).
+    // The card opens the note: the suite's Orbit corner on the website
+    // (BRANDING.md → Boxes, A; ui.tsx's orbitRow).
     <div className="relative h-full">
     <button
       type="button"
       onClick={(e) => onOpen(e)}
       {...(selected !== undefined ? { role: 'checkbox', 'aria-checked': selected } : {})}
-      className={`relative flex h-full w-full flex-col gap-1 rounded-xl border bg-slate-900 p-3.5 text-left transition-colors hover:border-slate-700 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+      className={`${orbitRow} relative flex h-full w-full flex-col gap-1 border bg-slate-900 p-3.5 text-left transition-colors hover:border-slate-700 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
         selected ? 'border-orange-500 bg-orange-500/10' : 'border-slate-800'
       } ${selected !== undefined ? 'pl-11' : ''} ${onFineTune ? 'pr-11' : ''}`}
     >

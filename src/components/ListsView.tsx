@@ -15,7 +15,7 @@ import { useBookStore } from '../stores/bookStore'
 import { ContactRow, ListExport } from './ContactList'
 import { ListChip } from './ListChip'
 import { TagChip } from './TagChip'
-import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, BtnKey, PlusIcon, tabHeading } from './ui'
+import { btnDanger, emptyBox, orbitCard, btnGhost, btnPrimary, btnSubtle, inputCls, BtnKey, PlusIcon, tabHeading } from './ui'
 import { autoFocusOK } from '../native/kit'
 import { phoneScreens } from '../native/shell'
 import { useT } from '../i18n'
@@ -114,11 +114,11 @@ export function ListsView() {
       />
 
       {lists.length === 0 && query.trim() ? (
-        <p className="rounded-2xl border border-dashed border-slate-800 px-6 py-8 text-center text-sm text-slate-400">
+        <p className={`${emptyBox} px-6 py-8 text-center text-sm text-slate-400`}>
           {t('lists.no_match')}
         </p>
       ) : lists.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-800 px-6 py-14 text-center">
+        <div className={`${emptyBox} px-6 py-14 text-center`}>
           <p className="text-sm text-slate-400">
             {phoneScreens() ? t('lists.none_phone') : t('lists.none')}
           </p>
@@ -151,7 +151,9 @@ export function ListsView() {
               right={deleteSwipe(tag.name, () => void removeList(tag.id))}
               focus={[{ label: t('todo.delete_label', { title: tag.name }), onClick: () => void removeList(tag.id) }]}
             >
-            <div className="flex h-full flex-col gap-2 rounded-2xl border border-slate-800 bg-slate-900 p-3 sm:p-4">
+            {/* A card whose name opens the list: the suite's Orbit corner on the
+                website (BRANDING.md → Boxes, A). */}
+            <div className={`${orbitCard} flex h-full flex-col gap-2 border border-slate-800 bg-slate-900 p-3 sm:p-4`}>
               <button
                 type="button"
                 onClick={() => setOpenId(tag.id)}
@@ -324,7 +326,7 @@ function ListPage({ list, onBack }: { list: Tag; onBack: () => void }) {
       )}
 
       {people.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-800 px-6 py-14 text-center">
+        <div className={`${emptyBox} px-6 py-14 text-center`}>
           <p className="text-sm text-slate-400">{t('lists.empty')}</p>
         </div>
       ) : (

@@ -94,11 +94,17 @@ Everywhere else — and with a keyboard or a screen reader anywhere — Delete i
 where it has always been: inside the contact's own form, behind the same
 confirmation.
 
-**Several at once:** Select, above the list, turns every card into a tick box.
-Tick the people you want, then Delete, Tag (adds tags to all of them) or Hide /
-Show. Delete asks first and names who is going. Only people still on screen are
-acted on — narrow the filter after ticking and the ones filtered out are left
-alone.
+**Several at once:** on the website every card has a tick box, with **Select
+all** above the list (the suite's "select several, then act" rule, from
+`@unisim/sdk`'s `useSelection` / `SelectCheckbox` / `SelectionBar`, 2026-11-20).
+Tick the people you want and the bar shows how many, then **Delete selected**,
+Tag (adds tags to all of them), Move, Hide / Show and Clear. A card still opens
+with a tap while others are ticked; holding a card on a touch screen ticks it.
+In the phone app, Select above the list (or holding a card) turns every card
+into a tick box instead. Delete asks first and names who is going, then offers
+**Undo** for six seconds, as a swipe's Delete does. Only people still on screen
+are acted on — narrow the filter after ticking and the ones filtered out are
+left alone.
 
 **Everything at once:** Actions ▸ Advanced ▸ **Delete all data** clears this
 device completely: every contact, tag, list and to-do, the PIN, your settings

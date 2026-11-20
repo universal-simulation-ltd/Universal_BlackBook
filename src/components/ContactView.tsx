@@ -168,6 +168,11 @@ export function ContactView({ id }: { id: string }) {
     chips.length === 0 &&
     !notes.trim()
 
+  // What goes in the details box (website): any of the fields below the name.
+  const hasFacts =
+    Boolean(contact.email.trim() || contact.company?.trim() || contact.phone.trim() || contact.address?.trim() || contact.birthdate) ||
+    chips.length > 0
+
   const details = (
     <div className="mx-auto w-full max-w-2xl space-y-5">
       {isFresh && (
@@ -201,88 +206,183 @@ export function ContactView({ id }: { id: string }) {
         </div>
       )}
 
-      {contact.email.trim() && (
-        <Row name={fieldLabel('email')}>
-          <a
-            href={`mailto:${contact.email.trim()}`}
-            className="break-all text-base text-orange-300 underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
-          >
-            {contact.email}
-          </a>
-        </Row>
-      )}
-
-      {contact.company?.trim() && (
-        <Row name={fieldLabel('company')}>
-          <p className="break-words text-base text-slate-200"><Linked text={contact.company} /></p>
-        </Row>
-      )}
-
-      {contact.phone.trim() && (
-        <Row name={fieldLabel('phone')}>
-          {/* The stored string is what is SHOWN — spacing, brackets and all
-              (see Contact.phone) — and the digits are what is dialled. A
-              `tel:` href keeps the punctuation the phone would choke on out
-              of the URL without rewriting what the user typed. */}
-          <a
-            href={`tel:${contact.phone.replace(/[^\d+]/g, '')}`}
-            className="text-base tabular-nums text-orange-300 underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
-          >
-            {contact.phone}
-          </a>
-        </Row>
-      )}
-
-      {contact.address?.trim() && (
-        <Row name={fieldLabel('address')}>
-          {/* `pre-line`: the line breaks are the address. */}
-          <p className="whitespace-pre-line break-words text-base text-slate-200"><Linked text={contact.address.trim()} /></p>
-        </Row>
-      )}
-
-      {contact.birthdate && (
-        <Row name={fieldLabel('birthday')}>
-          <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-base text-slate-200">
-            <span>{formatBirthday(contact.birthdate)}</span>
-            {age !== null && <span className="text-sm text-slate-500 tabular-nums">{t('view.age', { age })}</span>}
-          </p>
-          {/* The countdown is here on every contact, not only in the
-              birthdays view: "in 9 days" is the reason to have opened
-              somebody's card at all in the week before it. */}
-          {next && (
-            <p className="mt-1 flex items-center gap-1.5 text-sm text-orange-300/90">
-              <span aria-hidden>{next.inDays === 0 ? '🎉' : '🎂'}</span>
-              <span>{countdownLabel(next.inDays)}</span>
-              {next.turning !== null && (
-                <>
-                  <span aria-hidden className="text-slate-600">·</span>
-                  <span className="tabular-nums">{t('bday.turning', { age: next.turning })}</span>
-                </>
-              )}
-            </p>
+      {hasFacts &&
+        (phoneScreens() ? (
+          <>
+          {contact.email.trim() && (
+            <Row name={fieldLabel('email')}>
+              <a
+                href={`mailto:${contact.email.trim()}`}
+                className="break-all text-base text-orange-300 underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+              >
+                {contact.email}
+              </a>
+            </Row>
           )}
-        </Row>
-      )}
 
-      {tagChips.length > 0 && (
-        <Row name={fieldLabel('tags')}>
-          <div className="flex flex-wrap gap-1.5">
-            {tagChips.map((t) => (
-              <TagChip key={t.id} name={t.name} colour={t.colour} pattern={t.pattern} />
-            ))}
-          </div>
-        </Row>
-      )}
+          {contact.company?.trim() && (
+            <Row name={fieldLabel('company')}>
+              <p className="break-words text-base text-slate-200"><Linked text={contact.company} /></p>
+            </Row>
+          )}
 
-      {listChips.length > 0 && (
-        <Row name={fieldLabel('lists')}>
-          <div className="flex flex-wrap gap-1.5">
-            {listChips.map((t) => (
-              <ListChip key={t.id} name={t.name} />
-            ))}
+          {contact.phone.trim() && (
+            <Row name={fieldLabel('phone')}>
+              {/* The stored string is what is SHOWN — spacing, brackets and all
+                  (see Contact.phone) — and the digits are what is dialled. A
+                  `tel:` href keeps the punctuation the phone would choke on out
+                  of the URL without rewriting what the user typed. */}
+              <a
+                href={`tel:${contact.phone.replace(/[^\d+]/g, '')}`}
+                className="text-base tabular-nums text-orange-300 underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+              >
+                {contact.phone}
+              </a>
+            </Row>
+          )}
+
+          {contact.address?.trim() && (
+            <Row name={fieldLabel('address')}>
+              {/* `pre-line`: the line breaks are the address. */}
+              <p className="whitespace-pre-line break-words text-base text-slate-200"><Linked text={contact.address.trim()} /></p>
+            </Row>
+          )}
+
+          {contact.birthdate && (
+            <Row name={fieldLabel('birthday')}>
+              <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-base text-slate-200">
+                <span>{formatBirthday(contact.birthdate)}</span>
+                {age !== null && <span className="text-sm text-slate-500 tabular-nums">{t('view.age', { age })}</span>}
+              </p>
+              {/* The countdown is here on every contact, not only in the
+                  birthdays view: "in 9 days" is the reason to have opened
+                  somebody's card at all in the week before it. */}
+              {next && (
+                <p className="mt-1 flex items-center gap-1.5 text-sm text-orange-300/90">
+                  <span aria-hidden>{next.inDays === 0 ? '🎉' : '🎂'}</span>
+                  <span>{countdownLabel(next.inDays)}</span>
+                  {next.turning !== null && (
+                    <>
+                      <span aria-hidden className="text-slate-600">·</span>
+                      <span className="tabular-nums">{t('bday.turning', { age: next.turning })}</span>
+                    </>
+                  )}
+                </p>
+              )}
+            </Row>
+          )}
+
+          {tagChips.length > 0 && (
+            <Row name={fieldLabel('tags')}>
+              <div className="flex flex-wrap gap-1.5">
+                {tagChips.map((t) => (
+                  <TagChip key={t.id} name={t.name} colour={t.colour} pattern={t.pattern} />
+                ))}
+              </div>
+            </Row>
+          )}
+
+          {listChips.length > 0 && (
+            <Row name={fieldLabel('lists')}>
+              <div className="flex flex-wrap gap-1.5">
+                {listChips.map((t) => (
+                  <ListChip key={t.id} name={t.name} />
+                ))}
+              </div>
+            </Row>
+          )}
+
+          </>
+        ) : (
+          // The person's details, as one record: the suite's Key box on the
+          // website (BRANDING.md → Boxes, C), its neutral tab naming it.
+          <div className="u-box u-box--key mt-3 space-y-5 border-slate-800 bg-slate-900 px-4 pb-4 pt-6">
+            <span className="u-box__key">{t('view.details')}</span>
+          {contact.email.trim() && (
+            <Row name={fieldLabel('email')}>
+              <a
+                href={`mailto:${contact.email.trim()}`}
+                className="break-all text-base text-orange-300 underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+              >
+                {contact.email}
+              </a>
+            </Row>
+          )}
+
+          {contact.company?.trim() && (
+            <Row name={fieldLabel('company')}>
+              <p className="break-words text-base text-slate-200"><Linked text={contact.company} /></p>
+            </Row>
+          )}
+
+          {contact.phone.trim() && (
+            <Row name={fieldLabel('phone')}>
+              {/* The stored string is what is SHOWN — spacing, brackets and all
+                  (see Contact.phone) — and the digits are what is dialled. A
+                  `tel:` href keeps the punctuation the phone would choke on out
+                  of the URL without rewriting what the user typed. */}
+              <a
+                href={`tel:${contact.phone.replace(/[^\d+]/g, '')}`}
+                className="text-base tabular-nums text-orange-300 underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+              >
+                {contact.phone}
+              </a>
+            </Row>
+          )}
+
+          {contact.address?.trim() && (
+            <Row name={fieldLabel('address')}>
+              {/* `pre-line`: the line breaks are the address. */}
+              <p className="whitespace-pre-line break-words text-base text-slate-200"><Linked text={contact.address.trim()} /></p>
+            </Row>
+          )}
+
+          {contact.birthdate && (
+            <Row name={fieldLabel('birthday')}>
+              <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-base text-slate-200">
+                <span>{formatBirthday(contact.birthdate)}</span>
+                {age !== null && <span className="text-sm text-slate-500 tabular-nums">{t('view.age', { age })}</span>}
+              </p>
+              {/* The countdown is here on every contact, not only in the
+                  birthdays view: "in 9 days" is the reason to have opened
+                  somebody's card at all in the week before it. */}
+              {next && (
+                <p className="mt-1 flex items-center gap-1.5 text-sm text-orange-300/90">
+                  <span aria-hidden>{next.inDays === 0 ? '🎉' : '🎂'}</span>
+                  <span>{countdownLabel(next.inDays)}</span>
+                  {next.turning !== null && (
+                    <>
+                      <span aria-hidden className="text-slate-600">·</span>
+                      <span className="tabular-nums">{t('bday.turning', { age: next.turning })}</span>
+                    </>
+                  )}
+                </p>
+              )}
+            </Row>
+          )}
+
+          {tagChips.length > 0 && (
+            <Row name={fieldLabel('tags')}>
+              <div className="flex flex-wrap gap-1.5">
+                {tagChips.map((t) => (
+                  <TagChip key={t.id} name={t.name} colour={t.colour} pattern={t.pattern} />
+                ))}
+              </div>
+            </Row>
+          )}
+
+          {listChips.length > 0 && (
+            <Row name={fieldLabel('lists')}>
+              <div className="flex flex-wrap gap-1.5">
+                {listChips.map((t) => (
+                  <ListChip key={t.id} name={t.name} />
+                ))}
+              </div>
+            </Row>
+          )}
+
           </div>
-        </Row>
-      )}
+        ))}
 
       <div>
         {/* A real `<label>` here, unlike `Row`: this one has a control. */}

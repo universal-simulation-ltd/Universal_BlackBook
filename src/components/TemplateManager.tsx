@@ -8,7 +8,7 @@ import { Modal } from './Modal'
 import { actionSwipe, deleteSwipe, removeSwipe, SelectBar, SwipeGroup, SwipeItem, UndoBar, useHoldSelect, useUndo } from './SwipeActions'
 import { usePhoneKit } from '../native/kit'
 import type { Note } from '../lib/notes'
-import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, BtnKey, label, PlusIcon } from './ui'
+import { btnDanger, emptyBox, btnGhost, btnPrimary, btnSubtle, inputCls, BtnKey, label, PlusIcon } from './ui'
 
 const FIELD_TYPE_KEY: Record<FieldType, Key> = {
   text: 'tpl.type_text',
@@ -52,7 +52,7 @@ export function TemplateManager({ onClose }: { onClose: () => void }) {
       <Modal title={t('tpl.manage')} onClose={onClose} backLabel={t('tpl.back')}>
         <p className="mb-4 text-sm text-slate-400">{t('tpl.intro')}</p>
         {templates.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-slate-800 px-6 py-8 text-center text-sm text-slate-400">{t('tpl.none')}</p>
+          <p className={`${emptyBox} px-6 py-8 text-center text-sm text-slate-400`}>{t('tpl.none')}</p>
         ) : (
           <SwipeGroup>
           <SelectBar select={sel} total={templates.length} actions={[{ label: t('c.delete'), danger: true, onClick: (ids) => void removeMany(ids) }]} />

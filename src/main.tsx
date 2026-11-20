@@ -1,7 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { Capacitor } from '@capacitor/core'
-import { UniversalProvider, installButtonStyles, installTabStyles } from '@unisim/sdk'
+import { UniversalProvider, installBoxStyles, installButtonStyles, installTabStyles } from '@unisim/sdk'
 import App from './App'
 import './index.css'
 
@@ -49,6 +49,10 @@ const universalConfig = {
 // App.tsx's tab bar). The website wears them; the phone app keeps its own.
 installButtonStyles()
 installTabStyles()
+// The suite's box marks (BRANDING.md → Boxes), also as class strings
+// (components/ui.tsx: orbitRow, orbitCard, emptyBox; the Key boxes in place).
+// The sheet goes in once; only the website's classes use it.
+installBoxStyles()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

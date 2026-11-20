@@ -2,6 +2,7 @@ import { useId, useMemo, useRef, useState } from 'react'
 import { Elsewhere } from './Elsewhere'
 import { addContactFromSearch } from './addFromSearch'
 import { saveBlob } from '@unisim/media/save'
+import { Button, SelectCheckbox, SelectionBar, useSelection } from '@unisim/sdk'
 import {
   countdownLabel,
   currentAge,
@@ -27,9 +28,10 @@ import { FocusActions, SelectFrame, selectAct, selectDanger, UndoBar, useHold, u
 import { ListChip } from './ListChip'
 import { TagDot } from './TagChip'
 import { TagPicker } from './TagPicker'
-import { btnDanger, btnGhost, btnPrimary, btnSubtle, BtnKey, PlusIcon, TuneGlyph } from './ui'
+import { btnDanger, emptyBox, btnGhost, btnPrimary, btnSubtle, BtnKey, onWeb, orbitRow, PlusIcon, TuneGlyph } from './ui'
 import { currentT, useT } from '../i18n'
 import { usePhoneKit } from '../native/kit'
+import { phoneScreens } from '../native/shell'
 import { hasLocation } from '../lib/geo'
 import { DetailMarks } from './DetailMarks'
 
@@ -152,6 +154,14 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
     undoDelete.deleted(list)
     for (const c of list) void removeContact(c.id)
   }
+  // Delete several (a selection's Delete, after its confirm): one write for
+  // the batch (removeContacts), then Undo for six seconds like a swipe's
+  // Delete, as Notes and Places do (2026-11-20; it had no Undo before).
+  const deleteMany = (list: Contact[]) => {
+    if (list.length === 0) return
+    undoDelete.deleted(list)
+    void removeContacts(list.map((c) => c.id))
+  }
   /** Is the "hidden from this list" drawer open? Never persisted — it is a
       management view, and it should be shut again the next time you come
       looking for whose birthday is next. */
@@ -165,11 +175,16 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
    */
   const [selected, setSelected] = useState<Set<string> | null>(null)
   const selecting = selected !== null
-  // Hold a card to select it (James, 2026-10-25), and the phone's ways out.
+  // The phone's ways out of it (Android's back, a swipe in from the left).
   const phoneKit = usePhoneKit()
-  const holdCard = useHold((id) => setSelected((s) => new Set([...(s ?? []), id])))
   useLeaveSelection(selecting, Boolean(phoneKit), () => setSelected(null))
   const [bulk, setBulk] = useState<'delete' | 'tag' | null>(null)
+  /**
+   * The website's Delete selected, asking first: the SelectionBar waits on
+   * this promise, and ConfirmBulkDelete (which names who is going) answers it.
+   */
+  const [asking, setAsking] = useState<{ answer: (ok: boolean) => void } | null>(null)
+  const askBulkDelete = () => new Promise<boolean>((answer) => setAsking({ answer }))
   const tidiedId = useId()
   const hiddenBirthdaysId = useId()
   const recentId = useId()
@@ -193,6 +208,24 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
   // Unpinning the last one closes the view by itself.
   const showingPins = pinsFor === query && pins.length > 0
   const visible = showingPins ? pins : queried
+  /**
+   * The website's way to pick several (the suite rule, "Every list: select
+   * several, then act"; @unisim/sdk 0.227): a tick box on every card, Select
+   * all over the list, and once something is ticked the count, Delete
+   * selected, Tag, Move, Hide / Show and Clear. No mode: a card still opens
+   * with a tap while others are ticked.
+   *
+   * The phone app keeps its own (hold a card, then the select bar; `selected`
+   * above), the suite's phone rule; there the tick boxes are not drawn and
+   * this selection stays empty.
+   */
+  const web = !phoneScreens()
+  const sel = useSelection(web ? visible.map((c) => c.id) : [])
+  // Hold a card to select it (James, 2026-10-25): on the phone it starts the
+  // select bar; on a touch screen on the website it ticks the card's box.
+  const holdCard = useHold((id) =>
+    web ? sel.setMany([id], true) : setSelected((s) => new Set([...(s ?? []), id])),
+  )
   // What "x of N" counts: the people Contacts shows with no filter on. A
   // list-only person is not one of them, so they must not make a full list
   // read as "1 of 2".
@@ -247,6 +280,18 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
     () => (selected ? visible.filter((c) => selected.has(c.id)) : []),
     [selected, visible],
   )
+  // The website's ticked people (useSelection already drops anyone filtered
+  // off the screen), and whichever of the two the bulk dialogs act on.
+  const ticked = web ? visible.filter((c) => sel.has(c.id)) : []
+  const chosen = web ? ticked : picked
+  const endSelection = () => {
+    setSelected(null)
+    sel.clear()
+  }
+  // Hide/Show is the main list's flag; the birthdays view has its own
+  // meaning of "hidden" and a separate drawer for it.
+  const hideFlip = (people: Contact[]): 'hide' | 'show' | null =>
+    birthdays || people.length === 0 ? null : people.every((c) => c.hideFromList) ? 'show' : 'hide'
   const toggle = (id: string) =>
     setSelected((s) => {
       const next = new Set(s)
@@ -260,14 +305,20 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
   const undoBars = (
     <>
       {moveTo.ui}
-      {undoDelete.item && <UndoBar title={undoDelete.item[0]?.name || ''} onUndo={() => void undoDelete.undo()} />}
+      {undoDelete.item && (
+        <UndoBar
+          title={undoDelete.item[0]?.name || ''}
+          text={undoDelete.item.length === 1 ? undefined : t.plural('sel.deleted', undoDelete.item.length)}
+          onUndo={() => void undoDelete.undo()}
+        />
+      )}
     </>
   )
 
   if (contacts.length === 0) {
     return (
       <>
-      <div className="rounded-2xl border border-dashed border-slate-800 px-6 py-14 text-center">
+      <div className={`${emptyBox} px-6 py-14 text-center`}>
         <p className="text-lg font-semibold text-slate-200">{t('list.empty_title')}</p>
         <p className="mx-auto mt-1.5 max-w-md text-sm text-slate-400">{t('list.empty_body')}</p>
         {/* Answered here, once, rather than as a standing "not backed up"
@@ -307,7 +358,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
       {/* Above what the search found (James, 2026-10-23), here above "nobody
           matches" as much as above a list of results. */}
       {searching && !birthdays && <AddFromSearch text={query.text} className="mb-3" />}
-      <div className="rounded-2xl border border-dashed border-slate-800 px-6 py-14 text-center">
+      <div className={`${emptyBox} px-6 py-14 text-center`}>
         <p className="text-sm text-slate-400">
           {birthdays
             ? t('list.no_birthdays')
@@ -356,7 +407,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                 {/* The orange ring says "this one is not part of the list": the
                     same person is in their usual place below, and two
                     identical cards read as a duplicate entry. */}
-                <div className="rounded-xl ring-1 ring-orange-500/40">
+                <div className={`${onWeb('rounded-[14px]', 'rounded-xl')} ring-1 ring-orange-500/40`}>
                   {/* No swipe row: this is a second copy of a card that is also
                       in the list below, and a Delete on the copy is one more
                       place to flick somebody away by accident. */}
@@ -402,7 +453,8 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
           {emailLists && visible.length > 0 && !selecting && (
             <ListExport contacts={visible} tags={tags} tagIds={query.tagIds} />
           )}
-          {visible.length > 0 && !selecting && (
+          {/* The phone's Select; the website has its tick boxes instead. */}
+          {visible.length > 0 && !selecting && !web && (
             <button
               type="button"
               className={btnSubtle}
@@ -416,20 +468,56 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
           )}
         </div>
       </div>
+      {web && (
+        // Sticky once something is ticked, so Delete selected stays in reach
+        // while ticking down a long list (as the phone's select bar is).
+        <div className={sel.count > 0 ? 'sticky top-0 z-30 -mx-1 mb-2 bg-slate-950 px-1 py-1' : 'mb-2'}>
+          <SelectionBar
+            sel={sel}
+            noun={{ one: t('sel.person_noun'), other: t('sel.people_noun') }}
+            // Our own confirm rather than the SDK's: it names who is going,
+            // and says Undo follows (the SDK's says it cannot be undone).
+            confirm={askBulkDelete}
+            onDelete={(ids) => deleteMany(visible.filter((c) => ids.includes(c.id)))}
+            extra={
+              <>
+                <Button size="sm" onClick={() => setBulk('tag')}>
+                  {t('sel.tag')}
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    moveTo.start(ticked.map((c) => c.id))
+                    sel.clear()
+                  }}
+                >
+                  {t('sel.move')}
+                </Button>
+                {hideFlip(ticked) && (
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      void setListHiddenMany(
+                        ticked.map((c) => c.id),
+                        hideFlip(ticked) === 'hide',
+                      )
+                      sel.clear()
+                    }}
+                  >
+                    {hideFlip(ticked) === 'hide' ? t('c.hide') : t('c.show')}
+                  </Button>
+                )}
+              </>
+            }
+          />
+        </div>
+      )}
       {selecting && (
         <SelectBar
           count={picked.length}
           allPicked={picked.length === visible.length}
           onAll={() => setSelected(picked.length === visible.length ? new Set() : new Set(visible.map((c) => c.id)))}
-          // Hide/Show is the main list's flag; the birthdays view has its own
-          // meaning of "hidden" and a separate drawer for it.
-          hide={
-            birthdays || picked.length === 0
-              ? null
-              : picked.every((c) => c.hideFromList)
-                ? 'show'
-                : 'hide'
-          }
+          hide={hideFlip(picked)}
           onHide={(hidden) => {
             void setListHiddenMany(
               picked.map((c) => c.id),
@@ -512,10 +600,16 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                 dimmed={Boolean(c.hideFromList)}
                 onFineTune={() => edit(c.id)}
                 swipeHides
+                select={
+                  web
+                    ? { checked: sel.has(c.id), onChange: () => sel.toggle(c.id), label: t('nsel.select_label', { title: who(c) }) }
+                    : undefined
+                }
               />
               <FocusActions
                 actions={[
-                  { label: t('nsel.select_label', { title: who(c) }), onClick: () => setSelected(new Set([c.id])) },
+                  // The website's tick box is reachable by itself.
+                  ...(web ? [] : [{ label: t('nsel.select_label', { title: who(c) }), onClick: () => setSelected(new Set([c.id])) }]),
                   { label: t('swipe.delete_label', { name: who(c) }), onClick: () => removeWithUndo([c]) },
                 ]}
               />
@@ -655,24 +749,38 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
           people={picked}
           onKeep={() => setBulk(null)}
           onDelete={() => {
-            void removeContacts(picked.map((c) => c.id))
+            deleteMany(picked)
             setBulk(null)
             setSelected(null)
           }}
         />
       )}
 
+      {asking && (
+        <ConfirmBulkDelete
+          people={ticked}
+          onKeep={() => {
+            asking.answer(false)
+            setAsking(null)
+          }}
+          onDelete={() => {
+            asking.answer(true)
+            setAsking(null)
+          }}
+        />
+      )}
+
       {bulk === 'tag' && (
         <BulkTag
-          count={picked.length}
+          count={chosen.length}
           onClose={() => setBulk(null)}
           onAdd={(tagIds) => {
             void addTagsTo(
-              picked.map((c) => c.id),
+              chosen.map((c) => c.id),
               tagIds,
             )
             setBulk(null)
-            setSelected(null)
+            endSelection()
           }}
         />
       )}
@@ -968,6 +1076,7 @@ export function ContactRow({
   dimmed,
   pressed,
   onFineTune,
+  select,
 }: {
   contact: Contact
   byId: Map<string, Tag>
@@ -1003,6 +1112,11 @@ export function ContactRow({
    * corner, and the hide control sits to its left when a card has both.
    */
   onFineTune?: () => void
+  /**
+   * The website's tick box (the suite's select-several rule), over the card's
+   * leading corner as a sibling of the card button, like the corner icons.
+   */
+  select?: { checked: boolean; onChange: () => void; label: string }
 }) {
   const t = useT()
   const name = contact.name || t('c.this_contact')
@@ -1052,9 +1166,12 @@ export function ContactRow({
         // (see the note above), reached a different way. The row's actions are
         // now off a pointer device altogether (SwipeRow), and this stays opaque
         // so nothing else can shine through either.
-        className={`flex h-full w-full flex-col gap-2 rounded-xl border bg-slate-900 p-3.5 text-left transition-colors hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+        //
+        // The card opens the person: the suite's Orbit corner on the website
+        // (BRANDING.md → Boxes, A; ui.tsx's orbitRow).
+        className={`${orbitRow} flex h-full w-full flex-col gap-2 border bg-slate-900 p-3.5 text-left transition-colors hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
           isToday ? 'border-orange-500/50 hover:border-orange-500/70' : 'border-slate-800 hover:border-slate-700'
-        } ${dimmed ? 'opacity-60' : ''}`}
+        } ${dimmed ? 'opacity-60' : ''} ${select ? 'pl-11' : ''}`}
       >
         <div className="min-w-0">
           {/* The tags ride on the name as lights, not as a row of chips —
@@ -1135,6 +1252,15 @@ export function ContactRow({
           <p className="line-clamp-2 whitespace-pre-wrap break-words text-sm text-slate-500">{contact.notes}</p>
         )}
       </button>
+
+      {select && (
+        <SelectCheckbox
+          checked={select.checked}
+          onChange={select.onChange}
+          label={select.label}
+          className="absolute left-3.5 top-4"
+        />
+      )}
 
       {onToggleHidden && (
         <button

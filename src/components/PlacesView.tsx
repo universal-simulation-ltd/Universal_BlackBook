@@ -21,7 +21,7 @@ import { Elsewhere } from './Elsewhere'
 import { PlaceLinks } from './PlaceLinks'
 import { newLocation } from './currentLocation'
 import { useT } from '../i18n'
-import { btnDanger, btnGhost, btnPrimary, btnSubtle, BtnKey, inputCls, label, MapGlyph, PlusIcon, tabHeading, textareaCls } from './ui'
+import { btnDanger, emptyBox, btnGhost, btnPrimary, btnSubtle, BtnKey, inputCls, label, MapGlyph, PlusIcon, tabHeading, textareaCls } from './ui'
 import { usePanelStore } from '../stores/panelStore'
 import { autoFocusOK } from '../native/kit'
 import { phoneScreens } from '../native/shell'
@@ -141,11 +141,11 @@ export function PlacesView() {
       <AddTyped text={query} onAdd={addTyped} />
 
       {loaded && places.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-800 px-6 py-14 text-center">
+        <div className={`${emptyBox} px-6 py-14 text-center`}>
           <p className="text-sm text-slate-400">{phoneScreens() ? t('place.none_phone') : t('place.none')}</p>
         </div>
       ) : shown.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-slate-800 px-6 py-8 text-center text-sm text-slate-400">
+        <p className={`${emptyBox} px-6 py-8 text-center text-sm text-slate-400`}>
           {query.trim() ? t('place.no_match') : t('place.none_tagged')}
         </p>
       ) : (

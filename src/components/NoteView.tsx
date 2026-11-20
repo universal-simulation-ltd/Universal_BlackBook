@@ -117,8 +117,8 @@ function FieldValues({ note, template }: { note: Note; template: NoteTemplate })
   const t = useT()
   const filled = template.fields.filter((f) => note.fields?.[f.id]?.trim())
   if (filled.length === 0) return null
-  return (
-    <dl className="grid grid-cols-1 gap-3 rounded-xl border border-slate-800 bg-slate-900 px-3.5 py-3">
+  const list = (
+    <dl className={`grid grid-cols-1 gap-3 ${phoneScreens() ? 'rounded-xl border border-slate-800 bg-slate-900 px-3.5 py-3' : ''}`}>
       {filled.map((f) => (
         <div key={f.id} className="min-w-0">
           <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{f.label}</dt>
@@ -128,6 +128,15 @@ function FieldValues({ note, template }: { note: Note; template: NoteTemplate })
         </div>
       ))}
     </dl>
+  )
+  if (phoneScreens()) return list
+  // The record's values, under its template's name: the suite's Key box on
+  // the website (BRANDING.md → Boxes, C), the tab neutral.
+  return (
+    <div className="u-box u-box--key mt-3 border-slate-800 bg-slate-900 px-3.5 pb-3 pt-6">
+      <span className="u-box__key">{template.name || t('c.untitled')}</span>
+      {list}
+    </div>
   )
 }
 
@@ -354,7 +363,11 @@ function NoteView({ id, onBinned }: { id: string; onBinned: (note: Note) => void
 
       {template && (
         <div className="space-y-2">
-          <span className="inline-flex rounded-full border border-slate-700 px-2.5 py-0.5 text-xs font-medium text-slate-400">{template.name}</span>
+          {/* On the website the Key box's tab names the template once it has
+              values (FieldValues), so the pill would say it twice. */}
+          {(phoneScreens() || !template.fields.some((f) => note.fields?.[f.id]?.trim())) && (
+            <span className="inline-flex rounded-full border border-slate-700 px-2.5 py-0.5 text-xs font-medium text-slate-400">{template.name}</span>
+          )}
           <FieldValues note={note} template={template} />
         </div>
       )}

@@ -48,6 +48,21 @@ export const btnSubtle = PHONE
 /** A hand-rolled button's classes: the suite's on the website, its own on the phone. */
 export const onWeb = (web: string, phone: string) => (PHONE ? phone : web)
 
+// The suite's box marks (BRANDING.md → Boxes; main.tsx installs their CSS),
+// on the website only: the phone app keeps its own paper look, as with the
+// buttons. Orbit (A) goes on a card you tap to open something, the Viewfinder
+// with nothing in frame (D, all four corners muted, no outline) on an empty
+// state. The Key box (C) is written where it is used, with its tab.
+
+/** A row or card that opens something: the Orbit corner, row size (14px corners). */
+export const orbitRow = PHONE ? 'rounded-xl' : 'u-box u-box--orbit u-box--row'
+
+/** A bigger card that opens something: the Orbit corner, card size (18px corners). */
+export const orbitCard = PHONE ? 'rounded-2xl' : 'u-box u-box--orbit'
+
+/** An empty state's box: the Viewfinder, empty, on the website; the phone keeps its dashed outline. */
+export const emptyBox = PHONE ? 'rounded-2xl border border-dashed border-slate-800' : 'u-box u-box--frame u-box--empty'
+
 /**
  * A key button's icon block, its first child. Nothing on the phone, whose
  * buttons have no key.

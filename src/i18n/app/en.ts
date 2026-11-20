@@ -82,7 +82,7 @@ export const appEn = {
   'del.body':
     'Their notes, tags and birthday go with them. There is no undo — if you save your book online, the deletion is copied there the next time it syncs.',
   'del.many_body':
-    'Their notes, tags and birthdays go with them. There is no undo — if you save your book online, the deletion is copied there the next time it syncs.',
+    'Their notes, tags and birthdays go with them. You can undo it for a few seconds; after that, if you save your book online, the deletion is copied there the next time it syncs.',
   'del.and_more': ' and {count} more',
   'del.delete_n': 'Delete {count}',
 
@@ -90,6 +90,9 @@ export const appEn = {
   'sel.none': 'Select none',
   'sel.all': 'Select all',
   'sel.tag': 'Tag',
+  // The noun in Delete selected's confirm (SDK SelectionBar), no number.
+  'sel.person_noun': "person",
+  'sel.people_noun': "people",
 
   'bulk.tag_title': 'Tag {people}',
   'bulk.tag_note': 'The tags you pick are added to everybody selected.',
@@ -170,6 +173,8 @@ export const appEn = {
   'view.age': "Age {age}",
   'view.nothing_yet': "Nothing written down yet — tap to start.",
   'view.bare': "A name and nothing else so far. Fine-tune them to add an email, a number, a birthday or the thing you want to remember.",
+  // The key tab on a contact's details box (website).
+  'view.details': "Details",
 
   // ── Search and Filters ────────────────────────────────────────────────────
   'filter.tap_show': "Tap to show only these",

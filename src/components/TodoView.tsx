@@ -21,7 +21,7 @@ import { TagCombo } from './TagCombo'
 import { AddTyped, ListSearch } from './ListSearch'
 import { Elsewhere } from './Elsewhere'
 import { useT } from '../i18n'
-import { btnDanger, btnGhost, btnPrimary, btnSubtle, inputCls, BtnKey, label, PlusIcon, tabHeading, textareaCls } from './ui'
+import { btnDanger, emptyBox, orbitRow, btnGhost, btnPrimary, btnSubtle, inputCls, BtnKey, label, PlusIcon, tabHeading, textareaCls } from './ui'
 import { autoFocusOK } from '../native/kit'
 import { phoneScreens } from '../native/shell'
 import { saveKeyLabel } from '../lib/saveKey'
@@ -296,11 +296,11 @@ export function TodoView() {
       <AddTyped text={query} onAdd={addTyped} />
 
       {loaded && todos.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-800 px-6 py-14 text-center">
+        <div className={`${emptyBox} px-6 py-14 text-center`}>
           <p className="text-sm text-slate-400">{phoneScreens() ? t('todo.none_phone') : t('todo.none')}</p>
         </div>
       ) : open.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-slate-800 px-6 py-8 text-center text-sm text-slate-400">
+        <p className={`${emptyBox} px-6 py-8 text-center text-sm text-slate-400`}>
           {query.trim()
             ? t('todo.no_match')
             : activeFilter.length > 0
@@ -915,8 +915,11 @@ function TodoRow({
   return (
     // The tick box is a SIBLING of the card button, never inside it — a button
     // in a button is invalid HTML (see ContactRow).
+    // A card opens the to-do: the suite's Orbit corner on the website
+    // (BRANDING.md → Boxes, A), on the button, or on the box round a group's
+    // button and its items. List rows stay plain.
     <div
-      className={`relative ${row ? (lifted ? 'rounded-lg bg-slate-900 shadow-2xl ring-1 ring-orange-400' : '') : `h-full ${grouped ? `flex flex-col rounded-xl border bg-slate-900 ${edge}` : ''}`}`}
+      className={`relative ${row ? (lifted ? 'rounded-lg bg-slate-900 shadow-2xl ring-1 ring-orange-400' : '') : `h-full ${grouped ? `${orbitRow} flex flex-col border bg-slate-900 p-0 ${edge}` : ''}`}`}
       onTouchStart={onTouchStart}
     >
       <button
@@ -939,7 +942,7 @@ function TodoRow({
             ? `flex w-full flex-col gap-0.5 rounded-lg py-2 pl-11 ${foldRoom} text-left transition-colors hover:bg-slate-800/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
                 current ? 'bg-slate-800' : ''
               } ${done ? 'opacity-60' : ''}`
-            : `flex w-full flex-col gap-0.5 rounded-xl py-2.5 pl-12 ${foldRoom} text-left transition-colors hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+            : `flex w-full flex-col gap-0.5 ${grouped ? 'rounded-xl' : orbitRow} py-2.5 pl-12 ${foldRoom} text-left transition-colors hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
                 done ? 'opacity-60' : ''
               } ${grouped ? (folded ? '' : 'rounded-b-none') : `h-full border bg-slate-900 hover:border-slate-700 ${edge}`}`
         }
