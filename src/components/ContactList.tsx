@@ -16,13 +16,12 @@ import { copyText } from '../lib/clipboard'
 import { toCsv } from '../lib/csv'
 import { toRecipients } from '../lib/emailList'
 import { isList, keptOffContacts, listIdsOf } from '../lib/lists'
-import type { Side } from '../lib/swipe'
 import type { Contact, Tag } from '../lib/types'
 import { useBookStore } from '../stores/bookStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useSyncStore } from '../stores/syncStore'
 import { Modal } from './Modal'
-import { SwipeRow, type SwipeAction } from './SwipeRow'
+import { SwipeRow, type SwipeAction, type SwipeSide as Side } from '@unisim/sdk'
 import { useMove } from './MoveTo'
 import { FocusActions, SelectFrame, selectAct, selectDanger, UndoBar, useHold, useLeaveSelection, useUndo } from './SwipeActions'
 import { ListChip } from './ListChip'
@@ -72,7 +71,8 @@ function deleteAction(contact: Contact, onAction: () => void): SwipeAction {
     text: t('c.delete'),
     label: t('swipe.delete_label', { name: who(contact) }),
     icon: BinIcon,
-    tone: 'bg-rose-600 text-white focus-visible:ring-rose-200',
+    tone: 'danger',
+    className: 'bg-rose-600 text-white focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-rose-200',
     onAction,
   }
 }
@@ -85,7 +85,8 @@ function hideAction(contact: Contact, onAction: () => void): SwipeAction {
     // Slate, not rose. Hiding is reversible and undramatic, and giving it the
     // colour of the button that deletes somebody would say otherwise — on a
     // row where the two are one flick apart in opposite directions.
-    tone: 'bg-slate-700 text-slate-100 focus-visible:ring-slate-300',
+    tone: 'neutral',
+    className: 'bg-slate-700 text-slate-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-300',
     onAction,
   }
 }
@@ -95,7 +96,8 @@ function hideFromListAction(contact: Contact, onAction: () => void): SwipeAction
     text: currentT()('c.hide'),
     label: currentT()('swipe.hide_list_label', { name: who(contact) }),
     icon: EyeOffIcon,
-    tone: 'bg-slate-700 text-slate-100 focus-visible:ring-slate-300',
+    tone: 'neutral',
+    className: 'bg-slate-700 text-slate-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-300',
     onAction,
   }
 }
@@ -105,7 +107,8 @@ function showInListAction(contact: Contact, onAction: () => void): SwipeAction {
     text: currentT()('c.show'),
     label: currentT()('swipe.show_list_label', { name: who(contact) }),
     icon: EyeIcon,
-    tone: 'bg-orange-600 text-white focus-visible:ring-orange-200',
+    tone: 'accent',
+    className: 'bg-orange-600 text-white focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-200',
     onAction,
   }
 }
@@ -115,7 +118,8 @@ function showAction(contact: Contact, onAction: () => void): SwipeAction {
     text: currentT()('c.show'),
     label: currentT()('swipe.show_birthdays_label', { name: who(contact) }),
     icon: EyeIcon,
-    tone: 'bg-orange-600 text-white focus-visible:ring-orange-200',
+    tone: 'accent',
+    className: 'bg-orange-600 text-white focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-200',
     onAction,
   }
 }
@@ -177,7 +181,7 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
   const selecting = selected !== null
   // The phone's ways out of it (Android's back, a swipe in from the left).
   const phoneKit = usePhoneKit()
-  useLeaveSelection(selecting, Boolean(phoneKit), () => setSelected(null))
+  useLeaveSelection(selecting, () => setSelected(null), { enabled: Boolean(phoneKit) })
   const [bulk, setBulk] = useState<'delete' | 'tag' | null>(null)
   /**
    * The website's Delete selected, asking first: the SelectionBar waits on
@@ -548,6 +552,8 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
               />
             ) : (
             <SwipeRow
+              className="h-full rounded-xl"
+              focusActions={false}
               open={openRow?.id === c.id ? openRow.side : null}
               onOpenChange={(side) => setOpenRow(side ? { id: c.id, side } : null)}
               right={deleteAction(c, () => removeWithUndo([c]))}
@@ -649,6 +655,8 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                 {tidiedAway.map((c) => (
                   <li key={c.id}>
                     <SwipeRow
+                      className="h-full rounded-xl"
+                      focusActions={false}
                       open={openRow?.id === c.id ? openRow.side : null}
                       onOpenChange={(side) => setOpenRow(side ? { id: c.id, side } : null)}
                       right={deleteAction(c, () => removeWithUndo([c]))}
@@ -708,6 +716,8 @@ export function ContactList({ onImport }: { onImport?: () => void } = {}) {
                 {hidden.map((c) => (
                   <li key={c.id}>
                     <SwipeRow
+                      className="h-full rounded-xl"
+                      focusActions={false}
                       open={openRow?.id === c.id ? openRow.side : null}
                       onOpenChange={(side) => setOpenRow(side ? { id: c.id, side } : null)}
                       right={deleteAction(c, () => removeWithUndo([c]))}

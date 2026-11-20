@@ -1,9 +1,8 @@
 import { useId, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
-import { SwipeRow } from './SwipeRow'
+import { SwipeRow, type SwipeSide as Side } from '@unisim/sdk'
 import { useMove } from './MoveTo'
 import { deleteSwipe, FocusActions, pinSwipe, SelectFrame, selectAct, selectDanger, UndoBar, useAskDelete, useHold, useLeaveSelection, useUndo, webSelBarWrap } from './SwipeActions'
-import type { Side } from '../lib/swipe'
 import { Modal } from './Modal'
 import { copyText } from '../lib/clipboard'
 import { usePhoneKit } from '../native/kit'
@@ -175,7 +174,7 @@ export function NotesView() {
     if (web) wsel.setMany([id], true)
     else setSelected((s) => new Set([...(s ?? []), id]))
   })
-  useLeaveSelection(selecting, Boolean(kit), () => setSelected(null))
+  useLeaveSelection(selecting, () => setSelected(null), { enabled: Boolean(kit) })
 
   return (
     <div className="space-y-4">
@@ -341,6 +340,8 @@ export function NotesView() {
                     />
                   ) : (
                     <SwipeRow
+                      className="h-full rounded-xl"
+                      focusActions={false}
                       open={openRow?.id === n.id ? openRow.side : null}
                       onOpenChange={(side) => setOpenRow(side ? { id: n.id, side } : null)}
                       left={pinSwipe(Boolean(n.pinnedAt), n.title, () => {

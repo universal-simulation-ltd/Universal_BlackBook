@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type FormEvent, type ReactNode, type TouchEvent as ReactTouchEvent } from 'react'
 import { Button, GrowingTextarea, SelectCheckbox, SelectionBar, useDefaultView, useMediaQuery, useSelection, type UseDefaultView } from '@unisim/sdk'
-import { SwipeRow } from './SwipeRow'
+import { SwipeRow, type SwipeSide as Side } from '@unisim/sdk'
 import { useMove } from './MoveTo'
 import { actionSwipe, deleteSwipe, FocusActions, pinSwipe, SelectBar, SwipeGroup, SwipeItem, UndoBar, useAskDelete, useHold, useHoldSelect, useUndo, webSelBarWrap } from './SwipeActions'
 import { usePhoneKit } from '../native/kit'
-import type { Side } from '../lib/swipe'
 import { todayParts } from '../lib/birthday'
 import { isList } from '../lib/lists'
 import { addDays, compareDone, compareOpen, compareSnoozed, daysUntil, dueLabel, dueShort, groupProgress, isSnoozed, matchesTodo, matchesTodoTags, shortDate, snoozeChoices, type Todo, type TodoItem } from '../lib/todos'
@@ -224,6 +223,8 @@ export function TodoView() {
         </SwipeItem>
       ) : tickable(x, look,
         <SwipeRow
+          className="h-full rounded-xl"
+          focusActions={false}
           open={openRow?.id === x.id ? openRow.side : null}
           onOpenChange={(side) => setOpenRow(side ? { id: x.id, side } : null)}
           left={pinSwipe(Boolean(x.pinnedAt), x.title, () => {

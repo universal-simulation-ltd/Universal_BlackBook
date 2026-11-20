@@ -21,7 +21,7 @@
 
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { withShownOrder } from '../lib/tabs'
-import { requestSearch, useDefaultView } from '@unisim/sdk'
+import { requestSearch, useDefaultView, useTabReorder } from '@unisim/sdk'
 import { availableTabs, LockLink, SyncStatus, useContactPicker, type Tab } from '../appParts'
 import { CloudPanel } from '../components/CloudPanel'
 import { ContactForm } from '../components/ContactForm'
@@ -140,109 +140,18 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
   // Hold a tab and drag it (James, 2026-10-25). While one is held the bar
   // shows the order it would drop into; Tune stays last. A tab that Tune can
   // switch off can also be dropped on the bin that rises above the bar, which
-  // switches it off (James, 2026-10-26, a suite rule), with Undo.
-  const [dragTabs, setDragTabs] = useState<{ tab: Tab; order: Tab[]; bin?: boolean } | null>(null)
-  const binRef = useRef<HTMLDivElement>(null)
+  // switches it off (James, 2026-10-26, a suite rule), with Undo. The gesture
+  // is the SDK phone kit's useTabReorder (moved there from here, 0.229.0).
   const binned = useUndo<Tab>(async (x) => setSettings({ [TAB_SWITCH[x]]: true }))
-  const tabs: PhoneTab[] = [...(dragTabs?.order ?? shownTabs), 'tune']
-  const navRef = useRef<HTMLElement>(null)
-  const tabHold = useRef<{ tab: Tab; x0: number; y0: number; active: boolean; timer: ReturnType<typeof setTimeout> } | null>(null)
-  const dragRef = useRef(dragTabs)
-  dragRef.current = dragTabs
-  const shownRef = useRef(shownTabs)
-  shownRef.current = shownTabs
-  const orderRef = useRef(tabOrder)
-  orderRef.current = tabOrder
-  const binnedRef = useRef(binned.deleted)
-  binnedRef.current = binned.deleted
-  const holdTab = (tab: Tab) => (e: React.TouchEvent) => {
-    if (e.touches.length !== 1 || shownRef.current.length < 2) return
-    const t0 = e.touches[0]
-    const h = {
-      tab,
-      x0: t0.clientX,
-      y0: t0.clientY,
-      active: false,
-      timer: setTimeout(() => {
-        h.active = true
-        navigator.vibrate?.(12)
-        setDragTabs({ tab, order: shownRef.current })
-      }, 500),
-    }
-    if (tabHold.current) clearTimeout(tabHold.current.timer)
-    tabHold.current = h
-  }
-  useEffect(() => {
-    const move = (e: TouchEvent) => {
-      const h = tabHold.current
-      if (!h) return
-      const t0 = e.touches[0]
-      if (!h.active) {
-        if (t0 && Math.hypot(t0.clientX - h.x0, t0.clientY - h.y0) > 10) {
-          clearTimeout(h.timer)
-          tabHold.current = null
-        }
-        return
-      }
-      e.preventDefault()
-      const d = dragRef.current
-      if (!d) return
-      // Over the bin (with a finger's width to spare): the order holds still.
-      const b = binRef.current?.getBoundingClientRect()
-      const pad = 18
-      const overBin = Boolean(
-        b && t0.clientX >= b.left - pad && t0.clientX <= b.right + pad && t0.clientY >= b.top - pad && t0.clientY <= b.bottom + pad,
-      )
-      if (overBin !== Boolean(d.bin)) {
-        navigator.vibrate?.(8)
-        setDragTabs({ ...d, bin: overBin })
-      }
-      if (overBin) return
-      // Which slot the finger is over, among the tabs that can move.
-      const slots = [...(navRef.current?.querySelectorAll<HTMLElement>('[data-tab]') ?? [])].filter((el) => el.dataset.tab !== 'tune')
-      const at = slots.findIndex((el) => {
-        const r = el.getBoundingClientRect()
-        return t0.clientX >= r.left && t0.clientX <= r.right
-      })
-      if (at < 0) return
-      const next = d.order.filter((x) => x !== d.tab)
-      next.splice(Math.min(at, next.length), 0, d.tab)
-      if (next.join() !== d.order.join()) setDragTabs({ tab: d.tab, order: next })
-    }
-    const end = () => {
-      const h = tabHold.current
-      tabHold.current = null
-      if (!h) return
-      clearTimeout(h.timer)
-      if (!h.active) return
-      // The lift is not a tap: the click it ends with must not switch tabs
-      // or count toward a double tap.
-      // Only on the bar itself: a quick tap on the Undo the bin leaves must count.
-      const swallow = (ev: Event) => {
-        if (!navRef.current?.contains(ev.target as Node)) return
-        ev.preventDefault()
-        ev.stopPropagation()
-      }
-      document.addEventListener('click', swallow, { capture: true, once: true })
-      setTimeout(() => document.removeEventListener('click', swallow, { capture: true }), 600)
-      const d = dragRef.current
-      setDragTabs(null)
-      if (d?.bin && shownRef.current.length > 1) {
-        setSettings({ [TAB_SWITCH[d.tab]]: false })
-        binnedRef.current(d.tab)
-        return
-      }
-      if (d && d.order.join() !== shownRef.current.join()) setSettings({ tabOrder: withShownOrder(orderRef.current, d.order) })
-    }
-    document.addEventListener('touchmove', move, { passive: false, capture: true })
-    document.addEventListener('touchend', end, true)
-    document.addEventListener('touchcancel', end, true)
-    return () => {
-      document.removeEventListener('touchmove', move, { capture: true })
-      document.removeEventListener('touchend', end, true)
-      document.removeEventListener('touchcancel', end, true)
-    }
-  }, [setSettings])
+  const reorder = useTabReorder<Tab>({
+    tabs: shownTabs,
+    onReorder: (order) => setSettings({ tabOrder: withShownOrder(tabOrder, order) }),
+    onBin: (x) => {
+      setSettings({ [TAB_SWITCH[x]]: false })
+      binned.deleted(x)
+    },
+  })
+  const tabs: PhoneTab[] = [...reorder.order, 'tune']
   // A tab whose switch has since gone off opens on the first one shown
   // (Contacts, unless that is hidden too).
   const current: PhoneTab = tabs.includes(tab) ? tab : (shownTabs[0] ?? 'tune')
@@ -389,10 +298,10 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
           )}
         </main>
 
-        {dragTabs && (
-          <div ref={binRef} className={`bb-tabbin${dragTabs.bin ? ' hot' : ''}`} aria-hidden>
+        {reorder.showBin && (
+          <div ref={reorder.binRef} className={`bb-tabbin${reorder.overBin ? ' hot' : ''}`} aria-hidden>
             <IconBin />
-            <span>{t(dragTabs.bin ? 'tab_bin_drop' : 'tab_bin_hint')}</span>
+            <span>{t(reorder.overBin ? 'tab_bin_drop' : 'tab_bin_hint')}</span>
           </div>
         )}
         {binned.item && (
@@ -403,7 +312,7 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
           />
         )}
 
-        <nav ref={navRef} className="bb-tabs" aria-label={t('tabs_label')}>
+        <nav ref={reorder.barRef} className="bb-tabs" aria-label={t('tabs_label')}>
           {tabs.map((target) => {
             const Icon = TAB_ICON[target]
             const props = target === 'tune' ? {} : tabDefault.buttonProps(target as Tab, t(TAB_LABEL[target]))
@@ -412,10 +321,10 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
                 key={target}
                 type="button"
                 data-tab={target}
-                className={`bb-tab${dragTabs?.tab === target ? ' lifted' : ''}`}
+                className={`bb-tab${reorder.dragging === target ? ' lifted' : ''}`}
                 aria-current={current === target ? 'page' : undefined}
                 {...props}
-                onTouchStart={target === 'tune' ? undefined : holdTab(target as Tab)}
+                {...(target === 'tune' ? {} : reorder.tabProps(target as Tab))}
                 onContextMenu={(e) => e.preventDefault()}
                 onClick={() => tapTab(target)}
               >

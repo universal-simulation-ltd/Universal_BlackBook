@@ -184,24 +184,10 @@ body {
   50% { transform: translateY(3px); }
 }
 
-/* The buttons hidden behind a contact card (components/SwipeRow.tsx).
-   TOUCH ONLY, and hidden everywhere else rather than merely covered up.
-
-   ⚠️ They are uncovered by a swipe, and the swipe is `ontouchstart` and
-   nothing else — there is no pointer equivalent, deliberately, because a
-   horizontal drag with a mouse is a text selection everywhere else on the web.
-   So on a desktop these are a crimson Delete and an orange Show painted under
-   every card in the list, waiting for a gesture that cannot happen: invisible
-   only for as long as the card over them is perfectly opaque, and lighting up
-   the moment one is not. That is exactly how they appeared on web — through a
-   card's translucent hover, and before that through a dimmed hidden row.
-
-   Nothing is lost by hiding them: every swipe action has a button somewhere a
-   finger is not required (the ✕ / eye on the card, Delete inside the contact's
-   own form), which is the rule SwipeRow was written to. */
-.swipeaction {
-  display: none;
-}
+/* The buttons hidden behind a swiped row are the SDK's (SwipeRow, @unisim/sdk
+   0.229.0): it draws them only while a row is off its rest, and never on a
+   mouse-and-trackpad device, where the touch-only swipe cannot uncover them
+   and their colour once showed through a card's translucent hover. */
 
 /* iOS Safari zooms the page in when a field under 16px takes focus, and it
    does not zoom back out — which is how a layout that fits ends up half
@@ -215,12 +201,6 @@ body {
   select,
   textarea {
     font-size: max(16px, 1em) !important;
-  }
-
-  /* A finger can reach them, so here they are. `flex`, matching the utility
-     class SwipeRow renders them with. */
-  .swipeaction {
-    display: flex;
   }
 }
 

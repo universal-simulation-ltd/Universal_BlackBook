@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react'
-import { moveTab, type Tab } from '../lib/tabs'
+import { useTabOrderList } from '@unisim/sdk'
+import type { Tab } from '../lib/tabs'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useT, type Key } from '../i18n'
 import { phoneScreens } from '../native/shell'
@@ -12,7 +12,8 @@ const NAME: Record<Tab, Key> = { contacts: 'tab_contacts', places: 'tab_places',
  * cannot drag. Each row has a grip to drag (mouse or finger) and Move up /
  * Move down buttons. Hidden tabs are listed too, so a tab turned back on
  * returns to its place. Tune itself is always last on the phone. Reset to
- * defaults puts the order back.
+ * defaults puts the order back. The grips and the moves are the SDK phone
+ * kit's useTabOrderList (0.229.0); the look is this app's.
  */
 export function TabOrderPreference() {
   const t = useT()
@@ -24,28 +25,7 @@ export function TabOrderPreference() {
   const contacts = useSettingsStore((s) => s.contacts)
   const places = useSettingsStore((s) => s.places)
   const on: Record<Tab, boolean> = { contacts: !phoneScreens() || contacts, places, lists: emailLists, todos, notes }
-  const list = useRef<HTMLOListElement>(null)
-  const [held, setHeld] = useState<Tab | null>(null)
-  const move = (tab: Tab, to: number) => set({ tabOrder: moveTab(order, tab, to) })
-
-  const grip = (tab: Tab) => ({
-    onPointerDown: (e: React.PointerEvent<HTMLSpanElement>) => {
-      e.preventDefault()
-      e.currentTarget.setPointerCapture(e.pointerId)
-      setHeld(tab)
-    },
-    onPointerMove: (e: React.PointerEvent<HTMLSpanElement>) => {
-      if (held !== tab) return
-      const rows = [...(list.current?.children ?? [])] as HTMLElement[]
-      const at = rows.findIndex((r) => {
-        const b = r.getBoundingClientRect()
-        return e.clientY >= b.top && e.clientY <= b.bottom
-      })
-      if (at >= 0 && order[at] !== tab) move(tab, at)
-    },
-    onPointerUp: () => setHeld(null),
-    onPointerCancel: () => setHeld(null),
-  })
+  const { held, listRef, gripProps, move } = useTabOrderList<Tab>(order, (next) => set({ tabOrder: next }))
 
   return (
     <fieldset className="mt-3 border-t border-slate-800 pt-3">
@@ -54,7 +34,7 @@ export function TabOrderPreference() {
         {t('pref.tab_order')}
       </p>
       <p className="mb-2 mt-0.5 text-xs text-slate-400">{t('pref.tab_order_note')}</p>
-      <ol ref={list} className="space-y-1">
+      <ol ref={listRef} className="space-y-1">
         {order.map((tab, i) => (
           <li
             key={tab}
@@ -63,7 +43,7 @@ export function TabOrderPreference() {
             }`}
           >
             <span
-              {...grip(tab)}
+              {...gripProps(tab)}
               aria-hidden
               className="flex h-9 w-7 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-slate-500 hover:text-slate-200"
             >

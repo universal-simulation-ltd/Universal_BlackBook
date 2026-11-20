@@ -1,14 +1,22 @@
 /* eslint-disable react-refresh/only-export-components -- the swipe actions, the undo hook and the bar that shows it belong together */
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode, type TouchEvent as ReactTouchEvent } from 'react'
-import { usePhoneLayer } from '@unisim/sdk'
+import { useEffect, useState, type ReactNode } from 'react'
+import { SwipeRow, useHoldSelect as useSdkHoldSelect, type HoldSelect, type SwipeAction } from '@unisim/sdk'
 import { btnDanger, btnGhost, btnSubtle } from './ui'
 import { Modal } from './Modal'
-import type { Side } from '../lib/swipe'
-import { SwipeRow } from './SwipeRow'
 import { usePhoneKit } from '../native/kit'
 import { useNativeNav } from '../native/nav'
 import { currentT, useT } from '../i18n'
-import type { SwipeAction } from './SwipeRow'
+
+// The row that swipes, the hold that selects, its way out and the Undo are the
+// SDK phone kit's since @unisim/sdk 0.229.0 (moved there from this file and
+// SwipeRow.tsx / lib/swipe.ts). What stays here is this app's look: the
+// actions' colours and icons, the selection overlay, the bars and the toast.
+export { SwipeGroup, useHold, useLeaveSelection, useUndo } from '@unisim/sdk'
+export type { HoldSelect } from '@unisim/sdk'
+
+/** An action's colours on this app's cards (Tailwind; they win over the SDK's tone). */
+const ORANGE = 'bg-orange-600 text-white focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-200'
+const ROSE = 'bg-rose-600 text-white focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-rose-200'
 
 // The swipes every deletable list shares (James, 2026-10-25; BRANDING.md ▸ "A
 // deletable row swipes: delete one way, a second action the other"): swipe
@@ -36,7 +44,8 @@ export function pinSwipe(pinned: boolean, title: string, onAction: () => void): 
     text: pinned ? t('todo.unpin') : t('todo.pin'),
     label: pinned ? t('todo.unpin_label', { title }) : t('todo.pin_label', { title }),
     icon: PinIcon,
-    tone: 'bg-orange-600 text-white focus-visible:ring-orange-200',
+    tone: 'accent',
+    className: ORANGE,
     onAction,
   }
 }
@@ -48,7 +57,8 @@ export function deleteSwipe(title: string, onAction: () => void): SwipeAction {
     text: t('c.delete'),
     label: t('todo.delete_label', { title }),
     icon: BinIcon,
-    tone: 'bg-rose-600 text-white focus-visible:ring-rose-200',
+    tone: 'danger',
+    className: ROSE,
     onAction,
   }
 }
@@ -107,29 +117,19 @@ const ICONS = {
 
 /** A second action (the right swipe) other than Pin: Edit, Unlink, Call… */
 export function actionSwipe(icon: keyof typeof ICONS, text: string, label: string, onAction: () => void): SwipeAction {
-  return { text, label, icon: ICONS[icon], tone: 'bg-orange-600 text-white focus-visible:ring-orange-200', onAction }
+  return { text, label, icon: ICONS[icon], tone: 'accent', className: ORANGE, onAction }
 }
 
 /** A deleting action other than Delete itself: Unlink, Remove, Leave out. */
 export function removeSwipe(icon: keyof typeof ICONS, text: string, label: string, onAction: () => void): SwipeAction {
-  return { text, label, icon: ICONS[icon], tone: 'bg-rose-600 text-white focus-visible:ring-rose-200', onAction }
+  return { text, label, icon: ICONS[icon], tone: 'danger', className: ROSE, onAction }
 }
 
 /**
- * One list's rows: at most one swiped open at a time (opening one closes the
- * other). Wrap a list in a group and each row in a SwipeItem.
- */
-const Group = createContext<{ open: { id: string; side: Side } | null; set: (o: { id: string; side: Side } | null) => void } | null>(null)
-
-export function SwipeGroup({ children }: { children: ReactNode }) {
-  const [open, set] = useState<{ id: string; side: Side } | null>(null)
-  return <Group.Provider value={{ open, set }}>{children}</Group.Provider>
-}
-
-/**
- * A row that swipes: `right` is uncovered by swiping LEFT (Delete), `left` by
- * swiping RIGHT (the second action). Each action closes the row as it runs.
- * Touch only, as SwipeRow is; `focus` lists the same actions as buttons.
+ * A row that swipes (the SDK's SwipeRow, inside a SwipeGroup: one open at a
+ * time): `right` is uncovered by swiping LEFT (Delete), `left` by swiping
+ * RIGHT (the second action). Each action closes the row as it runs. Touch
+ * only; `focus` lists the same jobs as buttons.
  */
 export function SwipeItem({
   id,
@@ -152,9 +152,6 @@ export function SwipeItem({
   children: ReactNode
 }) {
   const t = useT()
-  const own = useState<{ id: string; side: Side } | null>(null)
-  const group = useContext(Group) ?? { open: own[0], set: own[1] }
-  const close = (a?: SwipeAction) => a && { ...a, onAction: () => (group.set(null), a.onAction()) }
   if (select?.selecting) {
     const on = select.isSelected(id)
     return (
@@ -190,12 +187,7 @@ export function SwipeItem({
   const focusAll = select ? [{ label: t('nsel.select_label', { title: name ?? '' }), onClick: () => select.start(id) }, ...(focus ?? [])] : focus
   return (
     <div className="h-full" onTouchStart={select ? select.holdStart(id) : undefined}>
-    <SwipeRow
-      open={group.open?.id === id ? group.open.side : null}
-      onOpenChange={(side) => group.set(side ? { id, side } : null)}
-      left={close(left)}
-      right={close(right)}
-    >
+    <SwipeRow id={id} left={left} right={right} focusActions={false} className="h-full rounded-xl">
       <div className="relative h-full">
         {children}
         {focusAll && <FocusActions actions={focusAll} />}
@@ -205,157 +197,17 @@ export function SwipeItem({
   )
 }
 
-export interface HoldSelect {
-  selecting: boolean
-  isSelected: (id: string) => boolean
-  picked: string[]
-  /** Into selection mode with this one ticked (the hold, or a Select button). */
-  start: (id?: string) => void
-  toggle: (id: string, range?: boolean) => void
-  all: () => void
-  done: () => void
-  holdStart: (id: string) => (e: ReactTouchEvent) => void
-}
-
 /**
  * Hold to select (James, 2026-10-25: "a tap and hold should select the item";
- * BRANDING.md ▸ "A deletable row swipes"). A still finger for 0.45 s selects
- * the row and starts selection mode; any movement first is a swipe or a
- * scroll and cancels it. Then taps tick and untick, Shift-click ticks a run
- * on the website, and Done, Android's back or a swipe in from the left edge
- * leaves. The hold never fires the row's own tap, and the lifting finger
- * never presses what slides in under it (the selection bar): that click is
- * swallowed wherever it lands.
+ * BRANDING.md ▸ "A deletable row swipes"): the SDK's useHoldSelect. A still
+ * finger for 0.45 s selects the row and starts selection mode; then taps tick
+ * and untick, Shift-click ticks a run on the website, and Done, Android's
+ * back or a swipe in from the left edge leaves (on the phone). The hold never
+ * fires the row's own tap, and the lifting finger never presses what slides
+ * in under it (the selection bar).
  */
-/**
- * The hold itself: a still finger for 0.45 s calls `onHold(id)`. Movement
- * first (a swipe, a scroll) cancels it. The click the lifting finger makes is
- * swallowed wherever it lands, so neither the row's own tap nor whatever
- * slides in under the finger (a selection bar) is pressed.
- */
-export function useHold(onHold: (id: string) => void) {
-  const hold = useRef<{ timer: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null)
-  const held = useRef(false)
-  const cb = useRef(onHold)
-  cb.current = onHold
-  useEffect(() => {
-    const cancel = (e: TouchEvent) => {
-      const h = hold.current
-      if (!h) return
-      const t0 = e.touches[0]
-      if (e.type !== 'touchmove' || !t0 || Math.hypot(t0.clientX - h.x, t0.clientY - h.y) > 8) {
-        clearTimeout(h.timer)
-        hold.current = null
-      }
-    }
-    const up = () => {
-      if (held.current) setTimeout(() => (held.current = false), 400)
-    }
-    document.addEventListener('touchmove', cancel, { passive: true })
-    document.addEventListener('touchend', cancel)
-    document.addEventListener('touchcancel', cancel)
-    document.addEventListener('pointerup', up, true)
-    return () => {
-      document.removeEventListener('touchmove', cancel)
-      document.removeEventListener('touchend', cancel)
-      document.removeEventListener('touchcancel', cancel)
-      document.removeEventListener('pointerup', up, true)
-    }
-  }, [])
-  return (id: string) => (e: ReactTouchEvent) => {
-    if (e.touches.length !== 1) return
-    const t0 = e.touches[0]
-    if (hold.current) clearTimeout(hold.current.timer)
-    hold.current = {
-      x: t0.clientX,
-      y: t0.clientY,
-      timer: setTimeout(() => {
-        hold.current = null
-        held.current = true
-        const swallow = (ev: Event) => {
-          if (!held.current) return
-          held.current = false
-          ev.preventDefault()
-          ev.stopPropagation()
-        }
-        document.addEventListener('click', swallow, { capture: true, once: true })
-        setTimeout(() => document.removeEventListener('click', swallow, { capture: true }), 1500)
-        navigator.vibrate?.(12)
-        cb.current(id)
-      }, 450),
-    }
-  }
-}
-
-/** Selection mode can be left the phone's ways: Android's back, and a swipe in from the left edge. */
-export function useLeaveSelection(selecting: boolean, phone: boolean, leave: () => void) {
-  const cb = useRef(leave)
-  cb.current = leave
-  usePhoneLayer('page', () => cb.current(), { open: selecting && phone, lockScroll: false })
-  useEffect(() => {
-    if (!selecting || !phone) return
-    let from: { x: number; y: number } | null = null
-    const down = (e: TouchEvent) => {
-      const t0 = e.touches[0]
-      from = t0 && t0.clientX < 24 ? { x: t0.clientX, y: t0.clientY } : null
-    }
-    const move = (e: TouchEvent) => {
-      const t0 = e.touches[0]
-      if (!from || !t0) return
-      if (t0.clientX - from.x > 70 && Math.abs(t0.clientY - from.y) < 50) {
-        from = null
-        cb.current()
-      }
-    }
-    document.addEventListener('touchstart', down, { passive: true })
-    document.addEventListener('touchmove', move, { passive: true })
-    return () => {
-      document.removeEventListener('touchstart', down)
-      document.removeEventListener('touchmove', move)
-    }
-  }, [selecting, phone])
-}
-
 export function useHoldSelect(ids: string[], phone: boolean): HoldSelect {
-  const [selected, setSelected] = useState<Set<string> | null>(null)
-  const idsRef = useRef(ids)
-  idsRef.current = ids
-  const last = useRef<string | null>(null)
-  const selecting = selected !== null
-  useLeaveSelection(selecting, phone, () => setSelected(null))
-
-  const holdStart = useHold((id) => start(id))
-  function start(id?: string) {
-    last.current = id ?? null
-    setSelected((s) => {
-      const next = new Set(s ?? [])
-      if (id) next.add(id)
-      return next
-    })
-  }
-
-  return {
-    selecting,
-    isSelected: (id) => Boolean(selected?.has(id)),
-    picked: selected ? idsRef.current.filter((id) => selected.has(id)) : [],
-    start,
-    toggle: (id, range = false) => {
-      setSelected((s) => {
-        const next = new Set(s ?? [])
-        const order = idsRef.current
-        if (range && last.current && order.includes(last.current)) {
-          const [a, b] = [order.indexOf(last.current), order.indexOf(id)].sort((x, y) => x - y)
-          for (const x of order.slice(a, b + 1)) next.add(x)
-        } else if (next.has(id)) next.delete(id)
-        else next.add(id)
-        return next
-      })
-      last.current = id
-    },
-    all: () => setSelected((s) => (s && s.size === idsRef.current.length ? new Set() : new Set(idsRef.current))),
-    done: () => setSelected(null),
-    holdStart,
-  }
+  return useSdkHoldSelect(ids, { gestures: phone })
 }
 
 /**
@@ -460,26 +312,6 @@ export function FocusActions({ actions }: { actions: { label: string; onClick: (
       ))}
     </>
   )
-}
-
-/** Delete now, Undo for six seconds: what was deleted, and the way to put it back. */
-export function useUndo<T>(restore: (item: T) => Promise<void>) {
-  const [item, setItem] = useState<T | null>(null)
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
-  return {
-    item,
-    deleted: (x: T) => {
-      setItem(x)
-      clearTimeout(timer.current)
-      timer.current = setTimeout(() => setItem(null), 6000)
-    },
-    undo: async () => {
-      if (item === null) return
-      clearTimeout(timer.current)
-      await restore(item)
-      setItem(null)
-    },
-  }
 }
 
 /** "Deleted “Book dentist”. Undo" — at the foot of the screen. */

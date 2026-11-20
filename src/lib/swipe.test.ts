@@ -1,6 +1,19 @@
 import { describe, expect, it } from 'vitest'
-import { ACTION_WIDTH, FIRE_DISTANCE, FIRE_TRAVEL, decideAxis, dragOffset, dragOffsetFromOpen, firesOnRelease, restingOffset, settles } from './swipe'
-import type { Widths } from './swipe'
+// The swipe geometry now lives in the SDK's phone kit (@unisim/sdk 0.229.0,
+// moved there from this app's lib/swipe.ts). These checks stay, under the
+// names they were written with, to hold the SDK to what this app relied on.
+import {
+  SWIPE_ACTION_WIDTH as ACTION_WIDTH,
+  SWIPE_FIRE_DISTANCE as FIRE_DISTANCE,
+  SWIPE_FIRE_TRAVEL as FIRE_TRAVEL,
+  decideSwipeAxis as decideAxis,
+  swipeDragOffset as dragOffset,
+  swipeDragOffsetFromOpen as dragOffsetFromOpen,
+  swipeFiresOnRelease as firesOnRelease,
+  swipeRestingOffset as restingOffset,
+  swipeSettles as settles,
+} from '@unisim/sdk'
+import type { SwipeWidths as Widths } from '@unisim/sdk'
 
 describe('decideAxis', () => {
   it('waits for the slop before committing', () => {
