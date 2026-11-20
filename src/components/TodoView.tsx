@@ -6,7 +6,7 @@ import { actionSwipe, deleteSwipe, FocusActions, pinSwipe, SelectBar, SwipeGroup
 import { usePhoneKit } from '../native/kit'
 import { todayParts } from '../lib/birthday'
 import { isList } from '../lib/lists'
-import { addDays, compareDone, compareOpen, compareSnoozed, daysUntil, dueLabel, dueShort, groupProgress, isSnoozed, matchesTodo, matchesTodoTags, shortDate, snoozeChoices, type Todo, type TodoItem } from '../lib/todos'
+import { addDays, compareDaily, compareDone, compareOpen, compareSnoozed, daysUntil, dueLabel, dueShort, groupProgress, isSnoozed, matchesTodo, matchesTodoTags, shortDate, snoozeChoices, type Todo, type TodoItem } from '../lib/todos'
 import { newId } from '../lib/id'
 import type { Tag } from '../lib/types'
 import { useBookStore } from '../stores/bookStore'
@@ -21,7 +21,7 @@ import { AddTyped, ListSearch } from './ListSearch'
 import { Elsewhere } from './Elsewhere'
 import { useT } from '../i18n'
 import { DateField } from './DateField'
-import { btnDanger, emptyBox, orbitRow, btnGhost, btnPrimary, btnSubtle, inputCls, BtnKey, label, PlusIcon, tabHeading, textareaCls } from './ui'
+import { btnDanger, checkboxCls, emptyBox, orbitRow, btnGhost, btnPrimary, btnSubtle, inputCls, BtnKey, label, PlusIcon, tabHeading, textareaCls } from './ui'
 import { autoFocusOK } from '../native/kit'
 import { phoneScreens } from '../native/shell'
 import { saveKeyLabel } from '../lib/saveKey'
@@ -46,6 +46,39 @@ export function TodoView() {
   const tags = useBookStore((s) => s.tags)
   const [showDone, setShowDone] = useState(false)
   const [showSnoozed, setShowSnoozed] = useState(false)
+  // The Daily drawer (2026-11-20): open to start, and kept as left on this device.
+  const [showDaily, setShowDailyState] = useState(() => {
+    try {
+      return localStorage.getItem(DAILY_OPEN_KEY) !== '0'
+    } catch {
+      return true
+    }
+  })
+  const setShowDaily = (fn: (v: boolean) => boolean) =>
+    setShowDailyState((v) => {
+      const next = fn(v)
+      try {
+        localStorage.setItem(DAILY_OPEN_KEY, next ? '1' : '0')
+      } catch {
+        /* private mode: just this visit */
+      }
+      return next
+    })
+  const renew = useTodoStore((s) => s.renew)
+  // A new day unticks yesterday's daily ones: on opening the tab, on coming
+  // back to the app, and once a minute while it stays open over midnight.
+  useEffect(() => {
+    void renew()
+    const onShowPage = () => {
+      if (document.visibilityState === 'visible') void renew()
+    }
+    document.addEventListener('visibilitychange', onShowPage)
+    const timer = setInterval(() => void renew(), 60_000)
+    return () => {
+      document.removeEventListener('visibilitychange', onShowPage)
+      clearInterval(timer)
+    }
+  }, [renew])
   // The to-dos the Snooze sheet is open on (a row's, the detail's, or a selection).
   const [snoozing, setSnoozing] = useState<string[] | null>(null)
   const snooze = useTodoStore((s) => s.snooze)
@@ -65,6 +98,7 @@ export function TodoView() {
   }
   const doneId = useId()
   const snoozedId = useId()
+  const dailyId = useId()
   const hintId = useId()
   const setPinned = useTodoStore((s) => s.setPinned)
   const setDone = useTodoStore((s) => s.setDone)
@@ -109,7 +143,7 @@ export function TodoView() {
   const open = useMemo(
     () =>
       todos
-        .filter((t) => !t.doneAt && !isSnoozed(t, today) && matchesTodoTags(t, activeFilter) && matchesTodo(t, query, byId))
+        .filter((t) => !t.daily && !t.doneAt && !isSnoozed(t, today) && matchesTodoTags(t, activeFilter) && matchesTodo(t, query, byId))
         .sort(compareOpen),
     [todos, activeFilter, query, byId, today],
   )
@@ -124,10 +158,20 @@ export function TodoView() {
   const done = useMemo(
     () =>
       todos
-        .filter((t) => t.doneAt && matchesTodoTags(t, activeFilter) && matchesTodo(t, query, byId))
+        .filter((t) => !t.daily && t.doneAt && matchesTodoTags(t, activeFilter) && matchesTodo(t, query, byId))
         .sort(compareDone),
     [todos, activeFilter, query, byId],
   )
+  // Daily ones (2026-11-20): their own drawer, ticked ones staying in it
+  // (struck through) until tomorrow unticks them. A snoozed one waits in Snoozed.
+  const daily = useMemo(
+    () =>
+      todos
+        .filter((t) => t.daily && !isSnoozed(t, today) && matchesTodoTags(t, activeFilter) && matchesTodo(t, query, byId))
+        .sort(compareDaily),
+    [todos, activeFilter, query, byId, today],
+  )
+  const dailyDone = daily.filter((x) => x.doneAt).length
 
   const kit = usePhoneKit()
   // Shake to clear the done ones (Tune this app, off to start), with Undo.
@@ -137,7 +181,7 @@ export function TodoView() {
   useEffect(() => {
     if (!shakeClear || !kit) return
     return listenForShake(() => {
-      const gone = useTodoStore.getState().todos.filter((x) => x.doneAt)
+      const gone = useTodoStore.getState().todos.filter((x) => x.doneAt && !x.daily)
       if (!gone.length) return
       navigator.vibrate?.(30)
       removeManyRef.current(gone)
@@ -148,6 +192,7 @@ export function TodoView() {
   const openSel = useHoldSelect(open.map((x) => x.id), Boolean(kit))
   const doneSel = useHoldSelect(done.map((x) => x.id), Boolean(kit))
   const snoozedSel = useHoldSelect(snoozed.map((x) => x.id), Boolean(kit))
+  const dailySel = useHoldSelect(daily.map((x) => x.id), Boolean(kit))
   /**
    * The website's way to pick several (the suite rule, "Every list: select
    * several, then act"; @unisim/sdk 0.227), as on Contacts: a tick box beside
@@ -158,7 +203,7 @@ export function TodoView() {
    * a tap while others are ticked. Holding one on a touch screen ticks it.
    */
   const web = !phoneScreens()
-  const onShow = [...open, ...(showSnoozed ? snoozed : []), ...(showDone ? done : [])]
+  const onShow = [...(showDaily ? daily : []), ...open, ...(showSnoozed ? snoozed : []), ...(showDone ? done : [])]
   const wsel = useSelection(web ? onShow.map((x) => x.id) : [])
   const ticked = web ? onShow.filter((x) => wsel.has(x.id)) : []
   const tickedOpen = ticked.filter((x) => !x.doneAt)
@@ -405,11 +450,68 @@ export function TodoView() {
         </div>
       )}
 
+      {daily.length > 0 && (
+        <section>
+          <button
+            type="button"
+            onClick={() => setShowDaily((v) => !v)}
+            aria-expanded={showDaily}
+            aria-controls={dailyId}
+            className="inline-flex items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs text-slate-500 transition-colors hover:text-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+          >
+            <svg viewBox="0 0 16 16" className={`h-3.5 w-3.5 transition-transform ${showDaily ? 'rotate-90' : ''}`} fill="currentColor" aria-hidden>
+              <path d="M6 3.5 10.5 8 6 12.5V3.5Z" />
+            </svg>
+            <span aria-hidden>🔁</span>
+            <span className="tabular-nums">{t('todo.daily_count', { done: dailyDone, count: daily.length })}</span>
+          </button>
+          {showDaily && (
+            <SwipeGroup>
+              <div className="mt-2">
+                <SelectBar
+                  select={dailySel}
+                  total={daily.length}
+                  actions={[
+                    { label: t('todo.mark_done_short'), onClick: (ids) => ids.forEach((id) => void setDone(id, true)) },
+                    { label: t('todo.not_done'), onClick: (ids) => ids.forEach((id) => void setDone(id, false)) },
+                    { label: t('sel.move'), onClick: moveTo.start },
+                    { label: t('c.delete'), danger: true, onClick: (ids) => removeManyWithUndo(daily.filter((x) => ids.includes(x.id))) },
+                  ]}
+                />
+              </div>
+              {/* Swipe right ticks it (or unticks it), left deletes it. */}
+              <ul id={dailyId} className={`mt-2 ${doneCls}`}>
+                {daily.map((x) => (
+                  <li key={x.id} className={itemClass(layout, doneLook)}>
+                    {tickable(x, doneLook,
+                    <SwipeItem
+                      id={x.id}
+                      name={x.title}
+                      select={web ? undefined : dailySel}
+                      left={
+                        x.doneAt
+                          ? actionSwipe('undone', t('todo.not_done'), t('todo.mark_undone', { title: x.title }), () => void setDone(x.id, false))
+                          : actionSwipe('done', t('todo.mark_done_short'), t('todo.mark_done', { title: x.title }), () => void setDone(x.id, true))
+                      }
+                      right={deleteSwipe(x.title, () => removeWithUndo(x))}
+                      focus={[{ label: t('todo.delete_label', { title: x.title }), onClick: () => removeWithUndo(x) }]}
+                    >
+                      <TodoRow todo={x} byId={byId} today={today} look={doneLook} />
+                    </SwipeItem>,
+                    true)}
+                  </li>
+                ))}
+              </ul>
+            </SwipeGroup>
+          )}
+        </section>
+      )}
+
       {loaded && todos.length === 0 ? (
         <div className={`${emptyBox} px-6 py-14 text-center`}>
           <p className="text-sm text-slate-400">{phoneScreens() ? t('todo.none_phone') : t('todo.none')}</p>
         </div>
-      ) : open.length === 0 ? (
+      ) : open.length === 0 && daily.length > 0 && !query.trim() && activeFilter.length === 0 ? null : open.length === 0 ? (
         <p className={`${emptyBox} px-6 py-8 text-center text-sm text-slate-400`}>
           {query.trim()
             ? t('todo.no_match')
@@ -618,7 +720,7 @@ export function TodoView() {
       )}
 
       {/* Then what the same search finds on the other tabs (James, 2026-11-18). */}
-      {!openSel.selecting && !doneSel.selecting && !snoozedSel.selecting && <Elsewhere here="todos" query={query} />}
+      {!openSel.selecting && !doneSel.selecting && !snoozedSel.selecting && !dailySel.selecting && <Elsewhere here="todos" query={query} />}
 
       {editing && <TodoForm key={editing} id={editing} />}
       {snoozing && (
@@ -800,6 +902,9 @@ type Shown = TodoLayout | 'grid'
 type Look = 'card' | 'row'
 
 /** The open (and done) list's own classes, per layout. */
+/** Whether the Daily drawer is open, on this device (2026-11-20). */
+const DAILY_OPEN_KEY = 'blackbook:todo-daily-open'
+
 function listClass(layout: Shown): string {
   switch (layout) {
     case 'grid':
@@ -1387,6 +1492,7 @@ function TodoForm({ id }: { id: string }) {
     tagIds: existing?.tagIds ?? [],
     ...(existing?.items?.length ? { items: existing.items } : {}),
     ...(existing?.snoozedUntil ? { snoozedUntil: existing.snoozedUntil } : {}),
+    ...(existing?.daily ? { daily: true } : {}),
   }))
   // Once per open form, like the tab's own.
   const today = useMemo(() => todayParts(), [])
@@ -1438,6 +1544,15 @@ function TodoForm({ id }: { id: string }) {
           />
         </div>
         <GroupEditor items={draft.items ?? []} onChange={(items) => patch({ items: items.length ? items : undefined })} />
+        {/* Renew daily (2026-11-20): unticked to start, as every switch is. */}
+        <label className="flex items-start gap-2.5 text-sm text-slate-200">
+          <input type="checkbox" className={`${checkboxCls} mt-0.5`} checked={Boolean(draft.daily)} onChange={(e) => patch({ daily: e.target.checked || undefined })} />
+          <span>
+            <span aria-hidden>🔁 </span>
+            {t('todo.daily')}
+            <span className="block text-xs text-slate-500">{t('todo.daily_note')}</span>
+          </span>
+        </label>
         {/* A new one is its name, its text and maybe a group (James,
             2026-10-30); the deadline, snooze and tags wait under More. */}
         {!more ? (

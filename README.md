@@ -350,6 +350,16 @@ how many notes and comments it has, and its latest comment. Search covers the
 comments too, and a place moved to another tab takes its comments along as
 dated lines.
 
+### Daily to-dos
+
+Tick **🔁 Renew daily** on a to-do (in its form; unticked to start) and it
+renews every day: ticked, it stays done (struck through) for the rest of the
+day, and the next day it is unticked again, a group's items too. Daily to-dos
+sit in their own **Daily** drawer above the list ("Daily · 1 of 3 done"), open
+to start and kept as you leave it on this device; they never go to Done, and
+Clear done and shake-to-clear leave them. Renewing is not counted as an edit,
+so a tick made today on another device still wins when the two sync.
+
 ### Dates: a calendar button
 
 Every date (a to-do's deadline and snooze, a reminder's date) is a calendar

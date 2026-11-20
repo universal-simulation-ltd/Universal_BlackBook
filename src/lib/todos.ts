@@ -59,8 +59,56 @@ export interface Todo {
    * harmless and left alone. Absent = not snoozed.
    */
   snoozedUntil?: string
+  /**
+   * Renews every day (James, 2026-11-20: "an option to renew daily so that
+   * every day they become a new task or they get unticked"): ticked, it stays
+   * done for the rest of the day; the next day it is unticked again, a
+   * group's items too (`renewDaily`). It lives in the tab's Daily drawer,
+   * never in the list or Done. Absent = an ordinary to-do.
+   */
+  daily?: boolean
   createdAt: number
   updatedAt: number
+}
+
+/** Local midnight at the start of the day `now` falls in (ms). */
+export function startOfDay(now = Date.now()): number {
+  const d = new Date(now)
+  d.setHours(0, 0, 0, 0)
+  return d.getTime()
+}
+
+/**
+ * Untick the daily to-dos ticked before today (and their items), as a new
+ * day starts. Returns the same array when nothing changed. `updatedAt` is
+ * left alone on purpose: renewing is not an edit, so a tick made today on
+ * another device (a newer updatedAt) still wins the sync merge.
+ */
+export function renewDaily(todos: Todo[], now = Date.now()): Todo[] {
+  const start = startOfDay(now)
+  let changed = false
+  const out = todos.map((t) => {
+    if (!t.daily) return t
+    const stale = t.doneAt !== undefined && t.doneAt < start
+    const staleItems = t.items?.some((i) => i.doneAt !== undefined && i.doneAt < start)
+    if (!stale && !staleItems) return t
+    changed = true
+    const { doneAt: _d, ...rest } = t
+    void _d
+    const items = t.items?.map((i) => {
+      if (i.doneAt === undefined || i.doneAt >= start) return i
+      const { doneAt: _i, ...r } = i
+      void _i
+      return r
+    })
+    return { ...rest, ...(stale ? {} : { doneAt: t.doneAt }), ...(items ? { items } : {}) }
+  })
+  return changed ? out : todos
+}
+
+/** The Daily drawer's order: still to do first, then by the list's own order. */
+export function compareDaily(a: Todo, b: Todo): number {
+  return Number(a.doneAt !== undefined) - Number(b.doneAt !== undefined) || compareOpen(a, b)
 }
 
 /** A group's items from storage, or undefined when it is not a group. */
@@ -120,6 +168,7 @@ export function toTodo(raw: unknown): Todo | null {
     ...(typeof r.rank === 'number' && Number.isFinite(r.rank) ? { rank: r.rank } : {}),
     ...(toItems(r.items) ? { items: toItems(r.items) } : {}),
     ...(toDue(r.snoozedUntil) ? { snoozedUntil: toDue(r.snoozedUntil) } : {}),
+    ...(r.daily === true ? { daily: true } : {}),
     createdAt: typeof r.createdAt === 'number' ? r.createdAt : Date.now(),
     updatedAt: typeof r.updatedAt === 'number' ? r.updatedAt : Date.now(),
   }

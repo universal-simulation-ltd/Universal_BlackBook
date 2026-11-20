@@ -91,6 +91,11 @@ const ICONS = {
       <path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3" />
     </svg>
   ),
+  done: (
+    <svg {...g}>
+      <path d="M5 12.5 10 17.5 19 7" />
+    </svg>
+  ),
   wake: (
     <svg {...g}>
       <circle cx="12" cy="12" r="4" />

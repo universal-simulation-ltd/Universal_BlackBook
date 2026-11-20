@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addDays, compareOpen, compareSnoozed, daysUntil, isSnoozed, snoozeChoices, dueLabel, dueShort, groupProgress, matchesTodo, mergeTodos, moveTodo, toTodo, toTodos, withItemDone, type Todo } from './todos'
+import { addDays, compareDaily, compareOpen, compareSnoozed, daysUntil, renewDaily, isSnoozed, snoozeChoices, dueLabel, dueShort, groupProgress, matchesTodo, mergeTodos, moveTodo, toTodo, toTodos, withItemDone, type Todo } from './todos'
 import { parseBackup } from './backup'
 
 const today = { year: 2026, month: 9, day: 27 }
@@ -184,5 +184,51 @@ describe('snoozed until (2026-11-19)', () => {
     expect(toTodo({ id: 'x', title: 'X', snoozedUntil: '2026-02-30' })).not.toHaveProperty('snoozedUntil')
     const data = parseBackup({ contacts: [], todos: [{ id: 't1', title: 'T', snoozedUntil: '2026-10-01' }] })!
     expect(data.todos[0]).toMatchObject({ snoozedUntil: '2026-10-01' })
+  })
+})
+
+describe('daily to-dos renew (2026-11-20)', () => {
+  const at = (y: number, m: number, d: number, h = 9) => new Date(y, m - 1, d, h).getTime()
+  const base = { id: 'd', title: 'Meds', details: '', tagIds: [], createdAt: 1, updatedAt: 5 }
+
+  it('unticks a daily to-do ticked yesterday, keeping its updatedAt', () => {
+    const todos = [{ ...base, daily: true, doneAt: at(2026, 11, 19) }]
+    const out = renewDaily(todos, at(2026, 11, 20))
+    expect(out[0].doneAt).toBeUndefined()
+    expect(out[0].updatedAt).toBe(5)
+  })
+
+  it('leaves one ticked today, and ordinary to-dos, alone (same array back)', () => {
+    const todos = [
+      { ...base, daily: true, doneAt: at(2026, 11, 20, 7) },
+      { ...base, id: 'o', doneAt: at(2026, 11, 1) },
+    ]
+    expect(renewDaily(todos, at(2026, 11, 20, 23))).toBe(todos)
+  })
+
+  it("unticks yesterday's items of a daily group, not today's", () => {
+    const todos = [
+      {
+        ...base,
+        daily: true,
+        items: [
+          { id: 'a', title: 'Walk', doneAt: at(2026, 11, 19) },
+          { id: 'b', title: 'Read', doneAt: at(2026, 11, 20, 6) },
+        ],
+      },
+    ]
+    const out = renewDaily(todos, at(2026, 11, 20, 12))
+    expect(out[0].items?.map((i) => i.doneAt !== undefined)).toEqual([false, true])
+  })
+
+  it('reads and writes the daily flag', () => {
+    expect(toTodo({ ...base, daily: true })?.daily).toBe(true)
+    expect('daily' in toTodo({ ...base, daily: 'yes' })!).toBe(false)
+  })
+
+  it('puts the ones still to do first in the Daily drawer', () => {
+    const a = { ...base, id: 'a', daily: true, doneAt: 10 }
+    const b = { ...base, id: 'b', daily: true }
+    expect([a, b].sort(compareDaily).map((x) => x.id)).toEqual(['b', 'a'])
   })
 })

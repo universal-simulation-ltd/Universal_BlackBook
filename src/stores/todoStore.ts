@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { newId } from '../lib/id'
 import { loadTodos, saveTodos } from '../lib/store'
-import { moveTodo, withItemDone, type Todo, type TodoItem } from '../lib/todos'
+import { moveTodo, renewDaily, withItemDone, type Todo, type TodoItem } from '../lib/todos'
 
 /** What the To-do form hands back. */
 export interface TodoDraft {
@@ -14,6 +14,8 @@ export interface TodoDraft {
   items?: TodoItem[]
   /** `YYYY-MM-DD` — see `Todo.snoozedUntil`. */
   snoozedUntil?: string
+  /** Renews every day — see `Todo.daily`. */
+  daily?: boolean
 }
 
 /**
@@ -58,6 +60,8 @@ interface TodoState {
   dropTag: (tagId: string) => Promise<void>
   /** The vault's or a backup file's copy (or a merge of it) becomes this device's. */
   replace: (todos: Todo[]) => Promise<void>
+  /** A new day: untick yesterday's daily to-dos (lib/todos.ts ▸ renewDaily). */
+  renew: () => Promise<void>
 }
 
 export const useTodoStore = create<TodoState>((set, get) => {
@@ -75,7 +79,8 @@ export const useTodoStore = create<TodoState>((set, get) => {
 
     init: async () => {
       if (get().loaded) return
-      const todos = await loadTodos()
+      // Yesterday's daily ones come back unticked (not saved until the next change).
+      const todos = renewDaily(await loadTodos())
       // A vault adopted while that read was in flight (`replace`) is newer
       // than what it read. Checked again AFTER the await for that reason.
       if (get().loaded) return
@@ -103,6 +108,7 @@ export const useTodoStore = create<TodoState>((set, get) => {
           ? { items: draft.items.map((i) => ({ ...i, title: i.title.trim() })).filter((i) => i.title) }
           : {}),
         ...(draft.snoozedUntil ? { snoozedUntil: draft.snoozedUntil } : {}),
+        ...(draft.daily ? { daily: true } : {}),
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,
       }
@@ -190,8 +196,15 @@ export const useTodoStore = create<TodoState>((set, get) => {
       return added.length
     },
 
+    // Daily ones are never cleared: they come back tomorrow.
     clearDone: async () => {
-      await commit(get().todos.filter((t) => t.doneAt === undefined))
+      await commit(get().todos.filter((t) => t.doneAt === undefined || t.daily))
+    },
+
+    renew: async () => {
+      const todos = get().todos
+      const next = renewDaily(todos)
+      if (next !== todos) await commit(next)
     },
 
     dropTag: async (tagId) => {
@@ -207,7 +220,7 @@ export const useTodoStore = create<TodoState>((set, get) => {
 
     replace: async (todos) => {
       set({ editing: null, loaded: true })
-      await commit(todos)
+      await commit(renewDaily(todos))
     },
   }
 })
