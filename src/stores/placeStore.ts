@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { newId } from '../lib/id'
 import { hasLocation, type Location } from '../lib/geo'
 import { loadPlaces, savePlaces } from '../lib/store'
-import type { Place } from '../lib/places'
+import { PLACE_LIMITS, type Place, type PlaceComment } from '../lib/places'
 import { useGoTab } from './searchStore'
 
 /** What the Places form hands back. */
@@ -28,11 +28,18 @@ interface PlaceState {
   tagFilter: string[]
   /** 'new', a place's id, or null — the form is open on it. */
   editing: string | null
+  /**
+   * A place's id, or null — its page is open (2026-11-20): what it is, its
+   * comments, and the people and notes linked to it. Fine-tune opens the
+   * form over it; saving or closing the form comes back to it.
+   */
+  viewing: string | null
   /** A new place's name, typed into the tab's search first ("Add “…”"). */
   prefillName: string | null
   init: () => Promise<void>
   setTagFilter: (tagIds: string[]) => void
   edit: (id: string | null) => void
+  view: (id: string | null) => void
   startPlace: (name: string) => void
   save: (draft: PlaceDraft) => Promise<void>
   remove: (id: string) => Promise<void>
@@ -41,6 +48,12 @@ interface PlaceState {
   setPinned: (id: string, pinned: boolean) => Promise<void>
   /** Link or unlink a person (2026-11-19). Saves at once, as a note's links do. */
   setContact: (id: string, contactId: string, on: boolean) => Promise<void>
+  /** Add a comment (2026-11-20). Saves at once. Returns it, or null for an empty one. */
+  addComment: (id: string, text: string) => Promise<PlaceComment | null>
+  /** Delete a comment. Saves at once. */
+  removeComment: (id: string, commentId: string) => Promise<void>
+  /** Undo a comment's delete: it goes back as it was. */
+  restoreComment: (id: string, comment: PlaceComment) => Promise<void>
   /** A tag was deleted: nothing may go on pointing at it. */
   dropTag: (tagId: string) => Promise<void>
   /** Undo a tag's delete: it goes back on these places. */
@@ -60,6 +73,7 @@ export const usePlaceStore = create<PlaceState>((set, get) => {
     loaded: false,
     tagFilter: [],
     editing: null,
+    viewing: null,
     prefillName: null,
 
     init: async () => {
@@ -72,6 +86,7 @@ export const usePlaceStore = create<PlaceState>((set, get) => {
 
     setTagFilter: (tagFilter) => set({ tagFilter }),
     edit: (editing) => set({ editing, prefillName: null }),
+    view: (viewing) => set({ viewing }),
     startPlace: (name) => set({ editing: 'new', prefillName: name }),
 
     save: async (draft) => {
@@ -91,6 +106,8 @@ export const usePlaceStore = create<PlaceState>((set, get) => {
         ...(existing?.pinnedAt ? { pinnedAt: existing.pinnedAt } : {}),
         // Links are made and broken on their own (setContact), never by the form.
         ...(existing?.contactIds?.length ? { contactIds: existing.contactIds } : {}),
+        // Comments too (addComment / removeComment).
+        ...(existing?.comments?.length ? { comments: existing.comments } : {}),
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,
       }
@@ -98,12 +115,13 @@ export const usePlaceStore = create<PlaceState>((set, get) => {
       // As a new contact: a tagged one lands the tab on its tags, an untagged
       // one clears a filter that would hide it.
       if (!existing && (place.tagIds.length > 0 || get().tagFilter.length > 0)) set({ tagFilter: place.tagIds })
-      set({ editing: null })
+      // A new place opens on its page, ready for a comment and its people.
+      set({ editing: null, ...(existing ? {} : { viewing: place.id }) })
       await commit(places)
     },
 
     remove: async (id) => {
-      set((s) => ({ editing: s.editing === id ? null : s.editing }))
+      set((s) => ({ editing: s.editing === id ? null : s.editing, viewing: s.viewing === id ? null : s.viewing }))
       await commit(get().places.filter((p) => p.id !== id))
     },
 
@@ -140,6 +158,37 @@ export const usePlaceStore = create<PlaceState>((set, get) => {
       )
     },
 
+    addComment: async (id, text) => {
+      const body = text.trim().slice(0, PLACE_LIMITS.comment)
+      const place = get().places.find((p) => p.id === id)
+      if (!body || !place) return null
+      const now = Date.now()
+      const comment: PlaceComment = { id: newId(), text: body, at: now }
+      const comments = [...(place.comments ?? []), comment].slice(-PLACE_LIMITS.comments)
+      await commit(get().places.map((p) => (p.id === id ? { ...p, comments, updatedAt: now } : p)))
+      return comment
+    },
+
+    removeComment: async (id, commentId) => {
+      const now = Date.now()
+      await commit(
+        get().places.map((p) => {
+          if (p.id !== id || !p.comments?.some((c) => c.id === commentId)) return p
+          const left = p.comments.filter((c) => c.id !== commentId)
+          const { comments: _c, ...rest } = p
+          void _c
+          return { ...rest, ...(left.length ? { comments: left } : {}), updatedAt: now }
+        }),
+      )
+    },
+
+    restoreComment: async (id, comment) => {
+      const place = get().places.find((p) => p.id === id)
+      if (!place || place.comments?.some((c) => c.id === comment.id)) return
+      const comments = [...(place.comments ?? []), comment].sort((a, b) => a.at - b.at)
+      await commit(get().places.map((p) => (p.id === id ? { ...p, comments, updatedAt: Date.now() } : p)))
+    },
+
     dropTag: async (tagId) => {
       set((s) => ({ tagFilter: s.tagFilter.filter((x) => x !== tagId) }))
       if (!get().places.some((p) => p.tagIds.includes(tagId))) return
@@ -154,14 +203,14 @@ export const usePlaceStore = create<PlaceState>((set, get) => {
     },
 
     replace: async (places) => {
-      set({ editing: null, loaded: true })
+      set((s) => ({ editing: null, loaded: true, viewing: s.viewing && places.some((p) => p.id === s.viewing) ? s.viewing : null }))
       await commit(places)
     },
   }
 })
 
-/** Open a place from anywhere: its form lives on the Places tab, so go there first. */
+/** Open a place's page from anywhere: it lives on the Places tab, so go there first. */
 export function openPlace(id: string) {
   useGoTab.getState().go('places')
-  usePlaceStore.getState().edit(id)
+  usePlaceStore.getState().view(id)
 }

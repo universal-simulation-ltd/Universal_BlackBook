@@ -12,6 +12,18 @@ import { tagNames } from './filter'
 import { locationLines, toLocation, type Location } from './geo'
 import { matchesNote, toContactIds, type Note } from './notes'
 
+/**
+ * A comment on a place (James, 2026-11-20: "you put a place in and then you
+ * make comments around that place"): what happened there, what to remember,
+ * dated. Newest first on the place's page; the latest shows on its row.
+ */
+export interface PlaceComment {
+  id: string
+  text: string
+  /** When it was written (ms). */
+  at: number
+}
+
 export interface Place {
   id: string
   /** What it is called. The only required field. */
@@ -32,11 +44,37 @@ export interface Place {
    * matches nobody and is not shown, as on a note.
    */
   contactIds?: string[]
+  /** Comments on it (2026-11-20), oldest first as stored. Absent = none. */
+  comments?: PlaceComment[]
   createdAt: number
   updatedAt: number
 }
 
-export const PLACE_LIMITS = { places: 20_000, name: 500, phone: 100, website: 2_000, details: 100_000 } as const
+export const PLACE_LIMITS = { places: 20_000, name: 500, phone: 100, website: 2_000, details: 100_000, comments: 2_000, comment: 10_000 } as const
+
+/** Stored comments as PlaceComments: bad ones dropped, duplicates by id dropped, oldest first. */
+export function toPlaceComments(raw: unknown): PlaceComment[] | undefined {
+  if (!Array.isArray(raw)) return undefined
+  const out: PlaceComment[] = []
+  const seen = new Set<string>()
+  for (const r of raw.slice(-PLACE_LIMITS.comments)) {
+    if (!r || typeof r !== 'object') continue
+    const c = r as Record<string, unknown>
+    if (typeof c.id !== 'string' || !c.id || c.id.length > 100 || seen.has(c.id)) continue
+    const text = typeof c.text === 'string' ? c.text.slice(0, PLACE_LIMITS.comment) : ''
+    if (!text.trim()) continue
+    const at = typeof c.at === 'number' && Number.isFinite(c.at) ? c.at : 0
+    out.push({ id: c.id, text, at })
+    seen.add(c.id)
+  }
+  out.sort((a, b) => a.at - b.at)
+  return out.length ? out : undefined
+}
+
+/** A place's comments, newest first. */
+export function newestComments(place: Place): PlaceComment[] {
+  return [...(place.comments ?? [])].sort((a, b) => b.at - a.at)
+}
 
 const str = (v: unknown, max: number) => (typeof v === 'string' ? v.slice(0, max) : '')
 
@@ -61,6 +99,7 @@ export function toPlace(raw: unknown, knownTags?: Set<string>): Place | null {
     tagIds,
     ...(typeof r.pinnedAt === 'number' && Number.isFinite(r.pinnedAt) ? { pinnedAt: r.pinnedAt } : {}),
     ...(toContactIds(r.contactIds) ? { contactIds: toContactIds(r.contactIds) } : {}),
+    ...(toPlaceComments(r.comments) ? { comments: toPlaceComments(r.comments) } : {}),
     createdAt,
     updatedAt: typeof r.updatedAt === 'number' && Number.isFinite(r.updatedAt) ? r.updatedAt : createdAt,
   }
@@ -100,10 +139,12 @@ export function placeWhere(place: Place, locale: string): string {
   return town || (loc.street ?? '').split('\n')[0] || locationLines(loc, locale).join(', ')
 }
 
-/** A place's search: its name, address, phone, website, notes and its tags' names. */
+/** A place's search: its name, address, phone, website, notes, comments and its tags' names. */
 export function matchesPlace(place: Place, query: string, byId: ReadonlyMap<string, { name: string }>, locale = 'en'): boolean {
   if (!query.trim()) return true
-  const text = [place.details, ...locationLines(place.location, locale), place.phone, place.website].filter(Boolean).join('\n')
+  const text = [place.details, ...locationLines(place.location, locale), place.phone, place.website, ...(place.comments ?? []).map((c) => c.text)]
+    .filter(Boolean)
+    .join('\n')
   return matchesNote({ ...place, title: place.name, details: text } as unknown as Note, query, tagNames(place.tagIds, byId))
 }
 

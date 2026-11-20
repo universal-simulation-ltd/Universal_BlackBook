@@ -334,6 +334,18 @@ notes from OneNote** has the export steps. The `.docx` reader is
 [fflate](https://github.com/101arrowz/fflate) (MIT) to unzip plus a small XML
 scanner of our own (`src/lib/noteImport.ts`).
 
+### Places: comments, people and notes
+
+Tap a place and its page opens: Directions, Call and Website, the address, its
+notes and tags, then **Comments** (what happened there, what to remember,
+dated, newest first; Delete has an Undo) and the **people** and **notes**
+linked to it, with Link to a person / Link to a note. A new place opens on its
+page once added. **Fine-tune** changes its name, address, phone, website,
+notes and tags. In the list each place shows the first people linked to it,
+how many notes and comments it has, and its latest comment. Search covers the
+comments too, and a place moved to another tab takes its comments along as
+dated lines.
+
 ### Locations in parts, with real place lists (offline)
 
 A note's **Link to location** and a contact's **Address** are Place (notes:

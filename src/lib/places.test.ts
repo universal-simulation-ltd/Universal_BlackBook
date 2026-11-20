@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { comparePlaces, matchesPlace, mergePlaces, placeWhere, toPlace, toPlaces, websiteUrl, type Place } from './places'
+import { comparePlaces, matchesPlace, mergePlaces, newestComments, placeWhere, toPlace, toPlaces, websiteUrl, type Place } from './places'
+import { fromPlace } from './move'
 import { parseBackup } from './backup'
 import { mapGroups, mappedFilters } from './mapGroups'
 import { parseTowns, setGeoData } from './geo'
@@ -88,5 +89,40 @@ describe('links (2026-11-19)', () => {
     const data = parseBackup({ contacts: [], places: [place({ contactIds: ['c1'] })], pages: [{ id: 'n', title: 'T', details: '', placeIds: ['p1'], createdAt: 1, updatedAt: 1 }] })!
     expect(data.places[0].contactIds).toEqual(['c1'])
     expect(data.pages[0].placeIds).toEqual(['p1'])
+  })
+})
+
+describe('place comments (2026-11-20)', () => {
+  it('keeps good comments, oldest first, and drops bad, empty and repeated ones', () => {
+    const p = toPlace({
+      ...place(),
+      comments: [
+        { id: 'b', text: 'Second visit', at: 20 },
+        { id: 'a', text: 'First visit', at: 10 },
+        { id: 'a', text: 'dup', at: 30 },
+        { id: 'c', text: '   ', at: 40 },
+        { text: 'no id', at: 50 },
+        'junk',
+      ],
+    })!
+    expect(p.comments?.map((c) => c.id)).toEqual(['a', 'b'])
+    expect(newestComments(p).map((c) => c.text)).toEqual(['Second visit', 'First visit'])
+  })
+
+  it('leaves comments off a place that has none', () => {
+    expect(toPlace({ ...place(), comments: [] })!.comments).toBeUndefined()
+    expect('comments' in toPlace(place())!).toBe(false)
+  })
+
+  it('searches a place by its comments', () => {
+    const p = place({ comments: [{ id: 'a', text: 'Door code 4821', at: 1 }] })
+    expect(matchesPlace(p, '4821', new Map())).toBe(true)
+    expect(matchesPlace(p, 'zzz', new Map())).toBe(false)
+  })
+
+  it('carries comments into the text when a place is moved', () => {
+    const p = place({ details: 'Opens at 9', comments: [{ id: 'a', text: 'Ask for Sam', at: Date.UTC(2026, 10, 20) }] })
+    const m = fromPlace(p, { untitled: 'Untitled' } as never)
+    expect(m.details).toBe('Opens at 9\n\n2026-11-20: Ask for Sam')
   })
 })

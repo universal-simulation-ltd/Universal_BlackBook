@@ -87,7 +87,7 @@ export function Elsewhere({ here, query }: { here: Here; query: string }) {
             tags={chips(p.tagIds)}
             onClick={() => {
               useGoTab.getState().go('places')
-              usePlaceStore.getState().edit(p.id)
+              usePlaceStore.getState().view(p.id)
             }}
           />
         ))}

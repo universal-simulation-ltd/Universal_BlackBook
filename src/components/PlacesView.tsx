@@ -1,13 +1,10 @@
 import { useId, useMemo, useState, type FormEvent } from 'react'
-import { Capacitor } from '@capacitor/core'
 import { Button, GrowingTextarea, SelectCheckbox, SelectionBar, useSelection } from '@unisim/sdk'
 import { deleteSwipe, pinSwipe, SelectBar, SwipeGroup, SwipeItem, UndoBar, useAskDelete, useHold, useHoldSelect, useUndo, webSelBarWrap } from './SwipeActions'
 import { useMove } from './MoveTo'
 import { usePhoneKit } from '../native/kit'
 import { isList } from '../lib/lists'
-import { mapsUrl } from '../lib/notes'
-import { hasLocation } from '../lib/geo'
-import { comparePlaces, matchesPlace, matchesPlaceTags, placeWhere, websiteUrl, type Place } from '../lib/places'
+import { comparePlaces, matchesPlace, matchesPlaceTags, newestComments, placeWhere, type Place } from '../lib/places'
 import type { Tag } from '../lib/types'
 import { useBookStore } from '../stores/bookStore'
 import { usePlaceStore, type PlaceDraft } from '../stores/placeStore'
@@ -18,7 +15,10 @@ import { TagCombo } from './TagCombo'
 import { AddTyped, ListSearch } from './ListSearch'
 import { LocationFields } from './LocationFields'
 import { Elsewhere } from './Elsewhere'
-import { PlaceLinks } from './PlaceLinks'
+import { PlaceActions, PlaceDetail } from './PlaceDetail'
+import { useNoteStore } from '../stores/noteStore'
+import { useSettingsStore } from '../stores/settingsStore'
+import type { Contact } from '../lib/types'
 import { newLocation } from './currentLocation'
 import { useT } from '../i18n'
 import { btnDanger, emptyBox, btnGhost, btnPrimary, btnSubtle, BtnKey, inputCls, label, MapGlyph, PlusIcon, tabHeading, textareaCls } from './ui'
@@ -40,7 +40,9 @@ export function PlacesView() {
   const places = usePlaceStore((s) => s.places)
   const loaded = usePlaceStore((s) => s.loaded)
   const editing = usePlaceStore((s) => s.editing)
+  const viewing = usePlaceStore((s) => s.viewing)
   const edit = usePlaceStore((s) => s.edit)
+  const view = usePlaceStore((s) => s.view)
   const startPlace = usePlaceStore((s) => s.startPlace)
   const tagFilter = usePlaceStore((s) => s.tagFilter)
   const setTagFilter = usePlaceStore((s) => s.setTagFilter)
@@ -48,6 +50,18 @@ export function PlacesView() {
   const remove = usePlaceStore((s) => s.remove)
   const restore = usePlaceStore((s) => s.restore)
   const tags = useBookStore((s) => s.tags)
+  const contacts = useBookStore((s) => s.contacts)
+  const notes = useNoteStore((s) => s.notes)
+  const notesOn = useSettingsStore((s) => s.notes)
+  // What each row shows beside its name (2026-11-20): its people, and how
+  // many notes are linked to it.
+  const contactsById = useMemo(() => new Map(contacts.map((c) => [c.id, c])), [contacts])
+  const noteCounts = useMemo(() => {
+    const m = new Map<string, number>()
+    if (!notesOn) return m
+    for (const n of notes) for (const id of n.placeIds ?? []) m.set(id, (m.get(id) ?? 0) + 1)
+    return m
+  }, [notes, notesOn])
   const [query, setQuery] = useState('')
   const hintId = useId()
   const undo = useUndo<Place[]>(async (xs) => {
@@ -234,7 +248,7 @@ export function PlacesView() {
                       { label: t('todo.delete_label', { title: p.name }), onClick: () => removeWithUndo(p) },
                     ]}
                   >
-                    <PlaceRow place={p} byId={byId} onOpen={() => edit(p.id)} />
+                    <PlaceRow place={p} byId={byId} contactsById={contactsById} noteCount={noteCounts.get(p.id) ?? 0} onOpen={() => view(p.id)} />
                   </SwipeItem>
                   </div>
                 </li>
@@ -259,23 +273,46 @@ export function PlacesView() {
       {/* Then what the same search finds on the other tabs. */}
       {!sel.selecting && <Elsewhere here="places" query={query} />}
 
-      {editing && <PlaceForm key={editing} id={editing} />}
+      {/* The form over the page: closing or saving it comes back to the page. */}
+      {editing ? <PlaceForm key={editing} id={editing} /> : viewing ? <PlaceDetail key={viewing} id={viewing} /> : null}
     </div>
   )
 }
 
-/** One place in the list: its name (pinned ones marked), its town, its tags' dots. */
-function PlaceRow({ place, byId, onOpen }: { place: Place; byId: Map<string, Tag>; onOpen: () => void }) {
+/**
+ * One place in the list: its name (pinned ones marked), its town, its tags'
+ * dots, and (2026-11-20) what it gathers: the people linked to it, how many
+ * notes and comments, and the latest comment.
+ */
+function PlaceRow({
+  place,
+  byId,
+  contactsById,
+  noteCount,
+  onOpen,
+}: {
+  place: Place
+  byId: Map<string, Tag>
+  contactsById: Map<string, Contact>
+  noteCount: number
+  onOpen: () => void
+}) {
   const t = useT()
   const chips = place.tagIds.map((id) => byId.get(id)).filter((x): x is Tag => Boolean(x) && !isList(x!))
   const where = placeWhere(place, t.locale)
+  const people = (place.contactIds ?? []).map((id) => contactsById.get(id)).filter((c): c is Contact => Boolean(c))
+  const names = people.slice(0, 2).map((c) => c.name || t('c.unnamed'))
+  const peopleText = names.length ? `${names.join(', ')}${people.length > 2 ? ` +${people.length - 2}` : ''}` : ''
+  const commentCount = place.comments?.length ?? 0
+  const latest = commentCount ? newestComments(place)[0] : undefined
+  const counts = [noteCount ? t.plural('place.notes', noteCount) : '', commentCount ? t.plural('place.comment_count', commentCount) : ''].filter(Boolean)
   return (
     <button
       type="button"
       onClick={onOpen}
       className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left transition-colors hover:bg-slate-800/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
     >
-      <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-800 text-orange-400">
+      <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center self-start rounded-full bg-slate-800 text-orange-400">
         <PinGlyph />
       </span>
       <span className="min-w-0 flex-1">
@@ -289,9 +326,32 @@ function PlaceRow({ place, byId, onOpen }: { place: Place; byId: Map<string, Tag
           {place.name || t('c.unnamed')}
         </span>
         {where && <span className="block truncate text-sm text-slate-400">{where}</span>}
+        {(peopleText || counts.length > 0) && (
+          <span className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-slate-400">
+            {peopleText && (
+              <span className="min-w-0 truncate">
+                <span aria-hidden>👤 </span>
+                <span className="sr-only">{t('nlink.contacts_label')}: </span>
+                {peopleText}
+              </span>
+            )}
+            {counts.map((c) => (
+              <span key={c} className="shrink-0">
+                {c}
+              </span>
+            ))}
+          </span>
+        )}
+        {latest && (
+          <span className="mt-0.5 block truncate text-xs italic text-slate-500">
+            <span aria-hidden>💬 </span>
+            <span className="sr-only">{t('place.latest_comment')}: </span>
+            {latest.text.replace(/\s+/g, ' ')}
+          </span>
+        )}
       </span>
       {chips.length > 0 && (
-        <span className="flex shrink-0 flex-wrap items-center justify-end">
+        <span className="flex shrink-0 flex-wrap items-center justify-end self-start">
           {chips.map((c) => (
             <TagDot key={c.id} name={c.name} colour={c.colour} pattern={c.pattern} />
           ))}
@@ -307,56 +367,6 @@ function PinGlyph({ className = 'h-5 w-5' }: { className?: string }) {
       <path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z" />
       <circle cx="12" cy="10" r="2.4" />
     </svg>
-  )
-}
-
-/**
- * A place's Directions, Call and Website, as buttons across the top of its
- * form — the ones it has the details for. Directions opens the device's own
- * maps app (Apple Maps, Android's geo: handler, OpenStreetMap on the website),
- * as a note's location does.
- */
-function PlaceActions({ place }: { place: Place }) {
-  const t = useT()
-  const native = Capacitor.isNativePlatform()
-  const maps = place.location && hasLocation(place.location) ? mapsUrl({ ...place.location, place: place.name }, Capacitor.getPlatform(), t.locale) : null
-  const tel = place.phone.replace(/[^\d+]/g, '')
-  const web = websiteUrl(place.website)
-  if (!maps && !tel && !web) return null
-  const cls = `${btnGhost} flex-1 justify-center`
-  return (
-    <div className="flex flex-wrap gap-2">
-      {maps && (
-        <a
-          href={maps}
-          target="_blank"
-          rel="noreferrer"
-          className={cls}
-          onClick={(e) => {
-            // Inside the app the web view hands the address to the phone.
-            if (native) {
-              e.preventDefault()
-              window.location.href = maps
-            }
-          }}
-        >
-          <span aria-hidden>🧭</span>
-          {t('place.directions')}
-        </a>
-      )}
-      {tel && (
-        <a href={`tel:${tel}`} className={cls}>
-          <span aria-hidden>📞</span>
-          {t('place.call')}
-        </a>
-      )}
-      {web && (
-        <a href={web} target="_blank" rel="noreferrer" className={cls}>
-          <span aria-hidden>🌐</span>
-          {t('place.website_open')}
-        </a>
-      )}
-    </div>
   )
 }
 
@@ -449,8 +459,7 @@ function PlaceForm({ id }: { id: string }) {
           <span className={label}>{t('field.tags')}</span>
           <TagPicker value={draft.tagIds} onChange={(tagIds) => patch({ tagIds })} />
         </div>
-        {/* People and notes linked to it (2026-11-19). Each link saves at once. */}
-        {existing && <PlaceLinks place={existing} onLeave={() => close(null)} />}
+        {/* People, notes and comments are on the place's page (PlaceDetail). */}
 
         <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
           {existing ? (

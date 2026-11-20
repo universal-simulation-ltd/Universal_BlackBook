@@ -66,9 +66,11 @@ export function fromContact(c: Contact, w: MoveWords): Moved {
 }
 
 export function fromPlace(p: Place, w: MoveWords): Moved {
+  // Its comments go along as dated lines under its notes, oldest first.
+  const comments = (p.comments ?? []).map((c) => `${c.at ? `${new Date(c.at).toISOString().slice(0, 10)}: ` : ''}${c.text}`).join('\n')
   return {
     title: p.name.trim() || w.untitled,
-    details: p.details,
+    details: [p.details, comments].filter((x) => x.trim()).join('\n\n'),
     tagIds: p.tagIds,
     location: p.location,
     ...(p.phone.trim() ? { phone: p.phone.trim() } : {}),
