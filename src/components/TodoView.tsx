@@ -203,6 +203,8 @@ export function TodoView() {
    * a tap while others are ticked. Holding one on a touch screen ticks it.
    */
   const web = !phoneScreens()
+  /** A list of tickable to-dos: on a wide computer, room between its cards for a hanging select box. */
+  const ticks = web ? 'bb-ticks' : ''
   const onShow = [...(showDaily ? daily : []), ...open, ...(showSnoozed ? snoozed : []), ...(showDone ? done : [])]
   const wsel = useSelection(web ? onShow.map((x) => x.id) : [])
   const ticked = web ? onShow.filter((x) => wsel.has(x.id)) : []
@@ -214,15 +216,23 @@ export function TodoView() {
    * A to-do with the website's tick box in a column of its own before it: the
    * row's own round box is Done, so the two must not share a corner. `hold`:
    * a touch screen's hold ticks it (the open ones' hold is the drag's).
+   *
+   * Two boxes side by side read as clutter (James, 2026-11-20), so the select
+   * box shows only on hover, on keyboard focus in the row, or once something
+   * is ticked; otherwise the row shows its Done box alone. On a wide computer
+   * it hangs in the page's margin, and `bb-ticks` lists leave it a 2rem gap
+   * between cards, so nothing moves when it appears; a touch screen has no
+   * hover, and the column opens once a hold has ticked one. Always in the
+   * page for a keyboard and a screen reader (index.css ▸ "To-do's select box").
    */
   const tickable = (x: Todo, look: Look, node: ReactNode, hold = false) =>
     web ? (
-      <div className={`flex items-start gap-1 ${look === 'card' ? 'h-full' : ''}`} onTouchStart={hold ? holdTick(x.id) : undefined}>
+      <div className={`bb-tick relative flex items-start gap-1 ${look === 'card' ? 'h-full' : ''}`} onTouchStart={hold ? holdTick(x.id) : undefined}>
         <SelectCheckbox
           checked={wsel.has(x.id)}
           onChange={() => wsel.toggle(x.id)}
           label={t('nsel.select_label', { title: x.title || t('c.untitled') })}
-          className={`ml-1 shrink-0 ${look === 'card' ? 'mt-3' : 'mt-2.5'}`}
+          className={`bb-sel ml-1 shrink-0 ${look === 'card' ? 'mt-3' : 'mt-2.5'}`}
         />
         <div className={`min-w-0 flex-1 ${look === 'card' ? 'h-full' : ''}`}>{node}</div>
       </div>
@@ -318,10 +328,11 @@ export function TodoView() {
   const bigger = layout === 'lanes' ? open.filter((x) => !isQuickTodo(x)) : []
   // The done ones: rows, except where the open ones are cards.
   const doneLook: Look = layout === 'grid' || layout === 'cards' ? 'card' : 'row'
-  const doneCls = listClass(layout === 'detail' || layout === 'lanes' ? 'list' : layout)
+  const doneBase = listClass(layout === 'detail' || layout === 'lanes' ? 'list' : layout)
+  const doneCls = `${doneBase} ${ticks}`
 
   return (
-    <div className="space-y-4">
+    <div className={`space-y-4 ${web && wsel.count > 0 ? 'bb-selecting' : ''}`}>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className={phoneScreens() ? 'bb-h1' : tabHeading}>{t('tab_todos')}</h1>
@@ -384,7 +395,7 @@ export function TodoView() {
       <AddTyped text={query} onAdd={addTyped} />
 
       {web && (
-        <div className={webSelBarWrap(wsel.count)}>
+        <div className={`${webSelBarWrap(wsel.count)} bb-tick-bar`}>
           <SelectionBar
             sel={wsel}
             confirm={askDelete.ask}
@@ -536,7 +547,7 @@ export function TodoView() {
         />
         {layout === 'detail' ? (
           <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] items-start gap-6">
-            {openList(open, 'row', listClass('list'))}
+            {openList(open, 'row', `${listClass('list')} ${ticks}`)}
             {/* Stays in sight while the list scrolls under it. */}
             <aside className="bb-detail sticky top-4" aria-live="polite">
               {current && <TodoDetail key={current.id} todo={current} byId={byId} today={today} onSnooze={() => setSnoozing([current.id])} />}
@@ -544,11 +555,11 @@ export function TodoView() {
           </div>
         ) : layout === 'lanes' ? (
           // Only the lanes with something in them; one alone takes the width.
-          <div className={`grid items-start gap-6 ${quick.length && bigger.length ? 'min-[700px]:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]' : ''}`}>
+          <div className={`grid items-start gap-6 ${ticks} ${quick.length && bigger.length ? 'min-[700px]:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]' : ''}`}>
             {quick.length > 0 && (
               <section>
                 <h2 className="mb-1 px-2 text-xs font-semibold text-slate-500">{t('todo.lane_quick')}</h2>
-                {openList(quick, 'row', listClass('list'))}
+                {openList(quick, 'row', `${listClass('list')} ${ticks}`)}
               </section>
             )}
             {bigger.length > 0 && (
@@ -559,7 +570,7 @@ export function TodoView() {
             )}
           </div>
         ) : (
-          openList(open, layout === 'grid' || layout === 'cards' ? 'card' : 'row', listClass(layout))
+          openList(open, layout === 'grid' || layout === 'cards' ? 'card' : 'row', `${listClass(layout)} ${ticks}`)
         )}
         </>
       )}
@@ -668,7 +679,7 @@ export function TodoView() {
               the done ones. */}
           {!showDone && (
             <SwipeGroup>
-              <div className={`mt-2 ${doneCls}`}>
+              <div className={`mt-2 ${doneBase} ${web ? 'bb-tick-peek' : ''}`}>
                 <SwipeItem
                   id={done[0].id}
                   name={done[0].title}

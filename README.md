@@ -112,7 +112,11 @@ on every note card and before every place, Select all, and once something is
 ticked the count, **Delete selected** (asks how many, then Undo for six
 seconds), the list's own actions (To-do: Pin, Done / Not done, Snooze, Move;
 Notes: Pin / Unpin, Copy, Move, Convert; Places: Pin / Unpin, Move) and Clear.
-To-do's tick boxes cover the snoozed and done ones while their drawers are open.
+To-do's tick boxes cover the snoozed and done ones while their drawers are open,
+and show only on hover, on keyboard focus in the row, or once something is
+ticked, so a row otherwise shows its Done box alone (on a wide screen the tick
+box hangs in the margin, so nothing moves; a touch screen holds a to-do to
+tick it, then every row shows its box).
 The phone app keeps hold to select in all three, snoozed to-dos included.
 
 **Everything at once:** Actions ▸ Advanced ▸ **Delete all data** clears this

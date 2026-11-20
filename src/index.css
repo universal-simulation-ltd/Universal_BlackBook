@@ -230,6 +230,77 @@ dialog::backdrop {
   user-select: none;
   -webkit-touch-callout: none;
 }
+
+/* To-do's select box (TodoView ▸ tickable): the website's square select box
+   sits in a column of its own beside the round Done box, and two boxes side by
+   side read as clutter (James, 2026-11-20). It shows on hover, on keyboard
+   focus in the row, or once anything is ticked (`.bb-selecting`, so ticking
+   more stays easy); otherwise the row shows its Done box alone. Never
+   display:none: a keyboard and a screen reader reach it all the same.
+
+   With a mouse nothing moves when it appears. On a computer 1024px and wider
+   it hangs in the page's 2rem margin, left of the row (and in the 2rem gap
+   between cards, `.bb-ticks`), so the Done box sits on the content's edge
+   with no gap; Select all hangs with it, over its column. Narrower, its column
+   stays in the row, only invisible. A touch screen has no hover: the column is
+   folded away (visually hidden, still focusable) until a hold has ticked one,
+   then every row opens it. */
+@media (hover: hover) {
+  .bb-sel {
+    opacity: 0;
+    transition: opacity 120ms ease;
+  }
+  .bb-tick:hover .bb-sel,
+  .bb-tick:has(:focus-visible) .bb-sel,
+  .bb-selecting .bb-sel {
+    opacity: 1;
+  }
+}
+@media (hover: hover) and (min-width: 64rem) {
+  .bb-tick .bb-sel {
+    position: absolute;
+    left: -1.5rem;
+    top: 0;
+    margin-left: 0;
+  }
+  /* The margin beside a row counts as the row, so the pointer can reach it. */
+  .bb-tick::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -1.75rem;
+    width: 1.75rem;
+  }
+  .bb-ticks {
+    column-gap: 2rem;
+  }
+  .bb-tick-bar {
+    margin-left: -1.5rem;
+  }
+  /* Sticky while ticking, with 0.25rem of padding of its own (webSelBarWrap). */
+  .bb-tick-bar.sticky {
+    margin-left: -1.75rem;
+  }
+}
+/* Narrower, the rows keep their (invisible) column; the last one done, under
+   the closed Done drawer, has no select box but lines up with them. */
+@media (hover: hover) and (max-width: 63.99rem) {
+  .bb-tick-peek {
+    padding-left: 1.75rem;
+  }
+}
+@media (hover: none) {
+  .bb-tick:not(:has(:focus-visible)) .bb-sel:not(.bb-selecting .bb-sel) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    opacity: 0;
+  }
+}
 .bb-drop-before::before,
 .bb-drop-after::after {
   content: '';
