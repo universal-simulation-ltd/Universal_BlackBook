@@ -79,8 +79,9 @@ export interface Settings {
   shakeClear: boolean
   /**
    * This app's colour scheme and language (its own, over the suite's) and the
-   * tab it opens on, as last seen here — the SDK keeps the live values
-   * (useTuneLook in App.tsx copies them in and out). Null until first seen.
+   * tab it opens on, as useTuneLook last copied them. No longer written: since
+   * @unisim/sdk 0.229.0 the SDK syncs these itself (components/tuneLook.ts).
+   * Kept so a vault that carries one still parses.
    */
   look: Look | null
   /**

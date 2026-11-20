@@ -49,7 +49,7 @@ import { usePanelStore } from './stores/panelStore'
 import { AddMenu, APP_ABOUT, availableTabs, LockLink, PREFERENCE_ROWS, REPO_URL, SyncStatus, tabName, TABS, useContactPicker, type Tab } from './appParts'
 import { currentT, useT } from './i18n'
 import { personalBookTitle, useNamedTitle } from './components/bookTitle'
-import { useFollowDefaultTab, useTuneLook } from './components/tuneLook'
+import { useFollowDefaultTab } from './components/tuneLook'
 import { useEffectiveTheme, useThemeStore } from './stores/themeStore'
 import { phoneScreens } from './native/shell'
 import { followThemeWithStatusBar } from './native/systemBars'
@@ -99,8 +99,6 @@ export default function App() {
   // First, so everything rendered below — and the lib/ helpers it calls —
   // answers in the language on screen (see i18n/index.ts).
   const tr = useT()
-  // Tune this app's look follows the account like the rest of Tune.
-  useTuneLook()
   const init = useBookStore((s) => s.init)
   const loaded = useBookStore((s) => s.loaded)
   const editing = useBookStore((s) => s.editing)
