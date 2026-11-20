@@ -1,7 +1,8 @@
 /* eslint-disable react-refresh/only-export-components -- the swipe actions, the undo hook and the bar that shows it belong together */
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode, type TouchEvent as ReactTouchEvent } from 'react'
 import { usePhoneLayer } from '@unisim/sdk'
-import { btnSubtle } from './ui'
+import { btnDanger, btnGhost, btnSubtle } from './ui'
+import { Modal } from './Modal'
 import type { Side } from '../lib/swipe'
 import { SwipeRow } from './SwipeRow'
 import { usePhoneKit } from '../native/kit'
@@ -509,3 +510,40 @@ export function UndoBar({ title, text, onUndo }: { title: string; text?: string;
     </div>
   )
 }
+
+/**
+ * The website's Delete selected, asking first in our own words (the
+ * SelectionBar's `confirm`): the SDK's own confirm says it can't be undone,
+ * and here a bulk delete has Undo for six seconds, as a swipe's Delete does.
+ * `ask` is what the bar waits on; `ui` is the sheet, rendered by the list.
+ */
+export function useAskDelete(title: string, body: (count: number) => string) {
+  const t = useT()
+  const [asking, setAsking] = useState<{ count: number; answer: (ok: boolean) => void } | null>(null)
+  const ask = (_message: string, count: number) => new Promise<boolean>((answer) => setAsking({ count, answer }))
+  const close = (ok: boolean) => {
+    asking?.answer(ok)
+    setAsking(null)
+  }
+  const ui = asking && (
+    <Modal phone="sheet" title={title} onClose={() => close(false)}>
+      <p className="text-sm text-slate-300">{body(asking.count)}</p>
+      <div className="mt-5 flex justify-end gap-2">
+        <button type="button" className={btnGhost} onClick={() => close(false)} autoFocus>
+          {t('c.keep')}
+        </button>
+        <button type="button" className={btnDanger} onClick={() => close(true)}>
+          {t('c.delete')}
+        </button>
+      </div>
+    </Modal>
+  )
+  return { ask, ui }
+}
+
+/**
+ * The website's tick-box selection bar (SDK SelectionBar), sticky once
+ * something is ticked so Delete selected stays in reach down a long list, as
+ * Contacts' is.
+ */
+export const webSelBarWrap = (count: number) => (count > 0 ? 'sticky top-0 z-30 -mx-1 mb-2 bg-slate-950 px-1 py-1' : 'mb-2')

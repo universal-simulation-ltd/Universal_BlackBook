@@ -2,13 +2,13 @@ import { useId, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { SwipeRow } from './SwipeRow'
 import { useMove } from './MoveTo'
-import { deleteSwipe, FocusActions, pinSwipe, SelectFrame, selectAct, selectDanger, UndoBar, useHold, useLeaveSelection, useUndo } from './SwipeActions'
+import { deleteSwipe, FocusActions, pinSwipe, SelectFrame, selectAct, selectDanger, UndoBar, useAskDelete, useHold, useLeaveSelection, useUndo, webSelBarWrap } from './SwipeActions'
 import type { Side } from '../lib/swipe'
 import { Modal } from './Modal'
 import { copyText } from '../lib/clipboard'
 import { usePhoneKit } from '../native/kit'
 import { useNativeNav } from '../native/nav'
-import { useScrollHint } from '@unisim/sdk'
+import { Button, SelectCheckbox, SelectionBar, useScrollHint, useSelection } from '@unisim/sdk'
 import { showValue, type NoteTemplate } from '../lib/templates'
 import { AddTyped, ListSearch } from './ListSearch'
 import { compareNotes, matchesNote, matchesNoteTags, noteText, preview, type Note } from '../lib/notes'
@@ -142,17 +142,38 @@ export function NotesView() {
   }
   const kit = usePhoneKit()
   const say = useNativeNav((s) => s.say)
-  const copyPicked = async () => {
-    const ok = await copyText(picked.map((n) => noteText(n.title, n.details)).join('\n\n'))
+  /**
+   * The website's way to pick several (the suite rule, "Every list: select
+   * several, then act"; @unisim/sdk 0.227), as on Contacts: a tick box on every
+   * card, Select all over the list, and once something is ticked the count,
+   * Delete selected (asks, then Undo for six seconds), Pin, Copy, Move,
+   * Convert and Clear. No mode: a card still opens with a tap while others are
+   * ticked. The phone app keeps its own (hold a note, then the select bar;
+   * `selected` above), the suite's phone rule.
+   */
+  const web = !phoneScreens()
+  const wsel = useSelection(web ? shown.map((n) => n.id) : [])
+  const ticked = web ? shown.filter((n) => wsel.has(n.id)) : []
+  // Whichever of the two the Convert sheet acts on.
+  const chosen = web ? ticked : picked
+  const endSelection = () => {
+    setSelected(null)
+    wsel.clear()
+  }
+  const askDelete = useAskDelete(t('nsel.delete_title'), (n) => t.plural('nsel.delete_body', n))
+  const copyPicked = async (list: Note[] = picked) => {
+    const ok = await copyText(list.map((n) => noteText(n.title, n.details)).join('\n\n'))
     if (kit) say(ok ? t('notes.copied') : t('export.copy_failed'))
     setCopied(ok)
     setTimeout(() => setCopied(false), 2000)
   }
 
-  // A hold selects (SwipeActions ▸ useHold), and the phone's ways out.
+  // A hold selects (SwipeActions ▸ useHold), and the phone's ways out. On a
+  // touch screen on the website it ticks the card's box.
   const holdStart = useHold((id) => {
     setOpenRow(null)
-    setSelected((s) => new Set([...(s ?? []), id]))
+    if (web) wsel.setMany([id], true)
+    else setSelected((s) => new Set([...(s ?? []), id]))
   })
   useLeaveSelection(selecting, Boolean(kit), () => setSelected(null))
 
@@ -242,11 +263,46 @@ export function NotesView() {
           {/* On the phone a hold selects, as on To-do; the button sat on the
               first card there (James, 2026-10-26: "the select button clashes
               with a card"). */}
-          {!selecting && shown.length > 0 && !phoneScreens() && (
-            <div className="flex justify-end">
-              <button type="button" className={btnSubtle} onClick={() => setSelected(new Set())}>
-                {t('nsel.select')}
-              </button>
+          {web && (
+            <div className={webSelBarWrap(wsel.count)}>
+              <SelectionBar
+                sel={wsel}
+                confirm={askDelete.ask}
+                onDelete={(ids) => removeWithUndo(shown.filter((n) => ids.includes(n.id)))}
+                extra={
+                  <>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        void setPinned(
+                          ticked.map((n) => n.id),
+                          !ticked.every((n) => n.pinnedAt),
+                        )
+                        wsel.clear()
+                      }}
+                    >
+                      {ticked.length > 0 && ticked.every((n) => n.pinnedAt) ? t('todo.unpin') : t('todo.pin')}
+                    </Button>
+                    <Button size="sm" onClick={() => void copyPicked(ticked)}>
+                      {copied ? t('notes.copied') : t('notes.copy')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        moveTo.start(ticked.map((n) => n.id))
+                        wsel.clear()
+                      }}
+                    >
+                      {t('sel.move')}
+                    </Button>
+                    {templates.length > 0 && (
+                      <Button size="sm" onClick={() => setConverting(true)}>
+                        {t('nsel.convert')}
+                      </Button>
+                    )}
+                  </>
+                }
+              />
             </div>
           )}
           {selecting && (
@@ -297,10 +353,22 @@ export function NotesView() {
                       })}
                     >
                       <div className="relative h-full">
-                        <NoteRow note={n} template={tpl} tags={tagById} onOpen={() => view(n.id)} onFineTune={() => edit(n.id)} />
+                        <NoteRow
+                          note={n}
+                          template={tpl}
+                          tags={tagById}
+                          onOpen={() => view(n.id)}
+                          onFineTune={() => edit(n.id)}
+                          select={
+                            web
+                              ? { checked: wsel.has(n.id), onChange: () => wsel.toggle(n.id), label: t('nsel.select_label', { title: n.title || t('c.untitled') }) }
+                              : undefined
+                          }
+                        />
                         <FocusActions
                           actions={[
-                            { label: t('nsel.select_label', { title: n.title || t('c.untitled') }), onClick: () => setSelected(new Set([n.id])) },
+                            // The website's tick box is reachable by itself.
+                            ...(web ? [] : [{ label: t('nsel.select_label', { title: n.title || t('c.untitled') }), onClick: () => setSelected(new Set([n.id])) }]),
                             {
                               label: n.pinnedAt ? t('todo.unpin_label', { title: n.title }) : t('todo.pin_label', { title: n.title }),
                               onClick: () => void setPinned([n.id], !n.pinnedAt),
@@ -328,15 +396,16 @@ export function NotesView() {
           onUndo={() => void undo.undo()}
         />
       )}
+      {askDelete.ui}
       {converting && (
         <ConvertSheet
           templates={templates}
-          picked={picked}
+          picked={chosen}
           onClose={() => setConverting(false)}
           onPick={(templateId) => {
             setConverting(false)
-            const ids = picked.map((n) => n.id)
-            setSelected(null)
+            const ids = chosen.map((n) => n.id)
+            endSelection()
             void convert(ids, templateId).then((count) => {
               const name = templateId ? templates.find((x) => x.id === templateId)?.name ?? '' : t('tpl.plain')
               if (kit && count) say(t.plural('nsel.converted', count, { name }))
@@ -437,6 +506,7 @@ function NoteRow({
   onOpen,
   onFineTune,
   selected,
+  select,
 }: {
   note: Note
   template?: NoteTemplate
@@ -450,6 +520,11 @@ function NoteRow({
   onFineTune?: () => void
   /** In selection mode: whether it is ticked (the card is the tick box). */
   selected?: boolean
+  /**
+   * The website's tick box (the suite's select-several rule), over the card's
+   * leading corner as a sibling of the card button, as on a contact's card.
+   */
+  select?: { checked: boolean; onChange: () => void; label: string }
 }) {
   const t = useT()
   // The tags ride on the title as lights, as on a contact's card (TagDot).
@@ -475,7 +550,7 @@ function NoteRow({
       {...(selected !== undefined ? { role: 'checkbox', 'aria-checked': selected } : {})}
       className={`${orbitRow} relative flex h-full w-full flex-col gap-1 border bg-slate-900 p-3.5 text-left transition-colors hover:border-slate-700 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
         selected ? 'border-orange-500 bg-orange-500/10' : 'border-slate-800'
-      } ${selected !== undefined ? 'pl-11' : ''} ${onFineTune ? 'pr-11' : ''}`}
+      } ${selected !== undefined || select ? 'pl-11' : ''} ${onFineTune ? 'pr-11' : ''}`}
     >
       {selected !== undefined && (
         <span
@@ -522,6 +597,9 @@ function NoteRow({
       </p>
       {line && <p className="truncate text-sm text-slate-400">{line}</p>}
     </button>
+    {select && (
+      <SelectCheckbox checked={select.checked} onChange={select.onChange} label={select.label} className="absolute left-3.5 top-4" />
+    )}
     {onFineTune && (
       <button
         type="button"

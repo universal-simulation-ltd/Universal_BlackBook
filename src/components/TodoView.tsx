@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type FormEvent, type ReactNode, type TouchEvent as ReactTouchEvent } from 'react'
-import { GrowingTextarea, useDefaultView, useMediaQuery, type UseDefaultView } from '@unisim/sdk'
+import { Button, GrowingTextarea, SelectCheckbox, SelectionBar, useDefaultView, useMediaQuery, useSelection, type UseDefaultView } from '@unisim/sdk'
 import { SwipeRow } from './SwipeRow'
 import { useMove } from './MoveTo'
-import { actionSwipe, deleteSwipe, FocusActions, pinSwipe, SelectBar, SwipeGroup, SwipeItem, UndoBar, useHoldSelect, useUndo } from './SwipeActions'
+import { actionSwipe, deleteSwipe, FocusActions, pinSwipe, SelectBar, SwipeGroup, SwipeItem, UndoBar, useAskDelete, useHold, useHoldSelect, useUndo, webSelBarWrap } from './SwipeActions'
 import { usePhoneKit } from '../native/kit'
 import type { Side } from '../lib/swipe'
 import { todayParts } from '../lib/birthday'
@@ -88,8 +88,9 @@ export function TodoView() {
 
   const { drag, dragStart, gripDown } = useTodoDrag(
     (id, target, after) => void move(id, target, after),
-    // Held and let go without moving: that selects (James, 2026-10-25).
-    (id) => openSel.start(id),
+    // Held and let go without moving: that selects (James, 2026-10-25) — the
+    // phone's select bar, or on a touch screen on the website the row's tick box.
+    (id) => (web ? wsel.setMany([id], true) : openSel.start(id)),
   )
   // Once per mount, as in ContactList: a tab left open over midnight keeps
   // yesterday's "Due today" until it is reopened.
@@ -142,8 +143,47 @@ export function TodoView() {
       removeManyRef.current(gone)
     })
   }, [shakeClear, kit])
+  // The phone app's selection: hold a to-do, then the select bar (the
+  // suite's phone rule), one per list. The website has tick boxes instead.
   const openSel = useHoldSelect(open.map((x) => x.id), Boolean(kit))
   const doneSel = useHoldSelect(done.map((x) => x.id), Boolean(kit))
+  const snoozedSel = useHoldSelect(snoozed.map((x) => x.id), Boolean(kit))
+  /**
+   * The website's way to pick several (the suite rule, "Every list: select
+   * several, then act"; @unisim/sdk 0.227), as on Contacts: a tick box beside
+   * every to-do on show (the open ones, and the snoozed and done ones while
+   * their drawers are open), Select all over the list, and once something is
+   * ticked the count, Delete selected (asks, then Undo for six seconds), Pin,
+   * Done / Not done, Snooze, Move and Clear. No mode: a to-do still opens with
+   * a tap while others are ticked. Holding one on a touch screen ticks it.
+   */
+  const web = !phoneScreens()
+  const onShow = [...open, ...(showSnoozed ? snoozed : []), ...(showDone ? done : [])]
+  const wsel = useSelection(web ? onShow.map((x) => x.id) : [])
+  const ticked = web ? onShow.filter((x) => wsel.has(x.id)) : []
+  const tickedOpen = ticked.filter((x) => !x.doneAt)
+  const tickedDone = ticked.filter((x) => x.doneAt)
+  const holdTick = useHold((id) => wsel.setMany([id], true))
+  const askDelete = useAskDelete(t('tsel.delete_title'), (n) => t.plural('tsel.delete_body', n))
+  /**
+   * A to-do with the website's tick box in a column of its own before it: the
+   * row's own round box is Done, so the two must not share a corner. `hold`:
+   * a touch screen's hold ticks it (the open ones' hold is the drag's).
+   */
+  const tickable = (x: Todo, look: Look, node: ReactNode, hold = false) =>
+    web ? (
+      <div className={`flex items-start gap-1 ${look === 'card' ? 'h-full' : ''}`} onTouchStart={hold ? holdTick(x.id) : undefined}>
+        <SelectCheckbox
+          checked={wsel.has(x.id)}
+          onChange={() => wsel.toggle(x.id)}
+          label={t('nsel.select_label', { title: x.title || t('c.untitled') })}
+          className={`ml-1 shrink-0 ${look === 'card' ? 'mt-3' : 'mt-2.5'}`}
+        />
+        <div className={`min-w-0 flex-1 ${look === 'card' ? 'h-full' : ''}`}>{node}</div>
+      </div>
+    ) : (
+      node
+    )
 
   // The website's layout (lib/todoLayout.ts). Opens on the default; a tap on
   // another button is for this visit, a double tap makes it the default.
@@ -182,7 +222,7 @@ export function TodoView() {
         <SwipeItem id={x.id} select={openSel} name={x.title}>
           <TodoRow todo={x} byId={byId} today={today} look={look} />
         </SwipeItem>
-      ) : (
+      ) : tickable(x, look,
         <SwipeRow
           open={openRow?.id === x.id ? openRow.side : null}
           onOpenChange={(side) => setOpenRow(side ? { id: x.id, side } : null)}
@@ -212,12 +252,13 @@ export function TodoView() {
                 up={i > 0 ? list[i - 1].id : null}
                 down={i < list.length - 1 ? list[i + 1].id : null}
                 onDelete={() => removeWithUndo(x)}
-                onSelect={() => openSel.start(x.id)}
+                // The website's tick box is reachable by itself.
+                onSelect={web ? undefined : () => openSel.start(x.id)}
                 onSnooze={() => setSnoozing([x.id])}
               />
             }
           />
-        </SwipeRow>
+        </SwipeRow>,
       )}
     </li>
   )
@@ -295,6 +336,73 @@ export function TodoView() {
       {/* What was typed, as a new to-do's title. */}
       <AddTyped text={query} onAdd={addTyped} />
 
+      {web && (
+        <div className={webSelBarWrap(wsel.count)}>
+          <SelectionBar
+            sel={wsel}
+            confirm={askDelete.ask}
+            onDelete={(ids) => removeManyWithUndo(todos.filter((x) => ids.includes(x.id)))}
+            extra={
+              <>
+                {tickedOpen.length > 0 && (
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      for (const x of tickedOpen) void setPinned(x.id, true)
+                      wsel.clear()
+                    }}
+                  >
+                    {t('todo.pin')}
+                  </Button>
+                )}
+                {tickedOpen.length > 0 && (
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      for (const x of tickedOpen) void setDone(x.id, true)
+                      wsel.clear()
+                    }}
+                  >
+                    {t('todo.mark_done_short')}
+                  </Button>
+                )}
+                {tickedDone.length > 0 && (
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      for (const x of tickedDone) void setDone(x.id, false)
+                      wsel.clear()
+                    }}
+                  >
+                    {t('todo.not_done')}
+                  </Button>
+                )}
+                {tickedOpen.length > 0 && (
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setSnoozing(tickedOpen.map((x) => x.id))
+                      wsel.clear()
+                    }}
+                  >
+                    {t('todo.snooze')}
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    moveTo.start(ticked.map((x) => x.id))
+                    wsel.clear()
+                  }}
+                >
+                  {t('sel.move')}
+                </Button>
+              </>
+            }
+          />
+        </div>
+      )}
+
       {loaded && todos.length === 0 ? (
         <div className={`${emptyBox} px-6 py-14 text-center`}>
           <p className="text-sm text-slate-400">{phoneScreens() ? t('todo.none_phone') : t('todo.none')}</p>
@@ -355,6 +463,7 @@ export function TodoView() {
         {t('todo.order_hint')}
       </p>
       {moveTo.ui}
+      {askDelete.ui}
       {undo.item && (
         <UndoBar
           title={undo.item.length === 1 ? undo.item[0].title : ''}
@@ -379,14 +488,29 @@ export function TodoView() {
           </button>
           {showSnoozed && (
             <SwipeGroup>
+              {/* The phone's hold to select, as on the open and done ones. */}
+              <div className="mt-2">
+                <SelectBar
+                  select={snoozedSel}
+                  total={snoozed.length}
+                  actions={[
+                    { label: t('todo.wake'), onClick: (ids) => void snooze(ids, undefined) },
+                    { label: t('todo.snooze'), onClick: (ids) => setSnoozing(ids) },
+                    { label: t('sel.move'), onClick: moveTo.start },
+                    { label: t('c.delete'), danger: true, onClick: (ids) => removeManyWithUndo(snoozed.filter((x) => ids.includes(x.id))) },
+                  ]}
+                />
+              </div>
               {/* Asleep until their day: swipe right (or the hidden button)
                   wakes one now, left deletes it. */}
               <ul id={snoozedId} className={`mt-2 ${doneCls}`}>
                 {snoozed.map((x) => (
                   <li key={x.id} className={itemClass(layout, doneLook)}>
+                    {tickable(x, doneLook,
                     <SwipeItem
                       id={x.id}
                       name={x.title}
+                      select={web ? undefined : snoozedSel}
                       left={actionSwipe('wake', t('todo.wake'), t('todo.wake_label', { title: x.title }), () => void snooze([x.id], undefined))}
                       right={deleteSwipe(x.title, () => removeWithUndo(x))}
                       focus={[
@@ -396,7 +520,8 @@ export function TodoView() {
                       ]}
                     >
                       <TodoRow todo={x} byId={byId} today={today} look={doneLook} />
-                    </SwipeItem>
+                    </SwipeItem>,
+                    true)}
                   </li>
                 ))}
               </ul>
@@ -470,16 +595,18 @@ export function TodoView() {
                 <li key={x.id} className={itemClass(layout, doneLook)}>
                   {/* Done ones swipe too: left deletes (with Undo), right
                       puts it back on the list. */}
+                  {tickable(x, doneLook,
                   <SwipeItem
                     id={x.id}
-                    select={doneSel}
+                    select={web ? undefined : doneSel}
                     name={x.title}
                     left={actionSwipe('undone', t('todo.not_done'), t('todo.mark_undone', { title: x.title }), () => void setDone(x.id, false))}
                     right={deleteSwipe(x.title, () => removeWithUndo(x))}
                     focus={[{ label: t('todo.delete_label', { title: x.title }), onClick: () => removeWithUndo(x) }]}
                   >
                     <TodoRow todo={x} byId={byId} today={today} look={doneLook} />
-                  </SwipeItem>
+                  </SwipeItem>,
+                  true)}
                 </li>
               ))}
             </ul>
@@ -489,7 +616,7 @@ export function TodoView() {
       )}
 
       {/* Then what the same search finds on the other tabs (James, 2026-11-18). */}
-      {!openSel.selecting && !doneSel.selecting && <Elsewhere here="todos" query={query} />}
+      {!openSel.selecting && !doneSel.selecting && !snoozedSel.selecting && <Elsewhere here="todos" query={query} />}
 
       {editing && <TodoForm key={editing} id={editing} />}
       {snoozing && (
@@ -644,14 +771,14 @@ function useTodoDrag(onDrop: (id: string, targetId: string, after: boolean) => v
  * VoiceOver, TalkBack and the keyboard reach Move up, Move down, Pin and
  * Delete without a gesture.
  */
-function RowActions({ todo, up, down, onDelete, onSelect, onSnooze }: { todo: Todo; up: string | null; down: string | null; onDelete: () => void; onSelect: () => void; onSnooze: () => void }) {
+function RowActions({ todo, up, down, onDelete, onSelect, onSnooze }: { todo: Todo; up: string | null; down: string | null; onDelete: () => void; onSelect?: () => void; onSnooze: () => void }) {
   const t = useT()
   const move = useTodoStore((s) => s.move)
   const setPinned = useTodoStore((s) => s.setPinned)
   return (
     <FocusActions
       actions={[
-        { label: t('nsel.select_label', { title: todo.title }), onClick: onSelect },
+        ...(onSelect ? [{ label: t('nsel.select_label', { title: todo.title }), onClick: onSelect }] : []),
         ...(up ? [{ label: t('todo.move_up', { title: todo.title }), onClick: () => void move(todo.id, up, false) }] : []),
         ...(down ? [{ label: t('todo.move_down', { title: todo.title }), onClick: () => void move(todo.id, down, true) }] : []),
         {

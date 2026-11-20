@@ -106,6 +106,15 @@ into a tick box instead. Delete asks first and names who is going, then offers
 are acted on — narrow the filter after ticking and the ones filtered out are
 left alone.
 
+To-do, Notes and Places work the same way on the website (2026-11-20): a tick
+box beside every to-do (in its own column, since the row's round box is Done),
+on every note card and before every place, Select all, and once something is
+ticked the count, **Delete selected** (asks how many, then Undo for six
+seconds), the list's own actions (To-do: Pin, Done / Not done, Snooze, Move;
+Notes: Pin / Unpin, Copy, Move, Convert; Places: Pin / Unpin, Move) and Clear.
+To-do's tick boxes cover the snoozed and done ones while their drawers are open.
+The phone app keeps hold to select in all three, snoozed to-dos included.
+
 **Everything at once:** Actions ▸ Advanced ▸ **Delete all data** clears this
 device completely: every contact, tag, list and to-do, the PIN, your settings
 and the remembered vault key. You type `DELETE` to confirm, and BlackBook
@@ -243,13 +252,14 @@ keyboard. All of it is `src/components/SwipeActions.tsx` (`SwipeGroup`,
 **Hold to select** (same day): in every one of these lists a still finger for
 half a second selects the row and opens a bar with "N selected", Select all and
 the list's bulk actions (People: Tag, Hide/Show, Delete; To-do: Pin, Done,
-Delete; done To-dos: Not done, Delete; Notes: Pin/Unpin, Copy, Delete; Lists:
+Delete; done To-dos: Not done, Delete; snoozed To-dos: Wake, Snooze, Move,
+Delete; Places: Pin, Move, Delete; Notes: Pin/Unpin, Copy, Delete; Lists:
 Copy emails, Delete; a list's people: Take off; Tags, Note templates and
 notifications: Delete; template fields: Remove; linked notes: Pin, Unlink;
 linked people: Unlink; import preview: Leave out). Done, Android's back or a
 swipe in from the left edge leaves. In To-do a hold that moves drags instead.
-Every row has a Select button on focus, and Shift-click ticks a run on the
-website. `useHold`, `useHoldSelect`, `useLeaveSelection` and `SelectBar` in
+Every row has a Select button on focus. On the website To-do, Notes, Places
+and People have tick boxes instead (above). `useHold`, `useHoldSelect`, `useLeaveSelection` and `SelectBar` in
 `SwipeActions.tsx`.
 
 The confirmations that stay are the ones a person reaches on purpose: Delete
@@ -590,7 +600,7 @@ suite registry — see `Docs_UNI_SIM/dev-preview.md`.
 | `npm run dev` | Vite dev server |
 | `npm test` | Vitest — the CSV parser, the search/sort, the birthday maths, the phone-contact mapping, the vault crypto, the backup file (round trip, password, hostile data, merge), the swipe geometry and the PIN lock (that it re-locks on every fresh opening, and that the reset takes the book and the remembered vault key with it) |
 | `BLACKBOOK_LIVE=1 npm test -- cloud.live` | The two-device vault round trip, against the REAL server. Not part of `npm test`: it signs in anonymously to production, exercises RLS, the primary-key conflict and the compare-and-set, then deletes what it made. |
-| `npm run test:backup` | Builds, then drives the built app in Chromium: saves a backup with and without a password, clears the device, opens it (wrong password refused), checks contacts and to-dos are back, that adding the same backup duplicates nothing, that a hostile file is tamed, that the Online backup row and sign-in are offered to a signed-out visitor, and no console error. Playwright is borrowed from `../Universal_Beam/node_modules/playwright` (or set `PLAYWRIGHT`). |
+| `npm run test:backup` | Builds, then drives the built app in Chromium: saves a backup with and without a password, clears the device, opens it (wrong password refused), checks contacts and to-dos are back, that adding the same backup duplicates nothing, that a hostile file is tamed, that the Online backup row and (in Tune this app) sign-in are offered to a signed-out visitor, and no console error. Playwright is borrowed from `../Universal_Beam/node_modules/playwright` (or set `PLAYWRIGHT`). |
 | `npm run lint` | ESLint |
 | `npm run build` | Typecheck + production build |
 | `npm run deploy` | Build and `wrangler deploy` |

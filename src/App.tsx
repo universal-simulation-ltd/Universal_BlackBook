@@ -65,6 +65,16 @@ import { followThemeWithStatusBar } from './native/systemBars'
 // insets, so on a notched phone held sideways the navbar keeps clear of the
 // notch along with everything it lines up with.
 const CONTAINER = 'gutter mx-auto w-full max-w-7xl'
+/**
+ * The tab tray's columns by how many tabs there are, and how wide it may grow
+ * (about 7rem a tab). Written out whole so Tailwind sees every class.
+ */
+const TRAY_COLS: Record<number, string> = {
+  2: 'grid-cols-2 sm:max-w-xs',
+  3: 'grid-cols-3 sm:max-w-sm',
+  4: 'grid-cols-4 sm:max-w-md',
+  5: 'grid-cols-5 sm:max-w-xl',
+}
 
 /**
  * The phone app's own screens (src/native/, lazy-loaded — the website never
@@ -349,9 +359,13 @@ export default function App() {
             // BRANDING.md → "On a phone, navigation sits at the bottom"); from
             // 768px up it stays here. The website only: the phone app returns
             // NativeApp above, with its own bottom tab bar, and never gets here.
-            className={`u-tabs u-tabs--dock mb-5 grid w-full ${
-              tabs.length === 4 ? 'grid-cols-4 sm:max-w-md' : tabs.length === 3 ? 'grid-cols-3 sm:max-w-sm' : 'grid-cols-2 sm:max-w-xs'
-            }`}
+            //
+            // One column per tab, all on one row. Five (People, Places,
+            // Lists with Email lists on, To-do, Notes) used to fall through to
+            // the two-column case and stack in three rows (2026-11-20). Below
+            // 768px the dock lays them out as a flex row instead (they fit at
+            // 390px, about 72px each), so these only shape the wider tray.
+            className={`u-tabs u-tabs--dock mb-5 grid w-full ${TRAY_COLS[Math.min(tabs.length, 5)] ?? TRAY_COLS[2]}`}
           >
             {tabs.map((t) => (
               <button

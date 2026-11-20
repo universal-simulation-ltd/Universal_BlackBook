@@ -1,4 +1,4 @@
-// End-to-end check of the backup file (Advanced ▸ Backup, import & export),
+// End-to-end check of the backup file (Advanced ▸ Backup & export),
 // the way to move or keep a copy of a book without an account, beside the
 // optional Universal ID sign-in and its encrypted online vault.
 //
@@ -6,7 +6,7 @@
 //
 // Serves the built `dist/` with `vite preview`, then in Chromium: seeds a book
 // with contacts and to-dos, saves a backup with and without a password, clears
-// the device, opens the protected backup (a wrong password refused, the right
+// the device, opens the protected backup (Import ▸ Restore a BlackBook backup) (a wrong password refused, the right
 // one accepted), replaces everything and checks contacts AND to-dos are back
 // (after a reload too); opens the plain backup with "Add to what's here" and
 // checks nothing is duplicated; tries a hostile file, a file from another app
@@ -125,11 +125,21 @@ try {
   const heading = () => page.getByRole('heading', { name: 'Your BlackBook' }).waitFor()
   const openPanel = async () => {
     await page.getByRole('button', { name: 'Actions · Profile' }).click()
-    const row = page.getByText('Backup, import & export', { exact: true })
+    const row = page.getByText('Backup & export', { exact: true })
     // The Advanced section remembers being open, so only open it when shut.
     if (!(await row.isVisible())) await page.getByRole('button', { name: 'Advanced' }).click()
     await row.click()
     await page.getByRole('heading', { name: 'Backup file' }).waitFor()
+  }
+  // Opening a backup is Import ▸ Restore a BlackBook backup since 2026-10-26
+  // (ImportPanel: "one door for everything coming in"); Backup & export only saves.
+  const openRestore = async () => {
+    await page.getByRole('button', { name: 'Actions · Profile' }).click()
+    const row = page.getByText('Import', { exact: true })
+    if (!(await row.isVisible())) await page.getByRole('button', { name: 'Advanced' }).click()
+    await row.click()
+    await page.getByRole('button', { name: /Restore a BlackBook backup/ }).click()
+    await page.getByRole('heading', { name: 'Restore a BlackBook backup' }).waitFor()
   }
   const closePanel = () => page.getByRole('dialog').getByRole('button', { name: /close/i }).first().click()
   const picker = () => page.locator('[data-testid=backup-file-input]')
@@ -165,13 +175,20 @@ try {
   check(await page.getByText('Ada Lovelace').first().isVisible(), 'seeded book shows its contacts')
 
   // ── 2. Signed out: sign-in and Online backup are offered ───────────────────
+  // Sign-in lives in Tune this app (the suite rule since 2026-10-26: "Signed
+  // in = personalised; sign-in lives in Tune"), not in the Actions menu.
   await page.getByRole('button', { name: 'Actions · Profile' }).click()
-  await page.getByRole('button', { name: 'Advanced' }).click()
-  const menuText = await page.locator('body').innerText()
-  check(/Sign in|Log in/i.test(menuText), 'the menu offers sign-in to a signed-out visitor')
+  await page.getByText('Tune this app', { exact: true }).click()
+  const tune = page.getByRole('dialog', { name: 'Tune this app' })
+  check(await tune.getByRole('button', { name: /^Sign in/ }).isVisible(), 'Tune this app offers sign-in to a signed-out visitor')
+  await page.keyboard.press('Escape')
+  await tune.waitFor({ state: 'hidden' })
+  await page.getByRole('button', { name: 'Actions · Profile' }).click()
+  const backupRow = page.getByText('Backup & export', { exact: true })
+  if (!(await backupRow.isVisible())) await page.getByRole('button', { name: 'Advanced' }).click()
   const onlineRow = page.getByText('Online backup', { exact: true })
   check(await onlineRow.isVisible(), 'Advanced ▸ Online backup row is there')
-  check(await page.getByText('Backup, import & export', { exact: true }).isVisible(), 'Advanced ▸ Backup, import & export row is there')
+  check(await backupRow.isVisible(), 'Advanced ▸ Backup & export row is there')
   await onlineRow.click()
   await page.getByRole('heading', { name: 'Online backup' }).waitFor()
   check(
@@ -221,7 +238,7 @@ try {
   check(true, 'device cleared: empty book')
 
   // ── 6. Open the protected backup: wrong password, then the right one ───────
-  await openPanel()
+  await openRestore()
   await picker().setInputFiles(lockedPath)
   await page.getByText('This backup has a password').waitFor()
   await page.locator('#backup-open-password').fill('wrong one')
@@ -230,7 +247,7 @@ try {
   check((await readDb(page)).contacts.length === 0, 'nothing changed after a wrong password')
   await page.locator('#backup-open-password').fill('correct horse')
   await page.getByRole('button', { name: 'Open', exact: true }).click()
-  await page.getByText(/holds 2 contacts, 2 to-dos, 0 notes and 1 tag/).waitFor()
+  await page.getByText(/holds 2 people, 2 to-dos, 0 notes and 1 tag/).waitFor()
   check(true, 'right password opens it and says what it holds')
   await page.getByRole('button', { name: 'Replace everything' }).click()
   await page.getByText(/This deletes the/).waitFor()
@@ -252,7 +269,7 @@ try {
   await page.getByRole('tab', { name: 'People' }).click()
 
   // ── 7. Add the plain backup to what is here: nothing is duplicated ─────────
-  await openPanel()
+  await openRestore()
   await picker().setInputFiles(plainPath)
   await page.getByRole('button', { name: "Add to what's here" }).click()
   await page.getByText(/nothing new to add/).waitFor()
@@ -262,7 +279,7 @@ try {
   // ── 8. Files that are not a BlackBook backup ───────────────────────────────
   const notJson = join(tmp, 'notes.json')
   writeFileSync(notJson, 'hello, not json')
-  await openPanel()
+  await openRestore()
   await picker().setInputFiles(notJson)
   check(await alertSays(/isn't a file this app saved/i), 'a file that is not a backup is refused')
   const wrongApp = join(tmp, 'wrong.json')

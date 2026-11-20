@@ -1,7 +1,7 @@
 import { useId, useMemo, useState, type FormEvent } from 'react'
 import { Capacitor } from '@capacitor/core'
-import { GrowingTextarea } from '@unisim/sdk'
-import { deleteSwipe, pinSwipe, SelectBar, SwipeGroup, SwipeItem, UndoBar, useHoldSelect, useUndo } from './SwipeActions'
+import { Button, GrowingTextarea, SelectCheckbox, SelectionBar, useSelection } from '@unisim/sdk'
+import { deleteSwipe, pinSwipe, SelectBar, SwipeGroup, SwipeItem, UndoBar, useAskDelete, useHold, useHoldSelect, useUndo, webSelBarWrap } from './SwipeActions'
 import { useMove } from './MoveTo'
 import { usePhoneKit } from '../native/kit'
 import { isList } from '../lib/lists'
@@ -85,7 +85,21 @@ export function PlacesView() {
         .sort((a, b) => comparePlaces(a, b, t.locale)),
     [places, activeFilter, query, byId, t.locale],
   )
+  // The phone app's selection: hold a place, then the select bar (the
+  // suite's phone rule). The website has tick boxes instead (below).
   const sel = useHoldSelect(shown.map((p) => p.id), Boolean(kit))
+  /**
+   * The website's way to pick several (the suite rule, "Every list: select
+   * several, then act"; @unisim/sdk 0.227), as on Contacts: a tick box on every
+   * place, Select all over the list, and once something is ticked the count,
+   * Delete selected (asks, then Undo for six seconds), Pin, Move and Clear.
+   * Holding a place on a touch screen ticks it.
+   */
+  const web = !phoneScreens()
+  const wsel = useSelection(web ? shown.map((p) => p.id) : [])
+  const ticked = web ? shown.filter((p) => wsel.has(p.id)) : []
+  const holdTick = useHold((id) => wsel.setMany([id], true))
+  const askDelete = useAskDelete(t('psel.delete_title'), (n) => t.plural('psel.delete_body', n))
 
   return (
     <div className="space-y-4">
@@ -150,6 +164,38 @@ export function PlacesView() {
         </p>
       ) : (
         <>
+          {web ? (
+            <div className={webSelBarWrap(wsel.count)}>
+              <SelectionBar
+                sel={wsel}
+                confirm={askDelete.ask}
+                onDelete={(ids) => removeManyWithUndo(shown.filter((p) => ids.includes(p.id)))}
+                extra={
+                  <>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        const pin = !ticked.every((p) => p.pinnedAt)
+                        for (const p of ticked) void setPinned(p.id, pin)
+                        wsel.clear()
+                      }}
+                    >
+                      {ticked.length > 0 && ticked.every((p) => p.pinnedAt) ? t('todo.unpin') : t('todo.pin')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        moveTo.start(ticked.map((p) => p.id))
+                        wsel.clear()
+                      }}
+                    >
+                      {t('sel.move')}
+                    </Button>
+                  </>
+                }
+              />
+            </div>
+          ) : (
           <SelectBar
             select={sel}
             total={shown.length}
@@ -159,14 +205,28 @@ export function PlacesView() {
               { label: t('c.delete'), danger: true, onClick: (ids) => removeManyWithUndo(shown.filter((p) => ids.includes(p.id))) },
             ]}
           />
+          )}
           <SwipeGroup>
             <ul className="max-w-4xl" aria-describedby={hintId}>
               {shown.map((p) => (
-                <li key={p.id} className="border-b border-slate-800/70">
+                <li
+                  key={p.id}
+                  className={`border-b border-slate-800/70 ${web ? 'flex items-center gap-1' : ''}`}
+                  onTouchStart={web ? holdTick(p.id) : undefined}
+                >
+                  {web && (
+                    <SelectCheckbox
+                      checked={wsel.has(p.id)}
+                      onChange={() => wsel.toggle(p.id)}
+                      label={t('nsel.select_label', { title: p.name || t('c.unnamed') })}
+                      className="ml-2 shrink-0"
+                    />
+                  )}
+                  <div className={web ? 'min-w-0 flex-1' : 'contents'}>
                   <SwipeItem
                     id={p.id}
                     name={p.name}
-                    select={sel}
+                    select={web ? undefined : sel}
                     left={pinSwipe(Boolean(p.pinnedAt), p.name, () => void setPinned(p.id, !p.pinnedAt))}
                     right={deleteSwipe(p.name, () => removeWithUndo(p))}
                     focus={[
@@ -176,6 +236,7 @@ export function PlacesView() {
                   >
                     <PlaceRow place={p} byId={byId} onOpen={() => edit(p.id)} />
                   </SwipeItem>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -186,6 +247,7 @@ export function PlacesView() {
         {t('place.hint')}
       </p>
       {moveTo.ui}
+      {askDelete.ui}
       {undo.item && (
         <UndoBar
           title={undo.item.length === 1 ? undo.item[0].name : ''}
