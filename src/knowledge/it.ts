@@ -123,7 +123,7 @@ Le etichette sono le tue categorie personali, come Famiglia, Lavoro o Club del l
 
 ## Liste email
 
-Se attivi le liste email in **Regola questa app**, puoi tenere gruppi di persone a cui scrivi insieme. Una lista è un tipo di etichetta. Copiando una lista ottieni una riga di nomi e indirizzi pronta da incollare nel campo A di Gmail, Outlook o Apple Mail. Chi non ha un indirizzo email viene escluso, e un indirizzo ripetuto viene incluso una sola volta.
+Se mostri la scheda Liste (il suo occhio in Ordine delle schede, in **Regola questa app**), puoi tenere gruppi di persone a cui scrivi insieme. Una lista è un tipo di etichetta. Copiando una lista ottieni una riga di nomi e indirizzi pronta da incollare nel campo A di Gmail, Outlook o Apple Mail. Chi non ha un indirizzo email viene escluso, e un indirizzo ripetuto viene incluso una sola volta.
 
 ## Nascondere qualcuno dall’elenco
 

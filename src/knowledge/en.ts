@@ -123,7 +123,7 @@ Tags are your own labels, such as Family, Work or Book club. A new book starts w
 
 ## Email lists
 
-If you turn on email lists in **Tune this app**, you can keep groups of people you email together. A list is a kind of tag. Copying a list gives you a line of names and addresses ready to paste into the To field of Gmail, Outlook or Apple Mail. People without an email address are left out, and an address that appears twice is included once.
+If you show the Lists tab (its eye under Tab order in **Tune this app**), you can keep groups of people you email together. A list is a kind of tag. Copying a list gives you a line of names and addresses ready to paste into the To field of Gmail, Outlook or Apple Mail. People without an email address are left out, and an address that appears twice is included once.
 
 ## Hiding someone from the list
 

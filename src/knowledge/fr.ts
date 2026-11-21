@@ -123,7 +123,7 @@ Les étiquettes sont vos propres libellés, comme Famille, Travail ou Club de le
 
 ## Listes d’e-mails
 
-Si vous activez les listes d’e-mails dans **Régler cette application**, vous pouvez garder des groupes de personnes à qui vous écrivez ensemble. Une liste est un type d’étiquette. Copier une liste vous donne une ligne de noms et d’adresses prête à coller dans le champ À de Gmail, Outlook ou Apple Mail. Les personnes sans adresse e-mail sont laissées de côté, et une adresse présente deux fois n’est incluse qu’une fois.
+Si vous affichez l’onglet Listes (son œil sous Ordre des onglets dans **Régler cette application**), vous pouvez garder des groupes de personnes à qui vous écrivez ensemble. Une liste est un type d’étiquette. Copier une liste vous donne une ligne de noms et d’adresses prête à coller dans le champ À de Gmail, Outlook ou Apple Mail. Les personnes sans adresse e-mail sont laissées de côté, et une adresse présente deux fois n’est incluse qu’une fois.
 
 ## Masquer quelqu’un de la liste
 

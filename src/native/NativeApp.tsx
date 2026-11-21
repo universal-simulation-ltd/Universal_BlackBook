@@ -20,8 +20,8 @@
 // clears it.
 
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
-import { withShownOrder } from '../lib/tabs'
-import { requestSearch, useDefaultView, useTabReorder } from '@unisim/sdk'
+import { TAB_SWITCH, withShownOrder } from '../lib/tabs'
+import { requestSearch, toggleTabInOrder, useDefaultView, useTabReorder } from '@unisim/sdk'
 import { availableTabs, LockLink, SyncStatus, useContactPicker, type Tab } from '../appParts'
 import { CloudPanel } from '../components/CloudPanel'
 import { ContactForm } from '../components/ContactForm'
@@ -68,18 +68,6 @@ import './native.css'
 const MapView = lazy(() => import('../components/MapView').then((m) => ({ default: m.MapView })))
 
 type PhoneTab = Tab | 'tune'
-
-/**
- * The tabs a switch in Tune turns off, and that switch: what the bin can take.
- * Every tab now, Contacts too (James, 2026-10-26); the last one shown stays.
- */
-const TAB_SWITCH: Record<Tab, 'emailLists' | 'todos' | 'notes' | 'contacts' | 'places'> = {
-  contacts: 'contacts',
-  places: 'places',
-  lists: 'emailLists',
-  todos: 'todos',
-  notes: 'notes',
-}
 
 const TAB_LABEL: Record<PhoneTab, Key> = { contacts: 'tab_contacts', places: 'tab_places', lists: 'tab_lists', todos: 'tab_todos', notes: 'tab_notes', tune: 'tab_tune' }
 const TAB_ICON: Record<PhoneTab, () => JSX.Element> = { contacts: IconBook, places: IconPlace, lists: IconLists, todos: IconTodo, notes: IconNote, tune: IconTune }
@@ -142,12 +130,16 @@ export default function NativeApp({ openCloud }: { openCloud: () => void }) {
   // switch off can also be dropped on the bin that rises above the bar, which
   // switches it off (James, 2026-10-26, a suite rule), with Undo. The gesture
   // is the SDK phone kit's useTabReorder (moved there from here, 0.229.0).
-  const binned = useUndo<Tab>(async (x) => setSettings({ [TAB_SWITCH[x]]: true }))
+  // A binned tab goes where the eye in Tune ▸ Tab order puts a hidden one, the
+  // bottom of the Hidden group (2026-11-20), and Undo puts the order back too.
+  const beforeBin = useRef<Tab[] | null>(null)
+  const binned = useUndo<Tab>(async (x) => setSettings({ [TAB_SWITCH[x]]: true, ...(beforeBin.current && { tabOrder: beforeBin.current }) }))
   const reorder = useTabReorder<Tab>({
     tabs: shownTabs,
     onReorder: (order) => setSettings({ tabOrder: withShownOrder(tabOrder, order) }),
     onBin: (x) => {
-      setSettings({ [TAB_SWITCH[x]]: false })
+      beforeBin.current = tabOrder
+      setSettings({ [TAB_SWITCH[x]]: false, tabOrder: toggleTabInOrder(tabOrder, x, true, (y) => !shownTabs.includes(y)) })
       binned.deleted(x)
     },
   })

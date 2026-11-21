@@ -11,6 +11,21 @@ export const TABS = ['contacts', 'places', 'lists', 'todos', 'notes'] as const
 export type Tab = (typeof TABS)[number]
 
 /**
+ * The setting that shows each tab: what the eye in Tune ▸ Tab order and the
+ * bin on the phone's tab bar both switch (one source of truth). Every tab can
+ * go on the phone (James, 2026-10-26); the website always shows Contacts.
+ * `emailLists` also brings Email list to Add new, and Copy emails and Export
+ * CSV, with the Lists tab.
+ */
+export const TAB_SWITCH = {
+  contacts: 'contacts',
+  places: 'places',
+  lists: 'emailLists',
+  todos: 'todos',
+  notes: 'notes',
+} as const satisfies Record<Tab, string>
+
+/**
  * A stored order, made whole: unknown names dropped, each tab once, and any
  * tab missing from it (one added after the order was saved) put back just
  * after its neighbour in the default order. Hidden tabs stay in the order, so

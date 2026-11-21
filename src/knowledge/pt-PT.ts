@@ -123,7 +123,7 @@ As etiquetas são rótulos seus, como Família, Trabalho ou Clube de leitura. Um
 
 ## Listas de email
 
-Se ativar as listas de email em **Ajustar esta aplicação**, pode manter grupos de pessoas a quem escreve em conjunto. Uma lista é um tipo de etiqueta. Copiar uma lista dá-lhe uma linha de nomes e endereços pronta a colar no campo Para do Gmail, do Outlook ou do Apple Mail. As pessoas sem email ficam de fora, e um endereço repetido entra apenas uma vez.
+Se mostrar o separador Listas (o olho dele em Ordem dos separadores, em **Ajustar esta aplicação**), pode manter grupos de pessoas a quem escreve em conjunto. Uma lista é um tipo de etiqueta. Copiar uma lista dá-lhe uma linha de nomes e endereços pronta a colar no campo Para do Gmail, do Outlook ou do Apple Mail. As pessoas sem email ficam de fora, e um endereço repetido entra apenas uma vez.
 
 ## Ocultar alguém da lista
 

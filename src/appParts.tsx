@@ -6,7 +6,7 @@ import { useDefaultView, useMediaQuery, type AboutAppConfig } from '@unisim/sdk'
 // lockfile the first time anyone upgrades anything, and a credits list naming a
 // package we removed is worse than no list at all.
 import credits from './generated/credits.json'
-import { EmailListsPreference } from './components/EmailListsPreference'
+import { AppSwitchesPreference } from './components/AppSwitchesPreference'
 import { FormFieldsPreference } from './components/FormFieldsPreference'
 import { TemplatesPreference } from './components/TemplateManager'
 import { TabOrderPreference } from './components/TabOrderPreference'
@@ -39,11 +39,13 @@ export const tabName = (t: Translator, tab: Tab) => t(TAB_KEYS[tab])
 /** BlackBook's own rows in Tune this app — in the ⚙ menu's copy and in ours (see `TuneThisApp`). */
 export const PREFERENCE_ROWS = (
   <>
-    <EmailListsPreference />
+    <AppSwitchesPreference />
+    {/* Which tabs show (the eye) and their order, then which one opens:
+        the tab rows together (James, 2026-11-20). */}
+    <TabOrderPreference />
     <OpensOnPreference />
     {/* The phone's To-do is always its one-column list. */}
     <TodoLayoutPreference />
-    <TabOrderPreference />
     <FormFieldsPreference />
     {/* The phone has its own row in Tune ▸ Your book. */}
     {!phoneScreens() && <TemplatesPreference />}
@@ -212,8 +214,9 @@ export function useContactPicker() {
 }
 
 /**
- * The tabs the landing screen shows, given Tune this app ▸ Email lists, ▸
- * To-do and ▸ Notes, and on the phone ▸ Contacts (the website always has it).
+ * The tabs the landing screen shows, in their order, given the switch for
+ * each (Tune this app ▸ Tab order's eye, or the phone's bin); the website
+ * always has Contacts.
  */
 export function availableTabs(emailLists: boolean, todos: boolean, notes = false, order: readonly Tab[] = TABS, contacts = true, places = false): Tab[] {
   const on: Record<Tab, boolean> = { contacts, places, lists: emailLists, todos, notes }

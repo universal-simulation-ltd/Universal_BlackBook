@@ -123,7 +123,7 @@ Etiketler Aile, İş veya Kitap kulübü gibi size ait adlardır. Yeni bir rehbe
 
 ## E-posta listeleri
 
-**Bu uygulamayı ayarla** bölümünde e-posta listelerini açarsanız, birlikte e-posta gönderdiğiniz kişilerden gruplar oluşturabilirsiniz. Liste bir tür etikettir. Bir listeyi kopyaladığınızda Gmail, Outlook veya Apple Mail’in Kime alanına yapıştırmaya hazır bir ad ve adres satırı elde edersiniz. E-posta adresi olmayan kişiler dışarıda kalır, iki kez geçen bir adres yalnızca bir kez eklenir.
+**Bu uygulamayı ayarla** bölümündeki Sekme sırası'nda göz simgesiyle Listeler sekmesini gösterirseniz, birlikte e-posta gönderdiğiniz kişilerden gruplar oluşturabilirsiniz. Liste bir tür etikettir. Bir listeyi kopyaladığınızda Gmail, Outlook veya Apple Mail’in Kime alanına yapıştırmaya hazır bir ad ve adres satırı elde edersiniz. E-posta adresi olmayan kişiler dışarıda kalır, iki kez geçen bir adres yalnızca bir kez eklenir.
 
 ## Birini listeden gizlemek
 

@@ -123,7 +123,7 @@ Schlagwörter sind Ihre eigenen Bezeichnungen, etwa Familie, Arbeit oder Buchclu
 
 ## E-Mail-Listen
 
-Wenn Sie E-Mail-Listen unter **Diese App anpassen** einschalten, können Sie Gruppen von Personen führen, denen Sie gemeinsam schreiben. Eine Liste ist eine Art Schlagwort. Wenn Sie eine Liste kopieren, erhalten Sie eine Zeile mit Namen und Adressen, die Sie direkt in das An-Feld von Gmail, Outlook oder Apple Mail einfügen können. Personen ohne E-Mail-Adresse werden ausgelassen, und eine doppelte Adresse erscheint nur einmal.
+Wenn Sie den Tab Listen einblenden (sein Auge unter Reihenfolge der Tabs in **Diese App anpassen**), können Sie Gruppen von Personen führen, denen Sie gemeinsam schreiben. Eine Liste ist eine Art Schlagwort. Wenn Sie eine Liste kopieren, erhalten Sie eine Zeile mit Namen und Adressen, die Sie direkt in das An-Feld von Gmail, Outlook oder Apple Mail einfügen können. Personen ohne E-Mail-Adresse werden ausgelassen, und eine doppelte Adresse erscheint nur einmal.
 
 ## Jemanden aus der Liste ausblenden
 
