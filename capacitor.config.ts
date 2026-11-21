@@ -24,7 +24,8 @@ const config: CapacitorConfig = {
   // pads by, exactly as on iOS. On an older WebView, where those env values
   // read 0, it pads the web view natively instead and the strips show the
   // WINDOW background: values/styles.xml pins it to the phone app's paper,
-  // and WindowThemePlugin repaints it to the leather for Dark.
+  // and @unisim/sdk's UnisimWindowTheme plugin repaints it to the leather for
+  // Dark.
   plugins: {
     SystemBars: {
       // Dark glyphs, for the app's default LIGHT paper ("LIGHT" means "for a

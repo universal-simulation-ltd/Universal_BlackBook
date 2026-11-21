@@ -6,9 +6,11 @@
      which it does on a WebView older than Chromium 140; those strips show the
      WINDOW's background, not the page's. Two colours, one per app theme: the
      phone app's paper and its leather (`html.bb-phone` in src/index.css). The
-     light one is the theme's own (the app's default); WindowThemePlugin
-     switches to the dark one when the app is set to Dark, or to Match my
-     device on a phone in dark mode. -->
+     light one is the theme's own (the app's default); @unisim/sdk's
+     UnisimWindowTheme plugin switches to the dark one when the app is set to
+     Dark, or to Match my device on a phone in dark mode. These override the
+     SDK's own defaults of the same names (its navbar's #ffffff / #0f172a):
+     the app's win when resources are merged. -->
 <resources>
     <color name="unisimWindowBackground">#faf7f1</color>
     <color name="unisimWindowBackgroundDark">#111010</color>
