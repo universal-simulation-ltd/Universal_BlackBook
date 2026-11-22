@@ -11,7 +11,7 @@ import { addDays, compareDaily, compareDone, compareOpen, compareSnoozed, daysUn
 import { newId } from '../lib/id'
 import type { Tag } from '../lib/types'
 import { useBookStore } from '../stores/bookStore'
-import { useTodoStore, type TodoDraft } from '../stores/todoStore'
+import { draftChanged, draftOnClose, useTodoStore, type TodoDraft } from '../stores/todoStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { listenForShake } from '../lib/shake'
 import { Modal } from './Modal'
@@ -1580,7 +1580,7 @@ function TodoForm({ id }: { id: string }) {
   const save = useTodoStore((s) => s.save)
   const remove = useTodoStore((s) => s.remove)
   const close = useTodoStore((s) => s.edit)
-  const [draft, setDraft] = useState<TodoDraft>(() => ({
+  const [start] = useState<TodoDraft>(() => ({
     id: existing?.id,
     title: existing?.title ?? useTodoStore.getState().prefillTitle ?? '',
     details: existing?.details ?? '',
@@ -1590,6 +1590,10 @@ function TodoForm({ id }: { id: string }) {
     ...(existing?.snoozedUntil ? { snoozedUntil: existing.snoozedUntil } : {}),
     ...(existing?.daily ? { daily: true } : {}),
   }))
+  const [draft, setDraft] = useState<TodoDraft>(start)
+  const draftRef = useRef(draft)
+  draftRef.current = draft
+  const changed = Boolean(existing) && draftChanged(start, draft)
   // Once per open form, like the tab's own.
   const today = useMemo(() => todayParts(), [])
   const snoozeId = useId()
@@ -1605,13 +1609,28 @@ function TodoForm({ id }: { id: string }) {
   const patch = (p: Partial<TodoDraft>) => setDraft((d) => ({ ...d, ...p }))
   const valid = draft.title.trim() !== ''
 
+  // Fine-tune saves as it closes, however it closes: a click off it, Escape,
+  // the ✕, Close or the phone's back (owner, 2026-11-22: "Autosave the entry
+  // if you click off the popup, no need for a save button just a close and
+  // then discard changes when edited"). A new to-do still has Add and Cancel.
+  const leave = () => {
+    if (!existing) return close(null)
+    // A box that still has focus (the group's add box) hands over what is
+    // typed in it first; the flush puts that in the draft before it is read.
+    flushSync(() => (document.activeElement as HTMLElement | null)?.blur?.())
+    const next = draftOnClose(start, draftRef.current)
+    if (next) void save(next)
+    else close(null)
+  }
+
   const submit = (e: FormEvent) => {
     e.preventDefault()
-    if (valid) void save(draft)
+    if (existing) leave()
+    else if (valid) void save(draft)
   }
 
   return (
-    <Modal title={existing ? t('todo.fine_tune') : t('add_todo')} onClose={() => close(null)}>
+    <Modal title={existing ? t('todo.fine_tune') : t('add_todo')} onClose={leave}>
       <form onSubmit={submit} className="space-y-4">
         <div>
           <label htmlFor={titleId} className={label}>
@@ -1714,14 +1733,28 @@ function TodoForm({ id }: { id: string }) {
           ) : (
             <span />
           )}
-          <div className="flex gap-2">
-            <button type="button" className={btnGhost} onClick={() => close(null)}>
-              {t('c.cancel')}
-            </button>
-            <button type="submit" className={btnPrimary} disabled={!valid} title={saveKeyLabel()}>
-              {existing ? t('c.save') : t('todo.add')}
-            </button>
-          </div>
+          {existing ? (
+            <div className="flex gap-2">
+              {/* Only once something is changed: closes leaving it as it was. */}
+              {changed && (
+                <button type="button" className={btnSubtle} onClick={() => close(null)}>
+                  {t('form.discard_changes')}
+                </button>
+              )}
+              <button type="button" className={btnGhost} onClick={leave} title={saveKeyLabel()}>
+                {t('c.close')}
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <button type="button" className={btnGhost} onClick={() => close(null)}>
+                {t('c.cancel')}
+              </button>
+              <button type="submit" className={btnPrimary} disabled={!valid} title={saveKeyLabel()}>
+                {t('todo.add')}
+              </button>
+            </div>
+          )}
         </div>
       </form>
     </Modal>

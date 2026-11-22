@@ -129,6 +129,7 @@ export const appFr: Partial<Record<AppKey, string>> = {
   'form.restore': "Vous étiez en train d’ajouter quelqu’un. Le voici.",
   'form.continue': "Continuer",
   'form.discard': "Abandonner",
+  'form.discard_changes': "Annuler les modifications",
   'form.name': "Nom",
   'form.notes': "Notes",
   'form.full_screen': "Plein écran",

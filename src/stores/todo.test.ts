@@ -102,3 +102,28 @@ describe('adding an item from the list (2026-11-22)', () => {
     expect(store.getState().todos).toBe(before)
   })
 })
+
+describe('Fine-tune saves as it closes (2026-11-22)', () => {
+  const start = { id: 't1', title: 'Shopping', details: '', due: undefined, tagIds: ['a'], items: [{ id: 'i', title: 'Bread' }] }
+
+  it('nothing changed: nothing to save, whatever order or blanks the draft has', async () => {
+    const { draftChanged, draftOnClose } = await import('./todoStore')
+    const same = { tagIds: ['a'], items: [{ id: 'i', title: 'Bread' }], details: '', title: 'Shopping', id: 't1', snoozedUntil: undefined, daily: undefined }
+    expect(draftChanged(start, same)).toBe(false)
+    expect(draftOnClose(start, same)).toBeNull()
+    // An emptied group is no group, the same as one that never was.
+    expect(draftChanged({ ...start, items: undefined }, { ...start, items: [] })).toBe(false)
+  })
+
+  it('a change is saved as it stands', async () => {
+    const { draftOnClose } = await import('./todoStore')
+    const now = { ...start, details: 'Before Friday', daily: true }
+    expect(draftOnClose(start, now)).toEqual(now)
+  })
+
+  it('a rubbed-out name keeps the old one', async () => {
+    const { draftOnClose } = await import('./todoStore')
+    expect(draftOnClose(start, { ...start, title: '  ' })).toBeNull()
+    expect(draftOnClose(start, { ...start, title: '', details: 'x' })).toEqual({ ...start, title: 'Shopping', details: 'x' })
+  })
+})

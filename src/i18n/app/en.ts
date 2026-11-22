@@ -155,6 +155,7 @@ export const appEn = {
   'form.restore': "You were part way through adding someone. Here it is.",
   'form.continue': "Continue",
   'form.discard': "Discard",
+  'form.discard_changes': "Discard changes",
   'form.name': "Name",
   'form.notes': "Notes",
   'form.full_screen': "Full screen",

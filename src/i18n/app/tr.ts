@@ -129,6 +129,7 @@ export const appTr: Partial<Record<AppKey, string>> = {
   'form.restore': "Birini eklemenin ortasındaydın. İşte kaldığın yer.",
   'form.continue': "Devam et",
   'form.discard': "At",
+  'form.discard_changes': "Değişiklikleri at",
   'form.name': "Ad",
   'form.notes': "Notlar",
   'form.full_screen': "Tam ekran",

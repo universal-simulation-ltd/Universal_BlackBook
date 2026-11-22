@@ -18,6 +18,27 @@ export interface TodoDraft {
   daily?: boolean
 }
 
+/** A draft as it would be saved: no blank or undefined fields, keys in one order. */
+function canonical(d: TodoDraft): string {
+  const flat: Record<string, unknown> = { ...d, items: d.items?.length ? d.items : undefined }
+  return JSON.stringify(Object.keys(flat).sort().filter((k) => flat[k] !== undefined).map((k) => [k, flat[k]]))
+}
+
+/** Whether Fine-tune has changed anything since it opened. */
+export function draftChanged(start: TodoDraft, now: TodoDraft): boolean {
+  return canonical(start) !== canonical(now)
+}
+
+/**
+ * What closing Fine-tune saves (owner, 2026-11-22: "Autosave the entry if you
+ * click off the popup"): the draft as it stands, or null when nothing changed.
+ * A name rubbed out keeps the old one, since a to-do cannot be nameless.
+ */
+export function draftOnClose(start: TodoDraft, now: TodoDraft): TodoDraft | null {
+  const draft = now.title.trim() ? now : { ...now, title: start.title }
+  return draftChanged(start, draft) ? draft : null
+}
+
 /**
  * The To-do tab's list — see lib/todos.ts. Its own store rather than more of
  * bookStore, which is about people; the vault carries both (syncStore), and so

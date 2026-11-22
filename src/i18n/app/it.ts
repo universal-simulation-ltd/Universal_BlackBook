@@ -129,6 +129,7 @@ export const appIt: Partial<Record<AppKey, string>> = {
   'form.restore': "Stavi aggiungendo qualcuno. Eccolo qui.",
   'form.continue': "Continua",
   'form.discard': "Scarta",
+  'form.discard_changes': "Annulla le modifiche",
   'form.name': "Nome",
   'form.notes': "Note",
   'form.full_screen': "Schermo intero",
