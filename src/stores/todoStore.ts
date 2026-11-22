@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { newId } from '../lib/id'
 import { loadTodos, saveTodos } from '../lib/store'
-import { moveTodo, renewDaily, withItemDone, type Todo, type TodoItem } from '../lib/todos'
+import { moveTodo, renewDaily, withItemAdded, withItemDone, type Todo, type TodoItem } from '../lib/todos'
 
 /** What the To-do form hands back. */
 export interface TodoDraft {
@@ -44,6 +44,8 @@ interface TodoState {
   setDone: (id: string, done: boolean) => Promise<void>
   /** Tick one item of a group (lib/todos.ts ▸ withItemDone). */
   setItemDone: (id: string, itemId: string, done: boolean) => Promise<void>
+  /** One more item on the end of a group, from the list (lib/todos.ts ▸ withItemAdded). */
+  addItem: (id: string, title: string) => Promise<void>
   remove: (id: string) => Promise<void>
   clearDone: () => Promise<void>
   /** Snooze until a day (`YYYY-MM-DD`), or wake (undefined). */
@@ -135,6 +137,14 @@ export const useTodoStore = create<TodoState>((set, get) => {
 
     setItemDone: async (id, itemId, done) => {
       await commit(get().todos.map((t) => (t.id === id ? withItemDone(t, itemId, done) : t)))
+    },
+
+    addItem: async (id, title) => {
+      const was = get().todos.find((t) => t.id === id)
+      // Only a group takes items; a blank one is no change, so no write.
+      if (!was?.items) return
+      const now = withItemAdded(was, title, newId())
+      if (now !== was) await commit(get().todos.map((t) => (t.id === id ? now : t)))
     },
 
     remove: async (id) => {

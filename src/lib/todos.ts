@@ -142,6 +142,17 @@ export function withItemDone(todo: Todo, itemId: string, done: boolean, now = Da
   return { ...todo, items, doneAt: all ? (todo.doneAt ?? now) : done ? todo.doneAt : undefined, updatedAt: now }
 }
 
+/**
+ * One more item on the end of a group, not yet done (2026-11-22: added from
+ * the list, no Fine-tune). A group that was all done is open again, the same
+ * as unticking an item. Blank text changes nothing.
+ */
+export function withItemAdded(todo: Todo, title: string, id: string, now = Date.now()): Todo {
+  const name = title.trim().replace(/\s+/g, ' ')
+  if (!name) return todo
+  return { ...todo, items: [...(todo.items ?? []), { id, title: name }], doneAt: undefined, updatedAt: now }
+}
+
 /** A calendar date, strictly. Anything else is dropped rather than shown wrong. */
 function toDue(v: unknown): string | undefined {
   if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return undefined

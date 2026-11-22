@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addDays, compareDaily, compareOpen, compareSnoozed, daysUntil, renewDaily, isSnoozed, snoozeChoices, dueLabel, dueShort, groupProgress, matchesTodo, mergeTodos, moveTodo, toTodo, toTodos, withItemDone, type Todo } from './todos'
+import { addDays, compareDaily, compareOpen, compareSnoozed, daysUntil, renewDaily, isSnoozed, snoozeChoices, dueLabel, dueShort, groupProgress, matchesTodo, mergeTodos, moveTodo, toTodo, toTodos, withItemAdded, withItemDone, type Todo } from './todos'
 import { parseBackup } from './backup'
 
 const today = { year: 2026, month: 9, day: 27 }
@@ -127,6 +127,19 @@ describe('groups (2026-10-30)', () => {
     const reopened = withItemDone(both, 'a', false, 30)
     expect(reopened.doneAt).toBeUndefined()
     expect(reopened.items![0]).not.toHaveProperty('doneAt')
+  })
+
+  it('an item added from the list goes on the end, not done, and reopens a done group', () => {
+    const added = withItemAdded(group, '  Eggs   free range ', 'c', 40)
+    expect(added.items).toEqual([...group.items!, { id: 'c', title: 'Eggs free range' }])
+    expect(added.updatedAt).toBe(40)
+    const allDone = withItemDone(withItemDone(group, 'a', true, 10), 'b', true, 20)
+    expect(allDone.doneAt).toBe(20)
+    const reopened = withItemAdded(allDone, 'Butter', 'd', 50)
+    expect(reopened.doneAt).toBeUndefined()
+    expect(groupProgress(reopened)).toEqual({ done: 2, count: 3 })
+    expect(withItemAdded(group, '   ', 'e', 60)).toBe(group)
+    expect(withItemAdded(todo({ items: [] }), 'First', 'f', 70).items).toEqual([{ id: 'f', title: 'First' }])
   })
 
   it('travels in a backup file', () => {

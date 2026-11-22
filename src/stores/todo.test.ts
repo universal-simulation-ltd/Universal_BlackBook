@@ -73,3 +73,32 @@ describe('the to-do list', () => {
     expect(again.getState().todos[0]).not.toHaveProperty('snoozedUntil')
   })
 })
+
+describe('adding an item from the list (2026-11-22)', () => {
+  it('goes on the end, unticked, survives a reload and reopens a done group', async () => {
+    const store = await reopen()
+    await store.getState().save(draft({ title: 'Shopping', items: [{ id: 'a', title: 'Bread' }] }))
+    const id = store.getState().todos[0].id
+    await store.getState().setDone(id, true)
+    expect(store.getState().todos[0].doneAt).toEqual(expect.any(Number))
+    await store.getState().addItem(id, ' Milk ')
+    const again = await reopen()
+    const group = again.getState().todos[0]
+    expect(group.doneAt).toBeUndefined()
+    expect(group.items).toEqual([
+      { id: 'a', title: 'Bread', doneAt: expect.any(Number) },
+      { id: expect.any(String), title: 'Milk' },
+    ])
+  })
+
+  it('does nothing for blank text, an ordinary to-do or a missing one', async () => {
+    const store = await reopen()
+    await store.getState().save(draft({ title: 'Group', items: [] }))
+    await store.getState().save(draft({ title: 'Plain' }))
+    const before = store.getState().todos
+    await store.getState().addItem(before[0].id, '   ')
+    await store.getState().addItem(before[1].id, 'Nope')
+    await store.getState().addItem('gone', 'Nope')
+    expect(store.getState().todos).toBe(before)
+  })
+})

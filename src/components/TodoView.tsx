@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type FormEvent, type ReactNode, type TouchEvent as ReactTouchEvent } from 'react'
+import { flushSync } from 'react-dom'
 import { Button, GrowingTextarea, SelectCheckbox, SelectionBar, useDefaultView, useMediaQuery, useSelection, type UseDefaultView } from '@unisim/sdk'
 import { SwipeRow, type SwipeSide as Side } from '@unisim/sdk'
 import { useMove } from './MoveTo'
@@ -1006,7 +1007,7 @@ function TodoDetail({ todo, byId, today, onSnooze }: { todo: Todo; byId: Map<str
   const chips = todo.tagIds.map((id) => byId.get(id)).filter((x): x is Tag => Boolean(x) && !isList(x!))
   const days = todo.due ? daysUntil(todo.due, today) : null
   const progress = groupProgress(todo)
-  const grouped = Boolean(todo.items?.length)
+  const grouped = todo.items !== undefined
   const title = todo.title || t('c.untitled')
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
@@ -1051,7 +1052,9 @@ function TodoDetail({ todo, byId, today, onSnooze }: { todo: Todo; byId: Map<str
       {todo.details && <p className="mt-4 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-300">{todo.details}</p>}
       {grouped && progress && (
         <div className="mt-4 border-t border-slate-800 pt-3">
-          <p className="mb-1 px-2 text-xs font-medium tabular-nums text-slate-500">{t('todo.group_count', { done: progress.done, count: progress.count })}</p>
+          {progress.count > 0 && (
+            <p className="mb-1 px-2 text-xs font-medium tabular-nums text-slate-500">{t('todo.group_count', { done: progress.done, count: progress.count })}</p>
+          )}
           <GroupItems todo={todo} />
         </div>
       )}
@@ -1111,8 +1114,11 @@ function TodoRow({
   const progress = groupProgress(todo)
   // A group's items have tick boxes of their own, and a button cannot hold
   // them: the card is drawn by the box around both, the items under the button.
-  const grouped = Boolean(todo.items?.length) && !brief
-  const [folded, setFolded] = useFolded(todo.id)
+  // An empty group is drawn as one too, so its "Add an item" row is there.
+  const grouped = todo.items !== undefined && !brief
+  const [stored, setFolded] = useFolded(todo.id)
+  // Nothing to fold away: no count, and the add row stays in sight.
+  const folded = stored && Boolean(progress?.count)
   const edge = lifted ? 'border-orange-400 shadow-2xl' : 'border-slate-800'
   const row = look === 'row'
   const countText = brief && progress && progress.count > 0 && (
@@ -1155,7 +1161,7 @@ function TodoRow({
   // A group's fold sits at the end of its name's line, as a button of its own
   // beside the card's (a button cannot hold one); the name's button leaves it
   // the room.
-  const foldRoom = grouped ? (onGripDown ? 'pr-[6.5rem]' : 'pr-[4.5rem]') : onGripDown ? 'pr-9' : row ? 'pr-2' : 'pr-3.5'
+  const foldRoom = grouped && progress?.count ? (onGripDown ? 'pr-[6.5rem]' : 'pr-[4.5rem]') : onGripDown ? 'pr-9' : row ? 'pr-2' : 'pr-3.5'
 
   return (
     // The tick box is a SIBLING of the card button, never inside it — a button
@@ -1217,7 +1223,7 @@ function TodoRow({
       >
         <Tick on={done} />
       </button>
-      {grouped && progress && (
+      {grouped && progress && progress.count > 0 && (
         // The group's count is also its fold (James, 2026-11-11: "when there's
         // a grouped todo make it collapsible"), on the name's line since
         // 2026-11-18 ("the groups could just have the chevron on title line").
@@ -1314,7 +1320,81 @@ function GroupItems({ todo, indent = false }: { todo: Todo; indent?: boolean }) 
           </li>
         )
       })}
+      <AddItem todo={todo} compact={indent} />
     </ul>
+  )
+}
+
+/**
+ * "+ Add an item" at the foot of a group's items (owner, 2026-11-22: "a way of
+ * adding a grouped tick item directly from this view"). A tap turns it into a
+ * box: Return adds and stays open for the next, Escape closes, and leaving it
+ * adds what was typed, as the form's box does. Touches stop here, so holding
+ * in the box selects text rather than lifting the card or swiping it.
+ */
+function AddItem({ todo, compact = false }: { todo: Todo; compact?: boolean }) {
+  const t = useT()
+  const addItem = useTodoStore((s) => s.addItem)
+  const [open, setOpen] = useState(false)
+  const [text, setText] = useState('')
+  const box = useRef<HTMLTextAreaElement | null>(null)
+  const add = () => {
+    if (text.trim()) void addItem(todo.id, text)
+    setText('')
+  }
+  const start = () => {
+    // Mounted and focused inside the tap, so iOS raises the keyboard.
+    flushSync(() => setOpen(true))
+    box.current?.focus()
+  }
+  return (
+    <li onTouchStart={(e) => e.stopPropagation()}>
+      {open ? (
+        <div className={`flex ${compact ? 'min-h-[32px]' : 'min-h-[40px]'} items-start gap-3 px-2 py-1`}>
+          <span aria-hidden className="mt-2.5 flex h-5 w-5 shrink-0 items-center justify-center text-slate-500 [&>svg]:h-4 [&>svg]:w-4">
+            <PlusIcon />
+          </span>
+          <GrowingTextarea
+            textareaRef={box}
+            rows={1}
+            className={`${inputCls} resize-none py-1.5 leading-snug`}
+            value={text}
+            placeholder={t('todo.group_add')}
+            aria-label={t('todo.group_add')}
+            enterKeyHint="enter"
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                e.preventDefault()
+                e.stopPropagation()
+                setText('')
+                setOpen(false)
+                return
+              }
+              // Return adds and stays in the box; an item is one line.
+              if (e.key !== 'Enter' || e.nativeEvent.isComposing) return
+              e.preventDefault()
+              add()
+            }}
+            onBlur={() => {
+              add()
+              setOpen(false)
+            }}
+          />
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={start}
+          className={`flex ${compact ? 'min-h-[32px]' : 'min-h-[40px]'} w-full items-center gap-3 rounded-lg px-2 text-left text-sm text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400`}
+        >
+          <span aria-hidden className="flex h-5 w-5 shrink-0 items-center justify-center [&>svg]:h-4 [&>svg]:w-4">
+            <PlusIcon />
+          </span>
+          {t('todo.group_add')}
+        </button>
+      )}
+    </li>
   )
 }
 
