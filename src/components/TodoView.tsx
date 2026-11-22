@@ -1326,7 +1326,7 @@ function GroupItems({ todo, indent = false }: { todo: Todo; indent?: boolean }) 
 }
 
 /**
- * "+ Add an item" at the foot of a group's items (owner, 2026-11-22: "a way of
+ * A + at the foot of a group's items (owner, 2026-11-22: "a way of
  * adding a grouped tick item directly from this view"). A tap turns it into a
  * box: Return adds and stays open for the next, Escape closes, and leaving it
  * adds what was typed, as the form's box does. Touches stop here, so holding
@@ -1386,12 +1386,17 @@ function AddItem({ todo, compact = false }: { todo: Todo; compact?: boolean }) {
         <button
           type="button"
           onClick={start}
-          className={`flex ${compact ? 'min-h-[32px]' : 'min-h-[40px]'} w-full items-center gap-3 rounded-lg px-2 text-left text-sm text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400`}
+          aria-label={t('todo.group_add')}
+          className={`group/add flex ${compact ? 'min-h-[32px]' : 'min-h-[40px]'} w-full items-center gap-3 rounded-lg px-2 text-left text-sm text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400`}
         >
           <span aria-hidden className="flex h-5 w-5 shrink-0 items-center justify-center [&>svg]:h-4 [&>svg]:w-4">
             <PlusIcon />
           </span>
-          {t('todo.group_add')}
+          {/* The + alone; the words only on hover or focus (owner, 2026-11-22:
+              "Only show 'add an item' on hover, + is enough"). */}
+          <span aria-hidden className="opacity-0 transition-opacity group-hover/add:opacity-100 group-focus-visible/add:opacity-100">
+            {t('todo.group_add')}
+          </span>
         </button>
       )}
     </li>
