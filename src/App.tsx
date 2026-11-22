@@ -50,6 +50,7 @@ import { AddMenu, APP_ABOUT, availableTabs, LockLink, PREFERENCE_ROWS, REPO_URL,
 import { currentT, useT } from './i18n'
 import { personalBookTitle, useNamedTitle } from './components/bookTitle'
 import { useFollowDefaultTab } from './components/tuneLook'
+import { useTwoStepDue } from './components/twoStep'
 import { useEffectiveTheme, useThemeStore } from './stores/themeStore'
 import { phoneScreens } from './native/shell'
 import { followThemeWithStatusBar } from './native/systemBars'
@@ -654,6 +655,12 @@ function useCloudSync(openPanel: () => void) {
   // It made the whole browser sluggish, and only ever while signed IN —
   // signed out `user` is a stable `null`, which is why it hid for so long.
   const userId = user?.id ?? null
+  // Signed in with a password but not past the two-step code yet: the vault is
+  // not read (James, 2026-11-22: "Surely it shouldn't show data in the bg if I
+  // haven't got through 2FA?"). The server refuses it anyway (migration 0342),
+  // and a refused read looks like "no online copy", which must not be taken
+  // as a cue to start one. Read again once the code is in.
+  const twoStep = useTwoStepDue(supabase, userId)
   const contacts = useBookStore((s) => s.contacts)
   const tags = useBookStore((s) => s.tags)
   const todos = useTodoStore((s) => s.todos)
@@ -674,6 +681,10 @@ function useCloudSync(openPanel: () => void) {
   const everSignedIn = useRef(false)
 
   useEffect(() => {
+    // Signed in, but the two-step code is still owed (or not yet known): wait.
+    // Nothing else changes; the sign-out handling below is for a real
+    // sign-out, which this is not.
+    if (userId && twoStep !== 'clear') return
     let cancelled = false
     // Read BEFORE `hydrate`, which resets the status on the way out.
     const sync = useSyncStore.getState()
@@ -705,7 +716,7 @@ function useCloudSync(openPanel: () => void) {
     return () => {
       cancelled = true
     }
-  }, [supabase, userId, hydrate, openPanel])
+  }, [supabase, userId, twoStep, hydrate, openPanel])
 
   // A sign-out this page never saw — made in another suite app on the same
   // site, or a session that expired while the app was shut. The book was left

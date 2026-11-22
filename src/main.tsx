@@ -43,6 +43,12 @@ const universalConfig = {
   product: 'blackbook' as const,
   cookieDomain: !isDesktop && import.meta.env.PROD ? '.unisim.co.uk' : undefined,
   openCount: !isPhoneApp,
+  // Sign in stays a row in the Actions menu for a guest, although the navbar
+  // keeps the account in Tune (`accountInTune`, SDK 0.241.0). An account is
+  // what brings the online copy to every device (James, 2026-11-22:
+  // "Blackbook is one of the ones that SHOULD have sign in directly in the
+  // actions dropdown").
+  signInInMenu: true,
 }
 
 // The suite's key buttons and tray tabs, as class strings (components/ui.tsx,
