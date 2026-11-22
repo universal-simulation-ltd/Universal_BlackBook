@@ -69,7 +69,13 @@ describe('backup file', () => {
 
   it('with a password: refuses none and a wrong one, opens with the right one', async () => {
     const packed = await packBackup(source(), { password: 'correct horse' })
-    expect(packed.text).not.toContain('Ada')
+    // The name must not be in the file anywhere but the ciphertext, which is
+    // random base64 and does spell "Ada" now and then (a CI deploy failed on
+    // `…S0AdaA7g6…`, 2026-11-22). So look everywhere except that one field.
+    const { encrypted, ...outside } = JSON.parse(packed.text)
+    const { ciphertext, ...params } = encrypted
+    expect(typeof ciphertext).toBe('string')
+    expect(JSON.stringify({ outside, params })).not.toContain('Ada')
     expect(await openBackup(packed.text)).toEqual({ ok: false, reason: 'needs-password' })
     expect(await openBackup(packed.text, 'wrong')).toEqual({ ok: false, reason: 'wrong-password' })
     const opened = await openBackup(packed.text, 'correct horse')
