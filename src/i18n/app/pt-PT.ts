@@ -414,6 +414,8 @@ export const appPtPT: Partial<Record<AppKey, string>> = {
   'todo.group_items': "Neste grupo",
   'todo.group_item_name': "Item",
   'todo.group_add': "Adicionar um item",
+  'todo.fold_all': "Recolher tudo",
+  'todo.unfold_all': "Abrir tudo",
   'todo.group_remove': "Remover {title}",
   'todo.group_count': "{done} de {count} feitas",
   'todo.group_show': "Mostrar os itens de “{title}”",

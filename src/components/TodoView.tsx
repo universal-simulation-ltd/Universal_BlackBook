@@ -9,6 +9,7 @@ import { todayParts } from '../lib/birthday'
 import { isList } from '../lib/lists'
 import { addDays, compareDaily, compareDone, compareOpen, compareSnoozed, daysUntil, dueLabel, dueShort, groupProgress, isSnoozed, matchesTodo, matchesTodoTags, shortDate, snoozeChoices, type Todo, type TodoItem } from '../lib/todos'
 import { newId } from '../lib/id'
+import { foldAllAction, setFolds, useFolded, useFolds } from '../lib/folds'
 import type { Tag } from '../lib/types'
 import { useBookStore } from '../stores/bookStore'
 import { draftChanged, draftOnClose, useTodoStore, type TodoDraft } from '../stores/todoStore'
@@ -265,6 +266,9 @@ export function TodoView() {
   // and again once the picked one is ticked off, filtered out or deleted.
   const [picked, setPicked] = useState<string | null>(null)
   const current = layout === 'detail' ? (open.find((x) => x.id === picked) ?? open[0]) : undefined
+  // The groups on show that have a fold: list and detail's open ones are
+  // single lines, their items in the pane.
+  const foldable = onShow.filter((x) => x.items?.length && !(layout === 'detail' && !x.doneAt && open.includes(x))).map((x) => x.id)
 
   /** One open to-do, drawn the way `look` says; `list` is the run it sits in. */
   const openItem = (x: Todo, list: Todo[], i: number, look: Look) => (
@@ -339,11 +343,12 @@ export function TodoView() {
           <h1 className={phoneScreens() ? 'bb-h1' : tabHeading}>{t('tab_todos')}</h1>
           {!phoneScreens() && <p className="text-sm text-slate-500">{t('todo.intro')}</p>}
         </div>
-        {layouts && (
+        {(layouts || foldable.length > 0) && (
           <div className="flex items-center gap-2">
-            <LayoutButtons value={layoutPick} dv={layoutDefault} onChange={setLayoutPick} />
+            <FoldAllButton ids={foldable} />
+            {layouts && <LayoutButtons value={layoutPick} dv={layoutDefault} onChange={setLayoutPick} />}
             {/* In the phone app the top bar's + does this. */}
-            {!phoneScreens() && (
+            {layouts && !phoneScreens() && (
               <button type="button" className={btnPrimary} onClick={() => edit('new')}>
                 <BtnKey>
                   <PlusIcon />
@@ -945,6 +950,30 @@ function itemClass(layout: Shown, look: Look): string {
  * Hidden on a narrow window, where every layout is one column anyway; in the
  * phone app, on a tablet only (TodoView doesn't draw them on a phone).
  */
+/**
+ * Fold every group on show shut, or open them all (owner, 2026-11-23: "have a
+ * collapse / open all button"): Collapse all while any is open, Open all once
+ * every one is folded. Only while there is a group to fold.
+ */
+function FoldAllButton({ ids }: { ids: string[] }) {
+  const t = useT()
+  const action = foldAllAction(ids, useFolds())
+  if (!action) return null
+  const collapse = action === 'collapse'
+  return (
+    <button
+      type="button"
+      onClick={() => setFolds(ids, collapse)}
+      className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-800 px-3 text-sm text-slate-300 transition-colors hover:bg-slate-800 hover:text-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+    >
+      <svg viewBox="0 0 16 16" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <path d={collapse ? 'm4.5 2.5 3.5 3.5 3.5-3.5M4.5 13.5 8 10l3.5 3.5' : 'm4.5 6 3.5-3.5L11.5 6M4.5 10 8 13.5 11.5 10'} />
+      </svg>
+      {t(collapse ? 'todo.fold_all' : 'todo.unfold_all')}
+    </button>
+  )
+}
+
 function LayoutButtons({ value, dv, onChange }: { value: TodoLayout; dv: UseDefaultView<TodoLayout>; onChange: (v: TodoLayout) => void }) {
   const t = useT()
   return (
@@ -1232,7 +1261,7 @@ function TodoRow({
           type="button"
           aria-expanded={!folded}
           aria-label={t(folded ? 'todo.group_show' : 'todo.group_hide', { title: todo.title || t('c.untitled') })}
-          onClick={() => setFolded(todo.id, !folded)}
+          onClick={() => setFolded(!folded)}
           className={`absolute ${row ? 'top-0' : 'top-0.5'} ${onGripDown ? 'right-9' : 'right-1.5'} flex h-10 items-center gap-1 rounded-lg px-2 text-xs font-medium tabular-nums text-slate-500 hover:bg-slate-800 hover:text-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${done ? 'opacity-60' : ''}`}
         >
           {progress.done}/{progress.count}
@@ -1261,35 +1290,6 @@ function TodoRow({
       {extra}
     </div>
   )
-}
-
-/**
- * Which groups are folded shut, on this device only: how the list looks here,
- * not something worth syncing. A Set in localStorage, shared by every row.
- */
-const FOLD_KEY = 'bb.todo.folded'
-function readFolded(): Set<string> {
-  try {
-    const v = JSON.parse(localStorage.getItem(FOLD_KEY) ?? '[]')
-    return new Set(Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [])
-  } catch {
-    return new Set()
-  }
-}
-function useFolded(id: string): [boolean, (id: string, on: boolean) => void] {
-  const [on, setOn] = useState(() => readFolded().has(id))
-  const set = useCallback((which: string, value: boolean) => {
-    const all = readFolded()
-    if (value) all.add(which)
-    else all.delete(which)
-    try {
-      localStorage.setItem(FOLD_KEY, JSON.stringify([...all]))
-    } catch {
-      /* private mode: folds for this visit only */
-    }
-    if (which === id) setOn(value)
-  }, [id])
-  return [on, set]
 }
 
 /**

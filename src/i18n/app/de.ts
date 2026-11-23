@@ -414,6 +414,8 @@ export const appDe: Partial<Record<AppKey, string>> = {
   'todo.group_items': "In dieser Gruppe",
   'todo.group_item_name': "Eintrag",
   'todo.group_add': "Eintrag hinzufügen",
+  'todo.fold_all': "Alle zuklappen",
+  'todo.unfold_all': "Alle aufklappen",
   'todo.group_remove': "{title} entfernen",
   'todo.group_count': "{done} von {count} erledigt",
   'todo.group_show': "Einträge in „{title}“ zeigen",

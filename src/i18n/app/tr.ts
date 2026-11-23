@@ -414,6 +414,8 @@ export const appTr: Partial<Record<AppKey, string>> = {
   'todo.group_items': "Bu grupta",
   'todo.group_item_name': "Öğe",
   'todo.group_add': "Öğe ekle",
+  'todo.fold_all': "Tümünü daralt",
+  'todo.unfold_all': "Tümünü aç",
   'todo.group_remove': "{title} öğesini kaldır",
   'todo.group_count': "{count} öğeden {done} tanesi bitti",
   'todo.group_show': "“{title}” içindekileri göster",

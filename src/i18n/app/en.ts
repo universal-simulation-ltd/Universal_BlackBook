@@ -464,6 +464,8 @@ export const appEn = {
   'todo.group_items': "In this group",
   'todo.group_item_name': "Item",
   'todo.group_add': "Add an item",
+  'todo.fold_all': "Collapse all",
+  'todo.unfold_all': "Open all",
   'todo.group_remove': "Remove {title}",
   'todo.group_count': "{done} of {count} done",
   'todo.group_show': "Show the items in “{title}”",
