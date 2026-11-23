@@ -1297,31 +1297,170 @@ function TodoRow({
  * (2026-10-30). Ticking the last one ticks the group off.
  */
 function GroupItems({ todo, indent = false }: { todo: Todo; indent?: boolean }) {
-  const t = useT()
-  const setItemDone = useTodoStore((s) => s.setItemDone)
+  const putItemBack = useTodoStore((s) => s.putItemBack)
+  // An item rubbed out in place goes at once, with Undo for a few seconds,
+  // as a swiped-away to-do does.
+  const undo = useUndo<{ item: TodoItem; at: number }>(({ item, at }) => putItemBack(todo.id, item, at))
   return (
     // A list row's items sit under its name, not under its tick box.
     <ul className={`space-y-0.5 pb-2 ${indent ? 'pl-9 pr-1.5' : 'px-1.5'} ${todo.doneAt ? 'opacity-60' : ''}`}>
-      {todo.items!.map((item) => {
-        const on = item.doneAt !== undefined
-        return (
-          <li key={item.id}>
-            <button
-              type="button"
-              role="checkbox"
-              aria-checked={on}
-              aria-label={on ? t('todo.mark_undone', { title: item.title }) : t('todo.mark_done', { title: item.title })}
-              onClick={() => void setItemDone(todo.id, item.id, !on)}
-              className={`flex ${indent ? 'min-h-[32px]' : 'min-h-[40px]'} w-full items-center gap-3 rounded-lg px-2 text-left text-sm transition-colors hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400`}
-            >
-              <Tick on={on} />
-              <span className={`min-w-0 break-words ${on ? 'text-slate-500 line-through decoration-slate-500' : 'text-slate-200'}`}>{item.title}</span>
-            </button>
-          </li>
-        )
-      })}
+      {todo.items!.map((item, at) => (
+        <ItemRow key={item.id} todo={todo} item={item} compact={indent} onRemoved={() => undo.deleted({ item, at })} />
+      ))}
       <AddItem todo={todo} compact={indent} />
+      {undo.item && <UndoBar title={undo.item.item.title} onUndo={() => void undo.undo()} />}
     </ul>
+  )
+}
+
+/** How long a still finger on an item takes to open it for typing, ms: under the card's 400 ms lift. */
+const ITEM_HOLD_MS = 300
+
+/**
+ * One item of a group: a tap ticks it; a right-click, a hold on a touch
+ * screen, or F2 opens its name for typing in place (owner, 2026-11-23: "allow
+ * to edit to do items directly on view page (maybe a right click or tap and
+ * hold on an item?)"). Return or leaving the box saves, Escape keeps the old
+ * name, and rubbing it out takes the item away (Undo in the group).
+ *
+ * The hold fires before the card's own hold-to-drag (400 ms), lights the row
+ * and calls the drag and the swipe off; a finger that moves first is still
+ * the row's swipe or the page's scroll. The box opens on the RELEASE, not
+ * when the hold fires: swapping the button out from under a finger that is
+ * still down would leave its touchend nowhere to go, and iOS raises the
+ * keyboard only for a focus inside a touch. That release ticks nothing.
+ */
+function ItemRow({ todo, item, compact, onRemoved }: { todo: Todo; item: TodoItem; compact: boolean; onRemoved: () => void }) {
+  const t = useT()
+  const setItemDone = useTodoStore((s) => s.setItemDone)
+  const renameItem = useTodoStore((s) => s.renameItem)
+  const [text, setText] = useState<string | null>(null)
+  const [held, setHeld] = useState(false)
+  const box = useRef<HTMLTextAreaElement | null>(null)
+  const hold = useRef<{ x: number; y: number; timer?: ReturnType<typeof setTimeout>; fired: boolean } | null>(null)
+  const done = useRef(false)
+  const on = item.doneAt !== undefined
+  const height = compact ? 'min-h-[32px]' : 'min-h-[40px]'
+
+  const open = () => {
+    done.current = false
+    flushSync(() => setText(item.title))
+    focusEnd()
+  }
+  const focusEnd = () => {
+    const el = box.current
+    if (!el) return
+    el.focus()
+    el.setSelectionRange(el.value.length, el.value.length)
+  }
+  const finish = (save: boolean) => {
+    if (done.current || text === null) return
+    done.current = true
+    const name = text.trim()
+    setText(null)
+    if (!save) return
+    void renameItem(todo.id, item.id, text)
+    if (!name) onRemoved()
+  }
+
+  if (text !== null) {
+    return (
+      <li onTouchStart={(e) => e.stopPropagation()}>
+        <div className={`flex ${height} items-start gap-3 px-2 py-1`}>
+          <span className="mt-1.5">
+            <Tick on={on} />
+          </span>
+          <GrowingTextarea
+            textareaRef={box}
+            rows={1}
+            className={`${inputCls} resize-none py-1.5 leading-snug`}
+            value={text}
+            aria-label={t('todo.group_item_name')}
+            enterKeyHint="done"
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                e.preventDefault()
+                e.stopPropagation()
+                finish(false)
+                return
+              }
+              // Return saves; an item is one line.
+              if (e.key !== 'Enter' || e.nativeEvent.isComposing) return
+              e.preventDefault()
+              finish(true)
+            }}
+            onBlur={() => finish(true)}
+          />
+        </div>
+      </li>
+    )
+  }
+
+  const cancelHold = () => {
+    if (hold.current?.timer) clearTimeout(hold.current.timer)
+    hold.current = null
+    setHeld(false)
+  }
+  return (
+    <li
+      onTouchStart={(e) => {
+        if (e.touches.length !== 1) return cancelHold()
+        const p = e.touches[0]
+        const h: NonNullable<typeof hold.current> = { x: p.clientX, y: p.clientY, fired: false }
+        h.timer = setTimeout(() => {
+          h.fired = true
+          navigator.vibrate?.(12)
+          // The card's lift and the row's swipe were waiting on this finger
+          // too: they listen for a cancel on the document (useTodoDrag).
+          document.dispatchEvent(new Event('touchcancel'))
+          setHeld(true)
+        }, ITEM_HOLD_MS)
+        hold.current = h
+      }}
+      onTouchMove={(e) => {
+        const h = hold.current
+        if (!h) return
+        // Held: the finger is the box's now, not the swipe's.
+        if (h.fired) return e.stopPropagation()
+        const p = e.touches[0]
+        if (Math.hypot(p.clientX - h.x, p.clientY - h.y) > 8) cancelHold()
+      }}
+      onTouchEnd={(e) => {
+        const fired = hold.current?.fired
+        cancelHold()
+        if (!fired) return
+        // No click from this release (no tick), and the box opens and
+        // takes the keyboard inside the touch, as iOS requires.
+        e.preventDefault()
+        e.stopPropagation()
+        open()
+      }}
+      onTouchCancel={cancelHold}
+    >
+      <button
+        type="button"
+        role="checkbox"
+        aria-checked={on}
+        aria-label={on ? t('todo.mark_undone', { title: item.title }) : t('todo.mark_done', { title: item.title })}
+        aria-keyshortcuts="F2"
+        onClick={() => void setItemDone(todo.id, item.id, !on)}
+        onContextMenu={(e) => {
+          // Only on an item: the browser's own menu everywhere else.
+          e.preventDefault()
+          if (!hold.current?.fired) open()
+        }}
+        onKeyDown={(e) => {
+          if (e.key !== 'F2') return
+          e.preventDefault()
+          open()
+        }}
+        className={`flex ${height} w-full select-none items-center gap-3 rounded-lg px-2 text-left text-sm transition-colors [-webkit-touch-callout:none] hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${held ? 'bg-slate-800 ring-1 ring-orange-400' : ''}`}
+      >
+        <Tick on={on} />
+        <span className={`min-w-0 break-words ${on ? 'text-slate-500 line-through decoration-slate-500' : 'text-slate-200'}`}>{item.title}</span>
+      </button>
+    </li>
   )
 }
 

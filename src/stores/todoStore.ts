@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { newId } from '../lib/id'
 import { loadTodos, saveTodos } from '../lib/store'
-import { moveTodo, renewDaily, withItemAdded, withItemDone, type Todo, type TodoItem } from '../lib/todos'
+import { moveTodo, renewDaily, withItemAdded, withItemBack, withItemDone, withItemRenamed, type Todo, type TodoItem } from '../lib/todos'
 
 /** What the To-do form hands back. */
 export interface TodoDraft {
@@ -67,6 +67,10 @@ interface TodoState {
   setItemDone: (id: string, itemId: string, done: boolean) => Promise<void>
   /** One more item on the end of a group, from the list (lib/todos.ts ▸ withItemAdded). */
   addItem: (id: string, title: string) => Promise<void>
+  /** An item renamed in the list; blank takes it out (lib/todos.ts ▸ withItemRenamed). */
+  renameItem: (id: string, itemId: string, title: string) => Promise<void>
+  /** Undo for an item taken out: back where it was (lib/todos.ts ▸ withItemBack). */
+  putItemBack: (id: string, item: TodoItem, at: number) => Promise<void>
   remove: (id: string) => Promise<void>
   clearDone: () => Promise<void>
   /** Snooze until a day (`YYYY-MM-DD`), or wake (undefined). */
@@ -166,6 +170,19 @@ export const useTodoStore = create<TodoState>((set, get) => {
       if (!was?.items) return
       const now = withItemAdded(was, title, newId())
       if (now !== was) await commit(get().todos.map((t) => (t.id === id ? now : t)))
+    },
+
+    renameItem: async (id, itemId, title) => {
+      const was = get().todos.find((t) => t.id === id)
+      if (!was) return
+      const now = withItemRenamed(was, itemId, title)
+      if (now !== was) await commit(get().todos.map((t) => (t.id === id ? now : t)))
+    },
+
+    putItemBack: async (id, item, at) => {
+      const was = get().todos.find((t) => t.id === id)
+      if (!was?.items) return
+      await commit(get().todos.map((t) => (t.id === id ? withItemBack(was, item, at) : t)))
     },
 
     remove: async (id) => {

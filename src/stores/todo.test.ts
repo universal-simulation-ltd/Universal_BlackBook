@@ -127,3 +127,18 @@ describe('Fine-tune saves as it closes (2026-11-22)', () => {
     expect(draftOnClose(start, { ...start, title: '', details: 'x' })).toEqual({ ...start, title: 'Shopping', details: 'x' })
   })
 })
+
+describe('editing an item in the list (2026-11-23)', () => {
+  it('renames, takes out on blank and puts back, across a reload', async () => {
+    const store = await reopen()
+    await store.getState().save(draft({ title: 'Shopping', items: [{ id: 'a', title: 'Bread' }, { id: 'b', title: 'Milk' }] }))
+    const id = store.getState().todos[0].id
+    await store.getState().renameItem(id, 'a', 'Rolls')
+    await store.getState().renameItem(id, 'b', '')
+    let again = await reopen()
+    expect(again.getState().todos[0].items).toEqual([{ id: 'a', title: 'Rolls' }])
+    await again.getState().putItemBack(id, { id: 'b', title: 'Milk' }, 1)
+    again = await reopen()
+    expect(again.getState().todos[0].items!.map((i) => i.title)).toEqual(['Rolls', 'Milk'])
+  })
+})

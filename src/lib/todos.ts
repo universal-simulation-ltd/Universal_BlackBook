@@ -153,6 +153,33 @@ export function withItemAdded(todo: Todo, title: string, id: string, now = Date.
   return { ...todo, items: [...(todo.items ?? []), { id, title: name }], doneAt: undefined, updatedAt: now }
 }
 
+/** A group whose items are all ticked is ticked; one with an item to do is open. */
+function settled(todo: Todo, items: TodoItem[], now: number): Todo {
+  const all = items.length > 0 && items.every((i) => i.doneAt !== undefined)
+  return { ...todo, items, doneAt: all ? (todo.doneAt ?? now) : undefined, updatedAt: now }
+}
+
+/**
+ * An item renamed in the list (2026-11-23: "edit to do items directly on view
+ * page"). Rubbed out, it goes, and a group left with only ticked items is
+ * ticked, as ticking its last one would. The same name changes nothing.
+ */
+export function withItemRenamed(todo: Todo, itemId: string, title: string, now = Date.now()): Todo {
+  const items = todo.items ?? []
+  const was = items.find((i) => i.id === itemId)
+  if (!was) return todo
+  const name = title.trim().replace(/\s+/g, ' ')
+  if (name === was.title) return todo
+  return settled(todo, name ? items.map((i) => (i.id === itemId ? { ...i, title: name } : i)) : items.filter((i) => i.id !== itemId), now)
+}
+
+/** Undo for a removed item: back in its old place, and the group's tick as that makes it. */
+export function withItemBack(todo: Todo, item: TodoItem, at: number, now = Date.now()): Todo {
+  const items = (todo.items ?? []).filter((i) => i.id !== item.id)
+  items.splice(Math.max(0, Math.min(at, items.length)), 0, item)
+  return settled(todo, items, now)
+}
+
 /** A calendar date, strictly. Anything else is dropped rather than shown wrong. */
 function toDue(v: unknown): string | undefined {
   if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return undefined

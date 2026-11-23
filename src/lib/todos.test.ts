@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addDays, compareDaily, compareOpen, compareSnoozed, daysUntil, renewDaily, isSnoozed, snoozeChoices, dueLabel, dueShort, groupProgress, matchesTodo, mergeTodos, moveTodo, toTodo, toTodos, withItemAdded, withItemDone, type Todo } from './todos'
+import { addDays, compareDaily, compareOpen, compareSnoozed, daysUntil, renewDaily, isSnoozed, snoozeChoices, dueLabel, dueShort, groupProgress, matchesTodo, mergeTodos, moveTodo, toTodo, toTodos, withItemAdded, withItemBack, withItemDone, withItemRenamed, type Todo } from './todos'
 import { parseBackup } from './backup'
 
 const today = { year: 2026, month: 9, day: 27 }
@@ -127,6 +127,31 @@ describe('groups (2026-10-30)', () => {
     const reopened = withItemDone(both, 'a', false, 30)
     expect(reopened.doneAt).toBeUndefined()
     expect(reopened.items![0]).not.toHaveProperty('doneAt')
+  })
+
+  it('an item renamed in the list keeps its place and tick; the same name is no change', () => {
+    const ticked = withItemDone(group, 'a', true, 10)
+    const renamed = withItemRenamed(ticked, 'a', '  Sourdough   loaf ', 20)
+    expect(renamed.items).toEqual([{ id: 'a', title: 'Sourdough loaf', doneAt: 10 }, { id: 'b', title: 'Milk' }])
+    expect(renamed.updatedAt).toBe(20)
+    expect(withItemRenamed(group, 'a', ' Bread ', 30)).toBe(group)
+    expect(withItemRenamed(group, 'gone', 'X', 30)).toBe(group)
+  })
+
+  it('rubbed out, an item goes; a group left all ticked is ticked, and Undo puts it back open', () => {
+    const one = withItemDone(group, 'a', true, 10)
+    const left = withItemRenamed(one, 'b', '   ', 20)
+    expect(left.items).toEqual([{ id: 'a', title: 'Bread', doneAt: 10 }])
+    expect(left.doneAt).toBe(20)
+    const back = withItemBack(left, { id: 'b', title: 'Milk' }, 1, 30)
+    expect(back.items!.map((i) => i.id)).toEqual(['a', 'b'])
+    expect(back.doneAt).toBeUndefined()
+    // The last item out leaves an empty group, open, to add to again.
+    const empty = withItemRenamed(todo({ items: [{ id: 'z', title: 'Only' }] }), 'z', '', 40)
+    expect(empty.items).toEqual([])
+    expect(empty.doneAt).toBeUndefined()
+    // Back at the front, and never twice.
+    expect(withItemBack(group, { id: 'a', title: 'Bread' }, 0, 50).items!.map((i) => i.id)).toEqual(['a', 'b'])
   })
 
   it('an item added from the list goes on the end, not done, and reopens a done group', () => {
