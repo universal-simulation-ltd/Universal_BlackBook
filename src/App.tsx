@@ -689,7 +689,10 @@ function useCloudSync(openPanel: () => void) {
     // Read BEFORE `hydrate`, which resets the status on the way out.
     const sync = useSyncStore.getState()
     const unsaved = sync.dirty || sync.pending !== null || sync.status === 'working' || sync.status === 'error' || sync.status === 'conflict'
-    void hydrate(supabase, userId).then(() => {
+    void hydrate(supabase, userId).then((stopped) => {
+      // Still owed its two-step code by the server's reckoning: nothing to
+      // offer yet. `twoStep` changes once it is in, and this runs again.
+      if (stopped === 'two-step') return
       // Signing in IS turning the backup on: open the panel so the passphrase
       // and the merge question come straight away. Once per account per
       // device, so somebody who closes it is not asked on every launch — and

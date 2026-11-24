@@ -1,6 +1,7 @@
 import { currentT } from '../i18n'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { create } from 'zustand'
+import { sessionOwesTwoStep } from '../components/twoStep'
 import {
   createVault,
   deleteVault,
@@ -124,7 +125,8 @@ interface SyncStore {
   /** Answer a clash: per conflict, keep this device's version or not. */
   resolveClash: (supabase: SupabaseClient, keepLocal: (c: Conflict) => boolean) => Promise<void>
 
-  hydrate: (supabase: SupabaseClient, userId: string | null) => Promise<void>
+  /** Resolves 'two-step' when it stopped because the session owes its code. */
+  hydrate: (supabase: SupabaseClient, userId: string | null) => Promise<'two-step' | void>
   /** `passphrase` null: no passphrase — the key is kept with the account. */
   enable: (supabase: SupabaseClient, userId: string, passphrase: string | null, remember: boolean) => Promise<void>
   unlock: (supabase: SupabaseClient, userId: string, passphrase: string, remember: boolean) => Promise<void>
@@ -451,6 +453,15 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
     try {
       const row = await fetchVault(supabase)
       if (!row) {
+        // ⚠️ An empty answer is ALSO what 0342 gives a session that still owes
+        // its two-step code. Taken for "no online copy", it started one and
+        // the insert was refused in red in the panel (James, 2026-11-24). Ask
+        // the server which it is, and if the code is owed, change nothing:
+        // App reads again once it is in.
+        if (await sessionOwesTwoStep(supabase)) {
+          set({ status: 'idle', message: null })
+          return 'two-step'
+        }
         set({ state: 'off', status: 'idle', rev: 0, salt: null, key: null, remembered: false, hasPassphrase: false, accountKey: null })
         // Signing in IS syncing (James, 2026-10-26): start the online copy,
         // without a passphrase, unless it was turned off here — or this
