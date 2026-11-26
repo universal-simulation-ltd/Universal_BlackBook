@@ -301,6 +301,26 @@ dialog::backdrop {
     opacity: 0;
   }
 }
+/* Notes' select box (NotesView ▸ NoteRow): on a card's leading corner, shown
+   only on hover, on keyboard focus in the card, or once a note is ticked
+   (James, 2026-11-26: "tick box appears on hover"), so ticking more stays
+   easy. Never display:none, so a keyboard and a screen reader reach it. On a
+   touch screen it waits for a hold to tick the first one. The card keeps the
+   room for it, so nothing moves when it shows. */
+.bb-nsel {
+  transition: opacity 120ms ease;
+}
+@media (hover: hover) {
+  .bb-ntick:not(:hover):not(:has(:focus-visible)) .bb-nsel:not(.bb-selecting .bb-nsel) {
+    opacity: 0;
+  }
+}
+@media (hover: none) {
+  .bb-ntick:not(:has(:focus-visible)) .bb-nsel:not(.bb-selecting .bb-nsel) {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
 .bb-drop-before::before,
 .bb-drop-after::after {
   content: '';

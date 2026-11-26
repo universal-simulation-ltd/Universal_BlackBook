@@ -27,6 +27,11 @@ export interface PhonePageProps {
   backLabel?: string
   /** Buttons at the right of the bar (a primary action, say). */
   actions?: ReactNode
+  /**
+   * Pinned under the body, above the home indicator, in thumb reach: a note's
+   * and a person's quick actions (James, 2026-11-26).
+   */
+  footer?: ReactNode
   children: ReactNode
   /** Full-bleed body: no padding of its own (a full-screen note). */
   bare?: boolean

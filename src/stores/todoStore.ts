@@ -67,6 +67,8 @@ interface TodoState {
   setItemDone: (id: string, itemId: string, done: boolean) => Promise<void>
   /** One more item on the end of a group, from the list (lib/todos.ts ▸ withItemAdded). */
   addItem: (id: string, title: string) => Promise<void>
+  /** A to-do's title changed in place on the list (2026-11-26); blank keeps the old one. */
+  rename: (id: string, title: string) => Promise<void>
   /** An item renamed in the list; blank takes it out (lib/todos.ts ▸ withItemRenamed). */
   renameItem: (id: string, itemId: string, title: string) => Promise<void>
   /** Undo for an item taken out: back where it was (lib/todos.ts ▸ withItemBack). */
@@ -170,6 +172,14 @@ export const useTodoStore = create<TodoState>((set, get) => {
       if (!was?.items) return
       const now = withItemAdded(was, title, newId())
       if (now !== was) await commit(get().todos.map((t) => (t.id === id ? now : t)))
+    },
+
+    rename: async (id, title) => {
+      const name = title.trim().replace(/\s+/g, ' ')
+      const was = get().todos.find((t) => t.id === id)
+      if (!was || !name || name === was.title) return
+      const now = Date.now()
+      await commit(get().todos.map((t) => (t.id === id ? { ...t, title: name, updatedAt: now } : t)))
     },
 
     renameItem: async (id, itemId, title) => {

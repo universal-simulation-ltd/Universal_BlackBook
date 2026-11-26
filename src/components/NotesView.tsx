@@ -177,7 +177,7 @@ export function NotesView() {
   useLeaveSelection(selecting, () => setSelected(null), { enabled: Boolean(kit) })
 
   return (
-    <div className="space-y-4">
+    <div className={`space-y-4 ${web && wsel.count > 0 ? 'bb-selecting' : ''}`}>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className={phoneScreens() ? 'bb-h1' : tabHeading}>{t('tab_notes')}</h1>
@@ -261,8 +261,10 @@ export function NotesView() {
         <>
           {/* On the phone a hold selects, as on To-do; the button sat on the
               first card there (James, 2026-10-26: "the select button clashes
-              with a card"). */}
-          {web && (
+              with a card"). On the website the bar, Select all with it, shows
+              only once one note is ticked (James, 2026-11-26): until then the
+              card's own box, on hover, is the way in. */}
+          {web && wsel.count > 0 && (
             <div className={webSelBarWrap(wsel.count)}>
               <SelectionBar
                 sel={wsel}
@@ -544,7 +546,7 @@ function NoteRow({
     // never inside it (a button in a button is invalid HTML; see ContactRow).
     // The card opens the note: the suite's Orbit corner on the website
     // (BRANDING.md → Boxes, A; ui.tsx's orbitRow).
-    <div className="relative h-full">
+    <div className={`relative h-full ${select ? 'bb-ntick' : ''}`}>
     <button
       type="button"
       onClick={(e) => onOpen(e)}
@@ -599,7 +601,7 @@ function NoteRow({
       {line && <p className="truncate text-sm text-slate-400">{line}</p>}
     </button>
     {select && (
-      <SelectCheckbox checked={select.checked} onChange={select.onChange} label={select.label} className="absolute left-3.5 top-4" />
+      <SelectCheckbox checked={select.checked} onChange={select.onChange} label={select.label} className="bb-nsel absolute left-3.5 top-4" />
     )}
     {onFineTune && (
       <button

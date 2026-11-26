@@ -131,7 +131,7 @@ export function ContactActions({ contact, onRemind }: { contact: Contact; onRemi
 
   return (
     <>
-      <QuickActions buttons={buttons} all={CONTACT_ACTIONS} order={order} onChange={(contactActions) => setSettings({ contactActions })} label={t('actions_label')} />
+      <QuickActions buttons={buttons} all={CONTACT_ACTIONS} order={order} onChange={(contactActions) => setSettings({ contactActions })} label={t('actions_label')} footer />
       {tagging && (
         <TagSheet
           value={contact.tagIds}

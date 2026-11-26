@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type FormEvent, type ReactNode, type TouchEvent as ReactTouchEvent } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type CSSProperties, type FormEvent, type ReactNode, type TouchEvent as ReactTouchEvent } from 'react'
 import { flushSync } from 'react-dom'
 import { Button, GrowingTextarea, SelectCheckbox, SelectionBar, useDefaultView, useMediaQuery, useSelection, type UseDefaultView } from '@unisim/sdk'
 import { SwipeRow, type SwipeSide as Side } from '@unisim/sdk'
@@ -10,6 +10,7 @@ import { isList } from '../lib/lists'
 import { addDays, compareDaily, compareDone, compareOpen, compareSnoozed, daysUntil, dueLabel, dueShort, groupProgress, isSnoozed, matchesTodo, matchesTodoTags, shortDate, snoozeChoices, type Todo, type TodoItem } from '../lib/todos'
 import { newId } from '../lib/id'
 import { foldAllAction, setFolds, useFolded, useFolds } from '../lib/folds'
+import { ColumnList } from './ColumnList'
 import type { Tag } from '../lib/types'
 import { useBookStore } from '../stores/bookStore'
 import { draftChanged, draftOnClose, useTodoStore, type TodoDraft } from '../stores/todoStore'
@@ -119,6 +120,13 @@ export function TodoView() {
     for (const x of xs) void remove(x.id)
   }
   const removeWithUndo = (x: Todo) => removeManyWithUndo([x])
+  // The phone's strike-through swipe ticks one off, with Undo for a few
+  // seconds as a delete has (James, 2026-11-26: "keep Undo after completing").
+  const doneUndo = useUndo<Todo>((x) => setDone(x.id, false))
+  const strikeDone = (x: Todo) => {
+    doneUndo.deleted(x)
+    void setDone(x.id, true)
+  }
   // Select ▸ Move: to Contacts or Notes (MoveTo).
   const moveTo = useMove('todos')
 
@@ -268,6 +276,8 @@ export function TodoView() {
   const current = layout === 'detail' ? (open.find((x) => x.id === picked) ?? open[0]) : undefined
   // The groups on show that have a fold: list and detail's open ones are
   // single lines, their items in the pane.
+  // The groups folded away: a fold re-splits the columns (ColumnList).
+  const folds = useFolds()
   const foldable = onShow.filter((x) => x.items?.length && !(layout === 'detail' && !x.doneAt && open.includes(x))).map((x) => x.id)
 
   /** One open to-do, drawn the way `look` says; `list` is the run it sits in. */
@@ -288,10 +298,16 @@ export function TodoView() {
           focusActions={false}
           open={openRow?.id === x.id ? openRow.side : null}
           onOpenChange={(side) => setOpenRow(side ? { id: x.id, side } : null)}
-          left={pinSwipe(Boolean(x.pinnedAt), x.title, () => {
-            setOpenRow(null)
-            void setPinned(x.id, !x.pinnedAt)
-          })}
+          // The phone app's swipe right strikes it through instead (TodoRow's
+          // onStrike); Pin is in the hold's select bar there.
+          left={
+            web
+              ? pinSwipe(Boolean(x.pinnedAt), x.title, () => {
+                  setOpenRow(null)
+                  void setPinned(x.id, !x.pinnedAt)
+                })
+              : undefined
+          }
           right={deleteSwipe(x.title, () => {
             setOpenRow(null)
             removeWithUndo(x)
@@ -302,6 +318,8 @@ export function TodoView() {
             byId={byId}
             today={today}
             look={look}
+            // Not while its Delete is showing: then a swipe right closes it.
+            onStrike={!web && openRow?.id !== x.id ? () => strikeDone(x) : undefined}
             lifted={drag?.id === x.id}
             current={current?.id === x.id}
             brief={layout === 'detail'}
@@ -325,9 +343,9 @@ export function TodoView() {
     </li>
   )
   const openList = (list: Todo[], look: Look, cls: string) => (
-    <ul className={cls} data-across={layout === 'grid' ? '' : undefined} aria-describedby={hintId}>
+    <ColumnList className={cls} data-across={layout === 'grid' ? '' : undefined} aria-describedby={hintId} signature={columnSig(list, folds)}>
       {list.map((x, i) => openItem(x, list, i, look))}
-    </ul>
+    </ColumnList>
   )
   const quick = layout === 'lanes' ? open.filter(isQuickTodo) : []
   const bigger = layout === 'lanes' ? open.filter((x) => !isQuickTodo(x)) : []
@@ -400,7 +418,9 @@ export function TodoView() {
       {/* What was typed, as a new to-do's title. */}
       <AddTyped text={query} onAdd={addTyped} />
 
-      {web && (
+      {/* Select all and the bar only once one is ticked (James, 2026-11-26);
+          until then the hovered row's own box is the way in. */}
+      {web && wsel.count > 0 && (
         <div className={`${webSelBarWrap(wsel.count)} bb-tick-bar`}>
           <SelectionBar
             sel={wsel}
@@ -497,7 +517,7 @@ export function TodoView() {
                 />
               </div>
               {/* Swipe right ticks it (or unticks it), left deletes it. */}
-              <ul id={dailyId} className={`mt-2 ${doneCls}`}>
+              <ColumnList id={dailyId} className={`mt-2 ${doneCls}`} signature={columnSig(daily, folds)}>
                 {daily.map((x) => (
                   <li key={x.id} className={itemClass(layout, doneLook)}>
                     {tickable(x, doneLook,
@@ -508,17 +528,19 @@ export function TodoView() {
                       left={
                         x.doneAt
                           ? actionSwipe('undone', t('todo.not_done'), t('todo.mark_undone', { title: x.title }), () => void setDone(x.id, false))
-                          : actionSwipe('done', t('todo.mark_done_short'), t('todo.mark_done', { title: x.title }), () => void setDone(x.id, true))
+                          : web
+                            ? actionSwipe('done', t('todo.mark_done_short'), t('todo.mark_done', { title: x.title }), () => void setDone(x.id, true))
+                            : undefined
                       }
                       right={deleteSwipe(x.title, () => removeWithUndo(x))}
                       focus={[{ label: t('todo.delete_label', { title: x.title }), onClick: () => removeWithUndo(x) }]}
                     >
-                      <TodoRow todo={x} byId={byId} today={today} look={doneLook} />
+                      <TodoRow todo={x} byId={byId} today={today} look={doneLook} onStrike={!web && !x.doneAt ? () => strikeDone(x) : undefined} />
                     </SwipeItem>,
                     true)}
                   </li>
                 ))}
-              </ul>
+              </ColumnList>
             </SwipeGroup>
           )}
         </section>
@@ -592,6 +614,9 @@ export function TodoView() {
           onUndo={() => void undo.undo()}
         />
       )}
+      {doneUndo.item && !undo.item && (
+        <UndoBar title="" text={t('todo.struck', { title: doneUndo.item.title || t('c.untitled') })} onUndo={() => void doneUndo.undo()} />
+      )}
 
       {snoozed.length > 0 && (
         <section className="border-t border-slate-800 pt-3">
@@ -616,6 +641,8 @@ export function TodoView() {
                   total={snoozed.length}
                   actions={[
                     { label: t('todo.wake'), onClick: (ids) => void snooze(ids, undefined) },
+                    // The phone app has no tick box to tick a sleeping one off.
+                    { label: t('todo.mark_done_short'), onClick: (ids) => ids.forEach((id) => void setDone(id, true)) },
                     { label: t('todo.snooze'), onClick: (ids) => setSnoozing(ids) },
                     { label: t('sel.move'), onClick: moveTo.start },
                     { label: t('c.delete'), danger: true, onClick: (ids) => removeManyWithUndo(snoozed.filter((x) => ids.includes(x.id))) },
@@ -624,7 +651,7 @@ export function TodoView() {
               </div>
               {/* Asleep until their day: swipe right (or the hidden button)
                   wakes one now, left deletes it. */}
-              <ul id={snoozedId} className={`mt-2 ${doneCls}`}>
+              <ColumnList id={snoozedId} className={`mt-2 ${doneCls}`} signature={columnSig(snoozed, folds)}>
                 {snoozed.map((x) => (
                   <li key={x.id} className={itemClass(layout, doneLook)}>
                     {tickable(x, doneLook,
@@ -645,7 +672,7 @@ export function TodoView() {
                     true)}
                   </li>
                 ))}
-              </ul>
+              </ColumnList>
             </SwipeGroup>
           )}
         </section>
@@ -711,7 +738,7 @@ export function TodoView() {
                 ]}
               />
             </div>
-            <ul id={doneId} className={`mt-2 ${doneCls}`}>
+            <ColumnList id={doneId} className={`mt-2 ${doneCls}`} signature={columnSig(done, folds)}>
               {done.map((x) => (
                 <li key={x.id} className={itemClass(layout, doneLook)}>
                   {/* Done ones swipe too: left deletes (with Undo), right
@@ -730,7 +757,7 @@ export function TodoView() {
                   true)}
                 </li>
               ))}
-            </ul>
+            </ColumnList>
             </SwipeGroup>
           )}
         </section>
@@ -937,6 +964,17 @@ function listClass(layout: Shown): string {
   }
 }
 
+/**
+ * What a list's columns are split from (ColumnList): the to-dos in their
+ * order and everything drawn in them, and which groups are folded. Nothing a
+ * hover or a drag changes.
+ */
+function columnSig(list: Todo[], folds: ReadonlySet<string>): string {
+  return JSON.stringify(
+    list.map((x) => [x.id, x.title, x.details, x.due, x.tagIds, x.doneAt, x.pinnedAt, x.snoozedUntil, x.items?.map((i) => [i.title, i.doneAt]), folds.has(x.id)]),
+  )
+}
+
 /** One item's own classes: a row's rule under it, a column's no-split. */
 function itemClass(layout: Shown, look: Look): string {
   if (look === 'row') return `border-b border-slate-800/70 ${layout === 'columns' ? 'break-inside-avoid' : ''}`
@@ -1116,6 +1154,7 @@ function TodoRow({
   onOpen,
   onTouchStart,
   onGripDown,
+  onStrike,
   extra,
 }: {
   todo: Todo
@@ -1132,10 +1171,21 @@ function TodoRow({
   onOpen?: () => void
   onTouchStart?: (e: ReactTouchEvent) => void
   onGripDown?: (e: React.PointerEvent) => void
+  /**
+   * The phone app: a swipe to the right along it strikes it through, and
+   * letting go past the end ticks it off (this is called). Absent where the
+   * swipe right is that list's own action (Wake, Not done).
+   */
+  onStrike?: () => void
   extra?: ReactNode
 }) {
   const t = useT()
   const setDone = useTodoStore((s) => s.setDone)
+  // The phone app has no tick box on a to-do (James, 2026-11-26): the swipe
+  // (onStrike), the hold's select bar or Fine-tune ticks it off. The box
+  // stays in the page, visually hidden, for VoiceOver and TalkBack.
+  const noTick = phoneScreens()
+  const strike = useStrike(onStrike)
   const edit = useTodoStore((s) => s.edit)
   const done = todo.doneAt !== undefined
   const chips = todo.tagIds.map((id) => byId.get(id)).filter((t): t is Tag => Boolean(t) && !isList(t!))
@@ -1181,10 +1231,37 @@ function TodoRow({
       ))}
     </span>
   )
+  // The website: a click on the name's words types in it, in place (James,
+  // 2026-11-26: "clicking the title edits it in place"); a click anywhere
+  // else on the card still opens it. Return or leaving the box saves, Escape
+  // keeps the old name, and a blank name is not saved. The phone app's tap
+  // still opens the to-do (a keyboard on every tap would be in the way).
+  const rename = useTodoStore((s) => s.rename)
+  const inPlace = !phoneScreens()
+  const [titleText, setTitleText] = useState<string | null>(null)
+  const titleBox = useRef<HTMLTextAreaElement | null>(null)
+  const titleDone = useRef(false)
+  const startTitle = () => {
+    titleDone.current = false
+    flushSync(() => setTitleText(todo.title))
+    const el = titleBox.current
+    if (!el) return
+    el.focus()
+    el.setSelectionRange(el.value.length, el.value.length)
+  }
+  const finishTitle = (save: boolean) => {
+    if (titleDone.current || titleText === null) return
+    titleDone.current = true
+    const text = titleText
+    setTitleText(null)
+    if (save) void rename(todo.id, text)
+  }
   const name = (
     <span className={`min-w-0 flex-1 break-words font-semibold text-slate-100 ${done ? 'line-through decoration-slate-500' : ''}`}>
       {todo.pinnedAt && !done && <PinMark />}
-      {todo.title || t('c.untitled')}
+      <span data-title={inPlace ? '' : undefined} className={inPlace ? 'cursor-text' : undefined} style={strike.style}>
+        {todo.title || t('c.untitled')}
+      </span>
     </span>
   )
   // A group's fold sits at the end of its name's line, as a button of its own
@@ -1200,11 +1277,61 @@ function TodoRow({
     // button and its items. List rows stay plain.
     <div
       className={`relative ${row ? (lifted ? 'rounded-lg bg-slate-900 shadow-2xl ring-1 ring-orange-400' : '') : `h-full ${grouped ? `${orbitRow} flex flex-col border bg-slate-900 p-0 ${edge}` : ''}`}`}
-      onTouchStart={onTouchStart}
+      onTouchStart={(e) => {
+        strike.start(e)
+        onTouchStart?.(e)
+      }}
+      onTouchMove={strike.move}
+      onTouchEnd={strike.end}
+      onTouchCancel={strike.cancel}
     >
+      {titleText !== null ? (
+        // The name, open for typing where it was: the card's own box, with a
+        // text box in place of the name (a box cannot sit inside a button).
+        <div
+          onTouchStart={(e) => e.stopPropagation()}
+          className={
+            row
+              ? `flex w-full flex-col gap-0.5 rounded-lg py-1 pl-11 ${foldRoom}`
+              : `flex w-full flex-col gap-0.5 ${grouped ? 'rounded-xl' : orbitRow} py-1.5 pl-12 ${foldRoom} ${grouped ? '' : `h-full border bg-slate-900 ${edge}`}`
+          }
+        >
+          <GrowingTextarea
+            textareaRef={titleBox}
+            rows={1}
+            className={`${inputCls} resize-none py-1 font-semibold leading-snug`}
+            value={titleText}
+            aria-label={t('todo.title_in_place', { title: todo.title || t('c.untitled') })}
+            enterKeyHint="done"
+            onChange={(e) => setTitleText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                e.preventDefault()
+                e.stopPropagation()
+                finishTitle(false)
+                return
+              }
+              // Return saves; a to-do's name is one line.
+              if (e.key !== 'Enter' || e.nativeEvent.isComposing) return
+              e.preventDefault()
+              finishTitle(true)
+            }}
+            onBlur={() => finishTitle(true)}
+          />
+          {todo.details && <span className="line-clamp-1 break-words px-0.5 text-sm text-slate-400">{todo.details}</span>}
+        </div>
+      ) : (
       <button
         type="button"
-        onClick={() => (onOpen ? onOpen() : edit(todo.id))}
+        onClick={(e) => {
+          if (inPlace && (e.target as HTMLElement).closest('[data-title]')) {
+            if (onOpen) onOpen()
+            startTitle()
+            return
+          }
+          if (onOpen) onOpen()
+          else edit(todo.id)
+        }}
         onDoubleClick={onOpen ? () => edit(todo.id) : undefined}
         aria-current={current || undefined}
         onKeyDown={(e) => {
@@ -1219,10 +1346,10 @@ function TodoRow({
         }}
         className={
           row
-            ? `flex w-full flex-col gap-0.5 rounded-lg py-2 pl-11 ${foldRoom} text-left transition-colors hover:bg-slate-800/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+            ? `flex w-full flex-col gap-0.5 rounded-lg py-2 ${noTick ? 'pl-3' : 'pl-11'} ${foldRoom} text-left transition-colors hover:bg-slate-800/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
                 current ? 'bg-slate-800' : ''
               } ${done ? 'opacity-60' : ''}`
-            : `flex w-full flex-col gap-0.5 ${grouped ? 'rounded-xl' : orbitRow} py-2.5 pl-12 ${foldRoom} text-left transition-colors hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+            : `flex w-full flex-col gap-0.5 ${grouped ? 'rounded-xl' : orbitRow} py-2.5 ${noTick ? 'pl-4' : 'pl-12'} ${foldRoom} text-left transition-colors hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
                 done ? 'opacity-60' : ''
               } ${grouped ? (folded ? '' : 'rounded-b-none') : `h-full border bg-slate-900 hover:border-slate-700 ${edge}`}`
         }
@@ -1242,13 +1369,18 @@ function TodoRow({
         </span>
         {todo.details && <span className="line-clamp-1 break-words text-sm text-slate-400">{todo.details}</span>}
       </button>
+      )}
       <button
         type="button"
         role="checkbox"
         aria-checked={done}
         aria-label={done ? t('todo.mark_undone', { title: todo.title }) : t('todo.mark_done', { title: todo.title })}
         onClick={() => void setDone(todo.id, !done)}
-        className={`absolute left-1.5 ${row ? 'top-0' : 'top-0.5'} flex h-10 w-10 items-center justify-center rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400`}
+        className={
+          noTick
+            ? 'sr-only'
+            : `absolute left-1.5 ${row ? 'top-0' : 'top-0.5'} flex h-10 w-10 items-center justify-center rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400`
+        }
       >
         <Tick on={done} />
       </button>
@@ -1317,8 +1449,9 @@ function GroupItems({ todo, indent = false }: { todo: Todo; indent?: boolean }) 
 const ITEM_HOLD_MS = 300
 
 /**
- * One item of a group: a tap ticks it; a right-click, a hold on a touch
- * screen, or F2 opens its name for typing in place (owner, 2026-11-23: "allow
+ * One item of a group: a tap on its box ticks it, a tap on its words (since
+ * 2026-11-26), a right-click, a hold on a touch screen, or F2 opens its name
+ * for typing in place (owner, 2026-11-23: "allow
  * to edit to do items directly on view page (maybe a right click or tap and
  * hold on an item?)"). Return or leaving the box saves, Escape keeps the old
  * name, and rubbing it out takes the item away (Undo in the group).
@@ -1438,13 +1571,10 @@ function ItemRow({ todo, item, compact, onRemoved }: { todo: Todo; item: TodoIte
       }}
       onTouchCancel={cancelHold}
     >
-      <button
-        type="button"
-        role="checkbox"
-        aria-checked={on}
-        aria-label={on ? t('todo.mark_undone', { title: item.title }) : t('todo.mark_done', { title: item.title })}
-        aria-keyshortcuts="F2"
-        onClick={() => void setItemDone(todo.id, item.id, !on)}
+      {/* The box ticks it; the words open it for typing (James, 2026-11-26:
+          a click on the text must not tick it). A right-click, a hold or F2
+          does the same from either. */}
+      <div
         onContextMenu={(e) => {
           // Only on an item: the browser's own menu everywhere else.
           e.preventDefault()
@@ -1455,11 +1585,28 @@ function ItemRow({ todo, item, compact, onRemoved }: { todo: Todo; item: TodoIte
           e.preventDefault()
           open()
         }}
-        className={`flex ${height} w-full select-none items-center gap-3 rounded-lg px-2 text-left text-sm transition-colors [-webkit-touch-callout:none] hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${held ? 'bg-slate-800 ring-1 ring-orange-400' : ''}`}
+        className={`flex ${height} w-full select-none items-center rounded-lg transition-colors [-webkit-touch-callout:none] hover:bg-slate-800 ${held ? 'bg-slate-800 ring-1 ring-orange-400' : ''}`}
       >
-        <Tick on={on} />
-        <span className={`min-w-0 break-words ${on ? 'text-slate-500 line-through decoration-slate-500' : 'text-slate-200'}`}>{item.title}</span>
-      </button>
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={on}
+          aria-label={on ? t('todo.mark_undone', { title: item.title }) : t('todo.mark_done', { title: item.title })}
+          aria-keyshortcuts="F2"
+          onClick={() => void setItemDone(todo.id, item.id, !on)}
+          className={`flex ${height} shrink-0 items-center rounded-lg pl-2 pr-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400`}
+        >
+          <Tick on={on} />
+        </button>
+        <button
+          type="button"
+          onClick={open}
+          aria-label={t('todo.title_in_place', { title: item.title })}
+          className={`flex ${height} min-w-0 flex-1 cursor-text items-center rounded-lg pl-1.5 pr-2 text-left text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400`}
+        >
+          <span className={`min-w-0 break-words ${on ? 'text-slate-500 line-through decoration-slate-500' : 'text-slate-200'}`}>{item.title}</span>
+        </button>
+      </div>
     </li>
   )
 }
@@ -1543,6 +1690,82 @@ function AddItem({ todo, compact = false }: { todo: Todo; compact?: boolean }) {
 }
 
 /** The tick box's square, for a to-do and for an item of a group. */
+/** How far right, as a share of the row's width, a finger goes to strike a to-do through. */
+const STRIKE_AT = 0.55
+
+/**
+ * The phone app's strike-through swipe (James, 2026-11-26: "swiping along a
+ * to-do draws the strike-through across the text as the finger moves; let go
+ * past the end and it completes, stop midway and the strike springs back and
+ * nothing changes"). Swipe RIGHT strikes and ticks off; swipe LEFT is still
+ * the row's Delete with Undo (SwipeRow) — the suite's two-way swipe, with
+ * striking as the second action. A light buzz as the line reaches the end,
+ * so the thumb knows letting go will tick it. Touch only, and only a
+ * sideways drag: a vertical one stays the page's scroll, and a hold stays the
+ * lift to drag.
+ */
+function useStrike(onStrike: (() => void) | undefined) {
+  const [p, setP] = useState(0)
+  const [live, setLive] = useState(false)
+  const g = useRef<{ x: number; y: number; w: number; axis: 'none' | 'x' | 'y'; past: boolean } | null>(null)
+  const start = (e: ReactTouchEvent) => {
+    if (!onStrike || e.touches.length !== 1) return
+    const t0 = e.touches[0]
+    g.current = { x: t0.clientX, y: t0.clientY, w: e.currentTarget.getBoundingClientRect().width || 1, axis: 'none', past: false }
+  }
+  const move = (e: ReactTouchEvent) => {
+    const s = g.current
+    const t0 = e.touches[0]
+    if (!s || !t0) return
+    const dx = t0.clientX - s.x
+    const dy = t0.clientY - s.y
+    if (s.axis === 'none') {
+      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return
+      s.axis = dx > 0 && Math.abs(dx) > Math.abs(dy) ? 'x' : 'y'
+      if (s.axis === 'x') setLive(true)
+    }
+    if (s.axis !== 'x') return
+    const next = Math.max(0, Math.min(1, dx / (s.w * STRIKE_AT)))
+    if ((next >= 1) !== s.past) {
+      s.past = next >= 1
+      if (s.past) navigator.vibrate?.(10)
+    }
+    setP(next)
+  }
+  const end = () => {
+    const s = g.current
+    g.current = null
+    if (!s || s.axis !== 'x') return
+    setLive(false)
+    if (s.past && onStrike) {
+      onStrike()
+      setP(0)
+      return
+    }
+    setP(0)
+  }
+  const cancel = () => {
+    g.current = null
+    setLive(false)
+    setP(0)
+  }
+  // The line under the finger: drawn as a background on the inline name, so
+  // it runs along every line of a long one; it follows the finger while
+  // live, and springs back once let go.
+  const style: CSSProperties | undefined = onStrike
+    ? {
+        backgroundImage: 'linear-gradient(currentColor, currentColor)',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: '0 55%',
+        backgroundSize: `${p * 100}% 2px`,
+        WebkitBoxDecorationBreak: 'clone',
+        boxDecorationBreak: 'clone',
+        transition: live ? 'none' : 'background-size 200ms ease-out',
+      }
+    : undefined
+  return { start, move, end, cancel, style }
+}
+
 function Tick({ on }: { on: boolean }) {
   return (
     <span

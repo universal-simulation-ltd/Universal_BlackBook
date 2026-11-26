@@ -66,7 +66,7 @@ function useBarFit(marker: RefObject<HTMLSpanElement | null>) {
   })
 }
 
-export function Page({ title, onBack, backLabel, actions, children, bare = false, editTitle }: PhonePageProps) {
+export function Page({ title, onBack, backLabel, actions, footer, children, bare = false, editTitle }: PhonePageProps) {
   const marker = useRef<HTMLSpanElement>(null)
   useBarFit(marker)
   return (
@@ -75,6 +75,7 @@ export function Page({ title, onBack, backLabel, actions, children, bare = false
       onBack={onBack}
       backLabel={backLabel}
       actions={actions}
+      footer={footer}
       className="bb-page"
       bodyClassName={bare ? 'bb-pagebody bare' : 'bb-pagebody'}
     >

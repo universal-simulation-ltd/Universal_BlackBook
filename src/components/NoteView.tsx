@@ -348,9 +348,22 @@ function NoteView({ id, onBinned }: { id: string; onBinned: (note: Note) => void
     />
   )
 
+  const footerRow = (
+    <QuickActions
+      buttons={buttons}
+      all={placesOn ? NOTE_ACTIONS : NOTE_ACTIONS.filter((k) => k !== 'places')}
+      order={actionOrder}
+      onChange={(noteActions) => setSettings({ noteActions })}
+      label={t('nlink.actions')}
+      status={copied}
+      footer
+    />
+  )
+
   const body = (
     <div ref={bodyRef} className="mx-auto w-full max-w-2xl space-y-5">
-      {actionRow}
+      {/* The phone app has it at the bottom of the screen (the page's footer). */}
+      {!kit && actionRow}
 
       {/* Its tags, as chips; 🏷️ Tags or Fine-tune changes them. */}
       {noteTags.length > 0 && (
@@ -500,6 +513,9 @@ function NoteView({ id, onBinned }: { id: string; onBinned: (note: Note) => void
         }}
         backLabel={kit.t('tab_notes')}
         onBack={back}
+        // The quick actions at the bottom of the screen, in thumb reach (James,
+        // 2026-11-26); out of the way while the keyboard is up for the text.
+        footer={typing ? undefined : <div className="mx-auto w-full max-w-2xl">{footerRow}</div>}
         actions={
           <button type="button" className="min-h-[44px] px-2 text-[16px] font-semibold text-orange-400" onClick={fineTune}>
             {kit.t('fine_tune')}

@@ -118,32 +118,38 @@ export function TagChip({
  * one tap away on the contact's own screen.
  *
  * Not focusable and not a button: the whole card is already a button, and a
- * control inside it is invalid HTML. The name is always in the DOM — squeezed
- * to zero width, not removed — so a screen reader still hears every tag, and
+ * control inside it is invalid HTML. The name is always in the DOM — see-through
+ * until hovered, not removed — so a screen reader still hears every tag, and
  * `title` answers on a long press where there is no hover.
  */
 export function TagDot({ name, colour, pattern }: { name: string; colour: string; pattern?: Pattern }) {
   const s = swatch(colour)
   const theme = useEffectiveTheme()
-  const style = { '--tag-bg': s.bg, '--tag-border': s.border } as CSSProperties
+  // The chip's tint over the card's own ground, so it hides what it covers.
+  const style = { '--tag-bg': s.bg, '--tag-border': s.border, background: 'linear-gradient(var(--tag-bg), var(--tag-bg)), var(--color-slate-900)' } as CSSProperties
+  const mark = pattern ? (
+    <TagMark colour={s.dot} pattern={pattern} className="h-3.5 w-3.5 shrink-0" />
+  ) : (
+    <svg viewBox="0 0 10 10" className="h-2.5 w-2.5 shrink-0" aria-hidden>
+      <circle cx="5" cy="5" r="4" fill={s.dot} />
+    </svg>
+  )
   return (
-    <span
-      title={name}
-      style={style}
-      className="group/dot inline-flex min-w-0 items-center rounded-full border border-transparent px-1 py-0.5 transition-[background-color,border-color] duration-150 hover:border-[var(--tag-border)] hover:bg-[var(--tag-bg)]"
-    >
-      {pattern ? (
-        <TagMark colour={s.dot} pattern={pattern} className="h-3.5 w-3.5 shrink-0" />
-      ) : (
-        <svg viewBox="0 0 10 10" className="h-2.5 w-2.5 shrink-0" aria-hidden>
-          <circle cx="5" cy="5" r="4" fill={s.dot} />
-        </svg>
-      )}
+    // The light keeps its own small room; the chip opens OVER the card,
+    // leftwards from the light, and never takes room of its own (owner,
+    // 2026-11-26: hover must never change the layout — a light that widened
+    // squeezed a to-do's name onto more lines, the card grew, and the To-do
+    // columns re-flowed under the pointer).
+    <span title={name} className="group/dot relative inline-flex items-center rounded-full border border-transparent px-1 py-0.5">
+      <span aria-hidden className="inline-flex">{mark}</span>
       <span
-        style={{ color: readable(s, theme) }}
-        className="max-w-0 overflow-hidden whitespace-nowrap text-xs font-medium opacity-0 transition-[max-width,opacity,margin] duration-150 group-hover/dot:ml-1 group-hover/dot:max-w-40 group-hover/dot:opacity-100"
+        style={style}
+        className="pointer-events-none absolute right-0 top-1/2 z-10 inline-flex -translate-y-1/2 items-center gap-1 whitespace-nowrap rounded-full border border-[var(--tag-border)] px-1 py-0.5 opacity-0 transition-opacity duration-150 group-hover/dot:opacity-100"
       >
-        {name}
+        <span style={{ color: readable(s, theme) }} className="text-xs font-medium">
+          {name}
+        </span>
+        <span aria-hidden className="inline-flex">{mark}</span>
       </span>
     </span>
   )

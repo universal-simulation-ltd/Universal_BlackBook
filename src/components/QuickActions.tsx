@@ -17,7 +17,7 @@ export interface QuickButton {
 }
 
 /**
- * The row of emoji buttons across the top of a note and of a contact (James,
+ * The row of emoji buttons on a note and on a contact (James,
  * 2026-10-27: "match up the quick actions style for contacts and notes, use
  * four buttons but only show the emojis"), in the order the person keeps
  * (lib/quickActions.ts). Three places, each a button or a "+", then a "…"
@@ -27,7 +27,9 @@ export interface QuickButton {
  * + as well as opposed to a + hiding another action if dropped", "tap and
  * hold to drag a + also"). The bin that rises in the middle of the screen puts
  * a button back among the rest, leaving a "+" where it was. A tap on a "+"
- * picks one of the rest from a list.
+ * picks one of the rest from a list. The website has it across the top; the
+ * phone app pins it to the bottom of the screen, in thumb reach (James,
+ * 2026-11-26), in the page's footer.
  */
 export function QuickActions<K extends string>({
   buttons,
@@ -36,6 +38,7 @@ export function QuickActions<K extends string>({
   onChange,
   label,
   status,
+  footer = false,
 }: {
   buttons: Record<K, QuickButton>
   /** Every button this row can hold, in the order a "+" lists them. */
@@ -45,6 +48,8 @@ export function QuickActions<K extends string>({
   /** The row's accessible name. */
   label: string
   status?: string | null
+  /** In the phone page's footer, at the bottom of the screen: no room of its own under it. */
+  footer?: boolean
 }) {
   const t = useT()
   const kit = usePhoneKit()
@@ -158,7 +163,7 @@ export function QuickActions<K extends string>({
       {/* data-swipe-x: a drag that starts here is a button being moved, so
           the page's own pull down (the SDK's phone kit) leaves it alone —
           without it the whole page slid down after the finger. */}
-      <div ref={rowRef} className="mb-5 grid grid-cols-4 gap-2" role="group" aria-label={label} data-swipe-x>
+      <div ref={rowRef} className={`${footer ? '' : 'mb-5'} grid grid-cols-4 gap-2`} role="group" aria-label={label} data-swipe-x>
         {shown.map((key, i) => {
           if (key === null) {
             const held = drag?.at === i

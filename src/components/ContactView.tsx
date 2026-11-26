@@ -500,10 +500,14 @@ export function ContactView({ id }: { id: string }) {
             {kit.t('fine_tune')}
           </button>
         }
+        // The quick actions at the bottom of the screen, in thumb reach
+        // (James, 2026-11-26).
+        footer={
+          <div className="mx-auto w-full max-w-2xl">
+            <kit.ContactActions contact={contact} onRemind={() => setRemind(true)} />
+          </div>
+        }
       >
-        <div className="mx-auto w-full max-w-2xl">
-          <kit.ContactActions contact={contact} onRemind={() => setRemind(true)} />
-        </div>
         {details}
         {remind && (
           <ReminderEditor
